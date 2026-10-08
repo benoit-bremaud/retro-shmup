@@ -28,9 +28,9 @@ Source: [`03-component.puml`](03-component.puml) — regenerate the SVG with
 
 | Component | Directory | Responsibility | Depends on |
 |---|---|---|---|
-| Bootstrap | `src/app` | Creates the adapters, injects them through the ports with the startup snapshot (ADR-0009), starts the loop | everything (composition root) |
+| Bootstrap | `src/app` | Creates the adapters, injects them through the ports with the environment — startup snapshot and `today()` (ADR-0009) — and starts the loop | everything (composition root) |
 | FrameLoop | `src/app` | `requestAnimationFrame` driver: wall time from `Clock`, multiplied by `SceneMachine.timeScale()` (ADR-0010), fed to the fixed-step accumulator (ADR-0002); per step reads one `IntentFrame` and calls `step`; per frame calls `render(alpha, wallDtMs)` with the unscaled wall time | SceneMachine, Clock, InputPort |
-| SceneMachine | `src/domain` | The screens of GDD §9.1 and their transitions; creates and steps the `Run`; draws menus; drives the music and the pause mix; loads and saves through `StoragePort` | Run, RunPresenter, SaveDocument, MessageCatalogue, ports |
+| SceneMachine | `src/domain` | The screens of GDD §9.1 and their transitions; creates and steps the `Run`; draws menus; drives the music and the pause mix; loads and saves through `StoragePort`; pushes bindings, key capture and the fullscreen preference through `InputPort` (UC5, UC6) | Run, RunPresenter, SaveDocument, MessageCatalogue, ports |
 | Run | `src/domain` | The simulation of one run — outcome-relevant state only: entities, patterns, pools, event bus, scoring, collisions | LevelScripts, Random |
 | RunPresenter | `src/domain` | Draws the play field and the HUD from the run's interpolated view; owns particles and game-feel effects (unseeded randomness, timers in wall-clock ms); provides the time scale of hit-stop and slow motion; first-time pickup labels, score pop-ups; maps events to SFX (ADR-0010) | Run (read only), MessageCatalogue, RenderPort, AudioPort |
 | LevelScripts | `src/domain` | The three typed, declarative level scripts (GDD §7.1) and the archetype data (GDD §5) | — |

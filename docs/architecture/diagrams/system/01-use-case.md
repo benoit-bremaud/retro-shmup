@@ -160,8 +160,8 @@ step depends on them.
   - 1a. First launch with `prefers-reduced-motion`: shake, flashes, hit-stop and slow motion are
     preset to off (GDD §9.3).
   - 2a. Player wants to change the controls: see UC6.
-  - 3a. Fullscreen is enabled outside a click, tap or key press: the preference is saved and
-    applied on the next Start gesture (GDD §9.3).
+  - 3a. Fullscreen is enabled without a click, tap or key press (gamepad): the preference is
+    saved and applied at the next click, tap or key press (GDD v0.4 §9.3, ADR-0009).
   - 3b. Storage is unavailable: changes apply for the session only.
 
 ### UC6 — Remap the controls

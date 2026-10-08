@@ -359,8 +359,9 @@ during a boss fight. On narrow screens the HUD collapses into a thin strip at th
 Music and SFX volume (separate), key / gamepad remap (§4.2), language (EN / FR), fullscreen,
 and **visual effects**: one on/off switch per effect of §9.4, all default **on**. On first launch,
 when the browser reports `prefers-reduced-motion`, screen shake, white flashes, hit-stop and slow
-motion default to **off** *(v0.2)*. The fullscreen preference is reapplied on the next "Press
-Start" gesture (browsers refuse fullscreen without one).
+motion default to **off** *(v0.2)*. Browsers refuse fullscreen outside a user gesture: a change
+made with a click, tap or key applies at once; otherwise the preference is applied at the next
+click, tap or key press, including during a run *(v0.4, ADR-0009)*.
 
 ### 9.4 Game feel (all effects individually toggleable in §9.3)
 

@@ -54,6 +54,7 @@ Run ..> Levels : reads
 Scenes ..> RenderPort : <<use>> menus
 Scenes ..> AudioPort : <<use>> mix, music
 Scenes ..> StoragePort : <<use>>
+Scenes ..> InputPort : <<use>> bindings, key capture,\nlabels, fullscreen wanted
 Presenter ..> RenderPort : <<use>> field + HUD
 Presenter ..> AudioPort : <<use>> SFX
 Run ..> RandomPort : <<use>> gameplay only
@@ -68,9 +69,9 @@ PerfClock -up- ClockPort
 
 note right of Boot
   Creates every adapter, injects it through
-  its port, and passes the startup snapshot
-  (today, reduced motion, language, touch,
-  fullscreen support) — ADR-0009.
+  its port, and passes the environment:
+  a startup snapshot (reduced motion, language,
+  touch, fullscreen support) and today() — ADR-0009.
 end note
 
 note right of Input
