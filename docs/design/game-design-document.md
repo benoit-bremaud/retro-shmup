@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Design phase — v0.1, consolidated from the inception brainstorming session (2026-10-07) |
+| **Status** | Design phase — v0.2 (2026-10-08): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 folds in the rules surfaced by the UML use-case study |
 | **Working title** | *retro-shmup* (codename; the commercial title is still open) |
 | **Genre** | Retro vertical-scrolling shoot'em up (shmup), 16-bit aesthetic |
 | **Platform** | Web browser (desktop first, mobile playable), TypeScript + native Canvas 2D |
@@ -125,18 +125,36 @@ Minimal, arcade style: one intro card (two sentences), one title card per level,
 
 | Priority | Input | Model |
 |---|---|---|
-| P0 | Keyboard | Arrows / WASD / ZQSD to move; `Space` or `Z` fire (hold = autofire); `X` or `Shift` bomb; `Esc` / `P` pause; `Enter` confirm. Remappable. |
-| P1 | Touch | The ship follows the finger with a vertical offset so the thumb never hides it; autofire always on; bomb = on-screen button or second-finger tap. |
+| P0 | Keyboard | Move: arrows (primary), `W A S D` physical keys (secondary — the same keys read Z Q S D on AZERTY); fire `Space` / `Z` (hold = autofire); bomb `X` / `Shift`; pause `P`; `Enter` confirm; `Esc` pauses in play and goes back in menus (fixed). Remappable. |
+| P1 | Touch | The ship follows the finger with a vertical offset so the thumb never hides it; autofire always on; bomb = on-screen button or second-finger tap; pause = on-screen button. |
 | P1 | Gamepad | Left stick / d-pad move; `A` fire; `B` bomb; `Start` pause (Gamepad API). Remappable. |
 | P2 | Mouse | Ship follows the cursor; autofire; right click or `Space` bomb. |
 
-Inputs are translated to **intents** (`move`, `fire`, `bomb`, `pause`, `confirm`) so the game
-never knows which device produced them (Command pattern, see the UML study).
+Inputs are translated to **intents** (`move`, `fire`, `bomb`, `pause`, `confirm`, `back`) so the
+game never knows which device produced them (Command pattern, see the UML study).
+
+**Bindings** *(v0.2)*: keyboard keys are bound by **physical key** (`KeyboardEvent.code`), so a
+layout change (QWERTY, AZERTY) never breaks them; labels shown to the player use the active
+layout. Each remappable intent (`move` ×4, `fire`, `bomb`, `pause`) has a **primary and a
+secondary slot** per device. Remapping edits one slot; a key already used elsewhere **swaps**
+with it, so no intent is ever left unbound. `confirm` and `back` are fixed (`Enter` / `Esc` on
+keyboard, `A` / `B` in menus on gamepad) to prevent lock-out; `Esc` is never bindable (browsers
+also reserve it to leave fullscreen). `Z` and `X` are physical positions too: they never collide
+with the `W A S D` block, on any layout. A "restore defaults" action exists per device. While
+waiting for a new key, `Esc` cancels on keyboard; on gamepad the wait cancels itself after 5 s
+(every button may be a binding). Touch and mouse have no discrete bindings and are not
+remappable.
+
+**Activation** *(v0.2)*: browsers unlock audio and fullscreen only after a click, tap or key
+press — a gamepad button does not count. If "Press Start" comes from a gamepad before any such
+gesture, the game asks for one click, tap or key.
 
 ### 4.3 Weapons and power levels
 
 Two weapons, selected by the colour of the last **P** pickup caught; **five power levels** shared
-between them (switching weapon keeps the current level, as in Raiden).
+between them (switching weapon keeps the current level, as in Raiden). A run starts with the
+**Spread** at level 1 *(v0.2: the more forgiving weapon, and effective against level 1's
+formations)*.
 
 | Weapon | Pickup | Character | Level 1 → 5 *(initial)* |
 |---|---|---|---|
@@ -148,13 +166,15 @@ is expressed in **level-1 shots** so this ratio is what the player feels as "pow
 
 ### 4.4 Lives, shield, death
 
-- **One hit = one life.** 3 lives at start *(initial)*; extra lives only from **1-UP** pickups.
+- **One hit = one life.** 3 lives at start *(initial)*, the ship in play included; at most 9
+  (HUD limit); extra lives only from **1-UP** pickups.
 - **Shield**: a pickup grants **one charge**, drawn as a ring around the ship. The next hit consumes
   the charge instead of a life (0.5 s invulnerability, no other penalty). Charges do not stack.
 - **On death**:
   1. the current power level drops by **one** (never below 1),
   2. a **P pickup of the current weapon colour** is released at the death position and drifts down
-     slowly — catching it restores the lost level,
+     slowly — catching it restores the lost level; at level 1 there is nothing to restore, so
+     nothing is released *(v0.2)*,
   3. the chain multiplier resets to ×1,
   4. bombs are reset to **2**,
   5. the ship respawns after 1.5 s with 2 s of invulnerability.
@@ -163,8 +183,9 @@ is expressed in **level-1 shots** so this ratio is what the player feels as "pow
 ### 4.5 Bombs
 
 - Stock **2 per life, maximum 5** *(initial)*; **Bomb** pickups add one.
-- Effect: every enemy bullet on screen is cancelled, every enemy takes heavy damage *(initial: 30
-  level-1 shots)*, the player is invulnerable for **1 s**, large screen shake (toggleable).
+- Effect: every enemy bullet on screen is cancelled, every enemy **including the boss** takes heavy
+  damage *(initial: 30 level-1 shots — 5–10 % of a boss)*, the player is invulnerable for **1 s**,
+  large screen shake (toggleable). With an empty stock the input does nothing.
 - A bomb used is noted for the end-of-level tally (no-bomb bonus lost).
 
 ### 4.6 Pickups
@@ -180,6 +201,10 @@ leaves the bottom of the screen is lost.
 | **Shield** | Cyan ring | One shield charge | Carrier, Heavy |
 | **Bomb** | Yellow "B" | +1 bomb (max 5) | Heavy, Carrier |
 | **1-UP** | Green ship icon | +1 life | Rare: specific Carriers in the level script |
+
+**Pickup at its cap** *(v0.2, one rule)*: when the effect cannot apply — power already 5, bombs
+already 5, a shield charge already held, lives already 9 — the pickup grants **1 000 points**
+instead. A P of the other colour still switches the weapon (level unchanged).
 
 Rule of thumb: everything that falls is good to catch. (This invariant is exactly what the 1.x
 "ejected pilots" candidate would challenge — see §12.)
@@ -287,10 +312,22 @@ small label ("SHIELD", "BOMB", "1UP") floats above it for 1 s.
 
 ```
 Boot → Title ⇄ { Options, High scores, Credits }
-Title → Playing ⇄ Paused
-Playing → Level results → Playing (next level) | Ending → Title
-Playing → Game over → Name entry (if top 10) → High scores → Title
+Title → Playing ⇄ Paused → Options → Paused
+Paused → Title (quit, after confirmation — the run is discarded, no name entry)
+Playing → Level results → Playing (next level) | Ending
+Ending | Game over → Name entry (if top 10) → High scores → Title
 ```
+
+**Pause** *(v0.2)*: the player pauses at any moment (`pause` intent). The game also pauses on its
+own when the tab is hidden, when the window loses focus, or when the gamepad in use disconnects —
+and **never resumes on its own**. While paused the simulation is frozen (no tick, no timer, no
+random draw), the music is ducked to −12 dB over 150 ms and the SFX are silenced. Resuming shows a
+1 s **3-2-1 count-in** (simulation still frozen); the frame clock is reset so no time elapsed
+during the pause reaches the simulation. Quitting from pause asks for confirmation, default
+"No"; a quit run is discarded and never offered the high-score entry.
+
+**Name entry** *(v0.2)*: three characters from A–Z, 0–9, space and `.`, starting at `AAA`; no
+timer. On touch, an on-screen letter grid.
 
 ### 9.2 HUD (side bands, outside the 240 × 320 play field)
 
@@ -300,11 +337,13 @@ during a boss fight. On narrow screens the HUD collapses into a thin strip at th
 
 ### 9.3 Options
 
-Music and SFX volume (separate), key / gamepad remap, language (EN / FR), **accessibility**:
-screen shake on/off, white flashes on/off (both default **on**, and both off when the browser
-reports `prefers-reduced-motion`), fullscreen toggle.
+Music and SFX volume (separate), key / gamepad remap (§4.2), language (EN / FR), fullscreen,
+and **visual effects**: one on/off switch per effect of §9.4, all default **on**. On first launch,
+when the browser reports `prefers-reduced-motion`, screen shake, white flashes, hit-stop and slow
+motion default to **off** *(v0.2)*. The fullscreen preference is reapplied on the next "Press
+Start" gesture (browsers refuse fullscreen without one).
 
-### 9.4 Game feel (all effects individually toggleable)
+### 9.4 Game feel (all effects individually toggleable in §9.3)
 
 Hit flash (2 frames white), hit-stop on large kills (2–3 frames), screen shake on bombs and boss
 hits, muzzle flash, explosion particles with size-scaled bursts, floating score pop-ups, slow
@@ -464,4 +503,10 @@ fully playable at release quality, used to validate the design before producing 
 | TDD | Domain only | Everywhere (slows game feel work); none (domain coverage not guaranteed) |
 | Deployment | Cloudflare Pages + itch.io | GitHub Pages (no private-repo Pages on Free plan, no native PR previews) |
 | Rescue mechanic | 1.x candidate, study pending | In 1.0 (scope); dropped (identity potential too high to discard unstudied) |
+| Key binding *(v0.2)* | Physical keys (`code`), primary + secondary slot, swap on conflict, fixed `confirm` / `back`, restore defaults | Character-based keys (break on AZERTY, `Z` clashed with ZQSD); single slot (loses the default alternates); unbind on conflict (can leave `pause` unbound) |
+| Pause *(v0.2)* | Manual or automatic (tab hidden, focus lost, gamepad lost), never auto-resume, music ducked, 1 s count-in | No auto-pause (hidden tabs freeze the loop: return mid-bullets); auto-resume (unfair restart) |
+| Quit from pause *(v0.2)* | Allowed after confirmation, run discarded, no name entry | Record the score on quit (scores without finishing); no quit (only closing the tab) |
+| Ending *(v0.2)* | Leads to name entry like Game over | `Ending → Title` (a full clear could not record its score) |
+| Effect toggles *(v0.2)* | One switch per §9.4 effect; reduced-motion presets four to off | Two switches only (contradicted §9.4 and the project rules) |
+| Edge rules *(v0.2)* | Start with Spread; no release at level 1; bombs hit the boss; capped pickup = 1 000 points; 9 lives max | Leaving them undefined (each would be decided ad hoc in code) |
 | Public hosting | One first-level subdomain per game on benoitbremaud.fr, catalogue `/jeux/` on the portfolio (ADR-0008) | Arcade subdomain with paths (routing Worker, shared storage); one repository for all games; the portfolio's own path; nested subdomains (viable, longer, inconsistent with the existing `bulle-de-je`); attaching the domain before the title is final (a rename strands saves) |
