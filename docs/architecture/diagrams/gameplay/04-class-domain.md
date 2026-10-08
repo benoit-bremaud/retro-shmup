@@ -48,13 +48,16 @@ classDiagram
     +weapon() WeaponKind
     +powerLevel() number
     +bossHpRatio() number
+    +tally() LevelTally
     +snapshot() WorldSnapshot
   }
   class Run {
     -levelIndex: number
     +step(dt, frame: Readonly~IntentFrame~) void
+    +startNextLevel() void
     ~destroyEnemy(enemy: Enemy, cause: KillCause) void
     ~damageBoss(amount: number) void
+    ~playerDied(powerDropped: boolean) void
   }
   class RunOutcome {
     <<enumeration>>
@@ -111,7 +114,6 @@ classDiagram
     IGNORED
     ABSORBED
     DIED
-    GAME_OVER
   }
   class Weapon {
     -level: number
@@ -141,6 +143,8 @@ classDiagram
     -pierceLeft: number
     -alreadyHit: number[3]
     -alreadyHitCount: number
+    +canHit(serial: number) boolean
+    +recordHit(serial: number) void
   }
   class Pickup {
     <<pooled>>
@@ -371,8 +375,9 @@ classDiagram
 |---|---|
 | Two weapons × 5 levels, Spread first, switch keeps the level (§4.3) | `Weapon.powerUp(kind)`; `kind` selects the stateless `WeaponPattern`; `cooldown` carries the rate |
 | Laser width and piercing (§4.3) | fast player bullets with `hitbox`, `pierceLeft`, and `alreadyHit` — the **serials** of the bodies already hit, enemies and boss alike — so one body is hit once per bullet, even when a pooled enemy is reused or the bullet overlaps a large boss for several steps |
-| One hit = one life, shield charge, invulnerability (§4.4) | `Player.hit(): HitOutcome` — `IGNORED` while invulnerable, `ABSORBED` by the shield |
-| Death: −1 level and release, none at level 1 (§4.4) | `Weapon.powerDown(): boolean`; on `true` the run spawns the release pickup directly |
+| One hit = one life, shield charge, invulnerability (§4.4) | `Player.hit(): HitOutcome` — `IGNORED` while entering, invulnerable or dead (the bullet passes through), `ABSORBED` by the shield, `DIED` otherwise; Game over is decided when the death sequence ends (`05-state-player`) |
+| Next level, run cleared (§2, §7) | `Run.startNextLevel()` resets the outcome, the tally and the level script, reseeds `Random` from the run seed and the level index; the outcome is `LEVEL_CLEARED` after levels 1–2, `RUN_CLEARED` after level 3 |
+| Death: −1 level and release, none at level 1 (§4.4) | `Weapon.powerDown(): boolean`; `Run.playerDied(powerDropped)` spawns the release pickup when `true` and resets the bombs to `DifficultyProfile.bombsPerLife` |
 | Bombs per life, cap, empty stock, hit the boss (§4.5) | `Player.useBomb(): boolean`; the run cancels `enemyBullets` and damages enemies and boss |
 | Pickup at its cap → 1 000 points (§4.6) | `Player.collect(kind): boolean` = applied; `PICKUP_COLLECTED` carries the kind in `detail` and "applied" in `value`; `ScoreKeeper` adds 1 000 when not applied |
 | Pickup collection box 32 × 32, player hitbox 4 × 4 (§4.1, §4.6) | `CollisionResolver` tests pickups against the full sprite box and bullets / bodies against the hitbox |
@@ -385,7 +390,8 @@ classDiagram
 | Boss bonus 10 000 + 100 × seconds left (§6) | `BOSS_DESTROYED` carries the seconds left in `value`; `ScoreKeeper` scores it |
 | Deterministic script, WARNING, boss entry (§6, §7.1) | `LevelDirector` walks `LevelScript.events` by `scriptTime`; publishes `BOSS_WARNING` at `warningAt` |
 | Chain: 2 s window, step every 5 kills, ×8 cap, reset on death (§8) | `ScoreKeeper.chainKills`, `chainTimer`, `multiplier()` |
-| Tally: full formations, no bomb, no miss, bombs left (§8) | `LevelTally`, reset at each level |
+| Tally: full formations, no bomb, no miss, bombs left (§8) | `LevelTally`, reset at each level; on `LEVEL_CLEARED` `ScoreKeeper` adds the bonuses; `RunView.tally()` feeds the results screen |
+| Chain expiry (§8) | `ScoreKeeper.tick(dt)` counts down `chainTimer` in every step and breaks the chain at 0 |
 | Difficulty knobs (§10) | `DifficultyProfile`; the HUD caps (9 lives, 5 bombs, level 5) are constants, not knobs |
 
 ## Notes
@@ -410,6 +416,13 @@ classDiagram
 - **Interpolation**: every moving object keeps `previousPosition`; `RunView.snapshot()` exposes
   previous and current positions so `RunPresenter` interpolates with `alpha` (ADR-0002) without
   allocating.
+- **Fixed order of `Run.step`** — the determinism contract (ADR-0002): (1) `LevelDirector.tick`
+  spawns due events; (2) the player moves and its `Weapon` fires; (3) a pressed bomb is applied;
+  (4) enemies, boss and bullets move, their strategies act; (5) `CollisionResolver` runs (bullets
+  vs enemies and boss, then hazards vs player, then pickups vs player); (6) bodies leaving the
+  screen are released, formations count escapes; (7) `ScoreKeeper.tick` and the boss and player
+  timers advance; (8) the outcome is updated — a level end is deferred while the player is `Dead`,
+  and a final death (no life left) sets `GAME_OVER`, which wins over a pending level end.
 - **HUD data**: `RunView` exposes everything the HUD shows (GDD §9.2), read by `RunPresenter`
   each frame without allocation.
 - **`destroyEnemy` and `damageBoss` have package visibility** (`~`): `CollisionResolver` and the bomb path of `Run`

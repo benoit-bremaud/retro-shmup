@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Design phase — v0.3 (2026-10-08): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 and v0.3 fold in the rules surfaced by the UML use-case and class studies |
+| **Status** | Design phase — v0.4 (2026-10-08): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies |
 | **Working title** | *retro-shmup* (codename; the commercial title is still open) |
 | **Genre** | Retro vertical-scrolling shoot'em up (shmup), 16-bit aesthetic |
 | **Platform** | Web browser (desktop first, mobile playable), TypeScript + native Canvas 2D |
@@ -119,7 +119,11 @@ Minimal, arcade style: one intro card (two sentences), one title card per level,
 - **Hitbox: 4 × 4 px** at the sprite's centre. The visible ship is much larger than what can be
   hit; bullets graze the wings. This is the genre's standard since the 1990s and the single most
   important fairness rule of the game.
-- Spawn / respawn: the ship enters from the bottom with **2 s of invulnerability** (blinking).
+- Spawn / respawn: the ship enters from the bottom with **2 s of invulnerability** (blinking); the
+  fly-in *(initial: 0.5 s)* is part of those 2 s and gives no control. The ship flies in like this
+  at the start of **every level** *(v0.4)*.
+- While invulnerable the ship is not hit at all: enemy bullets and bodies **pass through** it
+  *(v0.4)*.
 
 ### 4.2 Controls
 
@@ -176,9 +180,10 @@ is expressed in **level-1 shots** so this ratio is what the player feels as "pow
      slowly — catching it restores the lost level; at level 1 there is nothing to restore, so
      nothing is released *(v0.2)*,
   3. the chain multiplier resets to ×1,
-  4. bombs are reset to **2**,
+  4. bombs are reset to **2** (`bombsPerLife`, §10),
   5. the ship respawns after 1.5 s with 2 s of invulnerability.
-  Lives at 0 → **Game over** (no continues in 1.0).
+  Lives at 0 → **Game over** after the 1.5 s death sequence *(v0.4: the last explosion plays out)*
+  (no continues in 1.0).
 
 ### 4.5 Bombs
 
@@ -260,6 +265,9 @@ Ground targets (two collision layers, terrain per level) and mid-bosses are **ex
   phases) at 33 %. Each phase changes the bullet pattern and visibly **breaks a part** off the
   sprite (which may add a new attack).
 - **Timer: 90 s.** When it expires the boss flees; the level ends without the boss bonus.
+- **End of the fight** *(v0.4)*: when the boss is destroyed or flees, every enemy bullet on screen is
+  cancelled and the boss body becomes harmless, so the player cannot die during the boss's dying
+  or fleeing sequence.
 - HP *(initial, L1 shots)*: Cruiser 300, Gantry turret 450, Mothership core 600.
 - Score: **10 000 + 100 × seconds remaining** on the timer *(initial)*.
 - Boss bullets follow the same density ceiling (≤ 40 on screen) — bosses are read, not memorised.
@@ -301,7 +309,8 @@ small label ("SHIELD", "BOMB", "1UP") floats above it for 1 s.
 
 - **Base points** per enemy (§5.2) and per boss (§6).
 - **Chain multiplier ×1 … ×8** *(initial)*: every kill within **2 s** of the previous one extends the
-  chain; the multiplier steps up every 5 chained kills (×2 at 5, ×3 at 10 … ×8 at 35). The chain
+  chain; the multiplier steps up every 5 chained kills (×2 at 5, ×3 at 10 … ×8 at 35) — a kill is
+  scored at the current multiplier, then the chain steps up *(v0.4: the 5th kill scores ×1)*. The chain
   breaks after 2 s without a kill, and resets to ×1 on death. The HUD shows the current multiplier
   and a shrinking chain timer bar.
 - **End-of-level tally** *(initial)*: full formations destroyed × 500; **no-bomb** 5 000;
@@ -326,10 +335,15 @@ Ending | Game over → Name entry (if top 10) → High scores → Title
 **Pause** *(v0.2)*: the player pauses at any moment (`pause` intent). The game also pauses on its
 own when the tab is hidden, when the window loses focus, or when the gamepad in use disconnects —
 and **never resumes on its own**. While paused the simulation is frozen (no tick, no timer, no
-random draw), the music is ducked to −12 dB over 150 ms, game sounds stop and menu sounds stay audible. Resuming shows a
-1 s **3-2-1 count-in** (simulation still frozen). The frame loop keeps running; the paused scene
-takes every step, so no paused time ever reaches the run *(v0.3)*. Quitting from pause asks for confirmation, default
-"No"; a quit run is discarded and never offered the high-score entry.
+random draw), the music is ducked to −12 dB over 150 ms, game sounds stop and menu sounds stay
+audible. Resuming shows a 1 s **3-2-1 count-in** (simulation still frozen). The frame loop keeps running; the paused scene
+takes every step, so no paused time ever reaches the run *(v0.3)*. Quitting from pause asks for
+confirmation, default "No"; a quit run is discarded and never offered the high-score entry.
+*(v0.4)* An automatic trigger during a card, the results or the count-in is not lost: during the
+count-in it returns to the pause at once; during a card or the results it is remembered and the
+pause opens at the first step of play. Only the `pause` intent opens the pause; `back` is ignored
+in play, so the gamepad `B` (bomb in play) never pauses. The keyboard `Esc` sends both `pause`
+and `back`: it pauses in play and resumes from the pause menu.
 
 **Name entry** *(v0.2)*: three characters from A–Z, 0–9, space and `.`, starting at `AAA`; no
 timer. On touch, an on-screen letter grid.
@@ -515,4 +529,5 @@ fully playable at release quality, used to validate the design before producing 
 | Effect toggles *(v0.2)* | One switch per §9.4 effect; reduced-motion presets four to off | Two switches only (contradicted §9.4 and the project rules) |
 | Edge rules *(v0.2)* | Start with Spread; no release at level 1; bombs hit the boss; capped pickup = 1 000 points; 9 lives max | Leaving them undefined (each would be decided ad hoc in code) |
 | Contact and bomb kills *(v0.3)* | Enemy contact hits the player, not the enemy; bomb kills count for chain and formations; other-colour P at level 5 switches and scores 1 000 | Contact harmless (no reason to avoid bodies); bomb kills excluded (punishes the bomb twice) |
+| Behaviour rules *(v0.4)* | Fly-in at every level start; bullets pass through an invulnerable ship; Game over after the death sequence; enemy bullets cancelled when the boss is destroyed or flees; kill scored before the chain steps; automatic pause remembered during cards | Game over at the hit (cuts the explosion); bullets consumed by an invulnerable ship; bullets kept after the boss (death during its sequence); automatic pause ignored during cards (play resumes unfocused) |
 | Public hosting | One first-level subdomain per game on benoitbremaud.fr, catalogue `/jeux/` on the portfolio (ADR-0008) | Arcade subdomain with paths (routing Worker, shared storage); one repository for all games; the portfolio's own path; nested subdomains (viable, longer, inconsistent with the existing `bulle-de-je`); attaching the domain before the title is final (a rename strands saves) |
