@@ -1,0 +1,8 @@
+pnpm-lock.yaml
+dist/
+coverage/
+*.svg
+*.puml
+CHANGELOG.md
+# Documentation is reviewed by people and keeps its hand-aligned tables.
+*.md

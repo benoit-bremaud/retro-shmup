@@ -1,0 +1,9 @@
+{
+  "//": "The domain compiles without DOM types: a browser global in src/domain fails here (ADR-0003).",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "types": []
+  },
+  "include": ["src/domain"]
+}

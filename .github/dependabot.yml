@@ -1,15 +1,28 @@
 # Dependabot — keeps the SHA-pinned GitHub Actions in .github/workflows current.
 # Each bump PR carries the new SHA and refreshes the trailing "# vX.Y.Z" comment.
-#
-# The `npm` ecosystem block is added with the vertical slice, when package.json
-# and the lockfile exist.
+# The `npm` block keeps the toolchain current; minor and patch bumps are grouped.
 version: 2
 updates:
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: 'github-actions'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: 'weekly'
+      day: 'monday'
     open-pull-requests-limit: 5
     commit-message:
-      prefix: "chore(deps)"
+      prefix: 'chore(deps)'
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    open-pull-requests-limit: 5
+    ignore:
+      # typescript-eslint supports TypeScript < 6.1 only (ADR-0011): move to 7 when it does.
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major', 'version-update:semver-minor']
+    groups:
+      toolchain-minor-patch:
+        update-types: ['minor', 'patch']
+    commit-message:
+      prefix: 'chore(deps)'

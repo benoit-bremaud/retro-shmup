@@ -1,7 +1,7 @@
 name: Feature Request
 description: Propose a feature or an enhancement. Design before code — the rule must exist in the GDD and the UML diagrams must be validated before implementation.
-title: "feat(<scope>): <short description>"
-labels: ["type:feature"]
+title: 'feat(<scope>): <short description>'
+labels: ['type:feature']
 body:
   - type: dropdown
     id: area
@@ -37,7 +37,7 @@ body:
     attributes:
       label: Design reference
       description: The GDD section(s) and ADR(s) that define this feature. If the rule is not in the GDD yet, open the GDD revision first.
-      placeholder: "GDD §4.3, ADR-0003"
+      placeholder: 'GDD §4.3, ADR-0003'
     validations:
       required: true
 
@@ -80,6 +80,6 @@ body:
         - M
         - L
         - XL
-        - "XXL — should be split"
+        - 'XXL — should be split'
     validations:
       required: true

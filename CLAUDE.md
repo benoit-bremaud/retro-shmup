@@ -6,7 +6,8 @@
 renamed when it is chosen).
 **Type:** retro vertical shoot'em up for the browser. TypeScript strict + native Canvas 2D,
 240 × 320 pixel-perfect, 16-bit pixel art. Release target: itch.io (web), Steam considered later.
-**Status:** **design phase** — no application code yet. The design contract is
+**Status:** **vertical slice** in progress (design complete: GDD v0.4, ADR-0001..0011, UML study).
+The design contract is
 [docs/design/game-design-document.md](docs/design/game-design-document.md); technical decisions are
 ADRs under [docs/decisions/](docs/decisions/); the UML study lives under
 [docs/architecture/](docs/architecture/README.md).

@@ -8,6 +8,28 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-08
 
+### Vertical slice PR A — toolchain (branch `chore/toolchain`), ADR-0011
+
+- pnpm 10, Node 22, Vite 8, TypeScript ~6.0.3 strict, Vitest 5 with V8 coverage, ESLint 10 with
+  typescript-eslint `strictTypeChecked`, Prettier on code and configuration, husky hooks
+  (`pre-commit`: gitleaks on staged changes and lint-staged; `commit-msg`: commitlint with the
+  project scopes; `pre-push`: `make verify`), local SonarQube scan, light `ci.yml`, Dependabot
+  for npm.
+- The domain port interfaces of ADR-0001/0002/0006/0009/0010 land as types only, so the domain
+  boundary (no `DOM` lib, no browser globals, no `Date.now` / `Math.random`, no import from
+  adapters or app) is enforced on real code from the first commit.
+- **Decisions**:
+  - `TypeScript 6, not 7` (ADR-0011) — typescript-eslint 8.71 supports `typescript <6.1.0`;
+    Dependabot ignores TypeScript minor and major bumps until it widens its range.
+  - `Prettier excludes Markdown` — it would realign every table of the GDD and the ADRs.
+
+### PR #3 merged (`bb41e6b`) — UML study for 1.0, GDD v0.4, ADR-0009 and ADR-0010
+
+- Three automated review comments verified exact and fixed in `39411d6` before the merge:
+  `SceneMachine` uses `InputPort` (bindings, capture, labels, fullscreen), a fullscreen change
+  applies at the next click, tap or key press (GDD v0.4 §9.3), and `today()` is called when a high
+  score is recorded (ADR-0009).
+
 ### UML study for 1.0 (branch `docs/uml-study`) — GDD v0.4, ADR-0009 and ADR-0010
 
 - Eleven deliverables under `docs/architecture/`: C4 context and containers; use cases with

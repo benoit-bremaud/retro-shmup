@@ -8,13 +8,23 @@ and pull requests.
 
 ## Prerequisites
 
-- **Git** 2.30 or newer.
-- **Node.js 22 LTS** and **pnpm** will be required once application code lands with the vertical
-  slice. The design phase needs neither: the repository holds documentation and configuration only.
+- **Git** 2.30 or newer, **Node.js 22 LTS** (≥ 22.12, see `.nvmrc`), **pnpm 10**.
+- **gitleaks** ≥ 8.25 and **sonar-scanner** on the `PATH`, and the local **SonarQube** at
+  `http://localhost:9000` — the git hooks use them (ADR-0007, ADR-0011).
 
 ```bash
 git clone git@github.com:benoit-bremaud/retro-shmup.git
 cd retro-shmup
+pnpm install          # also installs the git hooks (husky)
+pnpm dev              # dev server
+make verify           # the full local gate, as run by the pre-push hook
+```
+
+**One-time SonarQube setup**: in SonarQube, create the project `retro-shmup` (manual setup, main
+branch `main`), generate a *project analysis token* for it, and store it outside the repository:
+
+```bash
+mkdir -p ~/.config/sonar-tokens && umask 077 && printf '%s' '<token>' > ~/.config/sonar-tokens/retro-shmup
 ```
 
 ## Branching strategy
