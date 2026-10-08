@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Game Design Document
+    url: https://github.com/benoit-bremaud/retro-shmup/blob/main/docs/design/game-design-document.md
+    about: The design contract. Read the relevant section (and its Decision record) before proposing a gameplay change.

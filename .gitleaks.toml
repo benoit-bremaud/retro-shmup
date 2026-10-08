@@ -1,0 +1,27 @@
+# Gitleaks configuration — retro-shmup
+# Extends the default rule set shipped with the gitleaks binary (v8):
+# https://github.com/gitleaks/gitleaks/blob/master/config/gitleaks.toml
+
+title = "retro-shmup gitleaks config"
+
+[extend]
+useDefault = true
+
+# Requires gitleaks >= 8.25.0 (CI pins 8.30.1 in .github/workflows/gitleaks.yml).
+# Global allowlist (since gitleaks v8.25.0 the table is [[allowlists]], not [allowlist]).
+# Keep it empty unless a path legitimately triggers rules on every scan (for example a
+# documented fixture). For a single reviewed false positive, do NOT widen this allowlist:
+# add the finding's fingerprint to a `.gitleaksignore` file at the repository root instead,
+# one entry per line in the form
+#   <commit-sha>:<file-path>:<rule-id>:<line-number>
+# as printed in the gitleaks report. Every entry must be justified in the PR that adds it.
+[[allowlists]]
+description = "Reviewed false positives (paths and regexes only; prefer .gitleaksignore)"
+paths = [
+  '''\.gitleaks\.toml$''',
+]
+regexes = [
+  # The localStorage save-document key (ADR-0006), e.g. `SAVE_KEY = 'retro-shmup.v1'`:
+  # a public, non-secret literal that trips `generic-api-key` on the word KEY.
+  '''retro-shmup\.v\d+''',
+]

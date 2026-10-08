@@ -1,0 +1,85 @@
+name: Feature Request
+description: Propose a feature or an enhancement. Design before code — the rule must exist in the GDD and the UML diagrams must be validated before implementation.
+title: "feat(<scope>): <short description>"
+labels: ["type:feature"]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of the project does this feature affect? (becomes the `area:*` label)
+      options:
+        - design
+        - uml
+        - engine
+        - game
+        - render
+        - audio
+        - input
+        - ui
+        - levels
+        - assets
+        - ci
+        - docs
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What needs to be implemented and why.
+    validations:
+      required: true
+
+  - type: input
+    id: design_reference
+    attributes:
+      label: Design reference
+      description: The GDD section(s) and ADR(s) that define this feature. If the rule is not in the GDD yet, open the GDD revision first.
+      placeholder: "GDD §4.3, ADR-0003"
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance criteria
+      description: Conditions that must hold for the feature to be done. Include the UML diagrams to validate and the tests expected.
+      placeholder: |
+        - [ ] UML (use-case / class / state / sequence as relevant) validated under docs/architecture/diagrams/<feature>/
+        - [ ] Domain rule covered by unit tests (happy / sad / edge)
+        - [ ] Criterion ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: technical_notes
+    attributes:
+      label: Technical notes
+      description: Implementation hints, affected modules, related issues, performance or determinism constraints.
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority (MoSCoW)
+      options:
+        - Must-Have
+        - Should-Have
+        - Nice-to-Have
+    validations:
+      required: true
+
+  - type: dropdown
+    id: estimation
+    attributes:
+      label: Estimation (T-shirt)
+      options:
+        - XS
+        - S
+        - M
+        - L
+        - XL
+        - "XXL — should be split"
+    validations:
+      required: true

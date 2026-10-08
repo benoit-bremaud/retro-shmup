@@ -1,0 +1,88 @@
+name: Bug Report
+description: Report a defect or an unexpected behaviour.
+title: "fix(<scope>): <short description>"
+labels: ["type:bug"]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of the project is affected? (becomes the `area:*` label)
+      options:
+        - design
+        - uml
+        - engine
+        - game
+        - render
+        - audio
+        - input
+        - ui
+        - levels
+        - assets
+        - ci
+        - docs
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened, and what did you expect instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Level, wave or screen, inputs used, and what to observe. For a simulation bug, the RNG seed and the scripted inputs if known.
+      placeholder: |
+        1. Start level 1 ...
+        2. Catch a P-blue at ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: Cite the GDD section or ADR that defines the expected rule when there is one.
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser and version, OS or device, input device (keyboard / touch / gamepad / mouse).
+      placeholder: "Firefox 140 / Ubuntu 24.04 / keyboard"
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshots / logs
+      description: Screenshots, recordings or console output, if applicable.
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority (MoSCoW)
+      options:
+        - Must-Have
+        - Should-Have
+        - Nice-to-Have
+    validations:
+      required: true
+
+  - type: dropdown
+    id: estimation
+    attributes:
+      label: Estimation (T-shirt)
+      options:
+        - XS
+        - S
+        - M
+        - L
+        - XL
+    validations:
+      required: true

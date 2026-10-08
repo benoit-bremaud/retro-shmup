@@ -1,0 +1,35 @@
+# Secret scanning over the full git history — any leaked secret fails the run (required check on `main`).
+# `pull-requests: read` is mandatory: the action calls GET /pulls/{n}/commits to scope a PR scan and dies on a 403 before scanning without it.
+name: Gitleaks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 3 * * 1" # weekly, Monday 03:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  gitleaks:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # full history: the scan covers every commit, not only HEAD
+          persist-credentials: false
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          # Used by the action to comment on pull requests.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # No GITLEAKS_LICENSE: required for organisation accounts only, not for
+          # personal accounts (gitleaks-action README at v3.0.0).
+          # Same binary as the local hooks. The action defaults to 8.24.3, which predates
+          # the `[[allowlists]]` syntax of .gitleaks.toml (gitleaks >= 8.25.0).
+          GITLEAKS_VERSION: "8.30.1"

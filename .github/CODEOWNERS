@@ -1,0 +1,3 @@
+# Solo project: @benoit-bremaud owns every path. Reviews are the local pre-push
+# gate plus an AI reviewer once one is configured; no human reviewer is auto-requested.
+* @benoit-bremaud
