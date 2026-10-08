@@ -20,6 +20,41 @@ const BROWSER_GLOBALS = [
   'globalThis',
 ].map((name) => ({ name, message: 'The domain never uses browser APIs: go through a port.' }));
 
+// Imports the domain may make: its own modules only, never an adapter or the composition root.
+const DOMAIN_IMPORT_PATTERNS = [
+  {
+    regex: '^(?!\\.{1,2}/)',
+    message: 'The domain imports only its own modules: no package, no Node built-in (ADR-0003).',
+  },
+  {
+    group: ['**/adapters/**', '**/app/**'],
+    message: 'The domain depends only on its ports (ADR-0003).',
+  },
+];
+
+// Syntax banned in all linted code except the root tool configuration files (security-policy INJ-3,
+// owner rules). Flat config replaces rule options per file, so the source override repeats it.
+const RESTRICTED_SYNTAX = [
+  // Named exports only (owner rule).
+  { selector: 'ExportDefaultDeclaration', message: 'Use named exports only.' },
+  // HTML injection sinks (security-policy INJ-3): the game draws on a canvas only.
+  {
+    selector: 'AssignmentExpression[left.property.name=/^(innerHTML|outerHTML|srcdoc)$/]',
+    message: 'No HTML injection sink: build DOM nodes or draw on the canvas (INJ-3).',
+  },
+  {
+    selector:
+      'CallExpression[callee.property.name=/^(insertAdjacentHTML|setHTMLUnsafe|createContextualFragment)$/]',
+    message: 'No HTML injection sink: build DOM nodes or draw on the canvas (INJ-3).',
+  },
+  {
+    // document.write only: clipboard.write or a file stream's write are legitimate.
+    selector:
+      "CallExpression[callee.object.name='document'][callee.property.name=/^(write|writeln)$/]",
+    message: 'No HTML injection sink: build DOM nodes or draw on the canvas (INJ-3).',
+  },
+];
+
 export default defineConfig(
   { ignores: ['dist/', 'coverage/', 'node_modules/'] },
   js.configs.recommended,
@@ -37,25 +72,27 @@ export default defineConfig(
       'no-eval': 'error',
       'no-new-func': 'error',
       'no-script-url': 'error',
+      // A leading underscore marks a parameter an implementation deliberately ignores.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+      'no-restricted-syntax': ['error', ...RESTRICTED_SYNTAX],
+    },
+  },
+  {
+    // No allocation inside the game loop (CLAUDE.md): a `for...of` over an array allocates an
+    // iterator in every V8 tier below TurboFan (measured 2026-10-08), so source code uses index
+    // loops, which never allocate.
+    files: ['src/**/*.ts'],
+    rules: {
+      '@typescript-eslint/prefer-for-of': 'off',
       'no-restricted-syntax': [
         'error',
-        // Named exports only (owner rule).
-        { selector: 'ExportDefaultDeclaration', message: 'Use named exports only.' },
-        // HTML injection sinks (security-policy INJ-3): the game draws on a canvas only.
+        ...RESTRICTED_SYNTAX,
         {
-          selector: 'AssignmentExpression[left.property.name=/^(innerHTML|outerHTML|srcdoc)$/]',
-          message: 'No HTML injection sink: build DOM nodes or draw on the canvas (INJ-3).',
-        },
-        {
-          selector:
-            'CallExpression[callee.property.name=/^(insertAdjacentHTML|setHTMLUnsafe|createContextualFragment)$/]',
-          message: 'No HTML injection sink: build DOM nodes or draw on the canvas (INJ-3).',
-        },
-        {
-          // document.write only: clipboard.write or a file stream's write are legitimate.
-          selector:
-            "CallExpression[callee.object.name='document'][callee.property.name=/^(write|writeln)$/]",
-          message: 'No HTML injection sink: build DOM nodes or draw on the canvas (INJ-3).',
+          selector: 'ForOfStatement',
+          message: 'Use an index loop: for...of allocates an iterator (no allocation in the loop).',
         },
       ],
     },
@@ -83,18 +120,22 @@ export default defineConfig(
         'error',
         { object: 'Math', property: 'random', message: 'Inject a seeded Random (ADR-0002).' },
       ],
+      'no-restricted-imports': ['error', { patterns: DOMAIN_IMPORT_PATTERNS }],
+    },
+  },
+  {
+    // Flat config replaces rule options: the domain patterns are repeated, plus the ban on the
+    // gameplay Random — presentation uses its own unseeded generator (ADR-0010).
+    files: ['src/domain/presentation/**/*.ts'],
+    rules: {
       'no-restricted-imports': [
         'error',
         {
           patterns: [
+            ...DOMAIN_IMPORT_PATTERNS,
             {
-              regex: '^(?!\\.{1,2}/)',
-              message:
-                'The domain imports only its own modules: no package, no Node built-in (ADR-0003).',
-            },
-            {
-              group: ['**/adapters/**', '**/app/**'],
-              message: 'The domain depends only on its ports (ADR-0003).',
+              group: ['**/random/seeded-random', '**/ports/random'],
+              message: 'Presentation never uses the gameplay Random (ADR-0010).',
             },
           ],
         },

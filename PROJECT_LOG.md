@@ -8,6 +8,45 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-08
 
+### Engine for the vertical slice (branch `feat/engine`) — ADR-0014
+
+- Fixed-step frame loop (ADR-0002): accumulator in milliseconds, 250 ms clamp, time scale for
+  hit-stop and slow motion (ADR-0010), one input read per step into one reused frame (ADR-0009),
+  interpolation factor passed to rendering.
+- Domain: `SeededRandom` (xoshiro128**, state seeded by a SplitMix-style 32-bit mixer; the
+  generator is checked against the authors' published reference vector), `FixedPool` (fails
+  closed on double release), the scrolling `Starfield` (pure function of scroll time, unseeded
+  presentation randomness), screen geometry and colour tokens.
+- Adapters: `Canvas2DRenderer` (480 × 320 off-screen surface, field region clipped and offset,
+  whole-pixel positions, integer scale with smoothing off; sprites and fonts fail closed until
+  assets load), `computeViewport` (integer scale in device pixels), `PerformanceClock`.
+- Composition root and a temporary `EnginePreview` target: the page shows the starfield in the
+  play field between the two HUD bands. Input moved to the next brick, with its first user. The
+  browser smoke test (`make smoke`) is deferred to the first playable brick.
+- Tests: TDD on the domain and the loop; adapters against recording doubles. SonarQube quality
+  gate passed with 0 open issue and 96 % coverage after one fix it caught (rule S7749: the
+  `0x1_0000_0000` literal became `2 ** 32`).
+- Pre-push review (5 dimensions, adversarial verification): fixed a double `requestAnimationFrame`
+  chain on stop/start, a mocked domain object in a test (now the real `Starfield`), the ESLint ban
+  on the gameplay `Random` in presentation code (promised by ADR-0010), and ADR-0014's missing
+  supersession of ADR-0001.
+- Codex review (PR #5): a `stop()` or restart from inside a step let the stale tick keep stepping
+  and drain the restarted accumulator; a lifecycle generation counter now ends that tick. The
+  starfield's `for...of` allocated an array iterator per frame: a bare loop over its three layers
+  allocates on every call under Ignition and Sparkplug (Node 22) and Maglev (Node 24), and never
+  with an index loop. Source code now uses index loops and ESLint bans `for...of` in `src/`. In
+  the interpreted tiers the draw still boxes floating-point results; the optimizing tiers do not.
+- **Decisions**:
+  - `ADR-0014 logical screen` — 480 × 320 (field centred, two 120 px HUD bands), chosen by the
+    owner: it keeps ×3 on 16:9 and 16:10 screens in fullscreen; integer scale in device
+    pixels; partially supersedes ADR-0001 (off-screen size, scale, field-only shake); the domain `dt` is in seconds and the loop counts milliseconds, which also corrects
+    the frame sequence of the UML study.
+  - `accumulator starts at half a step` — the owner chose it after a 10 000-frame simulation:
+    starting at 0 gave 0 or 2 steps on about a third of 60 Hz frames, half a step gives exactly
+    one.
+  - `input in the next brick` — the engine has no user of input yet (YAGNI); `IdleInput` keeps
+    the loop contract until the device input adapter lands.
+
 ### Toolchain for the vertical slice (branch `chore/toolchain`) — ADR-0011, ADR-0012
 
 - pnpm 10, Node 22, Vite 8, TypeScript ~6.0.3 strict, Vitest 5 with V8 coverage, ESLint 10 with

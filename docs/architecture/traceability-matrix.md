@@ -1,7 +1,8 @@
 # Traceability matrix — UML study (1.0)
 
 > **Scope**: the UML study of [docs/architecture](README.md) against the
-> [Game Design Document](../design/game-design-document.md) v0.4 and ADR-0001 to ADR-0010.
+> [Game Design Document](../design/game-design-document.md) v0.4, ADR-0001 to ADR-0010 and
+> ADR-0014 (ADR-0011 to ADR-0013 are tooling decisions with no UML realization).
 > **Purpose**: prove coverage — every use case is realized, every class and component is used,
 > nothing is orphaned. Update this file in the same change as any diagram.
 
@@ -85,12 +86,12 @@ is a calculation covered by unit tests (ADR-0003), not by a diagram.
 | ADR-0006 save document | UC3–UC5 text, STM-scenes |
 | ADR-0009 intent frame, gestures, audio mix | SD-tick (`read(frame)`), STM-scenes (pause rules), CMP |
 | ADR-0010 outcome vs presentation | SD-tick (time scale), SD-kill (handler rules), CD (`Body`, events) |
+| ADR-0014 logical screen, regions, `dt` in seconds | SD-tick (`step(1/60 s)`), CMP (Canvas2DRenderer) |
 | GDD v0.2–v0.4 rules surfaced by the study | GDD Decision record; CD rule table |
 
 ## 5. Known gaps (accepted)
 
-- `RenderPort.setRegion` is named in ADR-0010; its exact signature is frozen with the render seam
-  of the vertical slice.
+- ~~`RenderPort.setRegion` signature~~ — closed by ADR-0014 (decision 2).
 - The options, remapping and high-score flows have no sequence diagram by design (plain reads and
   writes, specified in their use-case text).
 - The rescue mechanic (GDD §12) is out of 1.0 and has no realization.

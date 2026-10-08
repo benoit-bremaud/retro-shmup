@@ -5,11 +5,10 @@
 **Name:** retro-shmup (codename — the commercial title is still open; the repository will be
 renamed when it is chosen).
 **Type:** retro vertical shoot'em up for the browser. TypeScript strict + native Canvas 2D,
-240 × 320 pixel-perfect, 16-bit pixel art. Release target: itch.io (web), Steam considered later.
-**Status:** **vertical slice** in progress (design complete: GDD v0.4, ADR-0001..0012, UML study).
+240 × 320 play field in a 480 × 320 pixel-perfect logical screen (ADR-0014), 16-bit pixel art. Release target: itch.io (web), Steam considered later.
+**Status:** **vertical slice** in progress (design complete: GDD v0.4, ADR-0001..0014, UML study).
 The design contract is [docs/design/game-design-document.md](docs/design/game-design-document.md);
-technical decisions are
-ADRs under [docs/decisions/](docs/decisions/); the UML study lives under
+technical decisions are ADRs under [docs/decisions/](docs/decisions/); the UML study lives under
 [docs/architecture/](docs/architecture/README.md).
 **Language:** English only in the repository (code, comments, commits, docs, issues, PRs).
 
@@ -41,6 +40,8 @@ repository.
 - **Fixed timestep, deterministic simulation.** 60 Hz accumulator loop, seeded RNG, no
   `Date.now()` / `Math.random()` inside the simulation. Level scripts must replay identically.
 - **No allocation inside the game loop.** Bullets, particles and pickups come from object pools.
+  Source code uses index loops: `for...of` allocates an array iterator below V8's top tier, and
+  ESLint bans it in `src/`.
 - **Every player-facing string goes through the message catalogue** (EN default, FR).
 - **Every game-feel effect is toggleable** and respects the photosensitivity options.
 - **Tests:** unit tests on the domain (TDD — Red/Green/Refactor), headless level-simulation tests
@@ -54,7 +55,11 @@ docs/design/        GDD and design annexes
 docs/decisions/     ADRs (Nygard format, ADR-NNNN-<slug>.md)
 docs/architecture/  UML diagrams (Mermaid), later: architecture notes
 .github/            CI (security baseline), templates, protection docs
-src/ · tests/ · public/assets/   — created with the vertical slice
+src/domain/         pure gameplay and presentation rules, ports (no browser API)
+src/adapters/       browser implementations of the ports (Canvas 2D, clock, viewport)
+src/app/            composition root and frame loop (only main.ts touches window/document)
+tests/              Vitest, mirroring src/
+public/assets/      sprites, fonts and audio — added with the assets brick
 ```
 
 ## Commit scopes (Conventional Commits)

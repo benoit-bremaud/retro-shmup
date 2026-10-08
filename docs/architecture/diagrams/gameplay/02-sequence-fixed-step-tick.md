@@ -3,7 +3,7 @@
 > **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.4 §9.1,
 > §9.4, §13
 > **Related ADRs**: ADR-0002 (fixed timestep, clamp, interpolation), ADR-0009 (intent frame,
-> press latching), ADR-0010 (time scale, wall-clock effects)
+> press latching), ADR-0010 (time scale, wall-clock effects), ADR-0014 (step units)
 > **Realizes**: UC1 steps 5–8 and UC2 of [01-use-case](../system/01-use-case.md); components
 > of [03-component](../system/03-component.md)
 
@@ -13,7 +13,8 @@ What happens during **one browser frame** while a run is on screen: how wall tim
 whole number of fixed simulation steps, where input is read, where the pause is decided, and how
 the frame is drawn with interpolation. It is the loop where determinism is won or lost. Inside
 `Run.step` see the fixed order in [04-class-domain](04-class-domain.md) and the two other
-sequences. All durations are in milliseconds; one step is `STEP = 1000 / 60` ms.
+sequences. The loop counts wall time in milliseconds (`STEP = 1000 / 60` ms); the domain receives
+`dt` in seconds, `1 / 60` (ADR-0014).
 
 ## Diagram
 
@@ -43,11 +44,11 @@ sequenceDiagram
   loop while accumulator ≥ STEP
     FL->>Input: read(frame)
     Note right of Input: fills the reused frame — presses latched since the last read
-    FL->>Scenes: step(STEP, frame)
+    FL->>Scenes: step(1/60 s, frame)
     alt [scene is Playing and Pause in pressed]
       Note over Scenes: enter Paused — the run does not step
     else [scene is Playing]
-      Scenes->>Run: step(STEP, frame)
+      Scenes->>Run: step(1/60 s, frame)
       Scenes->>Run: outcome()
       Run-->>Scenes: PLAYING, LEVEL_CLEARED, RUN_CLEARED or GAME_OVER
       Note over Scenes: a change of outcome triggers a scene transition — 05-state-scenes
@@ -70,7 +71,7 @@ sequenceDiagram
 
 ## Notes
 
-- **Determinism**: the run only sees `step(STEP, frame)`; the number of steps per frame varies
+- **Determinism**: the run only sees `step(1/60 s, frame)`; the number of steps per frame varies
   with the display rate and the time scale, never their length (ADR-0002).
 - **The pause is decided before the run steps**, in the step that carries `Pause`, and only in
   `Playing`; the other scenes apply their own rule (05-state-scenes). Returning from a hidden tab,
