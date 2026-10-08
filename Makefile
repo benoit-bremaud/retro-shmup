@@ -2,9 +2,9 @@
 SONAR_TOKEN_FILE := $(HOME)/.config/sonar-tokens/retro-shmup
 SONAR_URL := http://localhost:9000
 
-.PHONY: verify check secrets sonar-scan
+.PHONY: verify check secrets audit sonar-scan
 
-verify: check secrets sonar-scan
+verify: check secrets audit sonar-scan
 
 check:
 	pnpm typecheck
@@ -14,6 +14,9 @@ check:
 
 secrets:
 	gitleaks git --redact --no-banner
+
+audit:
+	pnpm audit --audit-level high
 
 sonar-scan:
 	@test -f "$(SONAR_TOKEN_FILE)" || { echo "Missing $(SONAR_TOKEN_FILE) — see CONTRIBUTING.md (SonarQube token)."; exit 1; }

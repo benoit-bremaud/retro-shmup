@@ -32,10 +32,23 @@ export default defineConfig(
       },
     },
     rules: {
-      // Named exports only (owner rule).
+      // Code execution from data (security-policy INJ-4).
+      'no-eval': 'error',
+      'no-new-func': 'error',
+      'no-script-url': 'error',
       'no-restricted-syntax': [
         'error',
+        // Named exports only (owner rule).
         { selector: 'ExportDefaultDeclaration', message: 'Use named exports only.' },
+        // HTML injection sinks (security-policy INJ-3): the game draws on a canvas only.
+        {
+          selector: 'AssignmentExpression[left.property.name=/^(innerHTML|outerHTML)$/]',
+          message: 'No HTML injection sink: build DOM nodes or draw on the canvas (INJ-3).',
+        },
+        {
+          selector: 'CallExpression[callee.property.name=/^(insertAdjacentHTML|write|writeln)$/]',
+          message: 'No HTML injection sink: build DOM nodes or draw on the canvas (INJ-3).',
+        },
       ],
     },
   },

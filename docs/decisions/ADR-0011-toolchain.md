@@ -17,16 +17,16 @@
 
 | Concern | Tool | Notes |
 |---|---|---|
-| Package manager | pnpm 10 (`packageManager` field) | lockfile committed, `--frozen-lockfile` in CI |
+| Package manager | pnpm 10 (`packageManager` field) | lockfile committed, `--frozen-lockfile` in CI; pnpm 10 does not run dependencies' install scripts unless allowed (supply chain) |
 | Runtime | Node 22 LTS (`.nvmrc`, `engines >= 22.12`) | Vite 8 minimum |
 | Language | TypeScript **~6.0.3**, strict plus `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `verbatimModuleSyntax` | pinned below 6.1 for typescript-eslint; Dependabot ignores TypeScript minor and major bumps until supported |
 | Domain boundary | `tsconfig.domain.json` (no `DOM` lib) + ESLint `no-restricted-globals`, `no-restricted-properties` (`Date.now`, `Math.random`), `no-restricted-imports` | enforces ADR-0002 / ADR-0003 mechanically |
 | Bundler, dev server | Vite 8 | `base` from `VITE_BASE_URL` (ADR-0004, ADR-0008) |
 | Tests | Vitest 5, Node environment, V8 coverage (`text`, `lcov`) | lcov feeds SonarQube; Playwright arrives with the smoke test |
-| Lint | ESLint 10 flat config, `typescript-eslint` `strictTypeChecked` + `stylisticTypeChecked`, named exports only | `defineConfig` (the `tseslint.config` helper is deprecated) |
+| Lint | ESLint 10 flat config, `typescript-eslint` `strictTypeChecked` + `stylisticTypeChecked`, named exports only, security bans (`no-eval`, `no-new-func`, `no-script-url`, HTML sinks) | `defineConfig` (the `tseslint.config` helper is deprecated); security rules map to the owner's security policy INJ-3/INJ-4 |
 | Format | Prettier 3 on code and configuration | Markdown excluded: documentation keeps its hand-aligned tables |
 | Hooks | husky 9: `pre-commit` (gitleaks on staged changes, lint-staged), `commit-msg` (commitlint, project scopes), `pre-push` (`make verify`) | ADR-0007 |
-| Local gate | `make verify` = typecheck, lint, format check, tests with coverage, gitleaks, SonarQube scan with quality-gate wait | token in `~/.config/sonar-tokens/retro-shmup`, never in the repository |
+| Local gate | `make verify` = typecheck, lint, format check, tests with coverage, gitleaks, `pnpm audit --audit-level high`, SonarQube scan with quality-gate wait and the package version | token in `~/.config/sonar-tokens/retro-shmup`, never in the repository |
 | CI | `ci.yml` "Lint, typecheck, test" + the security workflows | no coverage upload, no Sonar (ADR-0007) |
 
 ## Alternatives considered

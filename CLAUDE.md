@@ -20,6 +20,14 @@ repository.
 
 ## Non-negotiables (project)
 
+- **Security policy applies to every change.** The owner's `security-policy` (OWASP 2025 rules
+  INJ, INPUT, SECRET, ERR, CONFIG, SUPPLY, PRIV) and `security-ci-baseline` are checked on every
+  diff; any security finding is a Must Have. Mechanically enforced: ESLint bans `eval`,
+  `new Function`, `javascript:` URLs and HTML sinks (`innerHTML`, `insertAdjacentHTML`,
+  `document.write`); `make verify` runs gitleaks, `pnpm audit --audit-level high` and SonarQube.
+  Untrusted inputs of this game — the `localStorage` save document, the URL, files later — are
+  validated by allowlist and parsing never throws (ADR-0006).
+
 - **Design before code.** A feature is implemented only after (1) its rules exist in the GDD and
   (2) its UML diagrams (use-case, class, state, sequence as relevant) are validated. Diagrams are
   Mermaid under `docs/architecture/diagrams/<feature>/`.
