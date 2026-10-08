@@ -1,0 +1,50 @@
+@startuml 01-use-case
+title uc — retro-shmup — player goals (1.0)
+left to right direction
+skinparam shadowing false
+
+actor "Player" as Player
+
+rectangle "retro-shmup (web game, 1.0)" {
+  package "Play" {
+    usecase UC1 as "UC1 Play a run
+    --
+    extension points
+    any moment of play
+    run end"
+    usecase "UC2 Pause the run" as UC2
+  }
+  package "Progress" {
+    usecase "UC3 Record a high score" as UC3
+    usecase "UC4 Consult the high scores" as UC4
+  }
+  package "Settings" {
+    usecase "UC5 Configure the game" as UC5
+    usecase "UC6 Remap the controls" as UC6
+  }
+  package "About" {
+    usecase "UC7 Read the credits" as UC7
+  }
+}
+
+Player --> UC1
+Player --> UC2
+Player --> UC4
+Player --> UC5
+Player --> UC6
+Player --> UC7
+
+' layout only: keep Progress next to Play
+UC2 -[hidden]- UC3
+
+UC2 .> UC1 : <<extend>>
+note on link
+  condition: {pause intent}
+  extension point: any moment of play
+end note
+UC3 .> UC1 : <<extend>>
+note on link
+  condition: {final score enters the top 10}
+  extension point: run end
+end note
+@enduml

@@ -50,8 +50,8 @@ Roadmap (GDD section 11):
     quality gate, minimal CI
   - [ADR-0008](docs/decisions/ADR-0008-hosting-per-game-subdomain-on-benoitbremaud-fr.md) —
     Public hosting: one subdomain per game on benoitbremaud.fr, catalogue on the portfolio
-- [UML study](docs/architecture/diagrams/) — Mermaid diagrams, one folder per feature, numbered by
-  conception stage (use case, sequence, component, class, state, data flow).
+- [Architecture and UML study](docs/architecture/README.md) — C4 context and containers, then
+  the UML diagrams (Mermaid, PlantUML for use cases and components) and the traceability matrix.
 - [PROJECT_LOG.md](PROJECT_LOG.md) — operational logbook (what was done, why, by which PR).
 - [CHANGELOG.md](CHANGELOG.md) — release changelog (Keep a Changelog).
 - [CONTRIBUTING.md](CONTRIBUTING.md) — workflow, branches, commits, labels, design-before-code.

@@ -15,3 +15,5 @@ The design decisions these ADRs implement are fixed in the
 | ADR-0006 | Player data | `localStorage` only, versioned key, no personal data beyond three initials; no backend in 1.0. |
 | ADR-0007 | Quality gate | Local-first: husky hooks run gitleaks, lint, typecheck, tests with coverage and the local SonarQube gate before every push; CI keeps Gitleaks and a light `ci.yml` only. |
 | ADR-0008 | Public hosting | One first-level subdomain per game on `benoitbremaud.fr` (own Pages project, own `_headers`); catalogue page `/jeux/` on the portfolio. |
+| ADR-0009 | Input and audio contracts | Flat reusable intent frame (movement, held / pressed masks, device, tap), bindings and capture, gestures in the input adapter, audio mix control. |
+| ADR-0010 | Presentation outside the outcome | Separate random streams, time effects in the loop, `RunPresenter`, one ordered bus per run, `DropTable` as data, HUD region. |

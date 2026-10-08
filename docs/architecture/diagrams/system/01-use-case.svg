@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentScriptType="application/ecmascript" contentStyleType="text/css" height="797px" preserveAspectRatio="none" style="width:934px;height:797px;" version="1.1" viewBox="0 0 934 797" width="934px" zoomAndPan="magnify"><defs/><g><text fill="#000000" font-family="sans-serif" font-size="18" lengthAdjust="spacingAndGlyphs" textLength="326" x="315.5" y="19.2419">uc — retro-shmup — player goals (1.0)</text><!--MD5=[29425fa53b6758de4b49c763debd07d9]
+cluster retro-shmup (web game, 1.0)--><rect fill="#FFFFFF" height="690" style="stroke: #000000; stroke-width: 1.5;" width="829" x="94" y="48.6058"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="202" x="407.5" y="65.5718">retro-shmup (web game, 1.0)</text><!--MD5=[ab3c67ef086426cfe37c635e6b18634b]
+cluster Play--><polygon fill="#FFFFFF" points="133.5,94.6058,168.5,94.6058,175.5,119.6738,331.5,119.6738,331.5,395.6058,133.5,395.6058,133.5,94.6058" style="stroke: #000000; stroke-width: 1.5;"/><line style="stroke: #000000; stroke-width: 1.5;" x1="133.5" x2="175.5" y1="119.6738" y2="119.6738"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="29" x="137.5" y="111.5718">Play</text><!--MD5=[e60bc01f6fc9d20a7113a32f51fe190d]
+cluster Progress--><polygon fill="#FFFFFF" points="648,269.6058,715,269.6058,722,294.6738,899,294.6738,899,452.6058,648,452.6058,648,269.6058" style="stroke: #000000; stroke-width: 1.5;"/><line style="stroke: #000000; stroke-width: 1.5;" x1="648" x2="722" y1="294.6738" y2="294.6738"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="61" x="652" y="286.5718">Progress</text><!--MD5=[20596331c9b9f4fde36943293773a33d]
+cluster Settings--><polygon fill="#FFFFFF" points="118,419.6058,181,419.6058,188,444.6738,347,444.6738,347,596.6058,118,596.6058,118,419.6058" style="stroke: #000000; stroke-width: 1.5;"/><line style="stroke: #000000; stroke-width: 1.5;" x1="118" x2="188" y1="444.6738" y2="444.6738"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="57" x="122" y="436.5718">Settings</text><!--MD5=[f96cc674acf442ec17607a790997dc1e]
+cluster About--><polygon fill="#FFFFFF" points="128.5,620.6058,177.5,620.6058,184.5,645.6738,336.5,645.6738,336.5,714.6058,128.5,714.6058,128.5,620.6058" style="stroke: #000000; stroke-width: 1.5;"/><line style="stroke: #000000; stroke-width: 1.5;" x1="128.5" x2="184.5" y1="645.6738" y2="645.6738"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="43" x="132.5" y="637.5718">About</text><ellipse cx="232.317" cy="329.4942" fill="#FEFECE" rx="82.817" ry="49.3883" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="98" x="183.317" y="308.4441">UC1 Play a run</text><line style="stroke: #A80036; stroke-width: 1.0;" x1="155.5289" x2="309.105" y1="312.546" y2="312.546"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="111" x="176.817" y="331.512">extension points</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="133" x="165.817" y="350.5799">any moment of play</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="54" x="205.317" y="369.6478">run end</text><ellipse cx="232.6044" cy="151.8267" fill="#FEFECE" rx="81.6044" ry="18.7209" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="125" x="170.1044" y="157.8607">UC2 Pause the run</text><ellipse cx="773.282" cy="329.6622" fill="#FEFECE" rx="98.282" ry="22.0564" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="165" x="690.782" y="335.6962">UC3 Record a high score</text><ellipse cx="773.2893" cy="411.3637" fill="#FEFECE" rx="109.2893" ry="24.2579" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="190" x="678.2893" y="417.3977">UC4 Consult the high scores</text><ellipse cx="232.7153" cy="479.7489" fill="#FEFECE" rx="98.7153" ry="22.1431" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="166" x="149.7153" y="485.7829">UC5 Configure the game</text><ellipse cx="232.4862" cy="558.4031" fill="#FEFECE" rx="96.9862" ry="21.7972" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="162" x="151.4862" y="564.437">UC6 Remap the controls</text><ellipse cx="232.6038" cy="678.6266" fill="#FEFECE" rx="88.1038" ry="20.0208" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="141" x="162.1038" y="684.6606">UC7 Read the credits</text><!--MD5=[de2effd8dc5bf946a609466312d0f75f]
+entity Player--><ellipse cx="26.5" cy="488.6058" fill="#FEFECE" rx="8" ry="8" style="stroke: #A80036; stroke-width: 1.5;"/><path d="M26.5,496.6058 L26.5,523.6058 M13.5,504.6058 L39.5,504.6058 M26.5,523.6058 L13.5,538.6058 M26.5,523.6058 L39.5,538.6058 " fill="none" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="41" x="6" y="556.0718">Player</text><!--MD5=[2e992342d728e255a80bb91631392cde]
+link Player to UC1--><path d="M47.14,489.5658 C57.75,474.3958 71.61,456.1758 86,441.6058 C112.05,415.2258 144.45,389.7058 172.06,369.7058 " fill="none" id="Player-&gt;UC1" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="#A80036" points="176.45,366.5458,166.8114,368.5701,172.3959,369.4723,171.4937,375.0567,176.45,366.5458" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[2dbf59d65486de619fe8e220b61b7e80]
+link Player to UC2--><path d="M28.36,478.9258 C31.26,425.3258 42.69,329.9558 86,262.6058 C112.48,221.4258 159.79,189.6058 193.27,170.7958 " fill="none" id="Player-&gt;UC2" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="#A80036" points="197.69,168.3358,187.88,169.21,193.3192,170.7641,191.7652,176.2033,197.69,168.3358" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[2668c15d6fe4cb749bfbdd94da3e9714]
+link Player to UC4--><path d="M33.91,560.2658 C42.96,611.7958 61.19,696.1458 86,714.6058 C181.92,785.9658 241.29,751.5158 355,714.6058 C526.63,658.8858 686.72,503.1758 747.12,439.3858 " fill="none" id="Player-&gt;UC4" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="#A80036" points="750.61,435.6858,741.5289,439.4982,747.1832,439.3268,747.3545,444.9811,750.61,435.6858" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[9080170cb0bfce7c5ceeb6ef1a726062]
+link Player to UC5--><path d="M47.06,515.7658 C71.4,510.9958 114.44,502.5558 152.82,495.0258 " fill="none" id="Player-&gt;UC5" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="#A80036" points="157.96,494.0258,148.3613,491.8202,153.0522,494.9817,149.8907,499.6726,157.96,494.0258" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[dd4074397beb1acb1b4084c0e2641af0]
+link Player to UC6--><path d="M47.06,523.3458 C71.3,527.9758 114.1,536.1558 152.37,543.4758 " fill="none" id="Player-&gt;UC6" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="#A80036" points="157.5,544.4558,149.3992,538.8544,152.5869,543.5275,147.9138,546.7153,157.5,544.4558" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[0b98ce0f2dbd0453d670989b97c3110a]
+link Player to UC7--><path d="M47.15,551.2558 C57.47,566.2058 71.07,583.5858 86,596.6058 C115.87,622.6558 155.32,644.2658 185.61,658.7458 " fill="none" id="Player-&gt;UC7" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="#A80036" points="190.39,661.0058,183.9748,653.5329,185.8731,658.8617,180.5442,660.76,190.39,661.0058" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[594891eb4838d876d29f7ff5a36f2080]
+link UC2 to UC3--><!--MD5=[8daf02cb78117a5871462b95277c15b4]
+link UC2 to UC1--><path d="M232.5,170.3358 C232.5,194.9458 232.5,239.2058 232.5,274.8258 " fill="none" id="UC2-&gt;UC1" style="stroke: #A80036; stroke-width: 1.0; stroke-dasharray: 7.0,7.0;"/><polygon fill="#A80036" points="232.5,280.0158,236.5,271.0158,232.5,275.0158,228.5,271.0158,232.5,280.0158" style="stroke: #A80036; stroke-width: 1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="56" x="164" y="202.5029">«extend»</text><path d="M71.5,212.3119 L71.5,257.3119 L312.5,257.3119 L312.5,222.3119 L302.5,212.3119 L71.5,212.3119 " fill="#FBFB77" style="stroke: #A80036; stroke-width: 1.0;"/><path d="M302.5,212.3119 L302.5,222.3119 L312.5,222.3119 L302.5,212.3119 " fill="#FBFB77" style="stroke: #A80036; stroke-width: 1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="148" x="77.5" y="231.2089">condition: {pause intent}</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="220" x="77.5" y="248.9149">extension point: any moment of play</text><!--MD5=[165d7ea59359575911f0658a4bd1d977]
+link UC3 to UC1--><path d="M674.88,329.6058 C573.94,329.6058 417.78,329.6058 320.8,329.6058 " fill="none" id="UC3-&gt;UC1" style="stroke: #A80036; stroke-width: 1.0; stroke-dasharray: 7.0,7.0;"/><polygon fill="#A80036" points="315.66,329.6058,324.66,333.6058,320.66,329.6058,324.66,325.6058,315.66,329.6058" style="stroke: #A80036; stroke-width: 1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="56" x="469.5" y="269.5029">«extend»</text><path d="M368,279.3119 L368,324.3119 L627,324.3119 L627,289.3119 L617,279.3119 L368,279.3119 " fill="#FBFB77" style="stroke: #A80036; stroke-width: 1.0;"/><path d="M617,279.3119 L617,289.3119 L627,289.3119 L617,279.3119 " fill="#FBFB77" style="stroke: #A80036; stroke-width: 1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="238" x="374" y="298.2089">condition: {final score enters the top 10}</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="147" x="374" y="315.9149">extension point: run end</text><!--MD5=[acc2e1a6e8d676b0336cdf32e107d5f9]
+@startuml 01-use-case
+title uc — retro-shmup — player goals (1.0)
+left to right direction
+skinparam shadowing false
+
+actor "Player" as Player
+
+rectangle "retro-shmup (web game, 1.0)" {
+  package "Play" {
+    usecase UC1 as "UC1 Play a run
+    - -
+    extension points
+    any moment of play
+    run end"
+    usecase "UC2 Pause the run" as UC2
+  }
+  package "Progress" {
+    usecase "UC3 Record a high score" as UC3
+    usecase "UC4 Consult the high scores" as UC4
+  }
+  package "Settings" {
+    usecase "UC5 Configure the game" as UC5
+    usecase "UC6 Remap the controls" as UC6
+  }
+  package "About" {
+    usecase "UC7 Read the credits" as UC7
+  }
+}
+
+Player - -> UC1
+Player - -> UC2
+Player - -> UC4
+Player - -> UC5
+Player - -> UC6
+Player - -> UC7
+
+UC2 -[hidden]- UC3
+
+UC2 .> UC1 : <<extend>>
+note on link
+  condition: {pause intent}
+  extension point: any moment of play
+end note
+UC3 .> UC1 : <<extend>>
+note on link
+  condition: {final score enters the top 10}
+  extension point: run end
+end note
+@enduml
+
+PlantUML version 1.2020.02(Sun Mar 01 11:22:07 CET 2020)
+(GPL source distribution)
+Java Runtime: OpenJDK Runtime Environment
+JVM: OpenJDK 64-Bit Server VM
+Java Version: 21.0.12.1+1-1-24.04.4-Ubuntu
+Operating System: Linux
+Default Encoding: UTF-8
+Language: en
+Country: US
+--></g></svg>
