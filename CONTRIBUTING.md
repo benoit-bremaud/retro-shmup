@@ -149,13 +149,21 @@ pushed.
 Before every push, also run the structured local review gate (`review-local`) and, when render,
 input or bootstrap code changed, the Playwright smoke test (`make smoke`).
 
-CI keeps the necessary minimum: `ci.yml` (lint, typecheck, format check, tests, build) and the
-security workflows (Gitleaks, CodeQL, Dependency Review; OSSF Scorecard weekly). Nothing heavier runs in CI. `git push
---no-verify` is a conscious exception, acceptable only when SonarQube is down and the rest of
-`make verify` passed; say so in the PR.
+CI keeps the necessary minimum (ADR-0013): `ci.yml` (lint, typecheck, format check, tests,
+build) and the security workflows (Gitleaks, CodeQL, Dependency Review; OSSF Scorecard weekly,
+non-blocking). Nothing heavier runs in CI.
+
+When `make verify` cannot pass for a reason outside the change (ADR-0013):
+
+- **SonarQube or the npm registry is unreachable** — push with `git push --no-verify` only after
+  the rest of `make verify` passed, and say so in the PR;
+- **a high advisory has no fix yet** in a dependency — suppress it with
+  `pnpm audit --ignore <GHSA-id>` and log the advisory, the reason and a review date in
+  `PROJECT_LOG.md`; never ignore an advisory reachable from the shipped bundle.
 
 The SonarQube analysis token lives in `~/.config/sonar-tokens/retro-shmup` (mode 600) and is
-never committed.
+never committed. Never run the scanner in debug mode (`-X`, `sonar.verbose`, `sonar.log.level=DEBUG`):
+it prints every property, the token included.
 
 ## Pull request process
 

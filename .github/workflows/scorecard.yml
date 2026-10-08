@@ -1,5 +1,5 @@
 # OSSF Scorecard — weekly audit of the repository's security hygiene (security-ci-baseline).
-# Non-blocking by design (ADR-0007): it runs on main and weekly, never on pull requests, and
+# Non-blocking by design (ADR-0013): it runs on main and weekly, never on pull requests, and
 # publishes its findings to the Security tab. Follows the official template of ossf/scorecard;
 # when results are published, the workflow must keep: no top-level env or defaults, no
 # workflow-level write permission, only approved actions in this job.

@@ -43,11 +43,18 @@ export default defineConfig(
         { selector: 'ExportDefaultDeclaration', message: 'Use named exports only.' },
         // HTML injection sinks (security-policy INJ-3): the game draws on a canvas only.
         {
-          selector: 'AssignmentExpression[left.property.name=/^(innerHTML|outerHTML)$/]',
+          selector: 'AssignmentExpression[left.property.name=/^(innerHTML|outerHTML|srcdoc)$/]',
           message: 'No HTML injection sink: build DOM nodes or draw on the canvas (INJ-3).',
         },
         {
-          selector: 'CallExpression[callee.property.name=/^(insertAdjacentHTML|write|writeln)$/]',
+          selector:
+            'CallExpression[callee.property.name=/^(insertAdjacentHTML|setHTMLUnsafe|createContextualFragment)$/]',
+          message: 'No HTML injection sink: build DOM nodes or draw on the canvas (INJ-3).',
+        },
+        {
+          // document.write only: clipboard.write or a file stream's write are legitimate.
+          selector:
+            "CallExpression[callee.object.name='document'][callee.property.name=/^(write|writeln)$/]",
           message: 'No HTML injection sink: build DOM nodes or draw on the canvas (INJ-3).',
         },
       ],

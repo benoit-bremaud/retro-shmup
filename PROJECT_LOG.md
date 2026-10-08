@@ -25,9 +25,11 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   - `security policy enforced mechanically` — on the owner's request: ESLint bans `eval`,
     `new Function`, `javascript:` URLs and HTML sinks (INJ-3/4); `make verify` adds
     `pnpm audit --audit-level high`; the PR template carries the security checklist.
-  - `OSSF Scorecard, weekly and non-blocking` — recommended by the security CI baseline for a
-    public repository; runs on `main` and weekly, never on pull requests, so the CI stays
-    minimal (ADR-0007).
+  - `OSSF Scorecard, weekly and non-blocking` (ADR-0013) — recommended by the security CI
+    baseline for a public repository; runs on `main` and weekly, never on pull requests. ADR-0007
+    had rejected Scorecard: ADR-0013 partially supersedes it (CI table, audit exceptions), as
+    the security review of the branch required — a validated decision is never reopened
+    silently.
   - `.scannerwork/ ignored` — the SonarScanner work directory was not ignored and would have
     been committed; caught before any push.
 - Pre-push review: five independent dimensions (design, configuration correctness, security and
