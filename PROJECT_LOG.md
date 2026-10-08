@@ -8,7 +8,24 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-08
 
-### Repository public, GitHub protections applied, security scans activated
+### ADR-0008 — public hosting on benoitbremaud.fr
+
+- The owner wants the game on the personal domain and plans several games. Verified: the
+  domain's DNS is on Cloudflare, the portfolio (`benoit-bremaud/benoitbremaud.fr`) is a separate
+  static Cloudflare Pages site whose `_headers` deny framing on every path.
+- **Decisions**:
+  - `one subdomain per game` (ADR-0008) — `<game>.benoitbremaud.fr`, own Pages project and own
+    `_headers` per game; this game starts as `retro-shmup.benoitbremaud.fr`. Rejected: an
+    arcade subdomain with paths (routing Worker, shared storage), one repository for all games,
+    the portfolio's own path (couples repositories, shares its origin and headers), nested
+    subdomains (not covered by the free certificate).
+  - `catalogue on the portfolio` — a static `/jeux/` page in the portfolio repository, by its own
+    PR.
+  - `nothing deployed before the vertical slice` — no Cloudflare resource is created until a
+    playable build exists; the Pages project and custom domain are then created by the owner in
+    the Cloudflare dashboard.
+
+### PR #1 merged (`cf10d5f`) — repo public, protections applied, security scans on
 
 - Initial commit `46aab98` pushed to the new repository `benoit-bremaud/retro-shmup`; Gitleaks
   green on the first run. Default labels replaced by the triptych (8 `type:*`, 12 `area:*`,
@@ -31,8 +48,9 @@ human context: what was done, why, and by which PR. Not the release changelog (s
     `javascript-typescript` joins in the PR that brings the first TypeScript code.
   - `Dependency Review active` — free on a public repository; passes trivially until the npm
     manifest arrives with the vertical slice.
-  - `three required checks` — `Analyze (actions)` and `Dependency review` join `Secret scan` in
-    the `main` protection once this PR has run them green.
+  - `three required checks` — `Analyze (actions)` and `Dependency review` joined `Secret scan` in
+    the `main` protection after PR #1 ran them green (branch `ci/activate-public-security-scans`,
+    squash-merged).
 
 ---
 

@@ -406,6 +406,7 @@ playable.
 | Architecture | Object composition + patterns (Strategy, State, Object Pool, event bus, Command, ports); no ECS, no deep inheritance; UML-first | ADR-0003 |
 | Delivery | Cloudflare Pages (PR preview = staging, `main` = prod), itch.io via butler on tagged releases | ADR-0004 |
 | Licensing | MIT for the code; assets under their own licences in `public/assets/` with `CREDITS.md` | ADR-0005 |
+| Public hosting | `<game>.benoitbremaud.fr` (Cloudflare Pages custom domain, one project per game); catalogue at `benoitbremaud.fr/jeux/`; deployed from the vertical slice | ADR-0008 |
 | Player data | `localStorage` only, versioned key, no personal data beyond three initials; no backend in 1.0 | ADR-0006 |
 | Performance | 60 fps on a 2019 mid-range phone; ≤ 4 ms of logic per frame; no allocation inside the game loop (pools) | ADR-0002 |
 | Tests | Unit tests on the domain (TDD), headless level simulation with scripted inputs and seeded RNG, one browser smoke test; render and audio mocked at their ports | ADR-0003 |
@@ -463,3 +464,4 @@ fully playable at release quality, used to validate the design before producing 
 | TDD | Domain only | Everywhere (slows game feel work); none (domain coverage not guaranteed) |
 | Deployment | Cloudflare Pages + itch.io | GitHub Pages (no private-repo Pages on Free plan, no native PR previews) |
 | Rescue mechanic | 1.x candidate, study pending | In 1.0 (scope); dropped (identity potential too high to discard unstudied) |
+| Public hosting | One first-level subdomain per game on benoitbremaud.fr, catalogue `/jeux/` on the portfolio (ADR-0008) | Arcade subdomain with paths (routing Worker, shared storage); one repository for all games; the portfolio's own path; nested subdomains (not covered by the free certificate) |

@@ -14,3 +14,4 @@ The design decisions these ADRs implement are fixed in the
 | ADR-0005 | Licensing | MIT for the code; assets under their own licences in `public/assets/` with `CREDITS.md`. |
 | ADR-0006 | Player data | `localStorage` only, versioned key, no personal data beyond three initials; no backend in 1.0. |
 | ADR-0007 | Quality gate | Local-first: husky hooks run gitleaks, lint, typecheck, tests with coverage and the local SonarQube gate before every push; CI keeps Gitleaks and a light `ci.yml` only. |
+| ADR-0008 | Public hosting | One first-level subdomain per game on `benoitbremaud.fr` (own Pages project, own `_headers`); catalogue page `/jeux/` on the portfolio. |
