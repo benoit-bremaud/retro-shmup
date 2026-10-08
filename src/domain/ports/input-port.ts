@@ -69,3 +69,19 @@ export interface InputPort {
   /** Applied at the next click, tap or key press — browsers require a gesture. */
   setFullscreenWanted(wanted: boolean): void;
 }
+
+/** A neutral frame: no movement, no button, no tap. Created once and reused (ADR-0009). */
+export function createIntentFrame(): IntentFrame {
+  return {
+    device: 'keyboard',
+    moveKind: 'none',
+    moveX: 0,
+    moveY: 0,
+    held: 0,
+    pressed: 0,
+    tapRegion: 'none',
+    tapX: 0,
+    tapY: 0,
+    fullscreen: false,
+  };
+}

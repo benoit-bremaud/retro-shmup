@@ -15,7 +15,8 @@ when it is chosen.
 
 **Vertical slice in progress.** The design is complete — GDD, ADR-0001 to ADR-0011 and the UML
 study — and the code now follows it, one pull request per brick, up to level 1 at release
-quality. `pnpm install` then `pnpm dev` serves the (still empty) canvas page; see CONTRIBUTING.md.
+quality. `pnpm install` then `pnpm dev` shows the engine running: a scrolling starfield between
+the HUD bands, nothing playable yet; see CONTRIBUTING.md.
 
 Roadmap (GDD section 11):
 

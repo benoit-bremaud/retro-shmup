@@ -37,6 +37,11 @@ export default defineConfig(
       'no-eval': 'error',
       'no-new-func': 'error',
       'no-script-url': 'error',
+      // A leading underscore marks a parameter an implementation deliberately ignores.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
       'no-restricted-syntax': [
         'error',
         // Named exports only (owner rule).
