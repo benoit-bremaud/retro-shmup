@@ -15,12 +15,17 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   static Cloudflare Pages site whose `_headers` deny framing on every path.
 - **Decisions**:
   - `one subdomain per game` (ADR-0008) — `<game>.benoitbremaud.fr`, own Pages project and own
-    `_headers` per game; this game starts as `retro-shmup.benoitbremaud.fr`. Rejected: an
+    `_headers` per game; the custom domain is attached only once the commercial title is final
+    (a later rename would change the origin and strand players' saves), `pages.dev` URLs until
+    then. Rejected: an
     arcade subdomain with paths (routing Worker, shared storage), one repository for all games,
     the portfolio's own path (couples repositories, shares its origin and headers), nested
-    subdomains (not covered by the free certificate).
+    subdomains (viable, but longer and inconsistent with the existing `bulle-de-je` subdomain).
   - `catalogue on the portfolio` — a static `/jeux/` page in the portfolio repository, by its own
     PR.
+  - `review corrections` — two automated review comments on PR #2 were verified and accepted:
+    the certificate argument against nested subdomains was wrong (Pages uses per-hostname
+    Cloudflare for SaaS certificates), and a post-launch rename would lose saves.
   - `nothing deployed before the vertical slice` — no Cloudflare resource is created until a
     playable build exists; the Pages project and custom domain are then created by the owner in
     the Cloudflare dashboard.
