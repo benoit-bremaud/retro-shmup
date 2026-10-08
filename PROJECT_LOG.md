@@ -22,6 +22,14 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   - `TypeScript 6, not 7` (ADR-0011) — typescript-eslint 8.71 supports `typescript <6.1.0`;
     Dependabot ignores TypeScript minor and major bumps until it widens its range.
   - `Prettier excludes Markdown` — it would realign every table of the GDD and the ADRs.
+  - `security policy enforced mechanically` — on the owner's request: ESLint bans `eval`,
+    `new Function`, `javascript:` URLs and HTML sinks (INJ-3/4); `make verify` adds
+    `pnpm audit --audit-level high`; the PR template carries the security checklist.
+  - `OSSF Scorecard, weekly and non-blocking` — recommended by the security CI baseline for a
+    public repository; runs on `main` and weekly, never on pull requests, so the CI stays
+    minimal (ADR-0007).
+  - `.scannerwork/ ignored` — the SonarScanner work directory was not ignored and would have
+    been committed; caught before any push.
 
 ### PR #3 merged (`bb41e6b`) — UML study for 1.0, GDD v0.4, ADR-0009 and ADR-0010
 
