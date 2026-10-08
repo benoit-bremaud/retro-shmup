@@ -9,10 +9,10 @@ on GitHub, not in the repository.
 | Setting | Value |
 |---|---|
 | Require a pull request before merging | yes |
-| Required status checks | `Secret scan` (the Gitleaks job in [`workflows/gitleaks.yml`](workflows/gitleaks.yml)), branch up to date before merge (`strict`) |
+| Required status checks | `Secret scan` ([`workflows/gitleaks.yml`](workflows/gitleaks.yml)), `Analyze (actions)` ([`workflows/codeql.yml`](workflows/codeql.yml)), `Dependency review` ([`workflows/dependency-review.yml`](workflows/dependency-review.yml)); branch up to date before merge (`strict`) |
 | Required approving reviews | see below |
 | Dismiss stale approvals on new commits | yes |
-| Apply to administrators (`enforce_admins`) | yes — the owner is bound by the gate he can satisfy |
+| Apply to administrators (`enforce_admins`) | yes — the owner is bound by a gate they can satisfy |
 | Force push | blocked |
 | Branch deletion | blocked |
 | Push restrictions | none (solo repository) |
@@ -22,7 +22,7 @@ the workflow name `Gitleaks`. Renaming the job means re-applying the
 protection.
 
 Checks that arrive later (lint, typecheck, unit tests and headless simulation
-with the vertical slice; CodeQL and Dependency review once activated) are
+with the vertical slice; `Analyze (javascript-typescript)` once TypeScript exists) are
 appended to `checks` in their own PR.
 
 ### Required reviews: 0 now, 1 once a reviewer bot exists
@@ -57,7 +57,9 @@ gh api repos/benoit-bremaud/retro-shmup/branches/main/protection \
   "required_status_checks": {
     "strict": true,
     "checks": [
-      { "context": "Secret scan" }
+      { "context": "Secret scan" },
+      { "context": "Analyze (actions)" },
+      { "context": "Dependency review" }
     ]
   },
   "enforce_admins": true,
@@ -82,7 +84,9 @@ gh api repos/benoit-bremaud/retro-shmup/branches/main/protection \
   "required_status_checks": {
     "strict": true,
     "checks": [
-      { "context": "Secret scan" }
+      { "context": "Secret scan" },
+      { "context": "Analyze (actions)" },
+      { "context": "Dependency review" }
     ]
   },
   "enforce_admins": true,
@@ -125,7 +129,7 @@ Expected:
 
 ```json
 {
-  "checks": ["Secret scan"],
+  "checks": ["Secret scan", "Analyze (actions)", "Dependency review"],
   "strict": true,
   "reviews": 0,
   "admins": true,

@@ -6,6 +6,36 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ---
 
+## 2026-10-08
+
+### Repository public, GitHub protections applied, security scans activated
+
+- Initial commit `46aab98` pushed to the new repository `benoit-bremaud/retro-shmup`; Gitleaks
+  green on the first run. Default labels replaced by the triptych (8 `type:*`, 12 `area:*`,
+  3 `priority:*`).
+- Public-release checklist satisfied, then the repository was switched to **public** with the
+  owner's explicit approval: Gitleaks clean on the full history (local and CI), no tracked
+  secret, `.env.example` placeholders only, no development secret to rotate, secret detection
+  in CI, SSH signing key already registered on the account as a signing key.
+- Applied right after the switch (the Free plan refuses both on a private repository):
+  - `main` protection per `.github/branch-protection.md` — PR required, `Secret scan` required,
+    strict, admins included, 0 required approvals (no reviewer bot yet), no force push, no
+    deletion;
+  - tag ruleset `Protect release tags` (id `24704970`) on `refs/tags/v*` — creation, update and
+    deletion blocked, Admin bypass `always`, per `.github/tag-protection.md`;
+  - private vulnerability reporting, secret scanning with push protection, Dependabot alerts
+    and Dependabot security updates.
+- **Decisions**:
+  - `CodeQL on the actions language first` — CodeQL fails on a language with no source file, so
+    the matrix starts with `actions` (the workflows themselves, useful now);
+    `javascript-typescript` joins in the PR that brings the first TypeScript code.
+  - `Dependency Review active` — free on a public repository; passes trivially until the npm
+    manifest arrives with the vertical slice.
+  - `three required checks` — `Analyze (actions)` and `Dependency review` join `Secret scan` in
+    the `main` protection once this PR has run them green.
+
+---
+
 ## 2026-10-07
 
 ### Project inception — design brainstorming and repository bootstrap (inception session)

@@ -1,26 +1,17 @@
 # Static analysis (SAST) — results go to the GitHub Security tab (code scanning).
-#
-# DORMANT — manual trigger only, for two reasons:
-#   1. CodeQL requires GitHub Advanced Security. On a private Free-plan
-#      repository every run fails with "Code scanning is not enabled for this
-#      repository" — a red check about the plan, never about the code. A gate
-#      that cannot pass teaches people to ignore red.
-#   2. There is no TypeScript code yet (design phase); `src/` arrives with the
-#      vertical slice.
-#
-# Activation: a dedicated PR restoring the commented-out triggers below, once
-# the repository is public AND TypeScript code exists. Nothing else changes.
+# Free on public repositories. The matrix starts with `actions` (the workflows
+# themselves) because CodeQL fails on a language with no source file; add
+# `javascript-typescript` in the PR that brings the first TypeScript code.
 name: CodeQL
 
 on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 4 * * 1" # weekly, Monday 04:00 UTC
   workflow_dispatch: {}
-  # Restore once the repository is public and code exists:
-  # push:
-  #   branches: [main]
-  # pull_request:
-  #   branches: [main]
-  # schedule:
-  #   - cron: "0 4 * * 1" # weekly, Monday 04:00 UTC
 
 permissions:
   contents: read
@@ -36,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [javascript-typescript]
+        language: [actions]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

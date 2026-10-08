@@ -66,8 +66,9 @@ epic), one `area:*` (`design`, `uml`, `engine`, `game`, `render`, `audio`, `inpu
   `pre-push` = `make verify` (typecheck, Vitest with coverage, gitleaks on the pushed range,
   `sonar-scanner` against the local SonarQube at `localhost:9000` with quality-gate wait).
 - CI keeps the necessary minimum: `gitleaks.yml` and a light `ci.yml` (lint, typecheck, tests).
-  No SonarCloud, no coverage service, no E2E in CI. CodeQL / Dependency Review stay dormant until
-  the repository is public.
+  No SonarCloud, no coverage service, no E2E in CI. CodeQL (matrix `actions`, plus
+  `javascript-typescript` once code exists) and Dependency Review run since the repository went
+  public.
 - The SonarQube analysis token lives in `~/.config/sonar-tokens/retro-shmup` — never in the repo.
 - `git push --no-verify` is a conscious exception, allowed only when SonarQube is down and the
   rest of `make verify` passed.
