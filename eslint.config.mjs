@@ -32,6 +32,29 @@ const DOMAIN_IMPORT_PATTERNS = [
   },
 ];
 
+// Syntax banned in all linted code except the root tool configuration files (security-policy INJ-3,
+// owner rules). Flat config replaces rule options per file, so the source override repeats it.
+const RESTRICTED_SYNTAX = [
+  // Named exports only (owner rule).
+  { selector: 'ExportDefaultDeclaration', message: 'Use named exports only.' },
+  // HTML injection sinks (security-policy INJ-3): the game draws on a canvas only.
+  {
+    selector: 'AssignmentExpression[left.property.name=/^(innerHTML|outerHTML|srcdoc)$/]',
+    message: 'No HTML injection sink: build DOM nodes or draw on the canvas (INJ-3).',
+  },
+  {
+    selector:
+      'CallExpression[callee.property.name=/^(insertAdjacentHTML|setHTMLUnsafe|createContextualFragment)$/]',
+    message: 'No HTML injection sink: build DOM nodes or draw on the canvas (INJ-3).',
+  },
+  {
+    // document.write only: clipboard.write or a file stream's write are legitimate.
+    selector:
+      "CallExpression[callee.object.name='document'][callee.property.name=/^(write|writeln)$/]",
+    message: 'No HTML injection sink: build DOM nodes or draw on the canvas (INJ-3).',
+  },
+];
+
 export default defineConfig(
   { ignores: ['dist/', 'coverage/', 'node_modules/'] },
   js.configs.recommended,
@@ -54,25 +77,22 @@ export default defineConfig(
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
+      'no-restricted-syntax': ['error', ...RESTRICTED_SYNTAX],
+    },
+  },
+  {
+    // No allocation inside the game loop (CLAUDE.md): a `for...of` over an array allocates an
+    // iterator in every V8 tier below TurboFan (measured 2026-10-08), so source code uses index
+    // loops, which never allocate.
+    files: ['src/**/*.ts'],
+    rules: {
+      '@typescript-eslint/prefer-for-of': 'off',
       'no-restricted-syntax': [
         'error',
-        // Named exports only (owner rule).
-        { selector: 'ExportDefaultDeclaration', message: 'Use named exports only.' },
-        // HTML injection sinks (security-policy INJ-3): the game draws on a canvas only.
+        ...RESTRICTED_SYNTAX,
         {
-          selector: 'AssignmentExpression[left.property.name=/^(innerHTML|outerHTML|srcdoc)$/]',
-          message: 'No HTML injection sink: build DOM nodes or draw on the canvas (INJ-3).',
-        },
-        {
-          selector:
-            'CallExpression[callee.property.name=/^(insertAdjacentHTML|setHTMLUnsafe|createContextualFragment)$/]',
-          message: 'No HTML injection sink: build DOM nodes or draw on the canvas (INJ-3).',
-        },
-        {
-          // document.write only: clipboard.write or a file stream's write are legitimate.
-          selector:
-            "CallExpression[callee.object.name='document'][callee.property.name=/^(write|writeln)$/]",
-          message: 'No HTML injection sink: build DOM nodes or draw on the canvas (INJ-3).',
+          selector: 'ForOfStatement',
+          message: 'Use an index loop: for...of allocates an iterator (no allocation in the loop).',
         },
       ],
     },

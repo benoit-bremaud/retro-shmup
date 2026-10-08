@@ -40,6 +40,8 @@ repository.
 - **Fixed timestep, deterministic simulation.** 60 Hz accumulator loop, seeded RNG, no
   `Date.now()` / `Math.random()` inside the simulation. Level scripts must replay identically.
 - **No allocation inside the game loop.** Bullets, particles and pickups come from object pools.
+  Source code uses index loops: `for...of` allocates an array iterator below V8's top tier, and
+  ESLint bans it in `src/`.
 - **Every player-facing string goes through the message catalogue** (EN default, FR).
 - **Every game-feel effect is toggleable** and respects the photosensitivity options.
 - **Tests:** unit tests on the domain (TDD — Red/Green/Refactor), headless level-simulation tests

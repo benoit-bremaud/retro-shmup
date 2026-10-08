@@ -40,6 +40,8 @@ export class FrameLoop {
   private accumulatorMs = 0;
   private running = false;
   private scheduled = false;
+  // Bumped by start() and stop(): a tick whose step changed the lifecycle ends on the spot.
+  private generation = 0;
   private readonly clock: Clock;
   private readonly input: InputPort;
   private readonly target: FrameTarget;
@@ -52,17 +54,24 @@ export class FrameLoop {
     this.schedule = schedule;
   }
 
-  /** Starts, or restarts after `stop()`: the time origin is reset and the remainder discarded. */
+  /**
+   * Starts, or restarts after `stop()`: the time origin is reset and the remainder discarded. While
+   * running it does nothing; `stop()` then `start()` from inside `step()` ends the current tick
+   * there and the new chain starts clean.
+   */
   start(): void {
     if (this.running) return;
     this.running = true;
+    this.generation += 1;
     this.lastMs = undefined;
     this.accumulatorMs = STEP_MS / 2;
     this.scheduleOnce();
   }
 
+  /** Safe to call from inside `step()`: the remaining steps of the tick and its render are skipped. */
   stop(): void {
     this.running = false;
+    this.generation += 1;
   }
 
   // At most one pending frame callback, whatever the start / stop sequence: a second chain would
@@ -87,9 +96,13 @@ export class FrameLoop {
     this.lastMs = nowMs;
     const scale = this.target.timeScale();
     this.accumulatorMs += wallDtMs * (scale > 0 ? Math.min(scale, 1) : 0);
+    const generation = this.generation;
     while (this.accumulatorMs + EPSILON_MS >= STEP_MS) {
       this.input.read(this.frame);
       this.target.step(STEP_SECONDS, this.frame);
+      // A step that stopped or restarted the loop owns its state now: this stale tick must not
+      // step, drain the restarted accumulator, or render.
+      if (this.generation !== generation) return;
       this.accumulatorMs -= STEP_MS;
     }
     this.accumulatorMs = Math.max(this.accumulatorMs, 0);

@@ -32,7 +32,9 @@ export class Starfield {
     this.xs = new Float32Array(total);
     this.ys = new Float32Array(total);
     let i = 0;
-    for (const layer of STARFIELD_LAYERS) {
+    for (let l = 0; l < STARFIELD_LAYERS.length; l += 1) {
+      const layer = STARFIELD_LAYERS[l];
+      if (layer === undefined) continue;
       for (let n = 0; n < layer.count; n += 1) {
         this.xs[i] = Math.floor(random() * (FIELD_WIDTH - layer.size));
         this.ys[i] = random() * FIELD_HEIGHT;
@@ -44,7 +46,9 @@ export class Starfield {
   /** Draws in the current region, which the caller sets to the play field. */
   draw(render: RenderPort, timeSeconds: number): void {
     let i = 0;
-    for (const layer of STARFIELD_LAYERS) {
+    for (let l = 0; l < STARFIELD_LAYERS.length; l += 1) {
+      const layer = STARFIELD_LAYERS[l];
+      if (layer === undefined) continue;
       const offset = layer.speed * timeSeconds;
       for (let n = 0; n < layer.count; n += 1) {
         const y = ((((this.ys[i] ?? 0) + offset) % FIELD_HEIGHT) + FIELD_HEIGHT) % FIELD_HEIGHT;

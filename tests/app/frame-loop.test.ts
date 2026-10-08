@@ -83,13 +83,16 @@ function setup(): {
   return { clock, target, input, scheduler, loop };
 }
 
-/** Starts the loop and runs the first frame, which only sets the time origin. */
+/** Starts the loop and runs the first frame: it sets the time origin, takes no step, renders once. */
 function started(): ReturnType<typeof setup> {
   const fixture = setup();
   fixture.loop.start();
   fixture.scheduler.runFrame();
   return fixture;
 }
+
+/** The render of a first frame: half a step preloaded, no wall time elapsed. */
+const ORIGIN_RENDER = { alpha: 0.5, wallDtMs: 0 };
 
 function advance(fixture: ReturnType<typeof setup>, ms: number): void {
   fixture.clock.t += ms;
@@ -100,7 +103,7 @@ describe('FrameLoop — fixed steps (ADR-0002)', () => {
   it('takes no step on the first frame, which only sets the time origin', () => {
     const { target } = started();
     expect(target.steps).toEqual([]);
-    expect(target.renders).toEqual([{ alpha: 0.5, wallDtMs: 0 }]);
+    expect(target.renders).toEqual([ORIGIN_RENDER]);
   });
 
   it('runs one fixed step of 1/60 s for 1/60 s of wall time', () => {
@@ -229,7 +232,7 @@ describe('FrameLoop — lifecycle', () => {
     const fixture = started();
     fixture.loop.stop();
     advance(fixture, STEP_MS);
-    expect(fixture.target.renders).toHaveLength(1);
+    expect(fixture.target.renders).toEqual([ORIGIN_RENDER]);
   });
 
   it('keeps a single frame chain when started twice', () => {
@@ -260,5 +263,32 @@ describe('FrameLoop — lifecycle', () => {
     };
     advance(fixture, STEP_MS);
     expect(fixture.scheduler.pending).toBe(1);
+  });
+
+  it('ends the tick when a step stops the loop: no further step, no render', () => {
+    const fixture = started();
+    fixture.target.onStep = () => {
+      fixture.loop.stop();
+    };
+    advance(fixture, 3 * STEP_MS);
+    expect(fixture.target.steps).toHaveLength(1);
+    expect(fixture.target.renders).toEqual([ORIGIN_RENDER]);
+  });
+
+  it('restarts from a clean state when a step restarts the loop', () => {
+    const fixture = started();
+    fixture.target.onStep = () => {
+      fixture.target.onStep = undefined;
+      fixture.loop.stop();
+      fixture.loop.start();
+    };
+    advance(fixture, 3 * STEP_MS);
+    expect(fixture.target.renders).toEqual([ORIGIN_RENDER]);
+
+    // The new chain behaves like a first start: time origin, then the half-step preload.
+    advance(fixture, STEP_MS);
+    expect(fixture.target.renders.at(-1)).toEqual(ORIGIN_RENDER);
+    advance(fixture, 0.9 * STEP_MS);
+    expect(fixture.target.steps).toHaveLength(2);
   });
 });

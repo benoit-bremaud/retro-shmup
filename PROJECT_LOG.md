@@ -30,6 +30,12 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   chain on stop/start, a mocked domain object in a test (now the real `Starfield`), the ESLint ban
   on the gameplay `Random` in presentation code (promised by ADR-0010), and ADR-0014's missing
   supersession of ADR-0001.
+- Codex review (PR #5): a `stop()` or restart from inside a step let the stale tick keep stepping
+  and drain the restarted accumulator; a lifecycle generation counter now ends that tick. The
+  starfield's `for...of` allocated an array iterator per frame: a bare loop over its three layers
+  allocates on every call under Ignition and Sparkplug (Node 22) and Maglev (Node 24), and never
+  with an index loop. Source code now uses index loops and ESLint bans `for...of` in `src/`. In
+  the interpreted tiers the draw still boxes floating-point results; the optimizing tiers do not.
 - **Decisions**:
   - `ADR-0014 logical screen` — 480 × 320 (field centred, two 120 px HUD bands), chosen by the
     owner: it keeps ×3 on 16:9 and 16:10 screens in fullscreen; integer scale in device
