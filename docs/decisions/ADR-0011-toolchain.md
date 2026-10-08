@@ -27,7 +27,7 @@
 | Format | Prettier 3 on code and configuration | Markdown excluded: documentation keeps its hand-aligned tables |
 | Hooks | husky 9: `pre-commit` (gitleaks on staged changes, lint-staged), `commit-msg` (commitlint, project scopes), `pre-push` (`make verify`) | ADR-0007 |
 | Local gate | `make verify` = typecheck, lint, format check, tests with coverage, gitleaks, `pnpm audit --audit-level high`, SonarQube scan with quality-gate wait and the package version | token in `~/.config/sonar-tokens/retro-shmup`, never in the repository |
-| CI | `ci.yml` "Lint, typecheck, test" + the security workflows | no coverage upload, no Sonar (ADR-0007) |
+| CI | `ci.yml` "Lint, typecheck, test" + the security workflows (Gitleaks, CodeQL, Dependency Review; OSSF Scorecard weekly and on `main`, non-blocking) | no coverage upload, no Sonar (ADR-0007) |
 
 ## Alternatives considered
 
