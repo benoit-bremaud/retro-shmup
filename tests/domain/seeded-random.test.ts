@@ -29,17 +29,25 @@ describe('SeededRandom', () => {
     expect(Math.max(...values)).toBeLessThan(1);
   });
 
-  it('spreads values evenly enough for drop rolls (30 % and 60 % thresholds)', () => {
-    const values = take(new SeededRandom(2026), 20_000);
-    const below30 = values.filter((v) => v < 0.3).length / values.length;
-    const below60 = values.filter((v) => v < 0.6).length / values.length;
-    expect(below30).toBeCloseTo(0.3, 1);
-    expect(below60).toBeCloseTo(0.6, 1);
+  it('spreads values evenly: each tenth of [0, 1) gets 10 % ± 1 % of 100 000 draws', () => {
+    const bins = new Array<number>(10).fill(0);
+    for (const value of take(new SeededRandom(2026), 100_000)) {
+      const bin = Math.floor(value * 10);
+      bins[bin] = (bins[bin] ?? 0) + 1;
+    }
+    for (const count of bins) {
+      expect(Math.abs(count / 100_000 - 0.1)).toBeLessThan(0.01);
+    }
+  });
+
+  it('reduces seeds to 32 bits, as documented', () => {
+    expect(take(new SeededRandom(-1), 5)).toEqual(take(new SeededRandom(2 ** 32 - 1), 5));
   });
 
   it('matches the reference xoshiro128** (splitmix32-seeded) sequence for seed 42', () => {
-    // Expected values from an independent implementation of the authors' reference C code,
-    // itself checked against the published vector for state {1, 2, 3, 4}.
+    // Expected values from an independent implementation of the authors' reference C code
+    // (https://prng.di.unimi.it/xoshiro128starstar.c), itself checked against the reference
+    // opening sequence for state {1, 2, 3, 4}: 11520, 0, 5927040, 70819200, …
     expect(take(new SeededRandom(42), 5)).toEqual([
       0.6606157226487994, 0.12688010395504534, 0.11170196393504739, 0.8149394164793193,
       0.07910565007477999,

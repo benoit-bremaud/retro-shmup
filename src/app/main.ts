@@ -1,5 +1,6 @@
 // Composition root (ADR-0003): creates the adapters, wires them through the ports and starts the
-// frame loop. Covered by the browser smoke test, not by unit tests (ADR-0003 §7).
+// frame loop. The only module allowed to touch window, document, requestAnimationFrame and
+// Math.random (ADR-0014). To be covered by the browser smoke test (ADR-0003 §7), not yet written.
 import { Canvas2DRenderer } from '../adapters/canvas2d-renderer';
 import { PerformanceClock } from '../adapters/performance-clock';
 import { computeViewport } from '../adapters/viewport';

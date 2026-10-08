@@ -3,7 +3,7 @@
 > **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.4 §9.1,
 > §9.4, §13
 > **Related ADRs**: ADR-0002 (fixed timestep, clamp, interpolation), ADR-0009 (intent frame,
-> press latching), ADR-0010 (time scale, wall-clock effects)
+> press latching), ADR-0010 (time scale, wall-clock effects), ADR-0014 (step units)
 > **Realizes**: UC1 steps 5–8 and UC2 of [01-use-case](../system/01-use-case.md); components
 > of [03-component](../system/03-component.md)
 

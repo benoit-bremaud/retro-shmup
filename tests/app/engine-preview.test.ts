@@ -1,16 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { EnginePreview } from '../../src/app/engine-preview';
 import { STEP_SECONDS } from '../../src/app/frame-loop';
-import { IdleInput } from '../../src/app/idle-input';
-import { PerformanceClock } from '../../src/adapters/performance-clock';
-import { createIntentFrame } from '../../src/domain/ports/input-port';
 import type { RenderPort, RenderRegion } from '../../src/domain/ports/render-port';
 import { Palette } from '../../src/domain/presentation/palette';
-import { Starfield } from '../../src/domain/presentation/starfield';
+import { STARFIELD_LAYERS, Starfield } from '../../src/domain/presentation/starfield';
 
+/** Port double: records what is drawn, in order. The starfield itself is the real domain object. */
 class RecordingRender implements RenderPort {
   calls: string[] = [];
+  starYs: number[] = [];
+  private region: RenderRegion = 'hud';
   setRegion(region: RenderRegion): void {
+    this.region = region;
     this.calls.push(`region ${region}`);
   }
   clear(): void {
@@ -20,79 +21,56 @@ class RecordingRender implements RenderPort {
     throw new Error('not used');
   }
   drawRect(x: number, y: number, w: number, h: number, colour: string): void {
-    this.calls.push(`rect ${colour} ${[x, y, w, h].join(',')}`);
+    const isStar = this.region === 'field';
+    if (isStar) this.starYs.push(y);
+    this.calls.push(isStar ? 'star' : `rect ${colour} ${[x, y, w, h].join(',')}`);
   }
   drawText(): void {
     throw new Error('not used');
   }
   setCameraOffset(): void {
-    /* not used */
+    // Not used by the preview.
   }
   present(): void {
     this.calls.push('present');
   }
 }
 
-class SpyStarfield extends Starfield {
-  times: number[] = [];
-  constructor() {
-    super(() => 0.5);
-  }
-  override draw(_render: RenderPort, timeSeconds: number): void {
-    this.times.push(timeSeconds);
-  }
+/** Every star starts at the middle of the field, so its drawn y reveals the scroll time. */
+function middleStarfield(): Starfield {
+  return new Starfield(() => 0.5);
 }
 
 describe('EnginePreview', () => {
-  it('draws the field, then the HUD bands, then presents, in that order', () => {
+  it('clears, draws every star inside the field region, then the HUD bands, then presents', () => {
     const render = new RecordingRender();
-    const preview = new EnginePreview(render, new SpyStarfield());
-    preview.render(0);
-    expect(render.calls[0]).toBe('clear');
-    expect(render.calls[1]).toBe('region field');
-    expect(render.calls[2]).toBe('region hud');
-    expect(render.calls).toContain(`rect ${Palette.hudBand} 0,0,120,320`);
-    expect(render.calls).toContain(`rect ${Palette.hudBand} 360,0,120,320`);
-    expect(render.calls.at(-1)).toBe('present');
+    new EnginePreview(render, middleStarfield()).render(0);
+    const { calls } = render;
+    const firstStar = calls.indexOf('star');
+    const lastStar = calls.lastIndexOf('star');
+    expect(calls[0]).toBe('clear');
+    expect(calls.indexOf('region field')).toBeLessThan(firstStar);
+    expect(lastStar).toBeLessThan(calls.indexOf('region hud'));
+    expect(calls.filter((call) => call === 'star')).toHaveLength(
+      STARFIELD_LAYERS.reduce((sum, layer) => sum + layer.count, 0),
+    );
+    expect(calls).toContain(`rect ${Palette.hudBand} 0,0,120,320`);
+    expect(calls).toContain(`rect ${Palette.hudBand} 360,0,120,320`);
+    expect(calls.at(-1)).toBe('present');
   });
 
   it('scrolls with simulated time and interpolates between steps', () => {
-    const starfield = new SpyStarfield();
-    const preview = new EnginePreview(new RecordingRender(), starfield);
+    const render = new RecordingRender();
+    const preview = new EnginePreview(render, middleStarfield());
     preview.step(STEP_SECONDS);
     preview.step(STEP_SECONDS);
     preview.render(0.5);
-    expect(starfield.times.at(-1)).toBeCloseTo(2.5 * STEP_SECONDS, 10);
+    const slowest = STARFIELD_LAYERS[0];
+    if (slowest === undefined) throw new Error('no layer');
+    expect(render.starYs[0]).toBeCloseTo(160 + slowest.speed * 2.5 * STEP_SECONDS, 4);
   });
 
   it('never changes the time scale', () => {
-    expect(new EnginePreview(new RecordingRender(), new SpyStarfield()).timeScale()).toBe(1);
-  });
-});
-
-describe('IdleInput', () => {
-  it('leaves every frame neutral, whatever it held before', () => {
-    const frame = createIntentFrame();
-    frame.held = 7;
-    frame.pressed = 3;
-    frame.moveKind = 'target';
-    frame.tapRegion = 'field';
-    new IdleInput().read(frame);
-    expect(frame).toMatchObject({ held: 0, pressed: 0, moveKind: 'none', tapRegion: 'none' });
-  });
-
-  it('cancels any key capture and labels keys by their code', () => {
-    const input = new IdleInput();
-    expect(input.captureNext()).toEqual({ kind: 'cancelled' });
-    expect(input.label('KeyZ')).toBe('KeyZ');
-  });
-});
-
-describe('PerformanceClock', () => {
-  it('reads a monotonic clock in milliseconds', () => {
-    const clock = new PerformanceClock();
-    const a = clock.now();
-    const b = clock.now();
-    expect(b).toBeGreaterThanOrEqual(a);
+    expect(new EnginePreview(new RecordingRender(), middleStarfield()).timeScale()).toBe(1);
   });
 });

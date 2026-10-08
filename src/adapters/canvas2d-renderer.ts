@@ -29,6 +29,10 @@ export interface RenderSurface {
  * Canvas 2D implementation of `RenderPort` (ADR-0001, ADR-0010, ADR-0014): draws at whole logical
  * pixels into a 480 × 320 off-screen surface, then copies it to the visible canvas scaled by an
  * integer factor with smoothing off.
+ *
+ * @remarks The camera offset (screen shake) moves field-region draws only, at draw time: the HUD
+ * never shakes (ADR-0014). `drawSprite` and `drawText` fail closed until the asset brick loads a
+ * sprite sheet and the bitmap fonts.
  */
 export class Canvas2DRenderer implements RenderPort {
   private region: RenderRegion = 'hud';
@@ -40,13 +44,14 @@ export class Canvas2DRenderer implements RenderPort {
   private readonly offscreenImage: CanvasImageSource;
   private readonly visible: RenderSurface;
 
+  /** `offscreenImage` is the canvas behind `offscreen`, copied to `visible` by `present()`. */
   constructor(offscreen: RenderSurface, offscreenImage: CanvasImageSource, visible: RenderSurface) {
     this.offscreen = offscreen;
     this.offscreenImage = offscreenImage;
     this.visible = visible;
   }
 
-  /** Called by the composition root whenever the window or the pixel ratio changes. */
+  /** Called by the composition root when the window is resized. */
   resize(viewport: Viewport): void {
     this.deviceWidth = viewport.deviceWidth;
     this.deviceHeight = viewport.deviceHeight;

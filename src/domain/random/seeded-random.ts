@@ -2,8 +2,9 @@ import type { Random } from '../ports/random';
 
 /**
  * Deterministic gameplay randomness (ADR-0002): xoshiro128** by Blackman and Vigna, 32-bit integer
- * state, seeded through splitmix32 as its authors recommend so that any seed — 0 included — gives
- * a well-mixed state. No allocation after construction.
+ * state. Seeding uses a SplitMix-style 32-bit mixer (golden-ratio Weyl step + MurmurHash3 fmix32),
+ * the 32-bit analogue of the SplitMix64 seeding its authors recommend, so that any seed — 0
+ * included — gives a well-mixed, never all-zero state. No allocation after construction.
  */
 export class SeededRandom implements Random {
   private readonly state = new Uint32Array(4);
@@ -12,6 +13,7 @@ export class SeededRandom implements Random {
     this.seed(seed);
   }
 
+  /** Seeds are reduced to an unsigned 32-bit integer (ECMAScript ToUint32): -1 and 2³² − 1 match. */
   seed(s: number): void {
     let mix = s >>> 0;
     for (let i = 0; i < 4; i += 1) {

@@ -94,6 +94,16 @@ describe('Canvas2DRenderer (ADR-0001, ADR-0010, ADR-0014)', () => {
     expect(offscreen.calls.at(-1)).toBe(`fillRect ${Palette.starMid} 0,10,1,1`);
   });
 
+  it('leaves the field clip before clearing, so the clear covers the whole screen', () => {
+    const { renderer, offscreen } = setup();
+    renderer.setRegion('field');
+    renderer.clear();
+    const restore = offscreen.calls.lastIndexOf('restore');
+    const clear = offscreen.calls.indexOf(`fillRect ${Palette.background} 0,0,480,320`);
+    expect(restore).toBeGreaterThan(-1);
+    expect(restore).toBeLessThan(clear);
+  });
+
   it('presents the logical screen scaled by the integer factor, smoothing off', () => {
     const { renderer, visible } = setup();
     renderer.present();

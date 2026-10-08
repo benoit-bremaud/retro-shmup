@@ -17,6 +17,7 @@ export class FixedPool<T extends object> implements Pool<T> {
   private freeCount: number;
   private readonly inUse = new Map<T, boolean>();
 
+  /** @throws RangeError when `capacity` is not a positive integer. */
   constructor(capacity: number, create: () => T) {
     if (!Number.isInteger(capacity) || capacity < 1) {
       throw new RangeError(`Pool capacity must be a positive integer, got ${String(capacity)}`);
@@ -25,6 +26,9 @@ export class FixedPool<T extends object> implements Pool<T> {
     this.free = [];
     for (let i = 0; i < capacity; i += 1) {
       const item = create();
+      if (this.inUse.has(item)) {
+        throw new Error('Pool: the factory returned the same object twice');
+      }
       this.free.push(item);
       this.inUse.set(item, false);
     }
@@ -32,10 +36,9 @@ export class FixedPool<T extends object> implements Pool<T> {
   }
 
   acquire(): T | undefined {
-    if (this.freeCount === 0) return undefined;
+    const item = this.free[this.freeCount - 1];
+    if (this.freeCount === 0 || item === undefined) return undefined;
     this.freeCount -= 1;
-    const item = this.free[this.freeCount];
-    if (item === undefined) return undefined;
     this.inUse.set(item, true);
     return item;
   }

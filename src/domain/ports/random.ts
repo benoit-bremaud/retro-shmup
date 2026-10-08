@@ -4,5 +4,6 @@
  */
 export interface Random {
   next(): number;
+  /** Implementations may reduce the seed to their state size (see `SeededRandom`). */
   seed(s: number): void;
 }

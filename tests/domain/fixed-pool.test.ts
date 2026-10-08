@@ -63,6 +63,11 @@ describe('FixedPool', () => {
     }).toThrow(/not in use/);
   });
 
+  it('rejects a factory that returns the same object twice', () => {
+    const shared = { x: 0 };
+    expect(() => new FixedPool<Bullet>(2, () => shared)).toThrow(/same object/);
+  });
+
   it('rejects a capacity that is not a positive integer', () => {
     expect(() => new FixedPool<Bullet>(0, () => ({ x: 0 }))).toThrow(/capacity/);
     expect(() => new FixedPool<Bullet>(1.5, () => ({ x: 0 }))).toThrow(/capacity/);

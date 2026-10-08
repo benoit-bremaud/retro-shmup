@@ -20,6 +20,18 @@ const BROWSER_GLOBALS = [
   'globalThis',
 ].map((name) => ({ name, message: 'The domain never uses browser APIs: go through a port.' }));
 
+// Imports the domain may make: its own modules only, never an adapter or the composition root.
+const DOMAIN_IMPORT_PATTERNS = [
+  {
+    regex: '^(?!\\.{1,2}/)',
+    message: 'The domain imports only its own modules: no package, no Node built-in (ADR-0003).',
+  },
+  {
+    group: ['**/adapters/**', '**/app/**'],
+    message: 'The domain depends only on its ports (ADR-0003).',
+  },
+];
+
 export default defineConfig(
   { ignores: ['dist/', 'coverage/', 'node_modules/'] },
   js.configs.recommended,
@@ -88,18 +100,22 @@ export default defineConfig(
         'error',
         { object: 'Math', property: 'random', message: 'Inject a seeded Random (ADR-0002).' },
       ],
+      'no-restricted-imports': ['error', { patterns: DOMAIN_IMPORT_PATTERNS }],
+    },
+  },
+  {
+    // Flat config replaces rule options: the domain patterns are repeated, plus the ban on the
+    // gameplay Random — presentation uses its own unseeded generator (ADR-0010).
+    files: ['src/domain/presentation/**/*.ts'],
+    rules: {
       'no-restricted-imports': [
         'error',
         {
           patterns: [
+            ...DOMAIN_IMPORT_PATTERNS,
             {
-              regex: '^(?!\\.{1,2}/)',
-              message:
-                'The domain imports only its own modules: no package, no Node built-in (ADR-0003).',
-            },
-            {
-              group: ['**/adapters/**', '**/app/**'],
-              message: 'The domain depends only on its ports (ADR-0003).',
+              group: ['**/random/seeded-random', '**/ports/random'],
+              message: 'Presentation never uses the gameplay Random (ADR-0010).',
             },
           ],
         },

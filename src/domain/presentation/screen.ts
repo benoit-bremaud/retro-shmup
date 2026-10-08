@@ -1,7 +1,8 @@
-/** Logical screen of ADR-0014: the play field centred between two HUD bands. */
-export const SCREEN_WIDTH = 480;
-export const SCREEN_HEIGHT = 320;
-export const FIELD_X = 120;
+// Logical screen of ADR-0014: the 240 × 320 play field centred between two HUD bands. The field
+// and band sizes are the inputs; the rest is derived so the geometry has a single source.
 export const FIELD_WIDTH = 240;
 export const FIELD_HEIGHT = 320;
 export const HUD_BAND_WIDTH = 120;
+export const FIELD_X = HUD_BAND_WIDTH;
+export const SCREEN_WIDTH = FIELD_WIDTH + 2 * HUD_BAND_WIDTH;
+export const SCREEN_HEIGHT = FIELD_HEIGHT;

@@ -11,6 +11,18 @@ describe('computeViewport (ADR-0014)', () => {
     expect(computeViewport(w, h, dpr).scale).toBe(scale);
   });
 
+  it.each([
+    { dpr: 1.25, w: 1536, h: 864, scale: 3 },
+    { dpr: 1.5, w: 1280, h: 720, scale: 3 },
+    { dpr: 1.75, w: 1097, h: 617, scale: 3 },
+    { dpr: 3, w: 390, h: 844, scale: 2 },
+  ])('keeps whole device pixels at a fractional ratio of $dpr', ({ dpr, w, h, scale }) => {
+    const viewport = computeViewport(w, h, dpr);
+    expect(viewport.scale).toBe(scale);
+    expect(viewport.cssWidth * dpr).toBeCloseTo(viewport.deviceWidth, 9);
+    expect(Number.isInteger(viewport.deviceWidth)).toBe(true);
+  });
+
   it('never goes below ×1, even in a window smaller than the logical screen', () => {
     expect(computeViewport(300, 200, 1).scale).toBe(1);
   });

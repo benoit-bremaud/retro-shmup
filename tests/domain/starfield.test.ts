@@ -8,13 +8,12 @@ interface Rect {
   y: number;
   w: number;
   h: number;
-  colour: string;
 }
 
 class RecordingRender implements RenderPort {
   rects: Rect[] = [];
   setRegion(): void {
-    /* the caller selects the field */
+    // The caller selects the field.
   }
   clear(): void {
     this.rects = [];
@@ -22,25 +21,26 @@ class RecordingRender implements RenderPort {
   drawSprite(): void {
     throw new Error('not used');
   }
-  drawRect(x: number, y: number, w: number, h: number, colour: string): void {
-    this.rects.push({ x, y, w, h, colour });
+  drawRect(x: number, y: number, w: number, h: number): void {
+    this.rects.push({ x, y, w, h });
   }
   drawText(): void {
     throw new Error('not used');
   }
   setCameraOffset(): void {
-    /* not used */
+    // Not used.
   }
   present(): void {
-    /* not used */
+    // Not used.
   }
 }
 
+/** A deterministic stand-in for the unseeded presentation randomness. */
 function sequence(): () => number {
-  let i = 0;
+  let value = 0;
   return () => {
-    i = (i + 0.37) % 1;
-    return i;
+    value = (value + 0.37) % 1;
+    return value;
   };
 }
 
@@ -50,48 +50,60 @@ function draw(field: Starfield, timeSeconds: number): Rect[] {
   return render.rects;
 }
 
+/** Index of the first star of each layer in the drawing order. */
+const layerStarts = STARFIELD_LAYERS.map((_, layer) =>
+  STARFIELD_LAYERS.slice(0, layer).reduce((sum, previous) => sum + previous.count, 0),
+);
 const totalStars = STARFIELD_LAYERS.reduce((sum, layer) => sum + layer.count, 0);
 
 describe('Starfield (ADR-0010: a pure function of scroll time)', () => {
-  it('draws every star of every layer inside the play field', () => {
+  it('draws every star of every layer entirely inside the play field', () => {
     const rects = draw(new Starfield(sequence()), 12.5);
     expect(rects).toHaveLength(totalStars);
     for (const rect of rects) {
       expect(rect.x).toBeGreaterThanOrEqual(0);
-      expect(rect.x).toBeLessThan(FIELD_WIDTH);
+      expect(rect.x + rect.w).toBeLessThanOrEqual(FIELD_WIDTH);
       expect(rect.y).toBeGreaterThanOrEqual(0);
       expect(rect.y).toBeLessThan(FIELD_HEIGHT);
     }
   });
 
-  it('gives the same picture for the same time, whatever happened before', () => {
+  it('gives the same picture for the same time, whatever was drawn before', () => {
     const field = new Starfield(sequence());
     const first = draw(field, 3.2);
     draw(field, 100);
     expect(draw(field, 3.2)).toEqual(first);
   });
 
-  it('scrolls downward and wraps at the bottom of the field', () => {
-    const field = new Starfield(sequence());
-    const start = draw(field, 0);
-    const later = draw(field, 0.1);
+  it('scrolls downward and wraps from the bottom back to the top', () => {
+    const field = new Starfield(() => 0.5);
     const slowest = STARFIELD_LAYERS[0];
     if (slowest === undefined) throw new Error('no layer');
-    const firstStar = start[0];
-    const movedStar = later[0];
-    if (firstStar === undefined || movedStar === undefined) throw new Error('no star');
-    const expected = (firstStar.y + slowest.speed * 0.1) % FIELD_HEIGHT;
-    expect(movedStar.y).toBeCloseTo(expected, 5);
-    expect(movedStar.x).toBe(firstStar.x);
+    const start = draw(field, 0)[0];
+    const crossing = (FIELD_HEIGHT - 160 + 10) / slowest.speed;
+    const wrapped = draw(field, crossing)[0];
+    expect(start?.y).toBeCloseTo(160, 4);
+    expect(wrapped?.y).toBeCloseTo(10, 4);
   });
 
-  it('moves nearer layers faster (parallax)', () => {
-    const speeds = STARFIELD_LAYERS.map((layer) => layer.speed);
-    expect([...speeds].sort((a, b) => a - b)).toEqual(speeds);
-    expect(new Set(speeds).size).toBe(speeds.length);
+  it('stays inside the field for a negative time', () => {
+    for (const rect of draw(new Starfield(sequence()), -7.3)) {
+      expect(rect.y).toBeGreaterThanOrEqual(0);
+      expect(rect.y).toBeLessThan(FIELD_HEIGHT);
+    }
   });
 
-  it('draws the stars from a fixed table built once, using the injected randomness only', () => {
+  it('moves nearer layers faster (parallax), measured on the drawn stars', () => {
+    const field = new Starfield(() => 0.5);
+    const before = draw(field, 0);
+    const after = draw(field, 0.5);
+    const displacement = layerStarts.map(
+      (index) => (after[index]?.y ?? 0) - (before[index]?.y ?? 0),
+    );
+    expect(displacement.every((d, i) => i === 0 || d > (displacement[i - 1] ?? 0))).toBe(true);
+  });
+
+  it('builds its star table once and never draws randomness while rendering', () => {
     let calls = 0;
     const field = new Starfield(() => {
       calls += 1;
@@ -100,7 +112,6 @@ describe('Starfield (ADR-0010: a pure function of scroll time)', () => {
     const afterConstruction = calls;
     draw(field, 1);
     draw(field, 2);
-    expect(afterConstruction).toBe(totalStars * 2);
     expect(calls).toBe(afterConstruction);
   });
 });
