@@ -6,9 +6,9 @@
 renamed when it is chosen).
 **Type:** retro vertical shoot'em up for the browser. TypeScript strict + native Canvas 2D,
 240 × 320 pixel-perfect, 16-bit pixel art. Release target: itch.io (web), Steam considered later.
-**Status:** **vertical slice** in progress (design complete: GDD v0.4, ADR-0001..0011, UML study).
-The design contract is
-[docs/design/game-design-document.md](docs/design/game-design-document.md); technical decisions are
+**Status:** **vertical slice** in progress (design complete: GDD v0.4, ADR-0001..0012, UML study).
+The design contract is [docs/design/game-design-document.md](docs/design/game-design-document.md);
+technical decisions are
 ADRs under [docs/decisions/](docs/decisions/); the UML study lives under
 [docs/architecture/](docs/architecture/README.md).
 **Language:** English only in the repository (code, comments, commits, docs, issues, PRs).
@@ -74,10 +74,10 @@ epic), one `area:*` (`design`, `uml`, `engine`, `game`, `render`, `audio`, `inpu
 - The blocking gate runs **locally**: `pre-commit` (gitleaks on staged files, lint) and
   `pre-push` = `make verify` (typecheck, Vitest with coverage, gitleaks on the pushed range,
   `sonar-scanner` against the local SonarQube at `localhost:9000` with quality-gate wait).
-- CI keeps the necessary minimum: `gitleaks.yml` and a light `ci.yml` (lint, typecheck, tests).
-  No SonarCloud, no coverage service, no E2E in CI. CodeQL (matrix `actions`, plus
-  `javascript-typescript` once code exists) and Dependency Review run since the repository went
-  public.
+- CI keeps the necessary minimum: a light `ci.yml` (lint, typecheck, format, tests, build) and
+  the security workflows — Gitleaks, CodeQL (`actions` and `javascript-typescript`), Dependency
+  Review, OSSF Scorecard (weekly, non-blocking). No SonarCloud, no coverage service, no E2E in
+  CI.
 - The SonarQube analysis token lives in `~/.config/sonar-tokens/retro-shmup` — never in the repo.
 - `git push --no-verify` is a conscious exception, allowed only when SonarQube is down and the
   rest of `make verify` passed.

@@ -4,7 +4,7 @@ import { defineConfig } from 'eslint/config';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
-// Browser and clock APIs the domain must never touch (ADR-0002, ADR-0003, ADR-0009).
+// Browser, clock and global-object access the domain must never use (ADR-0002, ADR-0003, ADR-0009).
 const BROWSER_GLOBALS = [
   'window',
   'document',
@@ -17,6 +17,7 @@ const BROWSER_GLOBALS = [
   'setInterval',
   'AudioContext',
   'fetch',
+  'globalThis',
 ].map((name) => ({ name, message: 'The domain never uses browser APIs: go through a port.' }));
 
 export default defineConfig(
@@ -27,7 +28,7 @@ export default defineConfig(
   {
     languageOptions: {
       parserOptions: {
-        projectService: { allowDefaultProject: ['eslint.config.mjs', 'commitlint.config.mjs'] },
+        projectService: true,
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -53,8 +54,9 @@ export default defineConfig(
     },
   },
   {
-    // Tool configuration files must export a default object.
+    // Tool configuration files must export a default object and run under Node.
     files: ['*.config.ts', '*.config.mjs'],
+    languageOptions: { globals: globals.node },
     rules: { 'no-restricted-syntax': 'off' },
   },
   {
@@ -65,16 +67,24 @@ export default defineConfig(
   {
     files: ['src/domain/**/*.ts'],
     rules: {
-      'no-restricted-globals': ['error', ...BROWSER_GLOBALS],
+      'no-restricted-globals': [
+        'error',
+        ...BROWSER_GLOBALS,
+        { name: 'Date', message: 'Inject a Clock or today() (ADR-0002, ADR-0009).' },
+      ],
       'no-restricted-properties': [
         'error',
-        { object: 'Date', property: 'now', message: 'Inject a Clock (ADR-0002).' },
         { object: 'Math', property: 'random', message: 'Inject a seeded Random (ADR-0002).' },
       ],
       'no-restricted-imports': [
         'error',
         {
           patterns: [
+            {
+              regex: '^(?!\\.{1,2}/)',
+              message:
+                'The domain imports only its own modules: no package, no Node built-in (ADR-0003).',
+            },
             {
               group: ['**/adapters/**', '**/app/**'],
               message: 'The domain depends only on its ports (ADR-0003).',
@@ -101,9 +111,5 @@ export default defineConfig(
   {
     files: ['src/app/**/*.ts'],
     languageOptions: { globals: globals.browser },
-  },
-  {
-    files: ['*.config.ts', '*.config.mjs'],
-    languageOptions: { globals: globals.node },
   },
 );

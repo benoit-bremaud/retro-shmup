@@ -7,13 +7,13 @@
   "type": "module",
   "packageManager": "pnpm@10.30.3",
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=22.22.1"
   },
   "scripts": {
     "dev": "vite",
     "build": "pnpm typecheck && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.domain.json --noEmit",
+    "typecheck": "tsc -b && tsc -p tsconfig.domain.json --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -27,7 +27,7 @@
       "eslint --max-warnings 0",
       "prettier --check"
     ],
-    "*.{json,md,yml,yaml,html,css}": "prettier --check"
+    "*.{json,yml,yaml,html,css}": "prettier --check"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.3",

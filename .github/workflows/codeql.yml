@@ -1,7 +1,6 @@
 # Static analysis (SAST) — results go to the GitHub Security tab (code scanning).
-# Free on public repositories. The matrix starts with `actions` (the workflows
-# themselves) because CodeQL fails on a language with no source file; add
-# `javascript-typescript` in the PR that brings the first TypeScript code.
+# Free on public repositories. Two languages: the workflows themselves (`actions`)
+# and the game code (`javascript-typescript`, since the toolchain PR).
 name: CodeQL
 
 on:
@@ -27,7 +26,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [actions]
+        language: [actions, javascript-typescript]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

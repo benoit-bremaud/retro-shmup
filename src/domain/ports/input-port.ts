@@ -16,6 +16,7 @@ export type TapRegion = 'none' | 'field' | 'hud';
  * (ADR-0009). `direction`: (moveX, moveY) in [-1, 1]; `target`: play-field pixels.
  */
 export interface IntentFrame {
+  /** Last device used wins. */
   device: Device;
   moveKind: MoveKind;
   moveX: number;
@@ -24,7 +25,9 @@ export interface IntentFrame {
   held: number;
   /** Button bitmask: buttons that went down since the previous read. */
   pressed: number;
+  /** `none` when there was no tap since the previous read. */
   tapRegion: TapRegion;
+  /** In the region's coordinates (play field or HUD band), not screen pixels. */
   tapX: number;
   tapY: number;
   /** Current fullscreen state, as reported by the browser. */
@@ -35,15 +38,24 @@ export interface IntentFrame {
 export type RemappableIntent =
   'moveUp' | 'moveDown' | 'moveLeft' | 'moveRight' | 'fire' | 'bomb' | 'pause';
 
-/** Primary and secondary physical inputs of one intent (`KeyboardEvent.code` or a button id). */
-export type BindingSlots = readonly [primary: string | null, secondary: string | null];
-
-export interface Bindings {
-  readonly keyboard: Readonly<Record<RemappableIntent, BindingSlots>>;
-  readonly gamepad: Readonly<Record<RemappableIntent, BindingSlots>>;
+/** A primary input that always exists and an optional secondary one (ADR-0012). */
+export interface BindingSlots<T> {
+  readonly primary: T;
+  readonly secondary: T | null;
 }
 
-export type BindingCapture = 'waiting' | 'cancelled' | { readonly code: string };
+/** Keyboard slots hold `KeyboardEvent.code`; gamepad slots hold standard-mapping indices (ADR-0012). */
+export interface Bindings {
+  readonly keyboard: Readonly<Record<RemappableIntent, BindingSlots<string>>>;
+  readonly gamepad: Readonly<Record<RemappableIntent, BindingSlots<number>>>;
+}
+
+/** State of the "press the new key" capture; `cancelled` on `Esc` or the 5 s gamepad timeout. */
+export type BindingCapture =
+  | { readonly kind: 'waiting' }
+  | { readonly kind: 'cancelled' }
+  | { readonly kind: 'key'; readonly code: string }
+  | { readonly kind: 'button'; readonly index: number };
 
 /** Player input, whatever the device (ADR-0009). */
 export interface InputPort {

@@ -8,7 +8,7 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-08
 
-### Vertical slice PR A — toolchain (branch `chore/toolchain`), ADR-0011
+### Toolchain for the vertical slice (branch `chore/toolchain`) — ADR-0011, ADR-0012
 
 - pnpm 10, Node 22, Vite 8, TypeScript ~6.0.3 strict, Vitest 5 with V8 coverage, ESLint 10 with
   typescript-eslint `strictTypeChecked`, Prettier on code and configuration, husky hooks
@@ -30,6 +30,30 @@ human context: what was done, why, and by which PR. Not the release changelog (s
     minimal (ADR-0007).
   - `.scannerwork/ ignored` — the SonarScanner work directory was not ignored and would have
     been committed; caught before any push.
+- Pre-push review: five independent dimensions (design, configuration correctness, security and
+  CI, documentation, tests and SonarQube), every Must and Should verified adversarially (36
+  confirmed, none refuted). Fixed before the push:
+  - commitlint rejected the project's own `docs(adr): ADR-NNNN …` subjects (`subject-case`) and
+    accepted commits without a scope;
+  - `sonar.tests` named an untracked folder, so `make verify` failed on a fresh clone
+    (`tests/.gitkeep`);
+  - CodeQL now analyses `javascript-typescript`, and `Lint, typecheck, test` plus
+    `Analyze (javascript-typescript)` become required checks once they report green;
+  - the domain guard is complete: no package or Node built-in import, no `Date`, no
+    `globalThis`; tool configs moved to `tsconfig.node.json`, so Node types never reach browser
+    code;
+  - Vite `base` defaults to `./` (ADR-0004: itch.io serves from a sub-path);
+  - Node floor `>= 22.22.1` (lint-staged 17); CI gets a timeout, a concurrency group and a build
+    step; Dependabot gets a 7-day cooldown and keeps `@types/node` on the runtime major.
+- **Decisions**:
+  - `ADR-0012 binding shapes` — keyboard slots hold `KeyboardEvent.code`, gamepad slots hold
+    standard-mapping indices, the primary slot is never empty; written as a new ADR because
+    ADR-0009 is accepted.
+  - `S6564 accepted in sonar-project.properties` — `SpriteId`, `SfxId`, `TrackId` are ADR
+    vocabulary; the exception is versioned, scoped to that rule and to `src/domain/ports`.
+  - `secret hygiene in the setup command` — the documented token command now reads the token
+    with hidden input, so it never reaches the shell history; the token in use is rotated by the
+    owner after the push (security policy SECRET-4).
 
 ### PR #3 merged (`bb41e6b`) — UML study for 1.0, GDD v0.4, ADR-0009 and ADR-0010
 

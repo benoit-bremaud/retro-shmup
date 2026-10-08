@@ -4,7 +4,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['tests/**/*.test.ts'],
-    // The first tests arrive with the engine (vertical slice PR B).
+    // Remove with the first test file (engine PR): until then an empty run must pass.
     passWithNoTests: true,
     coverage: {
       provider: 'v8',

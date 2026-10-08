@@ -10,6 +10,9 @@ export interface AudioPort {
   music(track: TrackId | null): void;
   /** Linear gains in [0, 1], from the options. */
   setVolumes(music: number, sfx: number): void;
-  /** Paused: music ducked to −12 dB over 150 ms, game sounds stopped, UI sounds kept. */
+  /**
+   * Paused: music ducked to −12 dB over 150 ms, game sounds stopped, UI sounds kept.
+   * Resumed: the music returns over the 1 s count-in.
+   */
   setPaused(paused: boolean): void;
 }

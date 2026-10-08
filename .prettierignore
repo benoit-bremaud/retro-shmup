@@ -4,6 +4,5 @@ coverage/
 .scannerwork/
 *.svg
 *.puml
-CHANGELOG.md
-# Documentation is reviewed by people and keeps its hand-aligned tables.
+# Prettier would pad every Markdown table of the GDD, the ADRs and the log: noise for no reader.
 *.md

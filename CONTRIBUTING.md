@@ -8,8 +8,9 @@ and pull requests.
 
 ## Prerequisites
 
-- **Git** 2.30 or newer, **Node.js 22 LTS** (≥ 22.12, see `.nvmrc`), **pnpm 10**.
-- **gitleaks** ≥ 8.25 and **sonar-scanner** on the `PATH`, and the local **SonarQube** at
+- **Git** 2.30 or newer, **Node.js 22 LTS** (≥ 22.22.1 — lint-staged 17's floor; see `.nvmrc`),
+  **pnpm 10**.
+- **gitleaks** ≥ 8.25 (`.gitleaks.toml` uses `[[allowlists]]`) and **sonar-scanner** on the `PATH`, and the local **SonarQube** at
   `http://localhost:9000` — the git hooks use them (ADR-0007, ADR-0011).
 
 ```bash
@@ -21,10 +22,12 @@ make verify           # the full local gate, as run by the pre-push hook
 ```
 
 **One-time SonarQube setup**: in SonarQube, create the project `retro-shmup` (manual setup, main
-branch `main`), generate a *project analysis token* for it, and store it outside the repository:
+branch `main`), generate a *project analysis token* for it, and store it outside the repository.
+The command asks for the token with hidden input, so it never reaches the shell history, and
+forces mode 600 even on an existing file:
 
 ```bash
-mkdir -p ~/.config/sonar-tokens && umask 077 && printf '%s' '<token>' > ~/.config/sonar-tokens/retro-shmup
+(umask 077; mkdir -p ~/.config/sonar-tokens; printf 'Token: '; read -rs t; echo; printf '%s' "$t" > ~/.config/sonar-tokens/retro-shmup; chmod 600 ~/.config/sonar-tokens/retro-shmup)
 ```
 
 ## Branching strategy
@@ -132,18 +135,22 @@ Extra labels are allowed but never replace the triptych.
 
 The blocking checks run on the developer's machine, before the push, as decided in
 [ADR-0007](docs/decisions/ADR-0007-local-first-quality-gate-minimal-ci.md). Once application code
-exists, `pnpm install` installs the git hooks:
+`pnpm install` installs the git hooks (husky):
 
 | Hook | Runs | Budget |
 |---|---|---|
-| `pre-commit` | `gitleaks protect --staged`, ESLint and Prettier on the staged files | under 3 s |
-| `pre-push` (`make verify`) | typecheck, Vitest unit and headless-simulation tests with coverage, `gitleaks detect` on the pushed range, `sonar-scanner` against the local SonarQube (`localhost:9000`) with quality-gate wait | under 90 s |
+| `pre-commit` | `gitleaks git --pre-commit --staged`, then lint-staged: ESLint and `prettier --check` on the staged files | under 3 s |
+| `commit-msg` | commitlint: Conventional Commits with a scope from the project list | instant |
+| `pre-push` (`make verify`) | typecheck (app, node and domain projects), lint, format check, Vitest with coverage, `gitleaks git` on the full history, `pnpm audit --audit-level high`, `sonar-scanner` against the local SonarQube (`localhost:9000`) with quality-gate wait | under 90 s |
+
+`make verify` checks the working tree: push from a clean tree, so what is verified is what is
+pushed.
 
 Before every push, also run the structured local review gate (`review-local`) and, when render,
 input or bootstrap code changed, the Playwright smoke test (`make smoke`).
 
-CI keeps the necessary minimum: Gitleaks (server-side secret detection) and, with the vertical
-slice, a light `ci.yml` (lint, typecheck, tests). Nothing heavier runs in CI. `git push
+CI keeps the necessary minimum: `ci.yml` (lint, typecheck, format check, tests, build) and the
+security workflows (Gitleaks, CodeQL, Dependency Review; OSSF Scorecard weekly). Nothing heavier runs in CI. `git push
 --no-verify` is a conscious exception, acceptable only when SonarQube is down and the rest of
 `make verify` passed; say so in the PR.
 
