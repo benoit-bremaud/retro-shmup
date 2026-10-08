@@ -52,8 +52,9 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   - `S6564 accepted in sonar-project.properties` — `SpriteId`, `SfxId`, `TrackId` are ADR
     vocabulary; the exception is versioned, scoped to that rule and to `src/domain/ports`.
   - `secret hygiene in the setup command` — the documented token command now reads the token
-    with hidden input, so it never reaches the shell history; the token in use is rotated by the
-    owner after the push (security policy SECRET-4).
+    with hidden input, so it never reaches the shell history. Rotating the token in use (local,
+    scoped to this project) is deferred by the owner and stays an open follow-up (security
+    policy SECRET-4).
 
 ### PR #3 merged (`bb41e6b`) — UML study for 1.0, GDD v0.4, ADR-0009 and ADR-0010
 
