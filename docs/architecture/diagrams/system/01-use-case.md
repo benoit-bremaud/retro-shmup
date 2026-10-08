@@ -93,8 +93,8 @@ step depends on them.
 - **Primary actor**: Player. **Level**: subfunction, extends UC1.
 - **Preconditions**: a run is in play (UC1 steps 4–8).
 - **Success guarantee**: while paused the simulation is frozen — no tick, no timer, no random
-  draw; on resume no paused time reaches the simulation (the frame clock is reset, held
-  intents are re-sampled) (ADR-0002, GDD §9.1).
+  draw; on resume no paused time reaches the simulation — the loop keeps running and the paused
+  scene takes every step (ADR-0002, GDD §9.1).
 - **Main success scenario**:
   1. Player triggers the `pause` intent.
   2. The game freezes the simulation, ducks the music, silences the SFX and shows the pause menu

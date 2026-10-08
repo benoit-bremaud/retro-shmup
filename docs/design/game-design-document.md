@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Design phase — v0.2 (2026-10-08): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 folds in the rules surfaced by the UML use-case study |
+| **Status** | Design phase — v0.3 (2026-10-08): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 and v0.3 fold in the rules surfaced by the UML use-case and class studies |
 | **Working title** | *retro-shmup* (codename; the commercial title is still open) |
 | **Genre** | Retro vertical-scrolling shoot'em up (shmup), 16-bit aesthetic |
 | **Platform** | Web browser (desktop first, mobile playable), TypeScript + native Canvas 2D |
@@ -204,7 +204,8 @@ leaves the bottom of the screen is lost.
 
 **Pickup at its cap** *(v0.2, one rule)*: when the effect cannot apply — power already 5, bombs
 already 5, a shield charge already held, lives already 9 — the pickup grants **1 000 points**
-instead. A P of the other colour still switches the weapon (level unchanged).
+instead. A P of the other colour still switches the weapon (level unchanged); at level 5 it
+switches **and** grants the 1 000 points *(v0.3)*.
 
 Rule of thumb: everything that falls is good to catch. (This invariant is exactly what the 1.x
 "ejected pilots" candidate would challenge — see §12.)
@@ -229,6 +230,10 @@ roles on three size tiers cover every wave the three levels need.
 | **Carrier** | "Do I catch it before it leaves?" | Medium (32 px) | 4 | Crosses the screen laterally, never stops | None | **100 %**: Shield, Bomb or 1-UP as chosen by the level script | 500 |
 | **Heavy** | "How do I handle the pressure while I wear it down?" | Large (48–64 px) | 40 | Slow entry from the top, holds position 8–12 s, leaves | Bullet patterns: ring (12 bullets) or fan (5 bullets), every 2 s | Bomb or Shield at **60 %** | 1 000 |
 
+- **Contact** *(v0.3)*: touching any enemy body, boss included, hits the player like a bullet; the
+  enemy takes no damage from it.
+- **Bomb kills** *(v0.3)* count like shot kills: they extend the chain and count toward the full
+  formation guarantee.
 - Enemy bullets: speed 60–90 px/s *(initial)*, **10–40 on screen** at peak. No bullet is ever
   faster than the player's ship.
 - Every enemy flashes white for 2 frames when hit (palette flash, no extra sprite) and shares a
@@ -321,9 +326,9 @@ Ending | Game over → Name entry (if top 10) → High scores → Title
 **Pause** *(v0.2)*: the player pauses at any moment (`pause` intent). The game also pauses on its
 own when the tab is hidden, when the window loses focus, or when the gamepad in use disconnects —
 and **never resumes on its own**. While paused the simulation is frozen (no tick, no timer, no
-random draw), the music is ducked to −12 dB over 150 ms and the SFX are silenced. Resuming shows a
-1 s **3-2-1 count-in** (simulation still frozen); the frame clock is reset so no time elapsed
-during the pause reaches the simulation. Quitting from pause asks for confirmation, default
+random draw), the music is ducked to −12 dB over 150 ms, game sounds stop and menu sounds stay audible. Resuming shows a
+1 s **3-2-1 count-in** (simulation still frozen). The frame loop keeps running; the paused scene
+takes every step, so no paused time ever reaches the run *(v0.3)*. Quitting from pause asks for confirmation, default
 "No"; a quit run is discarded and never offered the high-score entry.
 
 **Name entry** *(v0.2)*: three characters from A–Z, 0–9, space and `.`, starting at `AAA`; no
@@ -509,4 +514,5 @@ fully playable at release quality, used to validate the design before producing 
 | Ending *(v0.2)* | Leads to name entry like Game over | `Ending → Title` (a full clear could not record its score) |
 | Effect toggles *(v0.2)* | One switch per §9.4 effect; reduced-motion presets four to off | Two switches only (contradicted §9.4 and the project rules) |
 | Edge rules *(v0.2)* | Start with Spread; no release at level 1; bombs hit the boss; capped pickup = 1 000 points; 9 lives max | Leaving them undefined (each would be decided ad hoc in code) |
+| Contact and bomb kills *(v0.3)* | Enemy contact hits the player, not the enemy; bomb kills count for chain and formations; other-colour P at level 5 switches and scores 1 000 | Contact harmless (no reason to avoid bodies); bomb kills excluded (punishes the bomb twice) |
 | Public hosting | One first-level subdomain per game on benoitbremaud.fr, catalogue `/jeux/` on the portfolio (ADR-0008) | Arcade subdomain with paths (routing Worker, shared storage); one repository for all games; the portfolio's own path; nested subdomains (viable, longer, inconsistent with the existing `bulle-de-je`); attaching the domain before the title is final (a rename strands saves) |

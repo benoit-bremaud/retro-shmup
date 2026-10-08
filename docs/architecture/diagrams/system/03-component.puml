@@ -1,0 +1,88 @@
+@startuml 03-component
+title cmp — retro-shmup — components, ports and the dependency rule (1.0)
+top to bottom direction
+skinparam shadowing false
+skinparam componentStyle uml2
+
+package "src/app — composition root" as App {
+  [Bootstrap] as Boot
+  [FrameLoop] as Loop
+}
+
+package "src/domain — pure TypeScript, no DOM" as Domain {
+  [SceneMachine] as Scenes
+  [Run] as Run
+  [RunPresenter] as Presenter
+  [LevelScripts] as Levels
+  [SaveDocument] as Save
+  [MessageCatalogue] as I18n
+  [SeededRandom] as Rng
+
+  package "ports (owned by the domain)" as Ports {
+    interface "RenderPort\n(ADR-0001, ADR-0010)" as RenderPort
+    interface "AudioPort\n(ADR-0009)" as AudioPort
+    interface "InputPort\n(ADR-0009)" as InputPort
+    interface "StoragePort\n(ADR-0006)" as StoragePort
+    interface "Clock\n(ADR-0002)" as ClockPort
+    interface "Random\n(ADR-0002)" as RandomPort
+  }
+}
+
+package "src/adapters — browser APIs" as Adapters {
+  [Canvas2DRenderer] as Canvas
+  [WebAudioPlayer] as WebAudio
+  [DeviceInput] as Input
+  [LocalStorageStore] as LocalStore
+  [PerformanceClock] as PerfClock
+}
+
+' composition root
+Boot --> Loop : starts
+Boot ..> Adapters : <<create>>
+Loop ..> Scenes : <<use>>\nper step: step(dt, frame)\nper frame: timeScale(),\nrender(alpha, wallDtMs)
+Loop ..> ClockPort : <<use>>
+Loop ..> InputPort : <<use>>
+
+' domain internals
+Scenes ..> Run : <<create>>, steps
+Scenes ..> Presenter : delegates drawing\nwhile a run is on screen
+Scenes ..> Save : parse / serialize
+Scenes ..> I18n : text lookup
+Presenter ..> Run : reads the view,\nsubscribes to its bus
+Presenter ..> I18n : labels
+Run ..> Levels : reads
+Scenes ..> RenderPort : <<use>> menus
+Scenes ..> AudioPort : <<use>> mix, music
+Scenes ..> StoragePort : <<use>>
+Presenter ..> RenderPort : <<use>> field + HUD
+Presenter ..> AudioPort : <<use>> SFX
+Run ..> RandomPort : <<use>> gameplay only
+Rng -up- RandomPort
+
+' adapters realize domain ports: dependencies point inward
+Canvas -up- RenderPort
+WebAudio -up- AudioPort
+Input -up- InputPort
+LocalStore -up- StoragePort
+PerfClock -up- ClockPort
+
+note right of Boot
+  Creates every adapter, injects it through
+  its port, and passes the startup snapshot
+  (today, reduced motion, language, touch,
+  fullscreen support) — ADR-0009.
+end note
+
+note right of Input
+  Inside its gesture handlers: unlocks audio,
+  requests fullscreen, latches presses,
+  synthesizes Pause on focus or device loss.
+end note
+
+note bottom of Run
+  The Simulation (ADR-0002, ADR-0009):
+  outcome-relevant state only — see
+  04-class-domain. Presentation never
+  changes it (ADR-0010).
+end note
+@enduml

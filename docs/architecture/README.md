@@ -60,11 +60,11 @@ Status: the study is written block by block; entries without a link are planned 
 | Folder | Diagram | Question it answers |
 |---|---|---|
 | `system` | [01 use case](diagrams/system/01-use-case.md) | Who wants what? 7 use cases with Cockburn specifications |
-| `system` | 03 component | Where are the domain / adapters / app boundaries, and which ports cross them? |
+| `system` | [03 component](diagrams/system/03-component.md) | Where are the domain / adapters / app boundaries, and which ports cross them? |
 | `gameplay` | 02 sequence — fixed-step tick | What happens during one frame? |
 | `gameplay` | 02 sequence — enemy destroyed | Hit → destruction → drop → score, audio, HUD, without coupling |
 | `gameplay` | 02 sequence — player hit | Shield or death, with every conditional branch |
-| `gameplay` | 04 class — domain | Entity composition, pools, event bus, difficulty profile |
+| `gameplay` | [04 class — domain](diagrams/gameplay/04-class-domain.md) | Entity composition, pools, event bus, difficulty profile |
 | `gameplay` | 05 state — player | Player lifecycle |
 | `gameplay` | 05 state — boss | Boss phases and timer |
 | `meta` | 05 state — scenes | The screens of GDD §9.1 and their transitions |
