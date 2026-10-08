@@ -18,4 +18,4 @@ secrets:
 sonar-scan:
 	@test -f "$(SONAR_TOKEN_FILE)" || { echo "Missing $(SONAR_TOKEN_FILE) — see CONTRIBUTING.md (SonarQube token)."; exit 1; }
 	@curl -sf -m 5 "$(SONAR_URL)/api/system/status" | grep -q '"status":"UP"' || { echo "SonarQube is not UP at $(SONAR_URL) — start it, or push with --no-verify after the rest of make verify passed (ADR-0007)."; exit 1; }
-	SONAR_TOKEN="$$(cat "$(SONAR_TOKEN_FILE)")" sonar-scanner
+	SONAR_TOKEN="$$(cat "$(SONAR_TOKEN_FILE)")" sonar-scanner -Dsonar.projectVersion="$$(node -p "require('./package.json').version")"

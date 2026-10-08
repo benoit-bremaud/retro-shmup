@@ -1,6 +1,7 @@
 pnpm-lock.yaml
 dist/
 coverage/
+.scannerwork/
 *.svg
 *.puml
 CHANGELOG.md

@@ -2,6 +2,7 @@
 node_modules/
 dist/
 coverage/
+.scannerwork/
 .vite/
 *.tsbuildinfo
 npm-debug.log*
