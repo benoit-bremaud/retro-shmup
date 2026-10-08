@@ -3,8 +3,8 @@
 > **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.3 §4.2,
 > §9, §13
 > **Related ADRs**: ADR-0001 (RenderPort), ADR-0002 (Clock, Random, loop), ADR-0003 (layout,
-> ports, dependency rule), ADR-0006 (StoragePort), ADR-0009 (input and audio contracts —
-> proposed), ADR-0010 (presentation outside the outcome — proposed)
+> ports, dependency rule), ADR-0006 (StoragePort), ADR-0009 (input and audio contracts),
+> ADR-0010 (presentation outside the outcome)
 > **Realizes**: the structure behind every use case of [01-use-case](01-use-case.md)
 
 ## Context

@@ -1,6 +1,6 @@
 # ADR-0010: Presentation never changes the outcome of a run
 
-**Status:** Proposed — 2026-10-08. Once accepted, it refines ADR-0002 (random stream, time
+**Status:** Accepted — 2026-10-08. It refines ADR-0002 (random stream, time
 scale), ADR-0003 (event bus ownership, `DropTable` shape) and ADR-0001 (HUD region); back-links
 are added to those ADRs in a dedicated PR.
 

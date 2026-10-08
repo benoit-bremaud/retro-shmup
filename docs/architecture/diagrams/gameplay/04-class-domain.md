@@ -2,8 +2,8 @@
 
 > **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.3 §4–§8, §10
 > **Related ADRs**: ADR-0002 (Simulation, Random, Pool), ADR-0003 (composition, patterns),
-> ADR-0009 (IntentFrame — proposed), ADR-0010 (event bus per run, `DropTable` as data,
-> presentation outside the outcome — proposed)
+> ADR-0009 (IntentFrame), ADR-0010 (event bus per run, `DropTable` as data,
+> presentation outside the outcome)
 > **Realizes**: UC1 of [01-use-case](../system/01-use-case.md); the structure is placed in
 > [03-component](../system/03-component.md) (`Run` component)
 

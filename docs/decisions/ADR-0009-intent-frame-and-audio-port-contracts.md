@@ -1,6 +1,6 @@
 # ADR-0009: Input and audio contracts — intent frame, bindings, gestures, mix control
 
-**Status:** Proposed — 2026-10-08. Once accepted, it replaces the `Intent` / `IntentFrame` /
+**Status:** Accepted — 2026-10-08. It replaces the `Intent` / `IntentFrame` /
 `InputPort` sketches of ADR-0002 and ADR-0003 and the `AudioPort` sketch of ADR-0003; those ADRs
 stay accepted for everything else (back-links added in a dedicated PR).
 
