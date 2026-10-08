@@ -1,23 +1,10 @@
 # Dependency review — blocks a PR that introduces a dependency with a known
-# vulnerability of severity high or critical.
-#
-# DORMANT — manual trigger only. The action relies on the dependency graph
-# diff API, which requires GitHub Advanced Security on a private Free-plan
-# repository; every run would fail with "not supported on this repository".
-# `workflow_dispatch` is present only because a workflow needs at least one
-# trigger: a manual run has no PR to diff (base-ref / head-ref are not set) and
-# is not expected to succeed.
-#
-# Activation: a dedicated PR restoring the `pull_request` trigger below, after
-# the repository is public. There is no package manifest yet either; the npm
-# dependencies arrive with the vertical slice.
+# vulnerability of severity high or critical. Free on public repositories.
 name: Dependency review
 
 on:
-  workflow_dispatch: {}
-  # Restore once the repository is public:
-  # pull_request:
-  #   branches: [main]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
