@@ -8,6 +8,43 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-08
 
+### Design of the first playable build (branch `docs/input-design`) — GDD v0.5, ADR-0015
+
+- A mapping of the design contract for the ship and device input brick (GDD, ADRs, UML, code,
+  read by four parallel readers, then synthesized and checked by a critic) found that the first
+  playable build could not start under "design before code": the base shot, the fly-in geometry,
+  the clamp reference, the blink rate, the touch offset, the gamepad stick and device mixing were
+  not decided, ADR-0014 owed the portrait-phone layout to this brick, and GDD v0.4 gave `Space`
+  to both the keyboard fire and the mouse bomb.
+- GDD v0.5 records the values *(initial)*; ADR-0015 records the mechanisms; the scene state
+  machine gains a first-playable subset note; the class diagram gains the spawner path.
+- **Decisions** (owner, 2026-10-08, all recommended options):
+  - `split the brick` — C0 (this design PR), C1 (scene subset, ship, Spread L1, keyboard, the
+    Playwright smoke test: first playable on keyboard), C2 (touch with the portrait screen,
+    gamepad, mouse).
+  - `portrait screen 240 × 352` — 32 px HUD strip above the field, chosen when its integer scale
+    is larger; on a 390 CSS px phone the field doubles from about 160 to 320 CSS px.
+  - `base shot` — Spread L1: 10 shots/s, 360 px/s, 2 × 8 px bullets.
+  - `details` — Start = Confirm, a tap or a click; `Pause` synthesized but ignored in play until
+    the enemies brick; fly-in from x 120 to y 272; whole sprite clamped; blink 3/s, its switch
+    with the options screen; touch offset 32 px, first finger drives, lifting keeps the ship
+    still, second-finger tap = bomb, touch buttons arrive with the bricks that give them an
+    effect; radial stick dead zone 0.2, d-pad wins;
+    mouse bomb = right click only; bomb secondary = left Shift; opposite keys cancel; ship drawn
+    with palette rectangles; smoke test probes pixels, Chromium only, Playwright 1.63.0 (outside
+    the 7-day cooldown).
+- Derived, not separately chosen: a touch that starts outside the field is a tap only (the HUD
+  region holds the touch buttons); a driving finger's moves are mapped wherever they fall;
+  tapping never fires faster than holding; a device owns the movement from when it starts
+  moving the ship.
+- Not in this PR: the ADR status back-links (ADR-0001, -0002, -0003, -0007, -0009, -0010, -0014)
+  stay for their dedicated PR.
+
+### PR #5 merged (`82596b9`) — engine for the vertical slice, ADR-0014
+
+- Two Codex review comments verified exact and fixed in `0294385` before the merge (stale tick on
+  restart, iterator allocation on the draw path); both answered on the PR. All six checks green.
+
 ### Engine for the vertical slice (branch `feat/engine`) — ADR-0014
 
 - Fixed-step frame loop (ADR-0002): accumulator in milliseconds, 250 ms clamp, time scale for

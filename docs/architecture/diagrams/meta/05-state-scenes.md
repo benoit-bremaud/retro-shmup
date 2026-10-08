@@ -1,9 +1,9 @@
 # State machine diagram — meta — screens and their transitions (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.4 §3.4,
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.5 §3.4,
 > §4.2, §9.1, §9.3
 > **Related ADRs**: ADR-0006 (save document), ADR-0009 (gestures, automatic pause), ADR-0010
-> (one run, one bus)
+> (one run, one bus), ADR-0015 (pause in the first playable)
 > **Realizes**: UC1–UC7 of [01-use-case](../system/01-use-case.md) at the screen level; the
 > `SceneMachine` component of [03-component](../system/03-component.md)
 
@@ -99,3 +99,25 @@ stateDiagram-v2
   the audio unlock itself happens in the input adapter's handler (ADR-0009).
 - **Name entry** follows both Ending and Game over when the score qualifies (GDD v0.2 §9.1); a run
   quit from the pause never reaches it. High scores then show the new entry highlighted (UC3).
+
+## First-playable subset (first playable brick)
+
+The first playable build implements part of this machine; each later brick adds states until the
+diagram above is complete. Three interim deviations are recorded below: the run starts at
+`Playing`, the start has no gesture guard, and `Playing` ignores `Pause`.
+
+- **States**: `Boot` → `Title` → `InRun { Playing }`. `Boot` loads nothing yet (no assets, no
+  save document); `InRun` entry creates the run and exit releases it, as above.
+- **Start**: `Confirm` pressed or a tap or click anywhere on the title — `Enter` in the keyboard
+  build, gamepad `A`, tap and click once those devices land. `Pause` is ignored on the title, as
+  in every scene other than play (pause rules above).
+- **Interim deviation, cards**: `InRun [*] --> Playing` until the intro and level title cards
+  land with the bitmap fonts and the message catalogue (screens brick), when it becomes
+  `[*] --> IntroCard` again.
+- **Interim deviation, gesture**: `Title --> InRun : start` has no `[gesture done]` guard until
+  `Gesture prompt` lands with audio; the intent frame carries no "a gesture happened" signal yet,
+  which that brick must add.
+- **Interim deviation, pause**: the input adapter already synthesizes `Pause` (ADR-0009,
+  ADR-0015 decision 9), but `Playing` ignores it until `Paused` and `Count-in` land, no later than
+  the enemies brick. Until then `Playing --> Paused` and the "pause before the step" rule of
+  02-sequence-fixed-step-tick are not implemented.

@@ -1,8 +1,8 @@
 # Traceability matrix — UML study (1.0)
 
 > **Scope**: the UML study of [docs/architecture](README.md) against the
-> [Game Design Document](../design/game-design-document.md) v0.4, ADR-0001 to ADR-0010 and
-> ADR-0014 (ADR-0011 to ADR-0013 are tooling decisions with no UML realization).
+> [Game Design Document](../design/game-design-document.md) v0.5, ADR-0001 to ADR-0010,
+> ADR-0014 and ADR-0015 (ADR-0011 to ADR-0013 are tooling decisions with no UML realization).
 > **Purpose**: prove coverage — every use case is realized, every class and component is used,
 > nothing is orphaned. Update this file in the same change as any diagram.
 
@@ -87,7 +87,9 @@ is a calculation covered by unit tests (ADR-0003), not by a diagram.
 | ADR-0009 intent frame, gestures, audio mix | SD-tick (`read(frame)`), STM-scenes (pause rules), CMP |
 | ADR-0010 outcome vs presentation | SD-tick (time scale), SD-kill (handler rules), CD (`Body`, events) |
 | ADR-0014 logical screen, regions, `dt` in seconds | SD-tick (`step(1/60 s)`), CMP (Canvas2DRenderer) |
+| ADR-0015 portrait screen, devices together, injected browser objects, pause interim | CMP (Canvas2DRenderer, DeviceInput), STM-scenes (first-playable subset) |
 | GDD v0.2–v0.4 rules surfaced by the study | GDD Decision record; CD rule table |
+| GDD v0.5 first-playable values (fly-in, clamp, blink, base shot) | STM-player notes (fly-in, blink), CD rule table (clamp, Spread L1), CD (`Player --> BulletSpawner`) |
 
 ## 5. Known gaps (accepted)
 

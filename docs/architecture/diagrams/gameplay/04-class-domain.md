@@ -1,6 +1,6 @@
 # Class diagram — gameplay — domain model of a run (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.4 §4–§8, §10
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.5 §4–§8, §10
 > **Related ADRs**: ADR-0002 (Simulation, Random, Pool), ADR-0003 (composition, patterns),
 > ADR-0009 (IntentFrame), ADR-0010 (event bus per run, `DropTable` as data,
 > presentation outside the outcome)
@@ -103,7 +103,7 @@ classDiagram
     -shield: boolean
     -invulnerableFor: number
     -respawnIn: number
-    +move(frame: IntentFrame, dt) void
+    +move(frame: Readonly~IntentFrame~, dt) void
     +hit() HitOutcome
     +useBomb() boolean
     +collect(kind: PickupKind) boolean
@@ -222,6 +222,7 @@ classDiagram
   World --> "0..*" Bullet : active
   World --> "0..*" Pickup : active
   Player *-- "1" Weapon
+  Player --> "1" BulletSpawner : fires through
   Player --> "1" PlayerState : state
   Player ..> HitOutcome
   Weapon --> "1" WeaponKind : kind
@@ -377,7 +378,7 @@ classDiagram
 
 ## How each GDD rule is carried
 
-| Rule (GDD v0.4) | Where it lives |
+| Rule (GDD v0.4–v0.5) | Where it lives |
 |---|---|
 | Two weapons × 5 levels, Spread first, switch keeps the level (§4.3) | `Weapon.powerUp(kind)`; `kind` selects the stateless `WeaponPattern`; `cooldown` carries the rate |
 | Laser width and piercing (§4.3) | fast player bullets with `hitbox`, `pierceLeft`, and `alreadyHit` — the **serials** of the bodies already hit, enemies and boss alike — so one body is hit once per bullet, even when a pooled enemy is reused or the bullet overlaps a large boss for several steps |
@@ -400,6 +401,8 @@ classDiagram
 | Bomb used (§4.5, §8) | `BOMB_USED` → `ScoreKeeper` sets `tally.bombUsed` (no-bomb bonus lost) |
 | Chain expiry (§8) | `ScoreKeeper.tick(dt)` counts down `chainTimer` in every step and breaks the chain at 0 |
 | Difficulty knobs (§10) | `DifficultyProfile`; the HUD caps (9 lives, 5 bombs, level 5) are constants, not knobs |
+| Clamp to the field, fly-in (v0.5 §4.1) | `Player.move`: centre kept in x 16–224, y 16–304 once `Entering` ends |
+| Spread level 1 (v0.5 §4.3) | `SpreadPattern` at level 1 spawns one 2 × 8 bullet at 6 px per step; `Weapon.cooldown` = 6 steps, counted down every step |
 
 ## Notes
 
@@ -414,7 +417,10 @@ classDiagram
   lives on `Body`, so archetypes are shared data and nothing is allocated per spawn. Boss phases
   are data that swap the strategies — this is how ADR-0003's "BossPhase" State is realized.
 - **One owner per object**: `Run` owns `World`, `World` owns `Player` and the pools; active
-  bullets, pickups and enemies are references into the pools.
+  bullets, pickups and enemies are references into the pools, kept in preallocated lists.
+- **Firing**: `World` gives itself to `Player`, as the `BulletSpawner`, when it creates it;
+  `Player.move` passes it to `Weapon.tick`, so no public method of `Player` or `Run` takes the
+  spawner.
 - **Events**: one reusable `GameEvent` object per kind (ADR-0010) — handlers never keep it and
   never publish an event of the kind they handle; `subject` is the serial of the body concerned
   (white flash, explosion size). `ScoreKeeper` subscribes first and is the only handler allowed

@@ -1,6 +1,6 @@
 # State machine diagram — gameplay — the player ship (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.4 §4.1,
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.5 §4.1,
 > §4.4, §4.5
 > **Related ADRs**: ADR-0002 (timers counted in simulation steps)
 > **Realizes**: the `PlayerState` of [04-class-domain](04-class-domain.md); the timing side of
@@ -44,7 +44,12 @@ stateDiagram-v2
 
 - **The 2 s of respawn invulnerability** (GDD §4.1) are split: 0.5 s of fly-in without control,
   then 1.5 s of `Invulnerable` with control. The same entry runs at the start of every level
-  (GDD v0.4 §4.1).
+  (GDD v0.4 §4.1). At 60 steps per second these are 30 and 90 steps.
+- **Fly-in** (GDD v0.5 §4.1): from x 120 just below the field straight up to y 272; no fire and no
+  clamp to the field while `Entering`. Both positions are set together at the start, so the
+  interpolation never draws a smear (ADR-0002).
+- **Blink**: 3 times per second while `Entering` or `Invulnerable` (GDD v0.5 §4.1); the presenter
+  reads the state from the snapshot (ADR-0010).
 - **Hits are ignored** in `Entering`, `Invulnerable` and `Dead` (`HitOutcome.IGNORED`): bullets and
   bodies pass through. In `Dead` this guarantees at most one life lost per step.
 - **Bombs** work in `Vulnerable` and `Invulnerable` only; they never shorten an ongoing
