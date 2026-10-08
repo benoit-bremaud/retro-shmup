@@ -135,7 +135,7 @@ Minimal, arcade style: one intro card (two sentences), one title card per level,
 | P2 | Mouse | Ship follows the cursor; autofire; right click or `Space` bomb. |
 
 Inputs are translated to **intents** (`move`, `fire`, `bomb`, `pause`, `confirm`, `back`) so the
-game never knows which device produced them (Command pattern, see the UML study).
+game never knows which device produced them (one plain intent frame per step, ADR-0009).
 
 **Bindings** *(v0.2)*: keyboard keys are bound by **physical key** (`KeyboardEvent.code`), so a
 layout change (QWERTY, AZERTY) never breaks them; labels shown to the player use the active
@@ -523,6 +523,7 @@ fully playable at release quality, used to validate the design before producing 
 | Deployment | Cloudflare Pages + itch.io | GitHub Pages (no private-repo Pages on Free plan, no native PR previews) |
 | Rescue mechanic | 1.x candidate, study pending | In 1.0 (scope); dropped (identity potential too high to discard unstudied) |
 | Key binding *(v0.2)* | Physical keys (`code`), primary + secondary slot, swap on conflict, fixed `confirm` / `back`, restore defaults | Character-based keys (break on AZERTY, `Z` clashed with ZQSD); single slot (loses the default alternates); unbind on conflict (can leave `pause` unbound) |
+| Activation *(v0.2)* | A gamepad start before any click, tap or key asks for one | Starting silent and windowed (browsers unlock audio and fullscreen only on a gesture) |
 | Pause *(v0.2)* | Manual or automatic (tab hidden, focus lost, gamepad lost), never auto-resume, music ducked, 1 s count-in | No auto-pause (hidden tabs freeze the loop: return mid-bullets); auto-resume (unfair restart) |
 | Quit from pause *(v0.2)* | Allowed after confirmation, run discarded, no name entry | Record the score on quit (scores without finishing); no quit (only closing the tab) |
 | Ending *(v0.2)* | Leads to name entry like Game over | `Ending → Title` (a full clear could not record its score) |

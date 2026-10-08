@@ -51,7 +51,7 @@ stateDiagram-v2
     LevelCard --> Playing : after(card time) [no pause pending]
     LevelCard --> Paused : after(card time) [pause pending] / clear pending
     Playing --> Paused : Pause pressed
-    Paused --> CountIn : resume or Back
+    Paused --> CountIn : resume or Back (Back acts as the resume choice)
     CountIn --> Playing : after(1 s)
     CountIn --> Paused : Pause pressed
     Paused --> PauseOptions : options

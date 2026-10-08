@@ -6,8 +6,8 @@
 > nothing is orphaned. Update this file in the same change as any diagram.
 
 Diagram abbreviations: **UC** [01-use-case](diagrams/system/01-use-case.md) · **CMP**
-[03-component](diagrams/system/03-component.md) · **CD** [04-class-domain](diagrams/gameplay/04-class-domain.md)
-· **SD-tick** [02-sequence-fixed-step-tick](diagrams/gameplay/02-sequence-fixed-step-tick.md) ·
+[03-component](diagrams/system/03-component.md) · **CD**
+[04-class-domain](diagrams/gameplay/04-class-domain.md) · **SD-tick** [02-sequence-fixed-step-tick](diagrams/gameplay/02-sequence-fixed-step-tick.md) ·
 **SD-kill** [02-sequence-enemy-destroyed](diagrams/gameplay/02-sequence-enemy-destroyed.md) ·
 **SD-hit** [02-sequence-player-hit](diagrams/gameplay/02-sequence-player-hit.md) · **STM-player**
 [05-state-player](diagrams/gameplay/05-state-player.md) · **STM-boss**
@@ -35,15 +35,17 @@ whose conditional steps live in the use-case text (proportionality rule of the s
 |---|---|---|---|---|---|
 | `Simulation`, `Run` | ✓ | ✓ | ✓ | outcome read by STM-scenes; step 8 by STM-player | §2, §7 |
 | `RunView`, `RunOutcome` | ✓ | | | STM-scenes guards | §9.2 |
-| `World`, `WorldView`, `BulletSpawner` | | ✓ | ✓ | | §5 |
+| `World` | | ✓ | ✓ | | §5 |
+| `WorldView`, `BulletSpawner` | | | | CD only — parameters of the strategies, covered by unit tests | §5.3 |
 | `Player`, `PlayerState`, `HitOutcome` | | | ✓ | STM-player | §4.1, §4.4 |
 | `Weapon`, `WeaponKind`, `WeaponPattern`, `SpreadPattern`, `LaserPattern` | | | ✓ (`powerDown`) | | §4.3 |
 | `Bullet` | | ✓ (`canHit`, `recordHit`) | ✓ (released) | | §4.3 |
-| `Pickup`, `PickupKind` | | ✓ (spawned) | ✓ (release) | | §4.6 |
+| `Pickup`, `PickupKind` | | ✓ (spawned) | ✓ (death release spawned) | | §4.6 |
 | `Pool<T>` | | ✓ (releases) | ✓ | | ADR-0002 |
 | `ScoreKeeper`, `LevelTally` | | ✓ | ✓ | STM-boss (bonuses) | §8 |
 | `CollisionResolver` | | ✓ | ✓ | | §4.1, §5.2 |
-| `LevelDirector`, `LevelScript`, `ScriptEvent` | | | | STM-boss (`warningAt`) | §7.1 |
+| `LevelDirector`, `LevelScript` | | | | STM-boss (`warningAt`) | §7.1 |
+| `ScriptEvent` | | | | CD rule table (Carrier cargo, spawns) | §5.2, §7.1 |
 | `EventBus`, `GameEvent`, `GameEventKind` | | ✓ | ✓ | STM-boss (events) | ADR-0010 |
 | `DifficultyProfile` | | ✓ (`dropRateScale`) | ✓ (`bombsPerLife`) | | §10 |
 | `Body`, `Enemy`, `EnemyArchetype`, `EnemyStats`, `DropTable` | | ✓ | | | §5.2, §5.3 |
@@ -67,9 +69,11 @@ is a calculation covered by unit tests (ADR-0003), not by a diagram.
 | RunPresenter | SD-tick, SD-kill, SD-hit |
 | LevelScripts | CD (`LevelScript`, archetypes), STM-boss |
 | SaveDocument | STM-scenes (`Boot`, `Name entry`), UC3–UC6 text |
-| MessageCatalogue | UC7, STM-scenes (cards, menus) |
+| MessageCatalogue | CMP; implied by UC7 and the cards and menus of STM-scenes |
 | SeededRandom | SD-kill (`Random`) |
-| Canvas2DRenderer, WebAudioPlayer, DeviceInput, LocalStorageStore, PerformanceClock | SD-tick (through their ports), CMP |
+| Canvas2DRenderer, DeviceInput, PerformanceClock | SD-tick (through `RenderPort`, `InputPort`, `Clock`), CMP |
+| WebAudioPlayer | SD-kill and SD-hit (SFX through the presenter), CMP |
+| LocalStorageStore | STM-scenes (`Boot`, `Name entry`), CMP |
 
 ## 4. Decisions → where they are realized
 

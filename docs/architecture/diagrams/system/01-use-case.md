@@ -84,7 +84,9 @@ step depends on them.
   - *a. At any moment of play (steps 4–8), Player pauses: UC2.
   - *b. At any moment of play, the tab is hidden, the window loses focus, or the gamepad in use
     disconnects: the game enters the paused state of UC2 (step 2) and shows the pause menu; it
-    never resumes on its own — Player continues at UC2 step 3 (GDD §9.1).
+    never resumes on its own — Player continues at UC2 step 3 (GDD §9.1). During a card or the
+    level results the pause is remembered and opens at the first step of play; during the
+    count-in it returns to the pause menu (GDD v0.4 §9.1).
 - **Postcondition**: the final score is known; it is persisted only through UC3.
 - **Relationships**: extended by UC2 (*any moment of play*) and UC3 (*run end*).
 

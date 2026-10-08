@@ -1,6 +1,6 @@
 # Class diagram — gameplay — domain model of a run (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.3 §4–§8, §10
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.4 §4–§8, §10
 > **Related ADRs**: ADR-0002 (Simulation, Random, Pool), ADR-0003 (composition, patterns),
 > ADR-0009 (IntentFrame), ADR-0010 (event bus per run, `DropTable` as data,
 > presentation outside the outcome)
@@ -28,6 +28,9 @@ allocated in the loop; «utility» marks a stateless function module.
 ## Diagram A — run, world, player, scoring
 
 ```mermaid
+---
+title: cd — view A — run, world, player, scoring
+---
 classDiagram
   direction LR
 
@@ -57,7 +60,7 @@ classDiagram
     +startNextLevel() void
     ~destroyEnemy(enemy: Enemy, cause: KillCause) void
     ~damageBoss(amount: number) void
-    ~playerDied(powerDropped: boolean) void
+    ~playerDied() void
   }
   class RunOutcome {
     <<enumeration>>
@@ -235,6 +238,9 @@ classDiagram
 ## Diagram B — enemies, bosses, level scripts, events
 
 ```mermaid
+---
+title: cd — view B — enemies, bosses, level scripts, events
+---
 classDiagram
   direction LR
 
@@ -371,13 +377,13 @@ classDiagram
 
 ## How each GDD rule is carried
 
-| Rule (GDD v0.3) | Where it lives |
+| Rule (GDD v0.4) | Where it lives |
 |---|---|
 | Two weapons × 5 levels, Spread first, switch keeps the level (§4.3) | `Weapon.powerUp(kind)`; `kind` selects the stateless `WeaponPattern`; `cooldown` carries the rate |
 | Laser width and piercing (§4.3) | fast player bullets with `hitbox`, `pierceLeft`, and `alreadyHit` — the **serials** of the bodies already hit, enemies and boss alike — so one body is hit once per bullet, even when a pooled enemy is reused or the bullet overlaps a large boss for several steps |
 | One hit = one life, shield charge, invulnerability (§4.4) | `Player.hit(): HitOutcome` — `IGNORED` while entering, invulnerable or dead (the bullet passes through), `ABSORBED` by the shield, `DIED` otherwise; Game over is decided when the death sequence ends (`05-state-player`) |
 | Next level, run cleared (§2, §7) | `Run.startNextLevel()` resets the outcome, the tally and the level script, reseeds `Random` from the run seed and the level index; the outcome is `LEVEL_CLEARED` after levels 1–2, `RUN_CLEARED` after level 3 |
-| Death: −1 level and release, none at level 1 (§4.4) | `Weapon.powerDown(): boolean`; `Run.playerDied(powerDropped)` spawns the release pickup when `true` and resets the bombs to `DifficultyProfile.bombsPerLife` |
+| Death: −1 level and release, none at level 1 (§4.4) | `Weapon.powerDown(): boolean`; `Run.playerDied()` resets the bombs to `DifficultyProfile.bombsPerLife`, calls `powerDown()` and spawns the release pickup when it returns `true` |
 | Bombs per life, cap, empty stock, hit the boss (§4.5) | `Player.useBomb(): boolean`; the run cancels `enemyBullets` and damages enemies and boss |
 | Pickup at its cap → 1 000 points (§4.6) | `Player.collect(kind): boolean` = applied; `PICKUP_COLLECTED` carries the kind in `detail` and "applied" in `value`; `ScoreKeeper` adds 1 000 when not applied |
 | Pickup collection box 32 × 32, player hitbox 4 × 4 (§4.1, §4.6) | `CollisionResolver` tests pickups against the full sprite box and bullets / bodies against the hitbox |
@@ -391,6 +397,7 @@ classDiagram
 | Deterministic script, WARNING, boss entry (§6, §7.1) | `LevelDirector` walks `LevelScript.events` by `scriptTime`; publishes `BOSS_WARNING` at `warningAt` |
 | Chain: 2 s window, step every 5 kills, ×8 cap, reset on death (§8) | `ScoreKeeper.chainKills`, `chainTimer`, `multiplier()` |
 | Tally: full formations, no bomb, no miss, bombs left (§8) | `LevelTally`, reset at each level; on `LEVEL_CLEARED` `ScoreKeeper` adds the bonuses; `RunView.tally()` feeds the results screen |
+| Bomb used (§4.5, §8) | `BOMB_USED` → `ScoreKeeper` sets `tally.bombUsed` (no-bomb bonus lost) |
 | Chain expiry (§8) | `ScoreKeeper.tick(dt)` counts down `chainTimer` in every step and breaks the chain at 0 |
 | Difficulty knobs (§10) | `DifficultyProfile`; the HUD caps (9 lives, 5 bombs, level 5) are constants, not knobs |
 

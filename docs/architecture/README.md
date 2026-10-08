@@ -74,7 +74,7 @@ Status: complete for 1.0 (2026-10-08).
 
 | Not drawn | Covered by |
 |---|---|
-| Class diagram of the ports | Signatures owned by ADR-0001, 0002, 0003, 0006; the ports appear as interfaces in 03 component |
+| Class diagram of the ports | Signatures owned by ADR-0001, 0002, 0003, 0006, 0009 and 0010; the ports appear as interfaces in 03 component |
 | Sequence — save high score | UC3's text (one write, one failure branch) |
 | Data-flow diagram | ADR-0006 (three initials, browser only, nothing transmitted) |
 | Sequence — options | UC5's text (plain read and write) |

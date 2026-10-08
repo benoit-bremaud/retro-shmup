@@ -44,12 +44,12 @@ sequenceDiagram
     Bus->>P: shield break effect and SFX
   else [Vulnerable, no shield]
     Note over Pl: lives −= 1, state Dead
-    Pl->>Wp: powerDown()
-    Wp-->>Pl: true if the level dropped, false at level 1
-    Pl-->>CR: DIED (powerDropped)
+    Pl-->>CR: DIED
     CR->>W: release the bullet (a body is unaffected)
-    CR->>Run: playerDied(powerDropped)
+    CR->>Run: playerDied()
     Note over Run: bombs = DifficultyProfile.bombsPerLife
+    Run->>Wp: powerDown()
+    Wp-->>Run: powerDropped — true if the level dropped, false at level 1
     opt [powerDropped]
       Run->>W: spawn P pickup of the current weapon colour at the death position
       Run->>Bus: publish PICKUP_SPAWNED (detail = kind)
@@ -71,6 +71,9 @@ sequenceDiagram
 - **Game over is not decided here**: the hit always returns `DIED`; when the death sequence ends,
   `05-state-player` either respawns the ship or, with no life left, sets the run outcome to
   `GAME_OVER` (GDD v0.4 §4.4 — the last explosion plays out).
+- **The player decides the outcome, the run applies the penalties**: `Player.hit()` returns
+  `IGNORED`, `ABSORBED` or `DIED`; `Run.playerDied()` applies what needs the difficulty profile
+  and the world — bombs, power, release.
 - **No release at power 1** (GDD v0.2 §4.4): `powerDown()` returns `false` and nothing spawns.
 - **Order**: the release pickup spawns before `PLAYER_DIED` is published, so every listener sees
   a consistent world; `ScoreKeeper` resets the chain before the presenter reacts.

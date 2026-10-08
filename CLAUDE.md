@@ -9,7 +9,7 @@ renamed when it is chosen).
 **Status:** **design phase** — no application code yet. The design contract is
 [docs/design/game-design-document.md](docs/design/game-design-document.md); technical decisions are
 ADRs under [docs/decisions/](docs/decisions/); the UML study lives under
-[docs/architecture/diagrams/](docs/architecture/diagrams/).
+[docs/architecture/](docs/architecture/README.md).
 **Language:** English only in the repository (code, comments, commits, docs, issues, PRs).
 
 Global rules (Conventional Commits, branch from `main`, no `any`, no default exports, pre-push
