@@ -5,7 +5,7 @@
 > **Related ADRs**: ADR-0002 (timestep), ADR-0003 (architecture), ADR-0005 (credits),
 > ADR-0006 (player data)
 > **Realized by**: the sequence, class and state diagrams of `gameplay/` and `meta/`, stitched
-> by the traceability matrix (`docs/architecture/traceability-matrix.md`, planned in this study)
+> by the [traceability matrix](../../traceability-matrix.md)
 
 ## Context
 

@@ -8,6 +8,31 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-08
 
+### UML study for 1.0 (branch `docs/uml-study`) — GDD v0.4, ADR-0009 and ADR-0010
+
+- Eleven deliverables under `docs/architecture/`: C4 context and containers; use cases with
+  Cockburn specifications and component diagram (PlantUML, source and SVG committed); domain
+  class model in two views; three sequences (one frame, enemy destroyed, player hit); three state
+  machines (player, boss, scenes); a traceability matrix. Three planned deliverables were dropped
+  as redundant with ADRs or use-case text (ports class diagram, save-high-score sequence,
+  data-flow diagram).
+- Delivered block by block, each block reviewed by an independent read-only reviewer, corrected,
+  re-reviewed, then validated by the owner. The reviews found real defects before any code: a
+  double life loss in one step, the gamepad `B` pausing on every bomb, a level-end vs Game over
+  race, a double kill in one step, an allocating and press-blind input contract, effect toggles
+  able to change a run's outcome.
+- **Decisions** (each validated by the owner):
+  - `GDD v0.2–v0.4` — the rules the scenarios required: physical-key bindings with two slots,
+    pause triggers and count-in, quit confirmation, Ending to name entry, per-effect switches,
+    pickup cap, start weapon, contact damage, bomb kills, fly-in at every level, invulnerable ship
+    untouchable, Game over after the death sequence, end-of-fight safety, chain scoring order.
+  - `ADR-0009` — flat, reusable intent frame (movement, held / pressed masks, device, tap in
+    region coordinates), bindings and key capture, gestures and fullscreen in the input adapter,
+    audio mix control.
+  - `ADR-0010` — presentation never changes the outcome: two random streams, time effects in the
+    loop timed on wall clock, `RunPresenter`, one ordered bus per run, `DropTable` as data, HUD
+    region.
+
 ### ADR-0008 — public hosting on benoitbremaud.fr
 
 - The owner wants the game on the personal domain and plans several games. Verified: the
@@ -29,6 +54,8 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   - `nothing deployed before the vertical slice` — no Cloudflare resource is created until a
     playable build exists; the Pages project and custom domain are then created by the owner in
     the Cloudflare dashboard.
+- PR #2 squash-merged (`3ade687`) after two automated review comments were verified, fixed in
+  `d560b9e` and answered inline.
 
 ### PR #1 merged (`cf10d5f`) — repo public, protections applied, security scans on
 

@@ -55,20 +55,20 @@ flowchart LR
 
 ## 3. UML study — index
 
-Status: the study is written block by block; entries without a link are planned in this study.
+Status: complete for 1.0 (2026-10-08).
 
 | Folder | Diagram | Question it answers |
 |---|---|---|
 | `system` | [01 use case](diagrams/system/01-use-case.md) | Who wants what? 7 use cases with Cockburn specifications |
 | `system` | [03 component](diagrams/system/03-component.md) | Where are the domain / adapters / app boundaries, and which ports cross them? |
-| `gameplay` | 02 sequence — fixed-step tick | What happens during one frame? |
-| `gameplay` | 02 sequence — enemy destroyed | Hit → destruction → drop → score, audio, HUD, without coupling |
-| `gameplay` | 02 sequence — player hit | Shield or death, with every conditional branch |
+| `gameplay` | [02 sequence — fixed-step tick](diagrams/gameplay/02-sequence-fixed-step-tick.md) | What happens during one frame? |
+| `gameplay` | [02 sequence — enemy destroyed](diagrams/gameplay/02-sequence-enemy-destroyed.md) | Hit → destruction → drop → score, audio, HUD, without coupling |
+| `gameplay` | [02 sequence — player hit](diagrams/gameplay/02-sequence-player-hit.md) | Shield or death, with every conditional branch |
 | `gameplay` | [04 class — domain](diagrams/gameplay/04-class-domain.md) | Entity composition, pools, event bus, difficulty profile |
-| `gameplay` | 05 state — player | Player lifecycle |
-| `gameplay` | 05 state — boss | Boss phases and timer |
-| `meta` | 05 state — scenes | The screens of GDD §9.1 and their transitions |
-| — | traceability matrix | Is every use case realized, and every class used? |
+| `gameplay` | [05 state — player](diagrams/gameplay/05-state-player.md) | Player lifecycle |
+| `gameplay` | [05 state — boss](diagrams/gameplay/05-state-boss.md) | Boss phases and timer |
+| `meta` | [05 state — scenes](diagrams/meta/05-state-scenes.md) | The screens of GDD §9.1 and their transitions |
+| — | [traceability matrix](traceability-matrix.md) | Is every use case realized, and every class used? |
 
 **Deliberately not drawn**, each covered elsewhere:
 
