@@ -1,7 +1,7 @@
 name: Bug Report
 description: Report a defect or an unexpected behaviour.
-title: "fix(<scope>): <short description>"
-labels: ["type:bug"]
+title: 'fix(<scope>): <short description>'
+labels: ['type:bug']
 body:
   - type: dropdown
     id: area
@@ -55,7 +55,7 @@ body:
     attributes:
       label: Environment
       description: Browser and version, OS or device, input device (keyboard / touch / gamepad / mouse).
-      placeholder: "Firefox 140 / Ubuntu 24.04 / keyboard"
+      placeholder: 'Firefox 140 / Ubuntu 24.04 / keyboard'
 
   - type: textarea
     id: evidence

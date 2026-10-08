@@ -8,6 +8,63 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-08
 
+### Toolchain for the vertical slice (branch `chore/toolchain`) — ADR-0011, ADR-0012
+
+- pnpm 10, Node 22, Vite 8, TypeScript ~6.0.3 strict, Vitest 5 with V8 coverage, ESLint 10 with
+  typescript-eslint `strictTypeChecked`, Prettier on code and configuration, husky hooks
+  (`pre-commit`: gitleaks on staged changes and lint-staged; `commit-msg`: commitlint with the
+  project scopes; `pre-push`: `make verify`), local SonarQube scan, light `ci.yml`, Dependabot
+  for npm.
+- The domain port interfaces of ADR-0001/0002/0006/0009/0010 land as types only, so the domain
+  boundary (no `DOM` lib, no browser globals, no `Date.now` / `Math.random`, no import from
+  adapters or app) is enforced on real code from the first commit.
+- **Decisions**:
+  - `TypeScript 6, not 7` (ADR-0011) — typescript-eslint 8.71 supports `typescript <6.1.0`;
+    Dependabot ignores TypeScript minor and major bumps until it widens its range.
+  - `Prettier excludes Markdown` — it would realign every table of the GDD and the ADRs.
+  - `security policy enforced mechanically` — on the owner's request: ESLint bans `eval`,
+    `new Function`, `javascript:` URLs and HTML sinks (INJ-3/4); `make verify` adds
+    `pnpm audit --audit-level high`; the PR template carries the security checklist.
+  - `OSSF Scorecard, weekly and non-blocking` (ADR-0013) — recommended by the security CI
+    baseline for a public repository; runs on `main` and weekly, never on pull requests. ADR-0007
+    had rejected Scorecard: ADR-0013 partially supersedes it (CI table, audit exceptions), as
+    the security review of the branch required — a validated decision is never reopened
+    silently.
+  - `.scannerwork/ ignored` — the SonarScanner work directory was not ignored and would have
+    been committed; caught before any push.
+- Pre-push review: five independent dimensions (design, configuration correctness, security and
+  CI, documentation, tests and SonarQube), every Must and Should verified adversarially (36
+  confirmed, none refuted). Fixed before the push:
+  - commitlint rejected the project's own `docs(adr): ADR-NNNN …` subjects (`subject-case`) and
+    accepted commits without a scope;
+  - `sonar.tests` named an untracked folder, so `make verify` failed on a fresh clone
+    (`tests/.gitkeep`);
+  - CodeQL now analyses `javascript-typescript`, and `Lint, typecheck, test` plus
+    `Analyze (javascript-typescript)` become required checks once they report green;
+  - the domain guard is complete: no package or Node built-in import, no `Date`, no
+    `globalThis`; tool configs moved to `tsconfig.node.json`, so Node types never reach browser
+    code;
+  - Vite `base` defaults to `./` (ADR-0004: itch.io serves from a sub-path);
+  - Node floor `>= 22.22.1` (lint-staged 17); CI gets a timeout, a concurrency group and a build
+    step; Dependabot gets a 7-day cooldown and keeps `@types/node` on the runtime major.
+- **Decisions**:
+  - `ADR-0012 binding shapes` — keyboard slots hold `KeyboardEvent.code`, gamepad slots hold
+    standard-mapping indices, the primary slot is never empty; written as a new ADR because
+    ADR-0009 is accepted.
+  - `S6564 accepted in sonar-project.properties` — `SpriteId`, `SfxId`, `TrackId` are ADR
+    vocabulary; the exception is versioned, scoped to that rule and to `src/domain/ports`.
+  - `secret hygiene in the setup command` — the documented token command now reads the token
+    with hidden input, so it never reaches the shell history. Rotating the token in use (local,
+    scoped to this project) is deferred by the owner and stays an open follow-up (security
+    policy SECRET-4).
+
+### PR #3 merged (`bb41e6b`) — UML study for 1.0, GDD v0.4, ADR-0009 and ADR-0010
+
+- Three automated review comments verified exact and fixed in `39411d6` before the merge:
+  `SceneMachine` uses `InputPort` (bindings, capture, labels, fullscreen), a fullscreen change
+  applies at the next click, tap or key press (GDD v0.4 §9.3), and `today()` is called when a high
+  score is recorded (ADR-0009).
+
 ### UML study for 1.0 (branch `docs/uml-study`) — GDD v0.4, ADR-0009 and ADR-0010
 
 - Eleven deliverables under `docs/architecture/`: C4 context and containers; use cases with

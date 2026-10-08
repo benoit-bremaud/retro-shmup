@@ -13,9 +13,9 @@ when it is chosen.
 
 ## Status
 
-**Design phase. There is no application code yet.** The design contract, the technical decisions
-and the UML study come first; the vertical slice (one level at release quality) follows once they
-are validated.
+**Vertical slice in progress.** The design is complete — GDD, ADR-0001 to ADR-0011 and the UML
+study — and the code now follows it, one pull request per brick, up to level 1 at release
+quality. `pnpm install` then `pnpm dev` serves the (still empty) canvas page; see CONTRIBUTING.md.
 
 Roadmap (GDD section 11):
 

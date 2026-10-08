@@ -1,0 +1,8 @@
+pnpm-lock.yaml
+dist/
+coverage/
+.scannerwork/
+*.svg
+*.puml
+# Prettier would pad every Markdown table of the GDD, the ADRs and the log: noise for no reader.
+*.md

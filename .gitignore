@@ -2,6 +2,7 @@
 node_modules/
 dist/
 coverage/
+.scannerwork/
 .vite/
 *.tsbuildinfo
 npm-debug.log*
@@ -33,3 +34,6 @@ logs/
 
 # Local scratch
 tmp/
+
+# Claude Code personal settings (machine-local)
+.claude/settings.local.json

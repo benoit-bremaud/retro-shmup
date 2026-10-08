@@ -17,3 +17,6 @@ The design decisions these ADRs implement are fixed in the
 | ADR-0008 | Public hosting | One first-level subdomain per game on `benoitbremaud.fr` (own Pages project, own `_headers`); catalogue page `/jeux/` on the portfolio. |
 | ADR-0009 | Input and audio contracts | Flat reusable intent frame (movement, held / pressed masks, device, tap), bindings and capture, gestures in the input adapter, audio mix control. |
 | ADR-0010 | Presentation outside the outcome | Separate random streams, time effects in the loop, `RunPresenter`, one ordered bus per run, `DropTable` as data, HUD region. |
+| ADR-0011 | Toolchain | pnpm, Vite 8, TypeScript ~6.0 (typescript-eslint support), Vitest 5, ESLint 10 strict type-checked, Prettier on code, husky hooks running `make verify`. |
+| ADR-0012 | Binding shapes | Keyboard slots hold `KeyboardEvent.code`, gamepad slots hold standard-mapping indices; primary slot never empty; capture as a discriminated union. |
+| ADR-0013 | Quality gate and CI after going public | Partially supersedes ADR-0007: CI table (CodeQL with TypeScript, Dependency Review, Scorecard weekly and non-blocking) and the audit exceptions of the local gate. |

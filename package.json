@@ -1,0 +1,48 @@
+{
+  "name": "retro-shmup",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Retro vertical shoot'em up for the browser (codename).",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@10.30.3",
+  "engines": {
+    "node": ">=22.22.1"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "pnpm typecheck && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b && tsc -p tsconfig.domain.json --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
+    "prepare": "husky || true"
+  },
+  "lint-staged": {
+    "*.{ts,mjs,js}": [
+      "eslint --max-warnings 0",
+      "prettier --check"
+    ],
+    "*.{json,yml,yaml,html,css}": "prettier --check"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.19.0",
+    "@vitest/coverage-v8": "^5.0.3",
+    "eslint": "^10.12.0",
+    "globals": "^17.13.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.9",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.1",
+    "vite": "^8.3.3",
+    "vitest": "^5.0.3"
+  }
+}

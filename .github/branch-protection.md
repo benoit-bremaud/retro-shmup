@@ -9,7 +9,7 @@ on GitHub, not in the repository.
 | Setting | Value |
 |---|---|
 | Require a pull request before merging | yes |
-| Required status checks | `Secret scan` ([`workflows/gitleaks.yml`](workflows/gitleaks.yml)), `Analyze (actions)` ([`workflows/codeql.yml`](workflows/codeql.yml)), `Dependency review` ([`workflows/dependency-review.yml`](workflows/dependency-review.yml)); branch up to date before merge (`strict`) |
+| Required status checks | `Secret scan` ([`workflows/gitleaks.yml`](workflows/gitleaks.yml)), `Analyze (actions)` and `Analyze (javascript-typescript)` ([`workflows/codeql.yml`](workflows/codeql.yml)), `Dependency review` ([`workflows/dependency-review.yml`](workflows/dependency-review.yml)), `Lint, typecheck, test` ([`workflows/ci.yml`](workflows/ci.yml)); branch up to date before merge (`strict`) |
 | Required approving reviews | see below |
 | Dismiss stale approvals on new commits | yes |
 | Apply to administrators (`enforce_admins`) | yes — the owner is bound by a gate they can satisfy |
@@ -21,9 +21,9 @@ The required check name is the job `name` in the workflow, `Secret scan`, not
 the workflow name `Gitleaks`. Renaming the job means re-applying the
 protection.
 
-Checks that arrive later (lint, typecheck, unit tests and headless simulation
-with the vertical slice; `Analyze (javascript-typescript)` once TypeScript exists) are
-appended to `checks` in their own PR.
+A new check is added to `checks` only after it has reported green once on a pull request;
+otherwise every pull request would wait for a check that never reports. OSSF Scorecard is
+deliberately not required (non-blocking, ADR-0007).
 
 ### Required reviews: 0 now, 1 once a reviewer bot exists
 
@@ -59,7 +59,9 @@ gh api repos/benoit-bremaud/retro-shmup/branches/main/protection \
     "checks": [
       { "context": "Secret scan" },
       { "context": "Analyze (actions)" },
-      { "context": "Dependency review" }
+      { "context": "Analyze (javascript-typescript)" },
+      { "context": "Dependency review" },
+      { "context": "Lint, typecheck, test" }
     ]
   },
   "enforce_admins": true,
@@ -86,7 +88,9 @@ gh api repos/benoit-bremaud/retro-shmup/branches/main/protection \
     "checks": [
       { "context": "Secret scan" },
       { "context": "Analyze (actions)" },
-      { "context": "Dependency review" }
+      { "context": "Analyze (javascript-typescript)" },
+      { "context": "Dependency review" },
+      { "context": "Lint, typecheck, test" }
     ]
   },
   "enforce_admins": true,
@@ -129,7 +133,7 @@ Expected:
 
 ```json
 {
-  "checks": ["Secret scan", "Analyze (actions)", "Dependency review"],
+  "checks": ["Secret scan", "Analyze (actions)", "Analyze (javascript-typescript)", "Dependency review", "Lint, typecheck, test"],
   "strict": true,
   "reviews": 0,
   "admins": true,

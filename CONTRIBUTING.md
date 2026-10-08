@@ -8,13 +8,26 @@ and pull requests.
 
 ## Prerequisites
 
-- **Git** 2.30 or newer.
-- **Node.js 22 LTS** and **pnpm** will be required once application code lands with the vertical
-  slice. The design phase needs neither: the repository holds documentation and configuration only.
+- **Git** 2.30 or newer, **Node.js 22 LTS** (≥ 22.22.1 — lint-staged 17's floor; see `.nvmrc`),
+  **pnpm 10**.
+- **gitleaks** ≥ 8.25 (`.gitleaks.toml` uses `[[allowlists]]`) and **sonar-scanner** on the `PATH`, and the local **SonarQube** at
+  `http://localhost:9000` — the git hooks use them (ADR-0007, ADR-0011).
 
 ```bash
 git clone git@github.com:benoit-bremaud/retro-shmup.git
 cd retro-shmup
+pnpm install          # also installs the git hooks (husky)
+pnpm dev              # dev server
+make verify           # the full local gate, as run by the pre-push hook
+```
+
+**One-time SonarQube setup**: in SonarQube, create the project `retro-shmup` (manual setup, main
+branch `main`), generate a *project analysis token* for it, and store it outside the repository.
+The command asks for the token with hidden input, so it never reaches the shell history, and
+forces mode 600 even on an existing file:
+
+```bash
+(umask 077; mkdir -p ~/.config/sonar-tokens; printf 'Token: '; read -rs t; echo; printf '%s' "$t" > ~/.config/sonar-tokens/retro-shmup; chmod 600 ~/.config/sonar-tokens/retro-shmup)
 ```
 
 ## Branching strategy
@@ -122,23 +135,35 @@ Extra labels are allowed but never replace the triptych.
 
 The blocking checks run on the developer's machine, before the push, as decided in
 [ADR-0007](docs/decisions/ADR-0007-local-first-quality-gate-minimal-ci.md). Once application code
-exists, `pnpm install` installs the git hooks:
+`pnpm install` installs the git hooks (husky):
 
 | Hook | Runs | Budget |
 |---|---|---|
-| `pre-commit` | `gitleaks protect --staged`, ESLint and Prettier on the staged files | under 3 s |
-| `pre-push` (`make verify`) | typecheck, Vitest unit and headless-simulation tests with coverage, `gitleaks detect` on the pushed range, `sonar-scanner` against the local SonarQube (`localhost:9000`) with quality-gate wait | under 90 s |
+| `pre-commit` | `gitleaks git --pre-commit --staged`, then lint-staged: ESLint and `prettier --check` on the staged files | under 3 s |
+| `commit-msg` | commitlint: Conventional Commits with a scope from the project list | instant |
+| `pre-push` (`make verify`) | typecheck (app, node and domain projects), lint, format check, Vitest with coverage, `gitleaks git` on the full history, `pnpm audit --audit-level high`, `sonar-scanner` against the local SonarQube (`localhost:9000`) with quality-gate wait | under 90 s |
+
+`make verify` checks the working tree: push from a clean tree, so what is verified is what is
+pushed.
 
 Before every push, also run the structured local review gate (`review-local`) and, when render,
 input or bootstrap code changed, the Playwright smoke test (`make smoke`).
 
-CI keeps the necessary minimum: Gitleaks (server-side secret detection) and, with the vertical
-slice, a light `ci.yml` (lint, typecheck, tests). Nothing heavier runs in CI. `git push
---no-verify` is a conscious exception, acceptable only when SonarQube is down and the rest of
-`make verify` passed; say so in the PR.
+CI keeps the necessary minimum (ADR-0013): `ci.yml` (lint, typecheck, format check, tests,
+build) and the security workflows (Gitleaks, CodeQL, Dependency Review; OSSF Scorecard weekly,
+non-blocking). Nothing heavier runs in CI.
+
+When `make verify` cannot pass for a reason outside the change (ADR-0013):
+
+- **SonarQube or the npm registry is unreachable** — push with `git push --no-verify` only after
+  the rest of `make verify` passed, and say so in the PR;
+- **a high advisory has no fix yet** in a dependency — suppress it with
+  `pnpm audit --ignore <GHSA-id>` and log the advisory, the reason and a review date in
+  `PROJECT_LOG.md`; never ignore an advisory reachable from the shipped bundle.
 
 The SonarQube analysis token lives in `~/.config/sonar-tokens/retro-shmup` (mode 600) and is
-never committed.
+never committed. Never run the scanner in debug mode (`-X`, `sonar.verbose`, `sonar.log.level=DEBUG`):
+it prints every property, the token included.
 
 ## Pull request process
 

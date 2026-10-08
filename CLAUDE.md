@@ -6,8 +6,9 @@
 renamed when it is chosen).
 **Type:** retro vertical shoot'em up for the browser. TypeScript strict + native Canvas 2D,
 240 × 320 pixel-perfect, 16-bit pixel art. Release target: itch.io (web), Steam considered later.
-**Status:** **design phase** — no application code yet. The design contract is
-[docs/design/game-design-document.md](docs/design/game-design-document.md); technical decisions are
+**Status:** **vertical slice** in progress (design complete: GDD v0.4, ADR-0001..0012, UML study).
+The design contract is [docs/design/game-design-document.md](docs/design/game-design-document.md);
+technical decisions are
 ADRs under [docs/decisions/](docs/decisions/); the UML study lives under
 [docs/architecture/](docs/architecture/README.md).
 **Language:** English only in the repository (code, comments, commits, docs, issues, PRs).
@@ -18,6 +19,16 @@ review gate, private-first, security defaults) are inherited from `~/.claude/CLA
 repository.
 
 ## Non-negotiables (project)
+
+- **Security policy applies to every change.** The owner's `security-policy` (OWASP 2025 rules
+  INJ, INPUT, SECRET, ERR, CONFIG, SUPPLY, PRIV) and `security-ci-baseline` are checked on every
+  diff; any security finding is a Must Have. Mechanically enforced: ESLint bans `eval`,
+  `new Function`, literal `javascript:` URLs and the HTML sinks (`innerHTML`, `outerHTML`,
+  `srcdoc`, `insertAdjacentHTML`, `setHTMLUnsafe`, `createContextualFragment`, `document.write`);
+  `make verify` runs gitleaks, `pnpm audit --audit-level high` and SonarQube. The deployed page
+  adds a CSP as the runtime backstop (ADR-0008).
+  Untrusted inputs of this game — the `localStorage` save document, the URL, files later — are
+  validated by allowlist and parsing never throws (ADR-0006).
 
 - **Design before code.** A feature is implemented only after (1) its rules exist in the GDD and
   (2) its UML diagrams (use-case, class, state, sequence as relevant) are validated. Diagrams are
@@ -65,13 +76,14 @@ epic), one `area:*` (`design`, `uml`, `engine`, `game`, `render`, `audio`, `inpu
 - The blocking gate runs **locally**: `pre-commit` (gitleaks on staged files, lint) and
   `pre-push` = `make verify` (typecheck, Vitest with coverage, gitleaks on the pushed range,
   `sonar-scanner` against the local SonarQube at `localhost:9000` with quality-gate wait).
-- CI keeps the necessary minimum: `gitleaks.yml` and a light `ci.yml` (lint, typecheck, tests).
-  No SonarCloud, no coverage service, no E2E in CI. CodeQL (matrix `actions`, plus
-  `javascript-typescript` once code exists) and Dependency Review run since the repository went
-  public.
+- CI keeps the necessary minimum: a light `ci.yml` (lint, typecheck, format, tests, build) and
+  the security workflows — Gitleaks, CodeQL (`actions` and `javascript-typescript`), Dependency
+  Review, OSSF Scorecard (weekly, non-blocking). No SonarCloud, no coverage service, no E2E in
+  CI.
 - The SonarQube analysis token lives in `~/.config/sonar-tokens/retro-shmup` — never in the repo.
-- `git push --no-verify` is a conscious exception, allowed only when SonarQube is down and the
-  rest of `make verify` passed.
+- `git push --no-verify` is a conscious exception, allowed only when SonarQube or the npm registry
+  is unreachable and the rest of `make verify` passed; an unfixable high advisory is suppressed
+  with `pnpm audit --ignore` and logged instead (ADR-0013).
 
 ## Workflow reminders
 
@@ -79,8 +91,8 @@ epic), one `area:*` (`design`, `uml`, `engine`, `game`, `render`, `audio`, `inpu
 - Run the local pre-push review gate (`review-local`) before every push.
 - After every merged PR: update `PROJECT_LOG.md` (entry per the project-log discipline),
   post-merge cleanup, memory compression.
-- The repository is **private** until the public-release checklist in `~/.claude/CLAUDE.md` is
-  fully satisfied; the owner approves the switch explicitly.
+- The repository is **public** since 2026-10-08 (public-release checklist satisfied, owner
+  approval); never commit anything that must stay private.
 
 ## Forbidden — never without explicit owner request
 
