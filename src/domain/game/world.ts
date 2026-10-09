@@ -3,7 +3,7 @@ import { Bullet } from './bullet';
 import { FIELD_HEIGHT, FIELD_WIDTH } from './geometry';
 import { Player } from './player';
 import { PLAYER_BULLET_POOL_SIZE } from './tuning';
-import type { BulletSpawner } from './weapon';
+import type { BulletSpawner, ShotSpec } from './weapon';
 
 /**
  * What is on the field during a run (class diagram, view A): the player and the pools. Active
@@ -21,28 +21,19 @@ export class World implements BulletSpawner {
   }
 
   /** An empty pool drops the shot: the loop never allocates (ADR-0002). */
-  spawnPlayerBullet(
-    x: number,
-    y: number,
-    vxPerSecond: number,
-    vyPerSecond: number,
-    width: number,
-    height: number,
-    damage: number,
-    pierce: number,
-  ): void {
+  spawnPlayerBullet(x: number, y: number, shot: Readonly<ShotSpec>): void {
     const bullet = this.playerBulletPool.acquire();
     if (bullet === undefined) return;
     bullet.position.x = x;
     bullet.position.y = y;
     bullet.previousPosition.x = x;
     bullet.previousPosition.y = y;
-    bullet.velocity.x = vxPerSecond;
-    bullet.velocity.y = vyPerSecond;
-    bullet.width = width;
-    bullet.height = height;
-    bullet.damage = damage;
-    bullet.pierceLeft = pierce;
+    bullet.velocity.x = shot.vxPerSecond;
+    bullet.velocity.y = shot.vyPerSecond;
+    bullet.width = shot.width;
+    bullet.height = shot.height;
+    bullet.damage = shot.damage;
+    bullet.pierceLeft = shot.pierce;
     this.playerBullets[this.activePlayerBullets] = bullet;
     this.activePlayerBullets += 1;
   }

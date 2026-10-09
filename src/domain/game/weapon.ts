@@ -7,17 +7,23 @@ import { SpreadLevel1, toSteps } from './tuning';
  * so the player and the world do not import each other. Enemy bullets join with the enemies.
  */
 export interface BulletSpawner {
-  /** Velocities in pixels per second; `pierce` is how many more bodies the bullet may cross. */
-  spawnPlayerBullet(
-    x: number,
-    y: number,
-    vxPerSecond: number,
-    vyPerSecond: number,
-    width: number,
-    height: number,
-    damage: number,
-    pierce: number,
-  ): void;
+  /** A bullet centred on (x, y), shaped by a constant shot record: nothing is allocated per shot. */
+  spawnPlayerBullet(x: number, y: number, shot: Readonly<ShotSpec>): void;
+}
+
+/**
+ * What a weapon fires, as a constant record per weapon and level (ADR-0003: tuning as data).
+ * Named fields make a swapped width and height, or damage and pierce, visible at a glance.
+ */
+export interface ShotSpec {
+  /** Pixels per second. */
+  readonly vxPerSecond: number;
+  readonly vyPerSecond: number;
+  readonly width: number;
+  readonly height: number;
+  readonly damage: number;
+  /** How many more bodies the bullet may cross (the Laser's piercing). */
+  readonly pierce: number;
 }
 
 const COOLDOWN_STEPS = toSteps(1 / SpreadLevel1.shotsPerSecond);

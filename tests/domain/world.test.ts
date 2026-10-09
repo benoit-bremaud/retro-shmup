@@ -4,8 +4,10 @@ import { World } from '../../src/domain/game/world';
 
 const DT = 1 / 60;
 
-function spawnAt(world: World, x: number, y: number, vyPerSecond = -360): void {
-  world.spawnPlayerBullet(x, y, 0, vyPerSecond, 2, 8, 1, 0);
+const SHOT = { vxPerSecond: 0, vyPerSecond: -360, width: 2, height: 8, damage: 1, pierce: 0 };
+
+function spawnAt(world: World, x: number, y: number): void {
+  world.spawnPlayerBullet(x, y, SHOT);
 }
 
 function ys(world: World): number[] {

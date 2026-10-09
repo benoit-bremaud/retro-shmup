@@ -28,7 +28,11 @@ offscreen.height = SCREEN_HEIGHT;
 const renderer = new Canvas2DRenderer(context2d(offscreen), offscreen, context2d(visible));
 
 function fitToWindow(canvas: HTMLCanvasElement): void {
-  const viewport = computeViewport(window.innerWidth, window.innerHeight, window.devicePixelRatio);
+  const viewport = computeViewport(
+    globalThis.innerWidth,
+    globalThis.innerHeight,
+    globalThis.devicePixelRatio,
+  );
   canvas.width = viewport.deviceWidth;
   canvas.height = viewport.deviceHeight;
   canvas.style.width = `${String(viewport.cssWidth)}px`;
@@ -37,20 +41,20 @@ function fitToWindow(canvas: HTMLCanvasElement): void {
 }
 
 fitToWindow(visible);
-window.addEventListener('resize', () => {
+globalThis.addEventListener('resize', () => {
   fitToWindow(visible);
 });
 
 // The input adapter never touches a browser global: it gets these narrow hooks (ADR-0015).
 const environment: InputEnvironment = {
   onKeyDown: (listener) => {
-    window.addEventListener('keydown', listener);
+    globalThis.addEventListener('keydown', listener);
   },
   onKeyUp: (listener) => {
-    window.addEventListener('keyup', listener);
+    globalThis.addEventListener('keyup', listener);
   },
   onFocusLost: (listener) => {
-    window.addEventListener('blur', listener);
+    globalThis.addEventListener('blur', listener);
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) listener();
     });

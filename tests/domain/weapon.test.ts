@@ -1,44 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { Weapon } from '../../src/domain/game/weapon';
-import type { BulletSpawner } from '../../src/domain/game/weapon';
+import type { BulletSpawner, ShotSpec } from '../../src/domain/game/weapon';
 
-interface SpawnedShot {
+interface SpawnedShot extends ShotSpec {
   step: number;
   x: number;
   y: number;
-  vxPerSecond: number;
-  vyPerSecond: number;
-  width: number;
-  height: number;
-  damage: number;
-  pierce: number;
 }
 
 /** Records the shots it is asked to spawn, with the step they were fired on. */
 class RecordingSpawner implements BulletSpawner {
   step = 0;
   readonly shots: SpawnedShot[] = [];
-  spawnPlayerBullet(
-    x: number,
-    y: number,
-    vxPerSecond: number,
-    vyPerSecond: number,
-    width: number,
-    height: number,
-    damage: number,
-    pierce: number,
-  ): void {
-    this.shots.push({
-      step: this.step,
-      x,
-      y,
-      vxPerSecond,
-      vyPerSecond,
-      width,
-      height,
-      damage,
-      pierce,
-    });
+  spawnPlayerBullet(x: number, y: number, shot: Readonly<ShotSpec>): void {
+    this.shots.push({ step: this.step, x, y, ...shot });
   }
 }
 

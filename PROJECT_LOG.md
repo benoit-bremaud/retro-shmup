@@ -35,6 +35,10 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   `Boot` step hands its frame to the title so an early `Enter` is not lost; the always-on blink
   is an interim deviation until the options screen. The field size moved to the game package;
   the tick sequence and the scene notes record `draw(snapshot, alpha)` and the background clock.
+- SonarQube gate (seven new issues, all fixed): re-exports written as `export … from`,
+  `globalThis` in the composition root, and — owner decision — `spawnPlayerBullet(x, y, shot)`
+  with a constant `ShotSpec` record instead of eight positional numbers (S107), in the class
+  diagram too.
 
 ### PR #6 merged (`7c390ff`) — design of the first playable build, GDD v0.5, ADR-0015
 

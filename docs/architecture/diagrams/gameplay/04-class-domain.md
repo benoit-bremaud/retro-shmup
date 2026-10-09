@@ -93,7 +93,7 @@ classDiagram
   class BulletSpawner {
     <<interface>>
     +spawnEnemyBullet(x, y, vxPerSecond, vyPerSecond) void
-    +spawnPlayerBullet(x, y, vxPerSecond, vyPerSecond, width, height, damage, pierce) void
+    +spawnPlayerBullet(x, y, shot: ShotSpec) void
   }
   class Player {
     -position: Vec2
@@ -427,6 +427,8 @@ classDiagram
 - **Player timers**: `Run.step` calls `Player.update` at step 2 and `Player.advanceTimers` at
   step 7, so a state change (end of the fly-in or of the invulnerability) applies from the next
   step, after the collisions of step 5.
+- **Shot records**: a weapon fires constant `ShotSpec` records (velocity in px/s, size, damage,
+  pierce), one per weapon and level, so a shot allocates nothing and its fields are named.
 - **Units**: timers and cooldowns are whole numbers of steps, counted down by 1 each step, and
   converted from the GDD's seconds once, at load (counted in steps: ADR-0002); velocities are pixels per second,
   multiplied by `dt` in seconds (ADR-0014). The domain never counts time by subtracting `dt`.

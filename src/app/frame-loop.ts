@@ -5,7 +5,7 @@ import type { InputPort, IntentFrame } from '../domain/ports/input-port';
 
 /** One simulation step in wall-clock milliseconds; the domain receives seconds (ADR-0014). */
 export const STEP_MS = 1000 / STEPS_PER_SECOND;
-export { STEP_SECONDS };
+export { STEP_SECONDS } from '../domain/game/tuning';
 /** A single frame never advances the simulation by more than this (ADR-0002). */
 export const MAX_FRAME_MS = 250;
 
