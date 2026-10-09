@@ -1,6 +1,6 @@
 # Class diagram — gameplay — domain model of a run (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.4 §4–§8, §10
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.5 §4–§8, §10
 > **Related ADRs**: ADR-0002 (Simulation, Random, Pool), ADR-0003 (composition, patterns),
 > ADR-0009 (IntentFrame), ADR-0010 (event bus per run, `DropTable` as data,
 > presentation outside the outcome)
@@ -92,8 +92,8 @@ classDiagram
   }
   class BulletSpawner {
     <<interface>>
-    +spawnEnemyBullet(x, y, vx, vy) void
-    +spawnPlayerBullet(x, y, vx, vy, width, height, damage, pierce) void
+    +spawnEnemyBullet(x, y, vxPerSecond, vyPerSecond) void
+    +spawnPlayerBullet(x, y, vxPerSecond, vyPerSecond, width, height, damage, pierce) void
   }
   class Player {
     -position: Vec2
@@ -101,9 +101,8 @@ classDiagram
     -lives: number
     -bombs: number
     -shield: boolean
-    -invulnerableFor: number
-    -respawnIn: number
-    +move(frame: IntentFrame, dt) void
+    -stateSteps: number
+    +update(frame: Readonly~IntentFrame~, dt, spawner: BulletSpawner) void
     +hit() HitOutcome
     +useBomb() boolean
     +collect(kind: PickupKind) boolean
@@ -222,6 +221,7 @@ classDiagram
   World --> "0..*" Bullet : active
   World --> "0..*" Pickup : active
   Player *-- "1" Weapon
+  Player ..> BulletSpawner : fires through (parameter)
   Player --> "1" PlayerState : state
   Player ..> HitOutcome
   Weapon --> "1" WeaponKind : kind
@@ -377,7 +377,7 @@ classDiagram
 
 ## How each GDD rule is carried
 
-| Rule (GDD v0.4) | Where it lives |
+| Rule (GDD v0.4–v0.5) | Where it lives |
 |---|---|
 | Two weapons × 5 levels, Spread first, switch keeps the level (§4.3) | `Weapon.powerUp(kind)`; `kind` selects the stateless `WeaponPattern`; `cooldown` carries the rate |
 | Laser width and piercing (§4.3) | fast player bullets with `hitbox`, `pierceLeft`, and `alreadyHit` — the **serials** of the bodies already hit, enemies and boss alike — so one body is hit once per bullet, even when a pooled enemy is reused or the bullet overlaps a large boss for several steps |
@@ -400,6 +400,8 @@ classDiagram
 | Bomb used (§4.5, §8) | `BOMB_USED` → `ScoreKeeper` sets `tally.bombUsed` (no-bomb bonus lost) |
 | Chain expiry (§8) | `ScoreKeeper.tick(dt)` counts down `chainTimer` in every step and breaks the chain at 0 |
 | Difficulty knobs (§10) | `DifficultyProfile`; the HUD caps (9 lives, 5 bombs, level 5) are constants, not knobs |
+| Clamp to the field, fly-in (v0.5 §4.1) | `Player.update`: clamp applied once `Entering` ends; fly-in path in 05-state-player |
+| Spread level 1 (v0.5 §4.3) | `SpreadPattern` at level 1 spawns one bullet from the nose (size, speed, rate: GDD §4.3); `Weapon.cooldown` in whole steps; bullets released once fully above the field |
 
 ## Notes
 
@@ -414,7 +416,19 @@ classDiagram
   lives on `Body`, so archetypes are shared data and nothing is allocated per spawn. Boss phases
   are data that swap the strategies — this is how ADR-0003's "BossPhase" State is realized.
 - **One owner per object**: `Run` owns `World`, `World` owns `Player` and the pools; active
-  bullets, pickups and enemies are references into the pools.
+  bullets, pickups and enemies are references into the pools, kept in preallocated lists.
+- **Firing**: `World` passes itself, as the `BulletSpawner`, to `Player.update` each step, which
+  forwards it to `Weapon.tick` — the same parameter style as `AttackPattern.tick`; no object
+  stores the spawner. `BulletSpawner` is declared with the weapon code, which avoids an import
+  cycle between player and world.
+- **Units**: timers and cooldowns are whole numbers of steps, counted down by 1 each step, and
+  converted from the GDD's seconds once, at load (counted in steps: ADR-0002); velocities are pixels per second,
+  multiplied by `dt` in seconds (ADR-0014). The domain never counts time by subtracting `dt`.
+- **Active lists**: removal while iterating is backwards, swap-with-last, then `pool.release` —
+  the only place either list changes. The player-bullet pool holds 16 bullets *(initial)*; a request on an empty pool is dropped (ADR-0002).
+- **Weapon strategy**: while `SpreadPattern` is the only pattern, `Weapon` calls it directly; the
+  look-up by `WeaponKind` comes with the second pattern. Per-level values live in a data record
+  (ADR-0003).
 - **Events**: one reusable `GameEvent` object per kind (ADR-0010) — handlers never keep it and
   never publish an event of the kind they handle; `subject` is the serial of the body concerned
   (white flash, explosion size). `ScoreKeeper` subscribes first and is the only handler allowed

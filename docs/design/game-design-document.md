@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Design phase — v0.4 (2026-10-08): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies |
+| **Status** | Vertical slice — v0.5 (2026-10-08): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot) |
 | **Working title** | *retro-shmup* (codename; the commercial title is still open) |
 | **Genre** | Retro vertical-scrolling shoot'em up (shmup), 16-bit aesthetic |
 | **Platform** | Web browser (desktop first, mobile playable), TypeScript + native Canvas 2D |
@@ -72,12 +72,16 @@ A full run is three levels, about 15–20 minutes.
 
 ### 3.1 Screen and scale
 
-- **Internal resolution 240 × 320 px** (3:4, arcade vertical). The game is rendered to an
-  off-screen canvas at this size and scaled by an **integer factor** (×3 = 720 × 960 on a 1080p
-  display) with nearest-neighbour sampling (`imageSmoothingEnabled = false`,
-  `image-rendering: pixelated`). Never fractional scaling.
-- On 16:9 displays the play field sits centred; the side bands carry the **HUD** (see §9.2).
-- On phones in portrait the play field is letterboxed top/bottom; the ship follows the finger.
+- **Play field 240 × 320 px** (3:4, arcade vertical). It sits in a **logical screen** that also
+  holds the HUD *(v0.5)*: **480 × 320** in landscape, the field centred between two 120 px HUD
+  bands (ADR-0014); **240 × 352** in portrait, a 32 px HUD strip above the field (ADR-0015). The
+  game uses, among the screens that fit the window, the one with the larger integer scale,
+  landscape on a tie (ADR-0015).
+- The logical screen is rendered off-screen and scaled by an **integer factor** (×3 = 1440 × 960 on
+  a 1080p display in fullscreen) with nearest-neighbour sampling (`imageSmoothingEnabled = false`,
+  `image-rendering: pixelated`). Never fractional scaling. The rest of the window is black.
+- On phones in portrait the portrait screen is letterboxed top/bottom; the ship follows the
+  finger.
 - Scrolling is **vertical**: the starfield scrolls down, enemies enter from the top (and sides for
   some roles), the player's ship lives in the lower third.
 
@@ -114,14 +118,25 @@ Minimal, arcade style: one intro card (two sentences), one title card per level,
 
 ### 4.1 Ship and movement
 
-- 32 × 32 px sprite, eight-direction movement, constant speed *(initial: 150 px/s, i.e. the play
-  field crossed in 1.6 s)*. Movement is clamped to the play field.
+- 32 × 32 px sprite. Maximum speed *(initial: 150 px/s, i.e. the play field crossed in 1.6 s)*:
+  keys and the d-pad move in eight directions at that speed; the analog stick moves at a speed
+  proportional to its tilt, up to it; touch and mouse move the ship toward the pointer, never
+  faster *(v0.5)*. The whole sprite stays inside the play field: its centre is clamped to x 16–224
+  and y 16–304 *(v0.5)*.
 - **Hitbox: 4 × 4 px** at the sprite's centre. The visible ship is much larger than what can be
   hit; bullets graze the wings. This is the genre's standard since the 1990s and the single most
   important fairness rule of the game.
 - Spawn / respawn: the ship enters from the bottom with **2 s of invulnerability** (blinking); the
   fly-in *(initial: 0.5 s)* is part of those 2 s and gives no control. The ship flies in like this
-  at the start of **every level** *(v0.4)*.
+  at the start of **every level** *(v0.4)*. It appears centred (x 120) fully hidden below the
+  field (y 336) and flies straight up at constant speed to its resting point, y 272
+  *(initial, v0.5)*; it neither fires nor is clamped during the fly-in.
+- The invulnerability blink runs at **3 blinks per second** *(initial, v0.5)*, never faster: the
+  photosensitivity threshold of WCAG 2.3.1. The ship is visible for the first half of each blink;
+  the phase runs continuously from the start of the protection (fly-in or invulnerability), so the
+  hand-over from fly-in to invulnerability and a bomb's extension keep it; the blink freezes with
+  the pause. It is a §9.4 effect, with a non-flashing replacement that does not rely on colour
+  alone (§9.7).
 - While invulnerable the ship is not hit at all: enemy bullets and bodies **pass through** it
   *(v0.4)*.
 
@@ -129,13 +144,19 @@ Minimal, arcade style: one intro card (two sentences), one title card per level,
 
 | Priority | Input | Model |
 |---|---|---|
-| P0 | Keyboard | Move: arrows (primary), `W A S D` physical keys (secondary — the same keys read Z Q S D on AZERTY); fire `Space` / `Z` (hold = autofire); bomb `X` / `Shift`; pause `P`; `Enter` confirm; `Esc` pauses in play and goes back in menus (fixed). Remappable. |
-| P1 | Touch | The ship follows the finger with a vertical offset so the thumb never hides it; autofire always on; bomb = on-screen button or second-finger tap; pause = on-screen button. |
-| P1 | Gamepad | Left stick / d-pad move; `A` fire; `B` bomb; `Start` pause (Gamepad API). Remappable. |
-| P2 | Mouse | Ship follows the cursor; autofire; right click or `Space` bomb. |
+| P0 | Keyboard | Move: arrows (primary), `W A S D` physical keys (secondary — the same keys read Z Q S D on AZERTY); opposite directions held together cancel. Fire `Space` / `Z` (hold = autofire); bomb `X` / left `Shift`; pause `P`; `Enter` (main or keypad) confirm; `Esc` pauses in play and goes back in menus (fixed). Remappable. |
+| P1 | Touch | The first finger on the play field drives the ship, which follows it **32 px above** *(initial)* so the thumb never hides it; lifting the finger leaves the ship where it is. Autofire always on; bomb = on-screen button or second-finger tap; pause = on-screen button. A touch that starts outside the play field is a tap on the HUD, never a move *(v0.5)*. |
+| P1 | Gamepad | Left stick (radial dead zone *(initial: 0.2)*) or d-pad move, the d-pad winning when pressed; `A` fire (hold = autofire); `B` bomb; `Start` pause (Gamepad API, standard mapping). The last pad used is the active one *(v0.5)*. Remappable. |
+| P2 | Mouse | Ship follows the cursor; autofire; right click bomb *(v0.5: `Space` stays the keyboard fire)*. |
 
-Inputs are translated to **intents** (`move`, `fire`, `bomb`, `pause`, `confirm`, `back`) so the
-game never knows which device produced them (one plain intent frame per step, ADR-0009).
+Inputs are translated to **intents** (`move`, `fire`, `bomb`, `pause`, `confirm`, `back`) so no
+outcome ever depends on the device that produced them (one plain intent frame per step, ADR-0009;
+the active device only chooses prompts and key labels).
+
+**Several devices at once** *(v0.5, ADR-0015)*: the ship follows the last device that started
+moving it; the buttons of every device combine; the always-on autofire of touch and mouse applies
+only while one of them owns the movement, so a keyboard player who brushes the mouse gets
+autofire only until a key or the stick moves the ship again.
 
 **Bindings** *(v0.2)*: keyboard keys are bound by **physical key** (`KeyboardEvent.code`), so a
 layout change (QWERTY, AZERTY) never breaks them; labels shown to the player use the active
@@ -167,6 +188,12 @@ formations)*.
 
 Damage output grows roughly ×1.0 / ×1.4 / ×1.9 / ×2.4 / ×3.0 from L1 to L5 *(initial)*. Enemy HP
 is expressed in **level-1 shots** so this ratio is what the player feels as "power".
+
+**Spread level 1** *(initial, v0.5)*: one stream straight up from the ship's nose (16 px above its
+centre), **10 shots per second**, bullets 2 × 8 px at **360 px/s** (the field crossed in under a
+second), gone once fully above the field. Holding fire shoots at that rate; the first shot leaves
+at once, including the first step with control after the fly-in. The cooldown runs whether fire
+is held or not, so tapping never fires faster than holding. One level-1 shot deals 1 damage.
 
 ### 4.4 Lives, shield, death
 
@@ -239,8 +266,8 @@ roles on three size tiers cover every wave the three levels need.
   enemy takes no damage from it.
 - **Bomb kills** *(v0.3)* count like shot kills: they extend the chain and count toward the full
   formation guarantee.
-- Enemy bullets: speed 60–90 px/s *(initial)*, **10–40 on screen** at peak. No bullet is ever
-  faster than the player's ship.
+- Enemy bullets: speed 60–90 px/s *(initial)*, **10–40 on screen** at peak. No enemy bullet is
+  ever faster than the player's ship *(v0.5 wording: player shots are faster by design)*.
 - Every enemy flashes white for 2 frames when hit (palette flash, no extra sprite) and shares a
   common explosion animation scaled by size tier.
 - Enemies that leave the screen alive simply despawn (no penalty, no score).
@@ -348,25 +375,28 @@ and `back`: it pauses in play and resumes from the pause menu.
 **Name entry** *(v0.2)*: three characters from A–Z, 0–9, space and `.`, starting at `AAA`; no
 timer. On touch, an on-screen letter grid.
 
-### 9.2 HUD (side bands, outside the 240 × 320 play field)
+### 9.2 HUD (outside the 240 × 320 play field)
 
 Left: score, chain multiplier + timer bar, lives, bombs. Right: level number and name, weapon
 colour and power level (1–5 pips), shield indicator. Boss HP bar at the top of the play field
-during a boss fight. On narrow screens the HUD collapses into a thin strip at the top.
+during a boss fight. On narrow screens the HUD collapses into the top strip of the portrait
+screen (§3.1) *(v0.5)*.
 
 ### 9.3 Options
 
 Music and SFX volume (separate), key / gamepad remap (§4.2), language (EN / FR), fullscreen,
 and **visual effects**: one on/off switch per effect of §9.4, all default **on**. On first launch,
 when the browser reports `prefers-reduced-motion`, screen shake, white flashes, hit-stop and slow
-motion default to **off** *(v0.2)*. Browsers refuse fullscreen outside a user gesture: a change
+motion default to **off** *(v0.2)*, and so does the invulnerability blink, replaced by its
+non-flashing form *(v0.5)*. Browsers refuse fullscreen outside a user gesture: a change
 made with a click, tap or key applies at once; otherwise the preference is applied at the next
 click, tap or key press, including during a run *(v0.4, ADR-0009)*.
 
 ### 9.4 Game feel (all effects individually toggleable in §9.3)
 
 Hit flash (2 frames white), hit-stop on large kills (2–3 frames), screen shake on bombs and boss
-hits, muzzle flash, explosion particles with size-scaled bursts, floating score pop-ups, slow
+hits, invulnerability blink (non-flashing replacement when off, §9.7) *(v0.5)*, muzzle flash,
+explosion particles with size-scaled bursts, floating score pop-ups, slow
 motion on boss death (0.5 s), boss "part breaks off" debris.
 
 ### 9.5 Audio
@@ -461,6 +491,8 @@ playable.
 | Topic | Decision | ADR |
 |---|---|---|
 | Rendering | Native Canvas 2D behind a minimal `RenderPort`; a WebGL renderer may replace it later without touching gameplay | ADR-0001 |
+| Screen | Logical screen 480 × 320 (landscape) or 240 × 352 (portrait) around the 240 × 320 field, integer scale in device pixels | ADR-0014, ADR-0015 |
+| Input | One flat intent frame per step, physical-key bindings, gestures in the input adapter, devices combined | ADR-0009, ADR-0012, ADR-0015 |
 | Simulation | Fixed timestep 60 Hz with accumulator, render interpolation, seeded RNG — deterministic | ADR-0002 |
 | Architecture | Object composition + patterns (Strategy, State, Object Pool, event bus, Command, ports); no ECS, no deep inheritance; UML-first | ADR-0003 |
 | Delivery | Cloudflare Pages (PR preview = staging, `main` = prod), itch.io via butler on tagged releases | ADR-0004 |
@@ -469,7 +501,7 @@ playable.
 | Player data | `localStorage` only, versioned key, no personal data beyond three initials; no backend in 1.0 | ADR-0006 |
 | Performance | 60 fps on a 2019 mid-range phone; ≤ 4 ms of logic per frame; no allocation inside the game loop (pools) | ADR-0002 |
 | Tests | Unit tests on the domain (TDD), headless level simulation with scripted inputs and seeded RNG, one browser smoke test; render and audio mocked at their ports | ADR-0003 |
-| Quality gate | Local-first: husky hooks run gitleaks, lint, typecheck, tests with coverage and the local SonarQube quality gate before every push; CI keeps only Gitleaks and a light lint/typecheck/test job | ADR-0007 |
+| Quality gate | Local-first: husky hooks run gitleaks, lint, typecheck, tests with coverage, the dependency audit and the local SonarQube quality gate before every push; CI runs a light lint/typecheck/test job and the security scans | ADR-0007, ADR-0013 |
 
 ---
 
@@ -528,8 +560,15 @@ fully playable at release quality, used to validate the design before producing 
 | Pause *(v0.2)* | Manual or automatic (tab hidden, focus lost, gamepad lost), never auto-resume, music ducked, 1 s count-in | No auto-pause (hidden tabs freeze the loop: return mid-bullets); auto-resume (unfair restart) |
 | Quit from pause *(v0.2)* | Allowed after confirmation, run discarded, no name entry | Record the score on quit (scores without finishing); no quit (only closing the tab) |
 | Ending *(v0.2)* | Leads to name entry like Game over | `Ending → Title` (a full clear could not record its score) |
-| Effect toggles *(v0.2)* | One switch per §9.4 effect; reduced-motion presets four to off | Two switches only (contradicted §9.4 and the project rules) |
+| Effect toggles *(v0.2)* | One switch per §9.4 effect; reduced-motion presets four to off (five with the v0.5 blink) | Two switches only (contradicted §9.4 and the project rules) |
 | Edge rules *(v0.2)* | Start with Spread; no release at level 1; bombs hit the boss; capped pickup = 1 000 points; 9 lives max | Leaving them undefined (each would be decided ad hoc in code) |
 | Contact and bomb kills *(v0.3)* | Enemy contact hits the player, not the enemy; bomb kills count for chain and formations; other-colour P at level 5 switches and scores 1 000 | Contact harmless (no reason to avoid bodies); bomb kills excluded (punishes the bomb twice) |
 | Behaviour rules *(v0.4)* | Fly-in at every level start; bullets pass through an invulnerable ship; Game over after the death sequence; enemy bullets cancelled when the boss is destroyed or flees; kill scored before the chain steps; automatic pause remembered during cards | Game over at the hit (cuts the explosion); bullets consumed by an invulnerable ship; bullets kept after the boss (death during its sequence); automatic pause ignored during cards (play resumes unfocused) |
 | Public hosting | One first-level subdomain per game on benoitbremaud.fr, catalogue `/jeux/` on the portfolio (ADR-0008) | Arcade subdomain with paths (routing Worker, shared storage); one repository for all games; the portfolio's own path; nested subdomains (viable, longer, inconsistent with the existing `bulle-de-je`); attaching the domain before the title is final (a rename strands saves) |
+| Portrait screen *(v0.5)* | Portrait screen with a top HUD strip (§3.1), used when it fits with the larger integer scale (ADR-0015) | See ADR-0015, Alternatives considered |
+| Base shot *(v0.5)* | Spread L1: one stream, 10 shots/s, 360 px/s | 15 shots/s at 480 px/s (less headroom to feel the power levels); no shot before enemies exist (no "move & shoot" in the first playable) |
+| Devices together *(v0.5)* | The ship follows the device that owns the movement; buttons combine; touch and mouse autofire only while they own it (ADR-0015) | See ADR-0015, Alternatives considered |
+| Mouse bomb *(v0.5)* | Right click | See ADR-0015, Alternatives considered |
+| Touch target *(v0.5)* | Absolute, 32 px above the first finger on the field; lifting keeps the ship in place | See ADR-0015, Alternatives considered |
+| Stick *(v0.5)* | Radial dead zone, speed proportional to tilt up to the maximum, d-pad wins | See ADR-0015, Alternatives considered |
+| Spawn and clamp *(v0.5)* | Straight fly-in from below the field; whole sprite kept in the field; blink 3 times per second (§4.1) | Centre-only clamp (wings clipped by the field edge); a faster arcade blink (above the photosensitivity threshold) |
