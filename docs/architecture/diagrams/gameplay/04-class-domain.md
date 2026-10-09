@@ -93,7 +93,7 @@ classDiagram
   class BulletSpawner {
     <<interface>>
     +spawnEnemyBullet(x, y, vxPerSecond, vyPerSecond) void
-    +spawnPlayerBullet(x, y, vxPerSecond, vyPerSecond, width, height, damage, pierce) void
+    +spawnPlayerBullet(x, y, shot: ShotSpec) void
   }
   class Player {
     -position: Vec2
@@ -102,7 +102,9 @@ classDiagram
     -bombs: number
     -shield: boolean
     -stateSteps: number
+    -protectionSteps: number
     +update(frame: Readonly~IntentFrame~, dt, spawner: BulletSpawner) void
+    +advanceTimers() void
     +hit() HitOutcome
     +useBomb() boolean
     +collect(kind: PickupKind) boolean
@@ -120,7 +122,7 @@ classDiagram
   class Weapon {
     -level: number
     -cooldown: number
-    +tick(dt, firing: boolean, spawner: BulletSpawner) void
+    +tick(origin: Readonly~Vec2~, firing: boolean, spawner: BulletSpawner) void
     +powerUp(kind: WeaponKind) boolean
     +powerDown() boolean
   }
@@ -418,9 +420,15 @@ classDiagram
 - **One owner per object**: `Run` owns `World`, `World` owns `Player` and the pools; active
   bullets, pickups and enemies are references into the pools, kept in preallocated lists.
 - **Firing**: `World` passes itself, as the `BulletSpawner`, to `Player.update` each step, which
-  forwards it to `Weapon.tick` — the same parameter style as `AttackPattern.tick`; no object
-  stores the spawner. `BulletSpawner` is declared with the weapon code, which avoids an import
+  forwards it to `Weapon.tick` with the ship's position as the origin — the same parameter style
+  as `AttackPattern.tick`; no object stores the spawner. `Weapon.tick` takes no `dt`: its
+  cooldown counts steps. `BulletSpawner` is declared with the weapon code, which avoids an import
   cycle between player and world.
+- **Player timers**: `Run.step` calls `Player.update` at step 2 and `Player.advanceTimers` at
+  step 7, so a state change (end of the fly-in or of the invulnerability) applies from the next
+  step, after the collisions of step 5.
+- **Shot records**: a weapon fires constant `ShotSpec` records (velocity in px/s, size, damage,
+  pierce), one per weapon and level, so a shot allocates nothing and its fields are named.
 - **Units**: timers and cooldowns are whole numbers of steps, counted down by 1 each step, and
   converted from the GDD's seconds once, at load (counted in steps: ADR-0002); velocities are pixels per second,
   multiplied by `dt` in seconds (ADR-0014). The domain never counts time by subtracting `dt`.

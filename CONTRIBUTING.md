@@ -19,6 +19,7 @@ cd retro-shmup
 pnpm install          # also installs the git hooks (husky)
 pnpm dev              # dev server
 make verify           # the full local gate, as run by the pre-push hook
+pnpm exec playwright install chromium   # once, for the browser smoke test (make smoke)
 ```
 
 **One-time SonarQube setup**: in SonarQube, create the project `retro-shmup` (manual setup, main
@@ -141,7 +142,7 @@ The blocking checks run on the developer's machine, before the push, as decided 
 |---|---|---|
 | `pre-commit` | `gitleaks git --pre-commit --staged`, then lint-staged: ESLint and `prettier --check` on the staged files | under 3 s |
 | `commit-msg` | commitlint: Conventional Commits with a scope from the project list | instant |
-| `pre-push` (`make verify`) | typecheck (app, node and domain projects), lint, format check, Vitest with coverage, `gitleaks git` on the full history, `pnpm audit --audit-level high`, `sonar-scanner` against the local SonarQube (`localhost:9000`) with quality-gate wait | under 90 s |
+| `pre-push` (`make verify`) | typecheck (app, node, smoke and domain projects), lint, format check, Vitest with coverage, `gitleaks git` on the full history, `pnpm audit --audit-level high`, `sonar-scanner` against the local SonarQube (`localhost:9000`) with quality-gate wait | under 90 s |
 
 `make verify` checks the working tree: push from a clean tree, so what is verified is what is
 pushed.

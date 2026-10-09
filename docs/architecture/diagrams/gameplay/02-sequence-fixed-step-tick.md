@@ -59,9 +59,10 @@ sequenceDiagram
   end
   Note over FL: alpha = accumulator / STEP
   FL->>Scenes: render(alpha, wallDtMs)
-  Scenes->>Presenter: render(alpha, wallDtMs)
-  Presenter->>Run: snapshot() and RunView getters
-  Run-->>Presenter: previous and current positions, HUD values
+  Scenes->>Render: setRegion field, starfield at the background clock
+  Scenes->>Run: snapshot()
+  Run-->>Scenes: previous and current positions, HUD values
+  Scenes->>Presenter: draw(snapshot, alpha) — wallDtMs joins with the effects
   Presenter->>Render: setRegion field, sprites at interpolated positions
   Presenter->>Render: setRegion hud, score, chain, lives, bombs, weapon
   Note over Presenter: effects advance by wallDtMs, unscaled — ADR-0010
@@ -76,6 +77,11 @@ sequenceDiagram
 - **The pause is decided before the run steps**, in the step that carries `Pause`, and only in
   `Playing`; the other scenes apply their own rule (05-state-scenes). Returning from a hidden tab,
   the clamp bounds the catch-up to 250 ms, consumed by the Paused scene.
+- **The scene machine draws the frame**: it draws the starfield from its background
+  clock, counted in steps of the scrolling scenes (05-state-scenes), passes the run's snapshot to
+  `RunPresenter.draw(snapshot, alpha)`, then the HUD region. In the first playable it draws the
+  empty HUD bands itself; the HUD contents move into `RunPresenter` with scoring and are drawn
+  after the bands. The presenter takes `wallDtMs` when its first wall-clock effect lands.
 - **One input read per step**: a press is consumed by exactly one step even when a frame runs
   several, and a tap shorter than a step is not lost (latched by the adapter).
 - **Time effects never touch the run**: during hit-stop `s` falls to 0 and the loop takes no

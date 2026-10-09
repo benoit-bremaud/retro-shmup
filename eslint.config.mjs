@@ -56,7 +56,16 @@ const RESTRICTED_SYNTAX = [
 ];
 
 export default defineConfig(
-  { ignores: ['dist/', 'coverage/', 'node_modules/'] },
+  {
+    ignores: [
+      'dist/',
+      'coverage/',
+      'node_modules/',
+      'test-results/',
+      'playwright-report/',
+      'blob-report/',
+    ],
+  },
   js.configs.recommended,
   tseslint.configs.strictTypeChecked,
   tseslint.configs.stylisticTypeChecked,
@@ -146,6 +155,15 @@ export default defineConfig(
     files: ['src/adapters/**/*.ts'],
     languageOptions: { globals: globals.browser },
     rules: {
+      // Only the composition root touches these; adapters receive narrow injected interfaces
+      // (ADR-0014 decision 7, ADR-0015 decision 4).
+      'no-restricted-globals': [
+        'error',
+        ...['window', 'document', 'navigator', 'requestAnimationFrame'].map((name) => ({
+          name,
+          message: 'Adapters receive browser objects from src/app/main.ts (ADR-0015).',
+        })),
+      ],
       'no-restricted-imports': [
         'error',
         {
