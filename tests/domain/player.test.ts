@@ -1,19 +1,39 @@
 import { describe, expect, it } from 'vitest';
 import { Player, PlayerState } from '../../src/domain/game/player';
 import { PlayerTuning } from '../../src/domain/game/tuning';
-import { createIntentFrame } from '../../src/domain/ports/input-port';
+import type { BulletSpawner } from '../../src/domain/game/weapon';
+import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
 
 const DT = 1 / 60;
 const FLY_IN_STEPS = 30;
 const INVULNERABLE_STEPS = 90;
 
-/** One fixed step as `Run.step` drives it: move at step 2, timers at step 7. */
-function step(player: Player, frame: Readonly<IntentFrame>, times = 1): void {
+/** Counts the shots the player's weapon asks for. */
+class CountingSpawner implements BulletSpawner {
+  shots = 0;
+  spawnPlayerBullet(): void {
+    this.shots += 1;
+  }
+}
+
+/** One fixed step as `Run.step` drives it: move and fire at step 2, timers at step 7. */
+function step(
+  player: Player,
+  frame: Readonly<IntentFrame>,
+  times = 1,
+  spawner: BulletSpawner = new CountingSpawner(),
+): void {
   for (let i = 0; i < times; i += 1) {
-    player.update(frame, DT);
+    player.update(frame, DT, spawner);
     player.advanceTimers();
   }
+}
+
+function firing(): IntentFrame {
+  const frame = createIntentFrame();
+  frame.held = Button.Fire;
+  return frame;
 }
 
 function idle(): IntentFrame {
@@ -139,5 +159,27 @@ describe('Player — protection count for the blink (GDD v0.5 §4.1)', () => {
     step(player, idle(), FLY_IN_STEPS + INVULNERABLE_STEPS + 5);
     expect(player.state).toBe(PlayerState.Vulnerable);
     expect(player.protectionSteps).toBe(FLY_IN_STEPS + INVULNERABLE_STEPS);
+  });
+});
+
+describe('Player — firing (GDD v0.5 §4.1, §4.3)', () => {
+  it('never fires during the fly-in', () => {
+    const spawner = new CountingSpawner();
+    step(new Player(), firing(), FLY_IN_STEPS, spawner);
+    expect(spawner.shots).toBe(0);
+  });
+
+  it('fires at once on the first step with control', () => {
+    const player = controllable();
+    const spawner = new CountingSpawner();
+    step(player, firing(), 1, spawner);
+    expect(spawner.shots).toBe(1);
+  });
+
+  it('fires 10 shots per second while fire is held', () => {
+    const player = controllable();
+    const spawner = new CountingSpawner();
+    step(player, firing(), 60, spawner);
+    expect(spawner.shots).toBe(10);
   });
 });

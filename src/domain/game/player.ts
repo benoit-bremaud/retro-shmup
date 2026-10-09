@@ -1,6 +1,10 @@
+import { Button } from '../ports/input-port';
 import type { IntentFrame } from '../ports/input-port';
 import { FIELD_HEIGHT, FIELD_WIDTH } from '../presentation/screen';
+import type { Vec2 } from './geometry';
 import { PlayerTuning, toSteps } from './tuning';
+import { Weapon } from './weapon';
+import type { BulletSpawner } from './weapon';
 
 /** Lifecycle of the ship (05-state-player); `Dead` arrives with collisions. */
 export const PlayerState = {
@@ -9,12 +13,6 @@ export const PlayerState = {
   Vulnerable: 'VULNERABLE',
 } as const;
 export type PlayerState = (typeof PlayerState)[keyof typeof PlayerState];
-
-/** A mutable point, updated in place so a step allocates nothing (ADR-0002). */
-export interface Vec2 {
-  x: number;
-  y: number;
-}
 
 const FLY_IN_STEPS = toSteps(PlayerTuning.flyInSeconds);
 const INVULNERABLE_STEPS = toSteps(PlayerTuning.invulnerableSeconds);
@@ -35,6 +33,7 @@ function clamp(value: number, min: number, max: number): number {
 export class Player {
   readonly position: Vec2 = { x: PlayerTuning.spawnX, y: PlayerTuning.spawnY };
   readonly previousPosition: Vec2 = { x: PlayerTuning.spawnX, y: PlayerTuning.spawnY };
+  private readonly weapon = new Weapon();
   private currentState: PlayerState = PlayerState.Entering;
   /** Steps left in the current timed state (05-state-player: one timer). */
   private stateSteps = FLY_IN_STEPS;
@@ -49,8 +48,11 @@ export class Player {
     return this.protection;
   }
 
-  /** Step 2 of `Run.step`: the fly-in, or the movement the frame asks for. */
-  update(frame: Readonly<IntentFrame>, dt: number): void {
+  /**
+   * Step 2 of `Run.step`: the fly-in, or the movement the frame asks for and the weapon. The
+   * spawner is a parameter, as for the enemies' attack patterns: the player never stores it.
+   */
+  update(frame: Readonly<IntentFrame>, dt: number, spawner: BulletSpawner): void {
     this.previousPosition.x = this.position.x;
     this.previousPosition.y = this.position.y;
     if (this.currentState === PlayerState.Entering) {
@@ -60,6 +62,7 @@ export class Player {
     this.move(frame, dt);
     this.position.x = clamp(this.position.x, MIN_X, MAX_X);
     this.position.y = clamp(this.position.y, MIN_Y, MAX_Y);
+    this.weapon.tick(this.position, (frame.held & Button.Fire) !== 0, spawner);
   }
 
   /** Step 7 of `Run.step`: the state timer and the protection count. */

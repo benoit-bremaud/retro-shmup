@@ -121,7 +121,7 @@ classDiagram
   class Weapon {
     -level: number
     -cooldown: number
-    +tick(dt, firing: boolean, spawner: BulletSpawner) void
+    +tick(origin: Vec2, firing: boolean, spawner: BulletSpawner) void
     +powerUp(kind: WeaponKind) boolean
     +powerDown() boolean
   }
@@ -419,8 +419,9 @@ classDiagram
 - **One owner per object**: `Run` owns `World`, `World` owns `Player` and the pools; active
   bullets, pickups and enemies are references into the pools, kept in preallocated lists.
 - **Firing**: `World` passes itself, as the `BulletSpawner`, to `Player.update` each step, which
-  forwards it to `Weapon.tick` — the same parameter style as `AttackPattern.tick`; no object
-  stores the spawner. `BulletSpawner` is declared with the weapon code, which avoids an import
+  forwards it to `Weapon.tick` with the ship's position as the origin — the same parameter style
+  as `AttackPattern.tick`; no object stores the spawner. `Weapon.tick` takes no `dt`: its
+  cooldown counts steps. `BulletSpawner` is declared with the weapon code, which avoids an import
   cycle between player and world.
 - **Player timers**: `Run.step` calls `Player.update` at step 2 and `Player.advanceTimers` at
   step 7, so a state change (end of the fly-in or of the invulnerability) applies from the next
