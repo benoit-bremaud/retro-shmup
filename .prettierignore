@@ -8,3 +8,8 @@ coverage/
 *.md
 # Machine-local tool settings (Claude Code)
 .claude/
+
+# Playwright smoke test output
+test-results/
+playwright-report/
+blob-report/

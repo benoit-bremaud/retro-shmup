@@ -38,3 +38,8 @@ tmp/
 # Claude Code personal settings (machine-local)
 .claude/settings.local.json
 .claude/launch.json
+
+# Playwright smoke test output
+test-results/
+playwright-report/
+blob-report/
