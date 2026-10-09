@@ -8,6 +8,25 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-09
 
+### First playable build on keyboard (branch `feat/game`) — issue #7, brick C1
+
+- Domain: tuning records of GDD v0.5 with the seconds-to-steps conversion; `Player` (fly-in,
+  one state timer, protection count for the blink, movement, field clamp); `Weapon` with Spread
+  level 1 fired through a spawner parameter; `World` with a 16-bullet pool and a preallocated
+  active list; `Run` (slots 2, 4, 6, 7 of the fixed order, snapshot without allocation);
+  `RunPresenter` (palette-rectangle ship, interpolated bullets, blink behind an effect switch);
+  `SceneMachine` subset Boot → Title → Playing with the background clock; `DEFAULT_BINDINGS`.
+- Adapters: `DeviceInput` façade with the keyboard module and one injected environment record;
+  lint bans `window`, `document`, `navigator` and `requestAnimationFrame` in `src/adapters`.
+- Composition root wired; `EnginePreview` and `IdleInput` removed.
+- Tests: TDD on the domain, the loop and the keyboard adapter (150 tests); the single Playwright
+  smoke test (Chromium, built bundle; `make smoke`), proved by a mutation; script time per frame
+  about 0.18 ms on the development machine, logged, not asserted.
+- **Design updates made with the code** (same change, owner informed at the PR): the class
+  diagram gains `Player.advanceTimers` (timers at step 7, after collisions) and
+  `Weapon.tick(origin, firing, spawner)` (no `dt`: the cooldown counts steps); the scene machine
+  owns the starfield's background clock, so it scrolls on the title and in play without a jump.
+
 ### PR #6 merged (`7c390ff`) — design of the first playable build, GDD v0.5, ADR-0015
 
 - One Codex comment (the screen choice could pick a landscape screen that overflows) and the

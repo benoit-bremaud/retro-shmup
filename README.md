@@ -15,8 +15,9 @@ when it is chosen.
 
 **Vertical slice in progress.** The design is complete — GDD, the
 [ADRs](docs/decisions/README.md) and the UML study — and the code now follows it, one pull request per brick, up to level 1 at release
-quality. `pnpm install` then `pnpm dev` shows the engine running: a scrolling starfield between
-the HUD bands, nothing playable yet; see CONTRIBUTING.md.
+quality. `pnpm install` then `pnpm dev` runs the first playable build on keyboard: press `Enter`
+on the title, then move with the arrows or `W A S D` and fire with `Space` or `Z`. No enemies
+yet; see CONTRIBUTING.md.
 
 Roadmap (GDD section 11):
 

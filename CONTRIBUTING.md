@@ -19,6 +19,7 @@ cd retro-shmup
 pnpm install          # also installs the git hooks (husky)
 pnpm dev              # dev server
 make verify           # the full local gate, as run by the pre-push hook
+pnpm exec playwright install chromium   # once, for the browser smoke test (make smoke)
 ```
 
 **One-time SonarQube setup**: in SonarQube, create the project `retro-shmup` (manual setup, main
