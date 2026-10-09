@@ -146,6 +146,15 @@ export default defineConfig(
     files: ['src/adapters/**/*.ts'],
     languageOptions: { globals: globals.browser },
     rules: {
+      // Only the composition root touches these; adapters receive narrow injected interfaces
+      // (ADR-0014 decision 7, ADR-0015 decision 4).
+      'no-restricted-globals': [
+        'error',
+        ...['window', 'document', 'navigator', 'requestAnimationFrame'].map((name) => ({
+          name,
+          message: 'Adapters receive browser objects from src/app/main.ts (ADR-0015).',
+        })),
+      ],
       'no-restricted-imports': [
         'error',
         {
