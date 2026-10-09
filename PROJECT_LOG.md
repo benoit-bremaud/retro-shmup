@@ -6,6 +6,15 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ---
 
+## 2026-10-09
+
+### PR #6 merged (`7c390ff`) — design of the first playable build, GDD v0.5, ADR-0015
+
+- One Codex comment (the screen choice could pick a landscape screen that overflows) and the
+  22 findings of the four-pass conception review were validated one at a time by the owner and
+  fixed in `5275276`; all six checks green. The project paused after the merge, then resumed
+  with issue #7 (brick C1, first playable on keyboard, 14 acceptance criteria).
+
 ## 2026-10-08
 
 ### Design of the first playable build (branch `docs/input-design`) — GDD v0.5, ADR-0015
