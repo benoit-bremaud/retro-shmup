@@ -103,6 +103,7 @@ classDiagram
     -shield: boolean
     -stateSteps: number
     +update(frame: Readonly~IntentFrame~, dt, spawner: BulletSpawner) void
+    +advanceTimers() void
     +hit() HitOutcome
     +useBomb() boolean
     +collect(kind: PickupKind) boolean
@@ -421,6 +422,9 @@ classDiagram
   forwards it to `Weapon.tick` — the same parameter style as `AttackPattern.tick`; no object
   stores the spawner. `BulletSpawner` is declared with the weapon code, which avoids an import
   cycle between player and world.
+- **Player timers**: `Run.step` calls `Player.update` at step 2 and `Player.advanceTimers` at
+  step 7, so a state change (end of the fly-in or of the invulnerability) applies from the next
+  step, after the collisions of step 5.
 - **Units**: timers and cooldowns are whole numbers of steps, counted down by 1 each step, and
   converted from the GDD's seconds once, at load (counted in steps: ADR-0002); velocities are pixels per second,
   multiplied by `dt` in seconds (ADR-0014). The domain never counts time by subtracting `dt`.
