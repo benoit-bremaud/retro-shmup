@@ -39,6 +39,27 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   moving the ship.
 - Not in this PR: the ADR status back-links (ADR-0001, -0002, -0003, -0007, -0009, -0010, -0014)
   stay for their dedicated PR.
+- **Conception review** (four passes of the conception gate: requirements and traceability, Clean
+  and SOLID, KISS/YAGNI/DRY, pattern fit) and one Codex comment, presented one at a time and
+  validated by the owner on 2026-10-09 (22 findings plus the Codex one, all recommended options):
+  - Codex: the screen choice keeps only screens that fit before comparing scales (a 390 px window
+    at a pixel ratio of 1 overflowed in landscape).
+  - Timers and cooldowns count whole steps, velocities are px/s times `dt`; converted numbers
+    left the UML.
+  - `DeviceInput` is a façade over per-device modules with a pure arbitration function and one
+    injected environment record, the audio unlock hook included.
+  - The build order and interim deviations live only in the first-playable section of the scene
+    machine, with the title and smoke-test presentation; the ADR and the GDD describe the shipped
+    game.
+  - The spawner is passed to `Player.update` as a parameter; one `stateSteps` timer; linear
+    fly-in from y 336; blink phase; shot origin, release, pool of 16, backward swap removal;
+    deterministic arbitration order, held state cleared on lost focus, no automatic takeover;
+    touch, mouse and gamepad edge rules; default bindings table; numbers kept in the GDD only.
+  - Correction of my own proposal, validated: the title shows no ship, so the smoke test can tell
+    the title from play.
+- Process: the owner reminded the general rules on 2026-10-08 — reviewer comments are presented
+  one at a time, and PR creation, pushes and branch deletions are asked first. PR #6 was opened
+  and pushed before that reminder.
 
 ### PR #5 merged (`82596b9`) — engine for the vertical slice, ADR-0014
 

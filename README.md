@@ -63,7 +63,7 @@ Roadmap (GDD section 11):
 
 | Topic | Decision |
 |---|---|
-| Resolution | 240 × 320 px play field (3:4 arcade vertical) in a 480 × 320 landscape or 240 × 352 portrait screen, integer scaling, nearest-neighbour sampling |
+| Resolution | 240 × 320 px play field (3:4 arcade vertical) in a landscape or portrait logical screen (GDD §3.1), integer scaling, nearest-neighbour sampling |
 | Scrolling | Vertical: enemies enter from the top (and sides), the player's ship lives in the lower third |
 | Player | 32 × 32 px sprite, 4 × 4 px hitbox, one hit = one life, 3 lives, one-charge shield, stock bombs |
 | Weapons | Spread (red) and Laser (blue), five shared power levels; death costs one level and releases it as a pickup |

@@ -87,9 +87,9 @@ is a calculation covered by unit tests (ADR-0003), not by a diagram.
 | ADR-0009 intent frame, gestures, audio mix | SD-tick (`read(frame)`), STM-scenes (pause rules), CMP |
 | ADR-0010 outcome vs presentation | SD-tick (time scale), SD-kill (handler rules), CD (`Body`, events) |
 | ADR-0014 logical screen, regions, `dt` in seconds | SD-tick (`step(1/60 s)`), CMP (Canvas2DRenderer) |
-| ADR-0015 portrait screen, devices together, injected browser objects, pause interim | CMP (Canvas2DRenderer, DeviceInput), STM-scenes (first-playable subset) |
+| ADR-0015 portrait screen, devices together, injected browser objects, default bindings | CMP (Bootstrap, Canvas2DRenderer, DeviceInput), STM-scenes (first-playable subset, build order); tests: layout choice, pointer mapping, arbitration function, keyboard and gamepad rules, lost focus, default bindings (ADR-0015 Consequences) |
 | GDD v0.2–v0.4 rules surfaced by the study | GDD Decision record; CD rule table |
-| GDD v0.5 first-playable values (fly-in, clamp, blink, base shot) | STM-player notes (fly-in, blink), CD rule table (clamp, Spread L1), CD (`Player --> BulletSpawner`) |
+| GDD v0.5 first-playable values (fly-in, clamp, blink, base shot) | STM-player notes (fly-in, blink, one timer), CD rule table and notes (clamp, Spread L1, units, active lists); tests: fly-in and state steps, clamp, cadence of 10 shots per 60 steps, bullet release, blink phase, smoke test (STM-scenes) |
 
 ## 5. Known gaps (accepted)
 
@@ -97,3 +97,5 @@ is a calculation covered by unit tests (ADR-0003), not by a diagram.
 - The options, remapping and high-score flows have no sequence diagram by design (plain reads and
   writes, specified in their use-case text).
 - The rescue mechanic (GDD §12) is out of 1.0 and has no realization.
+- Device arbitration (ADR-0015 decision 5) has no state diagram: its rule is textual and lives in
+  one pure function, unit-tested.
