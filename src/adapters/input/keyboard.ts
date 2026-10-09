@@ -16,12 +16,20 @@ const BUTTON_OF: Readonly<Partial<Record<RemappableIntent, number>>> = {
   pause: Button.Pause,
 };
 
-/** Fixed keys, never bindings (ADR-0015 decision 6). `Esc` is not a gesture and not prevented. */
+/** Fixed keys, never bindings (ADR-0015 decision 6). */
 const FIXED: Readonly<Record<string, number>> = {
   Enter: Button.Confirm,
   NumpadEnter: Button.Confirm,
   Escape: Button.Pause | Button.Back,
 };
+
+/**
+ * A bound key, `Enter` or `NumpadEnter` loses its browser action; `Esc` never does, so it can
+ * still leave fullscreen (ADR-0015 decisions 6 and 8).
+ */
+function isPrevented(code: string, intent: RemappableIntent | undefined): boolean {
+  return intent !== undefined || (code in FIXED && code !== 'Escape');
+}
 
 function emptyCounts(): Record<RemappableIntent, number> {
   return { moveUp: 0, moveDown: 0, moveLeft: 0, moveRight: 0, fire: 0, bomb: 0, pause: 0 };
@@ -37,6 +45,7 @@ export class KeyboardModule {
   private readonly counts = emptyCounts();
   private latched = 0;
 
+  /** Replaces the key → intent map; every held key counts as released, so none stays stuck. */
   setBindings(bindings: Bindings): void {
     this.release();
     const map = new Map<string, RemappableIntent>();
@@ -52,18 +61,22 @@ export class KeyboardModule {
     this.intentOf = map;
   }
 
-  /** True when the browser's default action must be prevented (bound or fixed key). */
+  /**
+   * Records a key going down and latches its presses until the next `sample`. Returns true when
+   * the browser's default action must be prevented, auto-repeats included, so a held arrow never
+   * scrolls the page.
+   */
   keyDown(code: string, repeat: boolean): boolean {
     const fixed = FIXED[code];
     const intent = this.intentOf.get(code);
-    if (repeat || this.down.has(code)) return intent !== undefined || (fixed ?? 0) !== 0;
+    if (repeat || this.down.has(code)) return isPrevented(code, intent);
     this.down.add(code);
     if (fixed !== undefined) this.latched |= fixed;
     if (intent !== undefined) {
       this.counts[intent] += 1;
       this.latched |= BUTTON_OF[intent] ?? 0;
     }
-    return intent !== undefined || (fixed !== undefined && code !== 'Escape');
+    return isPrevented(code, intent);
   }
 
   keyUp(code: string): void {
@@ -72,7 +85,7 @@ export class KeyboardModule {
     if (intent !== undefined) this.counts[intent] -= 1;
   }
 
-  /** Lost focus: no key release will arrive, so every key counts as released. */
+  /** Every key counts as released (lost focus, rebinding); latched presses are kept. */
   release(): void {
     this.down.clear();
     const intents = Object.keys(this.counts) as RemappableIntent[];
@@ -87,6 +100,7 @@ export class KeyboardModule {
     const c = this.counts;
     const x = (c.moveRight > 0 ? 1 : 0) - (c.moveLeft > 0 ? 1 : 0);
     const y = (c.moveDown > 0 ? 1 : 0) - (c.moveUp > 0 ? 1 : 0);
+    // Normalized, so a diagonal is never faster than the maximum speed (ADR-0009).
     const diagonal = x !== 0 && y !== 0 ? Math.SQRT1_2 : 1;
     into.moving = c.moveRight + c.moveLeft + c.moveDown + c.moveUp > 0;
     into.moveX = x * diagonal;

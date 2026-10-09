@@ -15,6 +15,7 @@ export const DEFAULT_BINDINGS: Bindings = {
     bomb: { primary: 'KeyX', secondary: 'ShiftLeft' },
     pause: { primary: 'KeyP', secondary: null },
   },
+  // W3C "standard" mapping indices: 12–15 the d-pad, 0 A, 1 B, 9 Start.
   gamepad: {
     moveUp: { primary: 12, secondary: null },
     moveDown: { primary: 13, secondary: null },

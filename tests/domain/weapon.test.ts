@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { SpreadLevel1 } from '../../src/domain/game/tuning';
 import { Weapon } from '../../src/domain/game/weapon';
 import type { BulletSpawner } from '../../src/domain/game/weapon';
 
@@ -89,13 +88,13 @@ describe('Weapon — Spread level 1 (GDD v0.5 §4.3)', () => {
     expect(spawner.shots).toEqual([
       {
         step: 0,
-        x: ORIGIN.x,
-        y: ORIGIN.y - SpreadLevel1.noseOffset,
+        x: 100,
+        y: 184,
         vxPerSecond: 0,
-        vyPerSecond: -SpreadLevel1.speed,
-        width: SpreadLevel1.width,
-        height: SpreadLevel1.height,
-        damage: SpreadLevel1.damage,
+        vyPerSecond: -360,
+        width: 2,
+        height: 8,
+        damage: 1,
         pierce: 0,
       },
     ]);

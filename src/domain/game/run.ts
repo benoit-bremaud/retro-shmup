@@ -25,6 +25,7 @@ export interface PlayerSnapshot {
  */
 export interface WorldSnapshot {
   readonly player: PlayerSnapshot;
+  /** The live pool list: only the first `playerBulletCount` entries are active. */
   readonly playerBullets: readonly Readonly<Bullet>[];
   readonly playerBulletCount: number;
 }
@@ -38,6 +39,7 @@ export class Run {
   private readonly world = new World();
   private readonly snapshotView: WorldSnapshot = createSnapshot(this.world);
 
+  /** One fixed step; `dt` is in seconds (ADR-0014). */
   step(dt: number, frame: Readonly<IntentFrame>): void {
     // (2) the player moves and its weapon fires.
     this.world.player.update(frame, dt, this.world);

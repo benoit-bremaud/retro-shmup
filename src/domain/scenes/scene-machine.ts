@@ -1,5 +1,5 @@
 import { Run } from '../game/run';
-import { STEPS_PER_SECOND } from '../game/tuning';
+import { STEP_SECONDS } from '../game/tuning';
 import { Button } from '../ports/input-port';
 import type { IntentFrame } from '../ports/input-port';
 import type { RenderPort } from '../ports/render-port';
@@ -16,8 +16,6 @@ export const Scene = {
   Playing: 'PLAYING',
 } as const;
 export type Scene = (typeof Scene)[keyof typeof Scene];
-
-const STEP_SECONDS = 1 / STEPS_PER_SECOND;
 
 /**
  * The screens and their transitions, first-playable subset (meta/05-state-scenes): Boot → Title →
@@ -50,22 +48,28 @@ export class SceneMachine {
   step(dt: number, frame: Readonly<IntentFrame>): void {
     switch (this.current) {
       case Scene.Boot:
-        // Nothing to load yet (no assets, no save document).
+        // Nothing to load yet (no assets, no save document). The title takes this step's frame,
+        // so a press latched before the first step is not lost.
         this.current = Scene.Title;
+        this.stepTitle(frame);
         return;
       case Scene.Title:
-        this.backgroundSteps += 1;
-        // Pause is ignored here, as in every scene but play (pause rules).
-        if ((frame.pressed & Button.Confirm) !== 0 || frame.tapRegion !== 'none') {
-          this.run = new Run(); // InRun entry creates the run.
-          this.current = Scene.Playing;
-        }
+        this.stepTitle(frame);
         return;
       case Scene.Playing:
         this.backgroundSteps += 1;
         // Interim deviation: Pause is ignored until the Paused scene lands (05-state-scenes).
         this.run?.step(dt, frame);
         return;
+    }
+  }
+
+  // Pause is ignored on the title, as in every scene but play (pause rules).
+  private stepTitle(frame: Readonly<IntentFrame>): void {
+    this.backgroundSteps += 1;
+    if ((frame.pressed & Button.Confirm) !== 0 || frame.tapRegion !== 'none') {
+      this.run = new Run(); // InRun entry creates the run.
+      this.current = Scene.Playing;
     }
   }
 

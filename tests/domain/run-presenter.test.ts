@@ -101,14 +101,17 @@ describe('RunPresenter — ship and bullets (05-state-scenes, first playable)', 
 
 describe('RunPresenter — invulnerability blink (GDD v0.5 §4.1)', () => {
   it.each([
-    [0, true],
-    [9, true],
-    [10, false],
-    [19, false],
-    [20, true],
-  ])('at protection step %i the ship is visible: %s (3 blinks per second)', (steps, visible) => {
+    [PlayerState.Entering, 0, true],
+    [PlayerState.Entering, 9, true],
+    [PlayerState.Entering, 10, false],
+    [PlayerState.Entering, 29, true],
+    [PlayerState.Invulnerable, 30, false],
+    [PlayerState.Invulnerable, 39, false],
+    [PlayerState.Invulnerable, 40, true],
+    [PlayerState.Invulnerable, 119, false],
+  ])('%s at protection step %i: visible %s (3 blinks per second)', (state, steps, visible) => {
     const render = new RecordingRender();
-    const protectedShip = ship({ state: PlayerState.Invulnerable, protectionSteps: steps });
+    const protectedShip = ship({ state, protectionSteps: steps });
     new RunPresenter(render, { blink: true }).draw(snapshot(protectedShip), 0);
     expect(hullRects(render).length > 0).toBe(visible);
   });

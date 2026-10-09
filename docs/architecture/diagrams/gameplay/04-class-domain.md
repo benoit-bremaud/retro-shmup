@@ -102,6 +102,7 @@ classDiagram
     -bombs: number
     -shield: boolean
     -stateSteps: number
+    -protectionSteps: number
     +update(frame: Readonly~IntentFrame~, dt, spawner: BulletSpawner) void
     +advanceTimers() void
     +hit() HitOutcome
@@ -121,7 +122,7 @@ classDiagram
   class Weapon {
     -level: number
     -cooldown: number
-    +tick(origin: Vec2, firing: boolean, spawner: BulletSpawner) void
+    +tick(origin: Readonly~Vec2~, firing: boolean, spawner: BulletSpawner) void
     +powerUp(kind: WeaponKind) boolean
     +powerDown() boolean
   }

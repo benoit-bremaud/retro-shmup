@@ -5,6 +5,8 @@ import { DEFAULT_BINDINGS } from '../../src/domain/input/default-bindings';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
 
+type Modifier = 'ctrl' | 'meta' | 'alt';
+
 /** Stands for the browser: captures the listeners the adapter registers, then replays events. */
 class FakeEnvironment implements InputEnvironment {
   private keyDown: ((event: KeyEventLike) => void) | undefined;
@@ -22,20 +24,23 @@ class FakeEnvironment implements InputEnvironment {
     this.focusLost = listener;
   }
 
-  down(code: string, repeat = false): void {
-    this.keyDown?.(this.event(code, repeat));
+  down(code: string, repeat = false, modifier: Modifier | null = null): void {
+    this.keyDown?.(this.event(code, repeat, modifier));
   }
   up(code: string): void {
-    this.keyUp?.(this.event(code, false));
+    this.keyUp?.(this.event(code, false, null));
   }
   loseFocus(): void {
     this.focusLost?.();
   }
 
-  private event(code: string, repeat: boolean): KeyEventLike {
+  private event(code: string, repeat: boolean, modifier: Modifier | null): KeyEventLike {
     return {
       code,
       repeat,
+      ctrlKey: modifier === 'ctrl',
+      metaKey: modifier === 'meta',
+      altKey: modifier === 'alt',
       preventDefault: () => {
         this.prevented.push(code);
       },
@@ -116,6 +121,17 @@ describe('DeviceInput — buttons and press latching (ADR-0009 decision 1)', () 
     expect(frame.pressed).toBe(0);
   });
 
+  it('ignores an auto-repeat arriving after a lost focus: a still-held key is no new press', () => {
+    const { env, input, frame } = setup();
+    env.down('Space');
+    env.loseFocus();
+    input.read(frame);
+    env.down('Space', true);
+    input.read(frame);
+    expect(frame.held).toBe(0);
+    expect(frame.pressed).toBe(0);
+  });
+
   it('does not count an auto-repeated keydown as a new press', () => {
     const { env, input, frame } = setup();
     env.down('KeyP');
@@ -161,16 +177,19 @@ describe('DeviceInput — lost focus (ADR-0015 decision 5)', () => {
   it('treats a key still held on return as a new press only when it goes down again', () => {
     const { env, input, frame } = setup();
     env.down('Space');
+    input.read(frame);
     env.loseFocus();
     input.read(frame);
+    expect(frame.held).toBe(0);
     env.down('Space');
     input.read(frame);
     expect(frame.held & Button.Fire).toBe(Button.Fire);
+    expect(frame.pressed & Button.Fire).toBe(Button.Fire);
   });
 });
 
-describe('DeviceInput — browser defaults and the unused members', () => {
-  it('prevents the browser default for bound and fixed keys only, so arrows never scroll', () => {
+describe('DeviceInput — browser defaults (ADR-0015 decisions 6 and 8)', () => {
+  it('prevents the browser default for bound keys and Enter only, so arrows never scroll', () => {
     const { env } = setup();
     env.down('ArrowDown');
     env.down('Space');
@@ -179,9 +198,39 @@ describe('DeviceInput — browser defaults and the unused members', () => {
     expect(env.prevented).toEqual(['ArrowDown', 'Space', 'Enter']);
   });
 
-  it('has no key capture or layout labels before the options screen', () => {
-    const { input } = setup();
-    expect(input.captureNext()).toEqual({ kind: 'cancelled' });
-    expect(input.label('KeyZ')).toBe('KeyZ');
+  it('keeps preventing the default on auto-repeat, so a held arrow never scrolls', () => {
+    const { env } = setup();
+    env.down('ArrowDown');
+    env.down('ArrowDown', true);
+    env.down('Space', true);
+    expect(env.prevented).toEqual(['ArrowDown', 'ArrowDown', 'Space']);
+  });
+
+  it('never prevents Esc, held or repeated, so it can still leave fullscreen', () => {
+    const { env } = setup();
+    env.down('Escape');
+    env.down('Escape', true);
+    expect(env.prevented).toEqual([]);
+  });
+});
+
+describe('DeviceInput — browser shortcuts (Ctrl, Cmd, Alt)', () => {
+  it.each(['ctrl', 'meta', 'alt'] as const)(
+    'ignores a bound key pressed with %s: no game input, browser action kept',
+    (modifier) => {
+      const { env, input, frame } = setup();
+      env.down('KeyZ', false, modifier);
+      input.read(frame);
+      expect(frame.held).toBe(0);
+      expect(frame.pressed).toBe(0);
+      expect(env.prevented).toEqual([]);
+    },
+  );
+
+  it('still treats Shift as a game key: left Shift is the secondary bomb', () => {
+    const { env, input, frame } = setup();
+    env.down('ShiftLeft');
+    input.read(frame);
+    expect(frame.pressed).toBe(Button.Bomb);
   });
 });

@@ -19,13 +19,22 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 - Adapters: `DeviceInput` façade with the keyboard module and one injected environment record;
   lint bans `window`, `document`, `navigator` and `requestAnimationFrame` in `src/adapters`.
 - Composition root wired; `EnginePreview` and `IdleInput` removed.
-- Tests: TDD on the domain, the loop and the keyboard adapter (150 tests); the single Playwright
+- Tests: TDD on the domain, the loop and the keyboard adapter (158 tests); the single Playwright
   smoke test (Chromium, built bundle; `make smoke`), proved by a mutation; script time per frame
   about 0.18 ms on the development machine, logged, not asserted.
 - **Design updates made with the code** (same change, owner informed at the PR): the class
   diagram gains `Player.advanceTimers` (timers at step 7, after collisions) and
   `Weapon.tick(origin, firing, spawner)` (no `dt`: the cooldown counts steps); the scene machine
   owns the starfield's background clock, so it scrolls on the title and in play without a jump.
+- Pre-push review (design, tests, correctness, security, documentation): no blocking finding
+  after fixes. Fixed: `Esc` was prevented while held (one shared rule now); five test gaps
+  where a real regression stayed green (full exit of a bullet, auto-repeat after a lost focus,
+  prevention on repeat, linear fly-in, blink while entering); literal expected values; a fuller
+  replay comparison; the frozen blink; a press through a multi-step frame. Owner decisions:
+  Ctrl, Cmd and Alt key combinations are never game inputs and keep their browser action; the
+  `Boot` step hands its frame to the title so an early `Enter` is not lost; the always-on blink
+  is an interim deviation until the options screen. The field size moved to the game package;
+  the tick sequence and the scene notes record `draw(snapshot, alpha)` and the background clock.
 
 ### PR #6 merged (`7c390ff`) — design of the first playable build, GDD v0.5, ADR-0015
 

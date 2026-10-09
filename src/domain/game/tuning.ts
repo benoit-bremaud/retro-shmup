@@ -5,6 +5,8 @@
 
 /** The fixed timestep runs at 60 Hz (ADR-0002). */
 export const STEPS_PER_SECOND = 60;
+/** The domain's `dt`, in seconds (ADR-0014). */
+export const STEP_SECONDS = 1 / STEPS_PER_SECOND;
 
 /**
  * Converts a GDD duration to whole simulation steps, once, at load. Timers then count steps down
@@ -18,10 +20,12 @@ export function toSteps(seconds: number): number {
 export const PlayerTuning = {
   /** Pixels per second; keys move at it, the stick and pointers never beyond it. */
   maxSpeed: 150,
+  /** Half the 32 px sprite box: also the margin of the clamp to the field. */
   halfSize: 16,
   spawnX: 120,
   /** Fully hidden below the 320 px field. */
   spawnY: 336,
+  /** Where the fly-in ends. */
   restY: 272,
   flyInSeconds: 0.5,
   invulnerableSeconds: 1.5,

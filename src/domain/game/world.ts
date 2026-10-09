@@ -1,6 +1,6 @@
 import { FixedPool } from '../pool/fixed-pool';
-import { FIELD_HEIGHT, FIELD_WIDTH } from '../presentation/screen';
 import { Bullet } from './bullet';
+import { FIELD_HEIGHT, FIELD_WIDTH } from './geometry';
 import { Player } from './player';
 import { PLAYER_BULLET_POOL_SIZE } from './tuning';
 import type { BulletSpawner } from './weapon';
@@ -61,7 +61,7 @@ export class World implements BulletSpawner {
 
   /**
    * Step 6 of `Run.step`: bullets fully outside the field go back to the pool. Backwards,
-   * swap-with-last, then release — the only place either list changes (class diagram notes).
+   * swap-with-last, then release — the only place an entry leaves either list (class diagram notes).
    */
   releaseOffscreen(): void {
     for (let i = this.activePlayerBullets - 1; i >= 0; i -= 1) {

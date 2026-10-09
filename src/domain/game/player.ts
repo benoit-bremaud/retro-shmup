@@ -1,6 +1,6 @@
 import { Button } from '../ports/input-port';
 import type { IntentFrame } from '../ports/input-port';
-import { FIELD_HEIGHT, FIELD_WIDTH } from '../presentation/screen';
+import { FIELD_HEIGHT, FIELD_WIDTH } from './geometry';
 import type { Vec2 } from './geometry';
 import { PlayerTuning, toSteps } from './tuning';
 import { Weapon } from './weapon';

@@ -67,6 +67,12 @@ function onTitle(): ReturnType<typeof setup> {
 }
 
 describe('SceneMachine — first-playable subset (meta/05-state-scenes)', () => {
+  it('keeps a press latched before the first step: Boot hands its frame to the title', () => {
+    const { machine } = setup();
+    machine.step(DT, pressed(Button.Confirm));
+    expect(machine.scene).toBe(Scene.Playing);
+  });
+
   it('starts in Boot and reaches the title on its first step', () => {
     const { machine } = setup();
     expect(machine.scene).toBe(Scene.Boot);
@@ -96,13 +102,6 @@ describe('SceneMachine — first-playable subset (meta/05-state-scenes)', () => 
     machine.step(DT, pressed(Button.Pause));
     expect(machine.scene).toBe(Scene.Playing);
   });
-
-  it('runs at full speed in every scene', () => {
-    const { machine } = onTitle();
-    expect(machine.timeScale()).toBe(1);
-    machine.step(DT, pressed(Button.Confirm));
-    expect(machine.timeScale()).toBe(1);
-  });
 });
 
 describe('SceneMachine — presentation of the first playable', () => {
@@ -130,5 +129,17 @@ describe('SceneMachine — presentation of the first playable', () => {
     for (let i = 0; i < 31; i += 1) machine.step(DT, fire);
     machine.render(0, 16);
     expect(render.drew(Palette.playerShot)).toBe(true);
+  });
+});
+
+describe('SceneMachine — frozen blink', () => {
+  it('never advances the blink while the simulation does not step', () => {
+    const { machine, render } = onTitle();
+    machine.step(DT, pressed(Button.Confirm));
+    for (let i = 0; i < 11; i += 1) machine.step(DT, createIntentFrame()); // hidden half
+    for (const wallDtMs of [16, 250, 1000]) {
+      machine.render(0.9, wallDtMs);
+      expect(render.drew(Palette.shipHull)).toBe(false);
+    }
   });
 });

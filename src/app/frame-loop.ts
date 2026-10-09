@@ -1,11 +1,11 @@
-import { STEPS_PER_SECOND } from '../domain/game/tuning';
+import { STEP_SECONDS, STEPS_PER_SECOND } from '../domain/game/tuning';
 import type { Clock } from '../domain/ports/clock';
 import { createIntentFrame } from '../domain/ports/input-port';
 import type { InputPort, IntentFrame } from '../domain/ports/input-port';
 
 /** One simulation step in wall-clock milliseconds; the domain receives seconds (ADR-0014). */
 export const STEP_MS = 1000 / STEPS_PER_SECOND;
-export const STEP_SECONDS = 1 / STEPS_PER_SECOND;
+export { STEP_SECONDS };
 /** A single frame never advances the simulation by more than this (ADR-0002). */
 export const MAX_FRAME_MS = 250;
 

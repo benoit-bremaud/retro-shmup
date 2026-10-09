@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { Player, PlayerState } from '../../src/domain/game/player';
-import { PlayerTuning } from '../../src/domain/game/tuning';
 import type { BulletSpawner } from '../../src/domain/game/weapon';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
@@ -67,22 +66,22 @@ describe('Player — spawn and fly-in (GDD v0.5 §4.1)', () => {
   it('spawns centred, fully hidden below the field, in Entering, with no smear', () => {
     const player = new Player();
     expect(player.state).toBe(PlayerState.Entering);
-    expect(player.position).toEqual({ x: PlayerTuning.spawnX, y: PlayerTuning.spawnY });
+    expect(player.position).toEqual({ x: 120, y: 336 });
     expect(player.previousPosition).toEqual(player.position);
   });
 
   it('flies straight up, linearly, and reaches its resting point at the end of the fly-in', () => {
     const player = new Player();
-    step(player, idle(), FLY_IN_STEPS / 2);
-    expect(player.position.y).toBeCloseTo((PlayerTuning.spawnY + PlayerTuning.restY) / 2, 9);
-    step(player, idle(), FLY_IN_STEPS / 2);
-    expect(player.position).toEqual({ x: PlayerTuning.spawnX, y: PlayerTuning.restY });
+    step(player, idle(), 10);
+    expect(player.position.y).toBeCloseTo(336 - 64 / 3, 9); // linear, never clamped to 304
+    step(player, idle(), 20);
+    expect(player.position).toEqual({ x: 120, y: 272 });
   });
 
   it('ignores movement during the fly-in', () => {
     const player = new Player();
     step(player, direction(1, 0), FLY_IN_STEPS);
-    expect(player.position.x).toBe(PlayerTuning.spawnX);
+    expect(player.position.x).toBe(120);
   });
 
   it('becomes Invulnerable after the fly-in, then Vulnerable after the invulnerability', () => {
@@ -102,20 +101,20 @@ describe('Player — movement (GDD v0.5 §4.1, ADR-0009)', () => {
   it('moves 2.5 px per step at full speed in a direction', () => {
     const player = controllable();
     step(player, direction(-1, 0));
-    expect(player.position.x).toBeCloseTo(PlayerTuning.spawnX - 2.5, 9);
+    expect(player.position.x).toBeCloseTo(120 - 2.5, 9);
   });
 
   it('keeps the previous position of the step for interpolation', () => {
     const player = controllable();
     step(player, direction(-1, 0));
-    expect(player.previousPosition.x).toBe(PlayerTuning.spawnX);
+    expect(player.previousPosition.x).toBe(120);
   });
 
   it('approaches a target at most at the maximum speed, then snaps to it', () => {
     const player = controllable();
-    step(player, target(PlayerTuning.spawnX, 200));
-    expect(player.position.y).toBeCloseTo(PlayerTuning.restY - 2.5, 9);
-    const near = target(PlayerTuning.spawnX + 1, player.position.y - 1);
+    step(player, target(120, 200));
+    expect(player.position.y).toBeCloseTo(272 - 2.5, 9);
+    const near = target(120 + 1, player.position.y - 1);
     step(player, near);
     expect(player.position).toEqual({ x: near.moveX, y: near.moveY });
   });
@@ -124,14 +123,14 @@ describe('Player — movement (GDD v0.5 §4.1, ADR-0009)', () => {
     const byKey = controllable();
     const byPointer = controllable();
     step(byKey, direction(0, -1), 10);
-    step(byPointer, target(PlayerTuning.spawnX, -500), 10);
+    step(byPointer, target(120, -500), 10);
     expect(byPointer.position.y).toBeCloseTo(byKey.position.y, 9);
   });
 
   it('stays still without movement', () => {
     const player = controllable();
     step(player, idle(), 5);
-    expect(player.position).toEqual({ x: PlayerTuning.spawnX, y: PlayerTuning.restY });
+    expect(player.position).toEqual({ x: 120, y: 272 });
   });
 
   it.each([

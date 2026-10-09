@@ -30,6 +30,7 @@ const COOLDOWN_STEPS = toSteps(1 / SpreadLevel1.shotsPerSecond);
 export class Weapon {
   private cooldown = 0;
 
+  /** Once per step; `origin` is the ship's centre. The spawner is never stored. */
   tick(origin: Readonly<Vec2>, firing: boolean, spawner: BulletSpawner): void {
     if (this.cooldown > 0) this.cooldown -= 1;
     if (!firing || this.cooldown > 0) return;

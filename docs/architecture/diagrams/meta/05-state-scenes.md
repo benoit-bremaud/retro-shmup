@@ -132,6 +132,11 @@ has no gesture guard, and `Playing` ignores `Pause`.
   the screens brick).
 - **Playing**: the starfield, the ship and its bullets as rectangles in palette colours (no
   sprite before the assets brick), empty HUD bands; the ship flies in from below (GDD §4.1).
+- **Background clock**: the scene machine counts the starfield's scroll time in steps of the
+  scenes that scroll (Title, Playing), so the starfield is continuous across the start and
+  freezes with hit-stop. The `Paused` scene decides whether it keeps scrolling.
+- **Interim deviation, blink**: the blink is always on; its non-flashing replacement and its
+  reduced-motion default (GDD §9.3, §9.7) arrive with the options screen (screens brick).
 - **Smoke test** (the single browser test, ADR-0003): Chromium only, against the built bundle.
   The ship's palette colour is absent at its resting point on the title, then present there after
   `Enter` and at least 30 frames. The logic time per step is measured and logged against the

@@ -37,12 +37,12 @@ describe('World — player bullets (class diagram notes, GDD v0.5 §4.3)', () =>
 
   it('releases a bullet once it is fully above the field, and only then', () => {
     const world = new World();
-    spawnAt(world, 100, 4.5);
+    spawnAt(world, 100, -3.5); // centre above the field, bottom 0.5 px still visible
     world.releaseOffscreen();
     expect(world.playerBulletCount).toBe(1);
-    spawnAt(world, 100, -4);
+    spawnAt(world, 100, -4); // bottom edge exactly on the top of the field
     world.releaseOffscreen();
-    expect(ys(world)).toEqual([4.5]);
+    expect(ys(world)).toEqual([-3.5]);
   });
 
   it('drops a shot when the pool is empty, without allocating', () => {

@@ -12,6 +12,9 @@ import type { KeyboardSample } from './keyboard';
 export interface KeyEventLike {
   readonly code: string;
   readonly repeat: boolean;
+  readonly ctrlKey: boolean;
+  readonly metaKey: boolean;
+  readonly altKey: boolean;
   preventDefault(): void;
 }
 
@@ -41,10 +44,13 @@ export class DeviceInput implements InputPort {
     held: 0,
     pressed: 0,
   };
+  /** One `Pause` press for lost focus, delivered by the next `read` (ADR-0009). */
   private automaticPause = false;
 
   constructor(environment: InputEnvironment) {
     environment.onKeyDown((event) => {
+      // A browser shortcut (Ctrl, Cmd or Alt held) is never a game input and keeps its action.
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
       if (this.keyboard.keyDown(event.code, event.repeat)) event.preventDefault();
     });
     environment.onKeyUp((event) => {
@@ -69,7 +75,7 @@ export class DeviceInput implements InputPort {
     into.tapRegion = 'none';
     into.tapX = 0;
     into.tapY = 0;
-    into.fullscreen = false;
+    into.fullscreen = false; // reported by the browser once fullscreen lands with the options
   }
 
   setBindings(bindings: Bindings): void {
