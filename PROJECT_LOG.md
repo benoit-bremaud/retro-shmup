@@ -8,6 +8,17 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-09
 
+### Online playable build (branch `chore/deploy`) — ADR-0004, ADR-0008
+
+- The owner asked for a playable build online, reached from the portfolio, before the enemies
+  brick (D) and the other devices (C2). Order now: deployment, then D, then C2.
+- `public/_headers` (ADR-0008 decision 4): a CSP limited to the game's own files with
+  `frame-ancestors 'self' https://benoitbremaud.fr`, plus `nosniff`, `Referrer-Policy`,
+  `Permissions-Policy` and `Cross-Origin-Opener-Policy`. The page's inline style moved to a
+  stylesheet so the CSP needs no `'unsafe-inline'`. Checked by serving the build locally with the
+  same CSP: the game runs with no violation.
+- Address: `retro-shmup.pages.dev` until the commercial title is final (ADR-0008 decision 1).
+
 ### PR #8 merged (`d8fcb73`) — first playable build on keyboard, closes #7
 
 - All six checks green; Codex reviewed with no comment. The owner play-tested it ("c'est

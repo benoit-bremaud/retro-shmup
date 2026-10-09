@@ -1,0 +1,16 @@
+/* Page around the canvas: black letterbox, canvas centred, pixels kept sharp (ADR-0014). */
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: #000;
+}
+
+body {
+  display: grid;
+  place-items: center;
+}
+
+#screen {
+  image-rendering: pixelated;
+}
