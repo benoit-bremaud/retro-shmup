@@ -8,6 +8,13 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-09
 
+### PR #8 merged (`d8fcb73`) — first playable build on keyboard, closes #7
+
+- All six checks green; Codex reviewed with no comment. The owner play-tested it ("c'est
+  rigolo") and opened brick C2 (issue #9: touch with the portrait screen, gamepad, mouse).
+- Local note: `pnpm` lives in the asdf shims, which `~/.zshrc` does not load; outside an
+  nvm-and-asdf shell, run `~/.asdf/shims/pnpm`.
+
 ### First playable build on keyboard (branch `feat/game`) — issue #7, brick C1
 
 - Domain: tuning records of GDD v0.5 with the seconds-to-steps conversion; `Player` (fly-in,
