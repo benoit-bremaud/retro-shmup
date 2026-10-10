@@ -18,6 +18,12 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   stylesheet so the CSP needs no `'unsafe-inline'`. Checked by serving the build locally with the
   same CSP: the game runs with no violation.
 - Address: `retro-shmup.pages.dev` until the commercial title is final (ADR-0008 decision 1).
+- Pages project `retro-shmup` created on 2026-10-10 (Cloudflare dashboard, GitHub App access
+  granted to this repository by the owner; build `pnpm build`, output `dist`, `NODE_VERSION`
+  22.23.3, `PNPM_VERSION` 10.30.3). The first production deployment, from `main` at `d8fcb73`,
+  answers 200 at `https://retro-shmup.pages.dev` and is playable; it predates the headers of
+  this PR, which the merge deploys.
+- Codex (PR #10): ADR-0016's follow-ups now include the portfolio pull request.
 - **Decision**: `ADR-0016 deploy every playable build` (owner, 2026-10-09) — partially
   supersedes ADR-0008 decision 5, which waited for the vertical slice; every merge to `main`
   now deploys, and the portfolio card says the game is in development.

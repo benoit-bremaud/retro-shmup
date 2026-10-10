@@ -39,8 +39,11 @@ on Cloudflare before the vertical slice) and the timing of its follow-ups 1, 2 a
 - The security headers ship with the first deployment (ADR-0008 decision 4).
 - Saves made inside a portfolio embed are separate from saves made on the game's own address, since
   the two are different sites (ADR-0006); the catalogue links to the game rather than embedding it.
-- Owner actions, recorded in the project log when done: create the Pages project; check the first
-  deployment with `curl -sI https://<project>.pages.dev`.
+- Follow-ups, in order, each recorded in the project log when done:
+  1. the owner creates the Pages project (done on 2026-10-10: `retro-shmup.pages.dev`);
+  2. the first deployment is checked with `curl -sI https://retro-shmup.pages.dev`;
+  3. a pull request in the portfolio repository adds the `benoitbremaud.fr/jeux/` catalogue page
+     and the game's "in development" card linking to it (ADR-0008 decision 3 and follow-up 4).
 
 ## References
 
