@@ -17,6 +17,8 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   on without the ship, arcade style).
 - No automated reviewer (quotas): a thorough pre-push review (0 Must, 2 Should and 6 Nice
   fixed), CI green, `make verify` green after fixing Sonar S1940 and S4043.
+- PR S (`feat/score`) pushed with `--no-verify` (ADR-0013): the npm registry timed out in
+  `pnpm audit`; typecheck, lint, format, tests (297), gitleaks and the SonarQube gate passed.
 
 ### PR #15 merged (`e75d40e`) — D1 P: Paused and Count-in
 
