@@ -3,6 +3,9 @@ import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
 import { Palette } from '../../src/domain/presentation/palette';
 import { Starfield } from '../../src/domain/presentation/starfield';
+import { DIVER } from '../../src/domain/game/enemy';
+import type { LevelScript } from '../../src/domain/game/level-script';
+import { Run } from '../../src/domain/game/run';
 import { Scene, SceneMachine } from '../../src/domain/scenes/scene-machine';
 import { RecordingRender } from '../support/recording-render';
 import type { RecordedRect } from '../support/recording-render';
@@ -246,5 +249,69 @@ describe('SceneMachine — Paused and Count-in (meta/05-state-scenes, pause rule
     fixture.machine.render(1, 16);
     expect(fixture.render.texts.map((text) => text.text)).toEqual(['3']);
     expect(fixture.render.drew(Palette.pauseIcon)).toBe(false);
+  });
+});
+
+/** Three Divers straight down on an idle ship at rest: three deaths, then Game over. */
+const KILLER: LevelScript = {
+  events: [2, 6.5, 11].map((at) => ({
+    at,
+    archetype: DIVER,
+    count: 1,
+    spawn: { x: 120, y: -8 },
+  })),
+};
+
+function gameOverFixture(): ReturnType<typeof setup> {
+  const render = new RecordingRender();
+  const machine = new SceneMachine(
+    render,
+    new Starfield(() => 0.5),
+    { blink: true },
+    () => new Run(KILLER),
+  );
+  machine.step(DT, createIntentFrame());
+  machine.step(DT, pressed(Button.Confirm));
+  for (let i = 0; i < 3000 && machine.scene === Scene.Playing; i += 1) {
+    machine.step(DT, createIntentFrame());
+  }
+  return { machine, render };
+}
+
+describe('SceneMachine — Game over (GDD §4.4, meta/05-state-scenes)', () => {
+  it('enters Game over when the run ends after its last death sequence', () => {
+    expect(gameOverFixture().machine.scene).toBe(Scene.GameOver);
+  });
+
+  it('returns to the title after 3 s', () => {
+    const { machine } = gameOverFixture();
+    for (let i = 0; i < 179; i += 1) machine.step(DT, createIntentFrame());
+    expect(machine.scene).toBe(Scene.GameOver);
+    machine.step(DT, createIntentFrame());
+    expect(machine.scene).toBe(Scene.Title);
+  });
+
+  it('returns to the title at once on Confirm, which does not start a new run', () => {
+    const { machine } = gameOverFixture();
+    machine.step(DT, pressed(Button.Confirm));
+    expect(machine.scene).toBe(Scene.Title);
+    machine.step(DT, createIntentFrame());
+    expect(machine.scene).toBe(Scene.Title);
+  });
+
+  it('ignores Pause', () => {
+    const { machine } = gameOverFixture();
+    machine.step(DT, pressed(Button.Pause | Button.Back));
+    expect(machine.scene).toBe(Scene.GameOver);
+  });
+
+  it('draws the finished run, frozen, under a veil', () => {
+    const { machine, render } = gameOverFixture();
+    machine.render(0.1, 16);
+    const early = [...render.rects];
+    expect(render.drew(Palette.veil)).toBe(true);
+    machine.step(DT, createIntentFrame());
+    machine.render(0.9, 16);
+    expect(render.rects).toEqual(early);
   });
 });

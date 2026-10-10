@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { PlayerState } from '../../src/domain/game/player';
 import type { Bullet } from '../../src/domain/game/bullet';
-import { Run } from '../../src/domain/game/run';
+import { DIVER } from '../../src/domain/game/enemy';
+import { GameEventKind } from '../../src/domain/game/events';
+import type { LevelScript } from '../../src/domain/game/level-script';
+import { Run, RunOutcome } from '../../src/domain/game/run';
 import { PLAYER_BULLET_POOL_SIZE } from '../../src/domain/game/tuning';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
@@ -63,5 +66,42 @@ describe('Run — fixed step order (class diagram notes)', () => {
       return JSON.stringify({ player, bullets });
     };
     expect(play()).toBe(play());
+  });
+});
+
+describe('Run — events of the enemies brick (ADR-0010, enemy-destroyed sequence)', () => {
+  it('publishes ENEMY_HIT, then one ENEMY_DESTROYED carrying position, score and size tier', () => {
+    const script: LevelScript = {
+      events: [{ at: 0, archetype: DIVER, count: 1, spawn: { x: 120, y: -8 } }],
+    };
+    const run = new Run(script);
+    const log: string[] = [];
+    run.events().subscribe(GameEventKind.EnemyHit, (e) => log.push(`hit ${String(e.subject)}`));
+    run
+      .events()
+      .subscribe(GameEventKind.EnemyDestroyed, (e) =>
+        log.push(`destroyed ${String(e.value)} ${String(e.detail)} ${String(e.position.x)}`),
+      );
+    for (let i = 0; i < 120 && log.length < 2; i += 1) run.step(DT, frame(Button.Fire));
+    expect(log).toEqual(['hit 1', 'destroyed 150 0 120']);
+  });
+
+  it('stops stepping once the outcome is GAME_OVER', () => {
+    const script: LevelScript = {
+      events: [2, 6.5, 11].map((at) => ({
+        at,
+        archetype: DIVER,
+        count: 1,
+        spawn: { x: 120, y: -8 },
+      })),
+    };
+    const run = new Run(script);
+    for (let i = 0; i < 3000 && run.outcome() === RunOutcome.Playing; i += 1) {
+      run.step(DT, frame(0));
+    }
+    expect(run.outcome()).toBe(RunOutcome.GameOver);
+    const before = JSON.stringify(run.snapshot().player);
+    run.step(DT, frame(0, 1));
+    expect(JSON.stringify(run.snapshot().player)).toBe(before);
   });
 });

@@ -7,3 +7,10 @@ export interface Vec2 {
   x: number;
   y: number;
 }
+
+/** Anything with a centre and a size: bullets, enemies, hitboxes. */
+export interface Box {
+  readonly position: Readonly<Vec2>;
+  readonly width: number;
+  readonly height: number;
+}

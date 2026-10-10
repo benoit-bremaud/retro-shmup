@@ -12,6 +12,12 @@ export const Palette = {
   shipWing: '#2c7a7b',
   shipCockpit: '#f6e05e',
   playerShot: '#ffd166',
+  // Placeholder enemies until the sprites land: each role its own colour, none the hull's.
+  popcorn: '#f56565',
+  diver: '#ed8936',
+  gunner: '#9f7aea',
+  enemyShot: '#ff6bcb',
+  lifeIcon: '#38b2ac',
   // HUD digits (hud font) and the overlays of the frozen scenes.
   hudText: '#fdf6e3',
   veil: '#05060fb3',

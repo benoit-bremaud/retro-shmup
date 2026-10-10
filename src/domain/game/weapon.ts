@@ -37,6 +37,11 @@ const COOLDOWN_STEPS = toSteps(1 / SpreadLevel1.shotsPerSecond);
 export class Weapon {
   private cooldown = 0;
 
+  /** A new ship fires at once (05-state-player, fly-in). */
+  reset(): void {
+    this.cooldown = 0;
+  }
+
   /** Once per step; `origin` is the ship's centre. The spawner is never stored. */
   tick(origin: Readonly<Vec2>, firing: boolean, spawner: PlayerShotSpawner): void {
     if (this.cooldown > 0) this.cooldown -= 1;
