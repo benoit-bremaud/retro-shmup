@@ -30,7 +30,7 @@ sequenceDiagram
   participant SK as ScoreKeeper
   participant P as RunPresenter
 
-  Run->>CR: resolve(world, run)
+  Run->>CR: resolve(world, run as HitRules)
   Note over CR: enemy bullet or body overlaps the player hitbox
   CR->>Pl: hit()
   alt [Entering, Invulnerable or Dead]
@@ -39,13 +39,13 @@ sequenceDiagram
   else [Vulnerable, shield held]
     Note over Pl: shield = false, Invulnerable for 0.5 s
     Pl-->>CR: ABSORBED
-    CR->>W: release the bullet (a body is unaffected)
+    Note over CR: the bullet's spent = true, released at step 6 (a body is unaffected)
     CR->>Bus: publish PLAYER_HIT (detail = absorbed)
     Bus->>P: shield break effect and SFX
   else [Vulnerable, no shield]
     Note over Pl: lives −= 1, state Dead
     Pl-->>CR: DIED
-    CR->>W: release the bullet (a body is unaffected)
+    Note over CR: the bullet's spent = true, released at step 6 (a body is unaffected)
     CR->>Run: playerDied()
     Note over Run: bombs = DifficultyProfile.bombsPerLife
     Run->>Wp: powerDown()

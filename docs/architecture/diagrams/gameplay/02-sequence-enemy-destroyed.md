@@ -35,20 +35,21 @@ sequenceDiagram
   participant SK as ScoreKeeper
   participant P as RunPresenter
 
-  Run->>CR: resolve(world, run)
-  Note over CR: bullet B overlaps active enemy E
+  Run->>CR: resolve(world, run as HitRules)
+  Note over CR: bullet B overlaps enemy E, neither spent
   CR->>B: canHit(E.serial)
   B-->>CR: true
-  CR->>E: hp −= B.damage
+  CR->>E: applyDamage(E, B.damage)
+  E-->>CR: crossed — true only when hp goes from > 0 to ≤ 0
   CR->>B: recordHit(E.serial)
   opt [B.pierceLeft = 0]
-    CR->>W: release B to the player-bullet pool
+    CR->>B: spent = true (released at step 6)
   end
   CR->>Bus: publish ENEMY_HIT (subject = E.serial)
   Bus->>P: white flash on E, hit SFX
-  opt [E.hp was > 0 and is now ≤ 0]
+  opt [crossed]
     CR->>Run: destroyEnemy(E, SHOT)
-    Run->>Bus: publish ENEMY_DESTROYED (subject = E.serial, value = archetype score)
+    Run->>Bus: publish ENEMY_DESTROYED (position, value = archetype score, detail = size tier)
     activate Bus
     Bus->>SK: score += value × current multiplier, chain extended
     activate SK
@@ -59,7 +60,7 @@ sequenceDiagram
       Bus->>P: chain feedback
     end
     deactivate SK
-    Bus->>P: explosion sized by archetype, SFX
+    Bus->>P: explosion sized by detail, SFX
     deactivate Bus
     alt [E carries a cargo]
       Run->>W: spawn pickup(cargo) at E
@@ -83,20 +84,24 @@ sequenceDiagram
       Run->>Bus: publish PICKUP_SPAWNED (detail = kind)
       Bus->>P: first-time label if this kind is new in the run
     end
-    Run->>W: release E to the enemy pool, marked inactive
+    Run->>E: spent = true (released at step 6)
   end
 ```
 
 ## Notes
 
-- **Destroyed at most once**: the guard `[hp was > 0 and is now ≤ 0]` and the immediate release
-  (inactive enemies are skipped by the rest of the pass, the pool release is safe during
-  iteration) prevent a double score, a double roll and a double formation count when two bullets
-  or a bomb and a bullet meet the same enemy in one step.
+- **Destroyed at most once**: `applyDamage` returns `true` only on the crossing to 0 HP, and the
+  `spent` mark (spent bodies and bullets are skipped by the rest of the step) prevent a double score, a
+  double roll and a double formation count when two bullets or a bomb and a bullet meet the same
+  enemy in one step.
+- **Mark now, release at step 6**: `World.sweep()` is the only caller of `pool.release`
+  (04-class-domain, mark then release), so no pool ever sees a double release. `ENEMY_DESTROYED`
+  carries its position and size tier because `E` is gone before the frame is drawn.
 - **Spawning is a direct call, never a handler** (ADR-0010): pickups, the formation reward and
   the pool release happen in `Run.destroyEnemy`, in this fixed order; only `ScoreKeeper` changes
   state from a handler, and the presenter only reacts.
-- **Subscription order**: `ScoreKeeper` first, `RunPresenter` second. `ScoreKeeper` publishes
+- **Subscription order**: `ScoreKeeper` first (subscribed by `Run`'s constructor), `RunPresenter`
+  second (subscribed by the scene machine). `ScoreKeeper` publishes
   `SCORE_AWARDED` and `CHAIN_STEPPED` from its handler — other kinds than the one it handles, so
   the reused event objects stay valid (ADR-0010 invariants).
 - **Chain rule** (GDD v0.4 §8): the kill is scored at the current multiplier, then the chain
