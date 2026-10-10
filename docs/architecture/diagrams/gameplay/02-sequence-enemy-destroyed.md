@@ -45,7 +45,8 @@ sequenceDiagram
   opt [B.pierceLeft = 0]
     CR->>B: spent = true (released at step 6)
   end
-  CR->>Bus: publish ENEMY_HIT (subject = E.serial)
+  CR->>Run: enemyHit(E)
+  Run->>Bus: publish ENEMY_HIT (subject = E.serial)
   Bus->>P: white flash on E, hit SFX
   opt [crossed]
     CR->>Run: destroyEnemy(E, SHOT)

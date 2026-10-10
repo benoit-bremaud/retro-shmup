@@ -143,6 +143,7 @@ The enemies brick adds `Paused`, `Count-in` and `Game over`, and removes the pau
   `NameEntry` branch until the high scores exist (screens brick). It draws the frozen field of
   the finished run, kept read-only (notes above), under a dim veil, without text.
 - **Frozen scenes** (`Paused`, `Count-in`, `Game over`) take every step without stepping the run
+  (except the last Count-in step, which hands over to `Playing`, above)
   and do not advance the background clock. `SceneMachine.render` picks the frame's alpha once:
   `alpha = 1` for the whole frame, starfield and snapshot, so nothing wobbles between two
   positions (02-sequence-fixed-step-tick); and it hands the presenter `wallDtMs = 0`, so effects

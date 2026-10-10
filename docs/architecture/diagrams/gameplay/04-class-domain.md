@@ -52,6 +52,8 @@ classDiagram
   }
   class HitRules {
     <<interface>>
+    +enemyHit(enemy: Enemy) void
+    +shieldBroken() void
     +destroyEnemy(enemy: Enemy, cause: KillCause) void
     +damageBoss(amount: number) void
     +playerDied() void
@@ -496,7 +498,10 @@ classDiagram
   enemies brick; bombs, shield, weapon, power and boss HP join with their bricks.
 - **`HitRules`** is declared in the collision module and realized by `Run`: `CollisionResolver`
   and the bomb path call it, and no other client sees it, since the scene machine holds the run
-  as `Simulation & RunView`. `damageBoss` joins it with the boss brick.
+  as `Simulation & RunView`. The resolver never sees the bus: every hit it finds goes through
+  `HitRules`, and `Run`, the single publisher of each kind, publishes `ENEMY_HIT`, `PLAYER_HIT`,
+  `ENEMY_DESTROYED` and `PLAYER_DIED`. The enemies brick implements `enemyHit`, `destroyEnemy`
+  and `playerDied`; `shieldBroken` joins with the shield, `damageBoss` with the boss brick.
 - **Brick subsets**: this diagram is the 1.0 model. A brick implements a subset of a type's
   fields and associations, recorded in the build order of meta/05-state-scenes, never weakened
   here: in the enemies brick `LevelScript` holds only its events and `loopAt` (interim), and
