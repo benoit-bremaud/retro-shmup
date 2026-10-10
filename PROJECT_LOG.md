@@ -8,6 +8,15 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-10
 
+### PR #15 merged (`e75d40e`) — D1 P: Paused and Count-in
+
+- `P` or `Esc` pauses (veil, two-bar icon, frozen field and starfield); `Enter` or `Esc` starts
+  a 1 s 3-2-1 count-in whose last step hands over to play; a lost focus never resumes. The
+  renderer draws the `hud` digits (3 × 5 glyphs at 2×) and fails closed on anything else.
+- Merged without an automated review: Codex and Copilot had both reached their quotas. Owner
+  decision on the scored option "merge now, review later": CI green, a clean pre-push review
+  (3 Should and 4 Nice fixed), SonarQube green, the pause checked by hand. Follow-up: #16.
+
 ### PR #14 merged (`260d98c`) — D1 R: ActiveList, World.sweep, PlayerShotSpawner
 
 - Pure refactor before the enemies: `ActiveList` owns its pool and is the only caller of
