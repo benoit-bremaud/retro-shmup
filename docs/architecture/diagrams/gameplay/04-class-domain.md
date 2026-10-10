@@ -415,7 +415,7 @@ classDiagram
 | Chain: 2 s window, step every 5 kills, ×8 cap, reset on death (§8) | `ScoreKeeper.chainKills`, `chainTimer`, `multiplier()` |
 | Tally: full formations, no bomb, no miss, bombs left (§8) | `LevelTally`, reset at each level; on `LEVEL_CLEARED` `ScoreKeeper` adds the bonuses; `RunView.tally()` feeds the results screen |
 | Bomb used (§4.5, §8) | `BOMB_USED` → `ScoreKeeper` sets `tally.bombUsed` (no-bomb bonus lost) |
-| Chain expiry (§8) | `ScoreKeeper.tick(dt)` counts down `chainTimer` in every step and breaks the chain at 0 |
+| Chain expiry, inclusive window (v0.6 §8) | `chainTimer` counts the steps left in the window: 120 on a kill, −1 when there is no chain (start, death). `ScoreKeeper.tick` (step 7, after the collisions) decrements it, and the chain breaks when it falls below 0, so a kill 120 steps after the previous one still extends it and one 121 steps after does not; `chainRatio` = max(`chainTimer`, 0) / 120 |
 | Difficulty knobs (§10) | `DifficultyProfile`; the HUD caps (9 lives, 5 bombs, level 5) are constants, not knobs |
 | Clamp to the field, fly-in (v0.5 §4.1) | `Player.update`: clamp applied once `Entering` ends; fly-in path in 05-state-player |
 | Enemy roles of the enemies brick (v0.6 §5.2.1) | `PathMovement` (S curve from `ScriptEvent.spawn`, mirrored by `mirror`), `DiveMovement` (`Body.diveTarget` captured at the dive, heading kept until the enemy leaves), `EnterHoldLeave` (spawn → `ScriptEvent.hover` → back); `AimedAttack` counts `fireTimer` only while `Body.armed`, which the movement sets (during the hold for `EnterHoldLeave`); a zero aim vector fires straight down |

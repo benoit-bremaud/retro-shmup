@@ -47,7 +47,8 @@ sequenceDiagram
     FL->>Scenes: step(1/60 s, frame)
     alt [scene is Playing and Pause in pressed]
       Note over Scenes: enter Paused — the run does not step
-    else [scene is Playing]
+    else [scene is Playing, or Count-in on its last step without Pause]
+      Note over Scenes: a last Count-in step hands over to Playing first — 05-state-scenes
       Scenes->>Run: step(1/60 s, frame)
       Scenes->>Run: outcome()
       Run-->>Scenes: PLAYING, LEVEL_CLEARED, RUN_CLEARED or GAME_OVER
