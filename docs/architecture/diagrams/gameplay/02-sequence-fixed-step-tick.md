@@ -67,7 +67,7 @@ sequenceDiagram
   Scenes->>Presenter: draw(snapshot, alpha, wallDtMs)
   Presenter->>Render: setRegion field, sprites at interpolated positions
   Presenter->>Render: setRegion hud, drawHud — score, chain, lives
-  Note over Presenter: draw first, then age every effect by wallDtMs, unscaled — ADR-0010 — so an effect recorded in this frame's steps starts at age 0 and is drawn at least once
+  Note over Presenter: draw first, then age the visual effects by wallDtMs, unscaled — ADR-0010 — so one recorded in this frame's steps is drawn at least once. A time effect (hit-stop, slow motion) recorded in this frame starts aging only after a later timeScale() has used it
   Scenes->>Render: overlays of the scene — veil, pause icon, count-in
   Scenes->>Render: present()
 ```
@@ -92,7 +92,9 @@ sequenceDiagram
   several, and a tap shorter than a step is not lost (latched by the adapter).
 - **Time effects never touch the run**: during hit-stop `s` falls to 0 and the loop takes no
   step; the presenter keeps animating on unscaled `wallDtMs`, and the effect ends on wall time
-  (ADR-0010). Outside `Playing` the scale is 1, so a slow motion never spills into the results
+  (ADR-0010). A time effect starts aging only from the frame after the one whose `timeScale()`
+  it changed, so a 2-to-3-frame hit-stop born during a 30 Hz or catch-up frame still freezes at
+  least one frame. Outside `Playing` the scale is 1, so a slow motion never spills into the results
   or the pause. The boss timer and the chain window, counted in steps, are untouched.
 - **Rendering reads, never writes**: the presenter uses the snapshot and its HUD getters;
   nothing on the render path changes simulation state.
