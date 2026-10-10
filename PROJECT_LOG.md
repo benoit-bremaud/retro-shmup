@@ -8,6 +8,14 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-10
 
+### PR #14 merged (`260d98c`) — D1 R: ActiveList, World.sweep, PlayerShotSpawner
+
+- Pure refactor before the enemies: `ActiveList` owns its pool and is the only caller of
+  `release`; `World.sweep()` is the single entry point of step 6; the ESLint rule keeps game
+  rules away from presentation and scenes; tests share one `RecordingRender`.
+- Review: Codex hit its usage limit and could not review; Copilot (launched by the owner)
+  recommended approval with no finding; CI green.
+
 ### PR #13 merged (`994c787`) — enemies brick design (D0)
 
 - GDD v0.6 and the UML of the enemies brick are on `main`. The review ran over 19 commits:
