@@ -35,6 +35,13 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   - inclusive 2 s chain window, reserve-life icons;
   - recorded interim deviations: no drops, formations, bombs, boss or `Random` in this brick;
   - a wording note on ADR-0010: `Run` subscribes its own `ScoreKeeper`.
+- PR #13 review (Codex, then Copilot launched by the owner): 13 Codex and 5 Copilot findings,
+  each studied and scored, then validated one at a time — among them the S curve mirror, the
+  Diver rows and the formation rule, the inclusive chain window (an off-by-one in our own
+  analysis), the count-in handoff, `HitRules` events, refused formation members, the chain bar
+  ratio and the draw-then-age effect order.
+- `git push --no-verify` on `60c76d1` (ADR-0013 exception): the npm registry timed out twice in
+  `pnpm audit`; typecheck, lint, format, tests, gitleaks and the SonarQube gate passed.
 
 ### PR #11 merged (`2a90e17`) and portfolio PR benoit-bremaud/benoitbremaud.fr#14 merged (`5a21024`)
 

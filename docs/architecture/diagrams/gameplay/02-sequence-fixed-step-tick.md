@@ -67,7 +67,7 @@ sequenceDiagram
   Scenes->>Presenter: draw(snapshot, alpha, wallDtMs)
   Presenter->>Render: setRegion field, sprites at interpolated positions
   Presenter->>Render: setRegion hud, drawHud — score, chain, lives
-  Note over Presenter: effects advance by wallDtMs, unscaled — ADR-0010
+  Note over Presenter: draw first, then age every effect by wallDtMs, unscaled — ADR-0010 — so an effect recorded in this frame's steps starts at age 0 and is drawn at least once
   Scenes->>Render: overlays of the scene — veil, pause icon, count-in
   Scenes->>Render: present()
 ```
