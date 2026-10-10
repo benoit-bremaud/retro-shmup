@@ -87,6 +87,7 @@ classDiagram
     -enemies: Pool~Enemy~
     -formations: Pool~Formation~
     +startFormation(total: number) Formation [0..1]
+    +spendPlayerBullets() void
     +sweep() void
   }
   class WorldView {
@@ -179,11 +180,12 @@ classDiagram
     +size: number
   }
   class ScoreKeeper {
-    -score: number
     -chainKills: number
     -chainTimer: number
+    +score() number
     +multiplier() number
-    +tick(dt) void
+    +chainRatio() number
+    +tick() void
   }
   class LevelTally {
     +formationsCleared: number
@@ -501,7 +503,9 @@ classDiagram
   vs enemies and boss, then hazards vs player, then pickups vs player); (6) `World.sweep()` releases
   spent items and bodies leaving the screen, formations count escapes; (7) `ScoreKeeper.tick` and the boss and player
   timers advance; (8) the outcome is updated — a level end is deferred while the player is `Dead`,
-  and a final death (no life left) sets `GAME_OVER`, which wins over a pending level end.
+  and a final death (no life left) sets `GAME_OVER`, which wins over a pending level end. Once
+  `GAME_OVER` is set, `World.spendPlayerBullets()` marks the ship's last shots, and later steps
+  run without the ship (GDD v0.6 §4.4): the ship stays out, so the score never moves.
 - **HUD data**: `WorldSnapshot` exposes the HUD values as getters, read by `RunPresenter` each
   frame without allocation: `score`, `multiplier`, `chainRatio` (0 to 1) and `lives` from the
   enemies brick; bombs, shield, weapon, power and boss HP join with their bricks.

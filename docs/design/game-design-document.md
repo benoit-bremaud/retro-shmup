@@ -211,7 +211,9 @@ is held or not, so tapping never fires faster than holding. One level-1 shot dea
   5. the ship respawns after 1.5 s with 2 s of invulnerability.
   Lives at 0 → **Game over** after the 1.5 s death sequence *(v0.4: the last explosion plays out)*
   (no continues in 1.0). The Game over screen lasts **3 s** *(initial, v0.6)*, or less when the
-  player confirms.
+  player confirms. It shows **GAME OVER** in large letters over the run, which keeps playing
+  without the ship, as on an arcade cabinet: waves keep coming, enemies fly and fire, the score
+  stays as it was *(v0.6, owner playtest)*.
 
 ### 4.5 Bombs
 
@@ -626,6 +628,7 @@ fully playable at release quality, used to validate the design before producing 
 | Spawn and clamp *(v0.5)* | Straight fly-in from below the field; whole sprite kept in the field; blink 3 times per second (§4.1) | Centre-only clamp (wings clipped by the field edge); a faster arcade blink (above the photosensitivity threshold) |
 | Enemy values *(v0.6)* | §5.2.1: full-box hitboxes, 75 px/s aimed bullets, Diver dive at 180 px/s, Gunner hover 3.5 s with one aimed bullet every 1.5 s | Hitboxes smaller than the sprite (the player's 4 × 4 hitbox already gives the fairness); three-bullet volleys from the start (kept for later levels) |
 | Game over time *(v0.6)* | 3 s, shortened by Confirm | Waiting for Confirm only (a player who walked away sees a frozen screen forever) |
+| Game over screen *(v0.6, owner playtest)* | Large "GAME OVER" (title font, message catalogue, "GAME OVER" in EN and FR) over the run playing on without the ship | A wordless frozen field (first design: read as a bug in playtest); only the starfield scrolling behind a frozen field; "PARTIE TERMINÉE" in French (longer, needs É) |
 | Gunner entry *(v0.6)* | Straight line from a scripted spawn point to a scripted hover point, back the same way; sides and top share one movement (§7.2.1) | Every Gunner from the top in the enemies brick (a recorded deviation from §7.2, to undo later) |
 | Chain window *(v0.6)* | Inclusive: a kill exactly 2 s after the previous one extends the chain | Strict (needs a 119-step timer or a different step order) |
 | Lives icons *(v0.6)* | Reserve lives only, as in the arcade | Every life, the ship in play included |

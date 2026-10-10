@@ -1,5 +1,5 @@
 import { SceneTuning, toSteps } from '../game/tuning';
-import { HUD_FONT_CELL } from '../ports/render-port';
+import { HUD_FONT_CELL, TITLE_FONT_CELL } from '../ports/render-port';
 import type { RenderPort } from '../ports/render-port';
 import { Palette } from './palette';
 import { FIELD_HEIGHT, FIELD_WIDTH } from './screen';
@@ -39,5 +39,17 @@ export function drawCountIn(render: RenderPort, stepsLeft: number): void {
     (FIELD_WIDTH - HUD_FONT_CELL.glyphWidth) / 2,
     (FIELD_HEIGHT - HUD_FONT_CELL.height) / 2,
     'hud',
+  );
+}
+
+/** A large line of `title` text centred on the field: the Game over message. */
+export function drawBanner(render: RenderPort, text: string): void {
+  const width = (text.length - 1) * TITLE_FONT_CELL.width + TITLE_FONT_CELL.glyphWidth;
+  render.setRegion('field');
+  render.drawText(
+    text,
+    Math.round((FIELD_WIDTH - width) / 2),
+    Math.round((FIELD_HEIGHT - TITLE_FONT_CELL.height) / 2),
+    'title',
   );
 }

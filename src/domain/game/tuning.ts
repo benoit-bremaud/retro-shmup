@@ -87,6 +87,13 @@ export const GunnerTuning = {
   firePeriodSeconds: 1.5,
 } as const;
 
+/** The chain (GDD §8): a 2 s window, a step every 5 kills, capped at ×8. */
+export const ChainTuning = {
+  windowSeconds: 2,
+  killsPerStep: 5,
+  maxMultiplier: 8,
+} as const;
+
 /** Pools of the enemies brick (GDD v0.6 §5.2.1). */
 export const ENEMY_POOL_SIZE = 16;
 export const ENEMY_BULLET_POOL_SIZE = 48;

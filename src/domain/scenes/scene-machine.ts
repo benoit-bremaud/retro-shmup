@@ -4,7 +4,9 @@ import { SceneTuning, STEP_SECONDS, toSteps } from '../game/tuning';
 import { Button } from '../ports/input-port';
 import type { IntentFrame } from '../ports/input-port';
 import type { RenderPort } from '../ports/render-port';
-import { drawCountIn, drawPauseIcon, drawVeil } from '../presentation/overlays';
+import { message } from '../i18n/messages';
+import type { Language } from '../i18n/messages';
+import { drawBanner, drawCountIn, drawPauseIcon, drawVeil } from '../presentation/overlays';
 import { Palette } from '../presentation/palette';
 import { RunPresenter } from '../presentation/run-presenter';
 import type { EffectSettings } from '../presentation/run-presenter';
@@ -37,7 +39,8 @@ const SCENE_TRAITS: Readonly<Record<Scene, SceneTraits>> = {
   [Scene.Playing]: { frozen: false, scrolls: true, drawsRun: true },
   [Scene.Paused]: { frozen: true, scrolls: false, drawsRun: true },
   [Scene.CountIn]: { frozen: true, scrolls: false, drawsRun: true },
-  [Scene.GameOver]: { frozen: true, scrolls: false, drawsRun: true },
+  // Arcade style: the run plays on without the ship behind GAME OVER (GDD v0.6 §4.4).
+  [Scene.GameOver]: { frozen: false, scrolls: true, drawsRun: true },
 };
 
 const COUNT_IN_STEPS = toSteps(SceneTuning.countInSeconds);
@@ -48,7 +51,7 @@ type InRun = Simulation & RunView;
 
 /**
  * The screens and their transitions (meta/05-state-scenes): Boot → Title → InRun { Playing ⇄
- * Paused ⇄ Count-in } → Game over → Title. The finished run stays read-only until the title. It
+ * Paused ⇄ Count-in } → Game over → Title. Game over keeps stepping the run without the ship; the run is released at the title. It
  * satisfies the frame loop's `FrameTarget` structurally, so the domain
  * never imports the loop. It owns the background clock, so the starfield scrolls on the title and
  * in play without a jump at the start, and freezes with the run.
@@ -59,10 +62,16 @@ export class SceneMachine {
   private backgroundSteps = 0;
   private countInLeft = 0;
   private gameOverLeft = 0;
+  /** English until the options screen chooses (GDD §9.6). */
+  private readonly language: Language = 'en';
   private readonly createRun: () => InRun;
   private readonly renderer: RenderPort;
   private readonly starfield: Starfield;
-  private readonly presenter: RunPresenter;
+  private readonly effects: Readonly<EffectSettings>;
+  /** Built with each run, so no effect or listener outlives its run (ADR-0010). */
+  private presenter: RunPresenter | undefined;
+  /** A frozen step ran since the last render: that frame ages no effect (count-in handoff). */
+  private frozenStepSinceRender = false;
 
   /** `createRun` builds each new run; tests pass a short level script, the game the default. */
   constructor(
@@ -74,7 +83,7 @@ export class SceneMachine {
     this.renderer = render;
     this.starfield = starfield;
     this.createRun = createRun;
-    this.presenter = new RunPresenter(render, effects);
+    this.effects = effects;
   }
 
   get scene(): Scene {
@@ -82,10 +91,12 @@ export class SceneMachine {
   }
 
   timeScale(): number {
-    return this.current === Scene.Playing ? this.presenter.timeScale() : 1;
+    if (this.current !== Scene.Playing || this.presenter === undefined) return 1;
+    return this.presenter.timeScale();
   }
 
   step(dt: number, frame: Readonly<IntentFrame>): void {
+    if (SCENE_TRAITS[this.current].frozen) this.frozenStepSinceRender = true;
     switch (this.current) {
       case Scene.Boot:
         // Nothing to load yet (no assets, no save document). The title takes this step's frame,
@@ -106,7 +117,7 @@ export class SceneMachine {
         this.stepCountIn(dt, frame);
         return;
       case Scene.GameOver:
-        this.stepGameOver(frame);
+        this.stepGameOver(dt, frame);
         return;
     }
   }
@@ -115,7 +126,9 @@ export class SceneMachine {
   private stepTitle(frame: Readonly<IntentFrame>): void {
     this.backgroundSteps += 1;
     if ((frame.pressed & Button.Confirm) !== 0 || frame.tapRegion !== 'none') {
-      this.run = this.createRun(); // InRun entry creates the run.
+      const run = this.createRun(); // InRun entry creates the run and its presenter.
+      this.run = run;
+      this.presenter = new RunPresenter(this.renderer, this.effects, run.events());
       this.current = Scene.Playing;
     }
   }
@@ -155,19 +168,26 @@ export class SceneMachine {
     this.stepPlaying(dt, frame);
   }
 
-  // Confirm, or the game-over time, returns to the title; the run is released there.
-  private stepGameOver(frame: Readonly<IntentFrame>): void {
+  // The run plays on without the ship; Confirm, or the game-over time, returns to the title,
+  // where the run is released.
+  private stepGameOver(dt: number, frame: Readonly<IntentFrame>): void {
+    this.backgroundSteps += 1;
+    this.run?.step(dt, frame);
     this.gameOverLeft -= 1;
     if ((frame.pressed & Button.Confirm) === 0 && this.gameOverLeft > 0) return;
     this.run = undefined;
+    this.presenter = undefined;
     this.current = Scene.Title;
   }
 
-  render(alpha: number, _wallDtMs: number): void {
+  render(alpha: number, wallDtMs: number): void {
     const r = this.renderer;
     const traits = SCENE_TRAITS[this.current];
     // A frozen scene draws its current positions: nothing wobbles between two positions.
     const frameAlpha = traits.frozen ? 1 : alpha;
+    // Effects never age in a frozen frame, nor in one that ran a frozen step (the handoff).
+    const effectMs = traits.frozen || this.frozenStepSinceRender ? 0 : wallDtMs;
+    this.frozenStepSinceRender = false;
     r.clear();
     // The bands first: the presenter draws the HUD contents over them.
     r.setRegion('hud');
@@ -176,8 +196,8 @@ export class SceneMachine {
     // Frozen scenes draw the starfield at alpha 1 too, so it never steps back at the pause.
     const scroll = traits.scrolls || traits.frozen ? frameAlpha : 0;
     this.starfield.draw(r, (this.backgroundSteps + scroll) * STEP_SECONDS);
-    if (traits.drawsRun && this.run !== undefined) {
-      this.presenter.draw(this.run.snapshot(), frameAlpha);
+    if (traits.drawsRun && this.run !== undefined && this.presenter !== undefined) {
+      this.presenter.draw(this.run.snapshot(), frameAlpha, effectMs);
     }
     this.drawOverlays();
     r.present();
@@ -186,6 +206,7 @@ export class SceneMachine {
   private drawOverlays(): void {
     if (this.current === Scene.GameOver) {
       drawVeil(this.renderer);
+      drawBanner(this.renderer, message('gameOver', this.language));
     } else if (this.current === Scene.Paused) {
       drawVeil(this.renderer);
       drawPauseIcon(this.renderer);
@@ -194,7 +215,7 @@ export class SceneMachine {
     }
   }
 
-  // Empty bands until the HUD contents land with scoring and pickups.
+  // The HUD bands; the presenter draws their contents over them.
   private drawHudBands(): void {
     const r = this.renderer;
     const rightBandX = FIELD_X + FIELD_WIDTH;

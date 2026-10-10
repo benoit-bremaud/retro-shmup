@@ -4,6 +4,8 @@ import type { GameEvent } from '../../src/domain/game/events';
 import { Run, RunOutcome } from '../../src/domain/game/run';
 import { ENEMY_BULLET_POOL_SIZE, ENEMY_POOL_SIZE } from '../../src/domain/game/tuning';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
+import { RunPresenter } from '../../src/domain/presentation/run-presenter';
+import { RecordingRender } from '../support/recording-render';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
 
 // Headless level simulation (ADR-0002, ADR-0003): the real run, scripted inputs, no browser.
@@ -106,5 +108,31 @@ describe('Level simulation — the enemies brick, headless', () => {
       for (let e = 0; e < enemies.count; e += 1) serials.add(enemies.at(e).serial);
     }
     expect(serials.size).toBeGreaterThan(10);
+  });
+});
+
+describe('Level simulation — effects never change the run (ADR-0010)', () => {
+  it('gives the same score, lives and event log with effects on and off', () => {
+    const play = (effectsOn: boolean): string => {
+      const run = new Run();
+      const render = new RecordingRender();
+      const presenter = new RunPresenter(
+        render,
+        { blink: effectsOn, hitFlash: effectsOn, explosions: effectsOn },
+        run.events(),
+      );
+      const log: string[] = [];
+      run.events().subscribe(GameEventKind.EnemyDestroyed, (e) => log.push(String(e.subject)));
+      for (let i = 0; i < 2 * ONE_PASS; i += 1) {
+        run.step(DT, scripted(i));
+        render.clear();
+        presenter.draw(run.snapshot(), 1, 16.7);
+      }
+      const snapshot = run.snapshot();
+      return JSON.stringify({ log, score: snapshot.score, lives: snapshot.lives });
+    };
+    const on = play(true);
+    expect(on).toBe(play(false));
+    expect(on).not.toContain('"score":0,');
   });
 });

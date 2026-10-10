@@ -3,7 +3,7 @@ import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
 import { Palette } from '../../src/domain/presentation/palette';
 import { Starfield } from '../../src/domain/presentation/starfield';
-import { DIVER } from '../../src/domain/game/enemy';
+import { DIVER, POPCORN } from '../../src/domain/game/enemy';
 import type { LevelScript } from '../../src/domain/game/level-script';
 import { Run } from '../../src/domain/game/run';
 import { Scene, SceneMachine } from '../../src/domain/scenes/scene-machine';
@@ -14,7 +14,11 @@ const DT = 1 / 60;
 
 function setup(): { machine: SceneMachine; render: RecordingRender } {
   const render = new RecordingRender();
-  const machine = new SceneMachine(render, new Starfield(() => 0.5), { blink: true });
+  const machine = new SceneMachine(render, new Starfield(() => 0.5), {
+    blink: true,
+    hitFlash: true,
+    explosions: true,
+  });
   return { machine, render };
 }
 
@@ -244,22 +248,28 @@ describe('SceneMachine — Paused and Count-in (meta/05-state-scenes, pause rule
     fixture.machine.render(1, 16);
     expect(fixture.render.drew(Palette.veil)).toBe(true);
     expect(fixture.render.drew(Palette.pauseIcon)).toBe(true);
-    expect(fixture.render.texts).toEqual([]);
+    const fieldTexts = (): string[] =>
+      fixture.render.texts.filter((text) => text.region === 'field').map((text) => text.text);
+    expect(fieldTexts()).toEqual([]);
     fixture.machine.step(DT, frame(Button.Confirm));
     fixture.machine.render(1, 16);
-    expect(fixture.render.texts.map((text) => text.text)).toEqual(['3']);
+    expect(fieldTexts()).toEqual(['3']);
     expect(fixture.render.drew(Palette.pauseIcon)).toBe(false);
   });
 });
 
 /** Three Divers straight down on an idle ship at rest: three deaths, then Game over. */
 const KILLER: LevelScript = {
-  events: [2, 6.5, 11].map((at) => ({
-    at,
-    archetype: DIVER,
-    count: 1,
-    spawn: { x: 120, y: -8 },
-  })),
+  events: [
+    ...[2, 6.5, 11].map((at) => ({
+      at,
+      archetype: DIVER,
+      count: 1,
+      spawn: { x: 120, y: -8 },
+    })),
+    // Far from the ship (x 0 to 80): still flying when the run ends, so Game over shows it move.
+    { at: 14, archetype: POPCORN, count: 1, spawn: { x: 40, y: -8 } },
+  ],
 };
 
 function gameOverFixture(): ReturnType<typeof setup> {
@@ -267,7 +277,7 @@ function gameOverFixture(): ReturnType<typeof setup> {
   const machine = new SceneMachine(
     render,
     new Starfield(() => 0.5),
-    { blink: true },
+    { blink: true, hitFlash: true, explosions: true },
     () => new Run(KILLER),
   );
   machine.step(DT, createIntentFrame());
@@ -305,13 +315,102 @@ describe('SceneMachine — Game over (GDD §4.4, meta/05-state-scenes)', () => {
     expect(machine.scene).toBe(Scene.GameOver);
   });
 
-  it('draws the finished run, frozen, under a veil', () => {
+  it('shows a large GAME OVER from the catalogue over a veil', () => {
     const { machine, render } = gameOverFixture();
-    machine.render(0.1, 16);
-    const early = [...render.rects];
+    machine.render(0, 16);
     expect(render.drew(Palette.veil)).toBe(true);
+    expect(render.texts.filter((text) => text.font === 'title')).toEqual([
+      { region: 'field', x: 50, y: 150, text: 'GAME OVER', font: 'title' },
+    ]);
+  });
+
+  it('keeps the run and the starfield moving behind it, arcade style', () => {
+    const { machine, render } = gameOverFixture();
+    machine.render(0, 16);
+    const before = render.rectsOf(Palette.popcorn).map((rect) => rect.y);
+    const starsBefore = render.rectsOf(Palette.starNear).map((rect) => rect.y);
+    expect(before).toHaveLength(1);
+    for (let i = 0; i < 30; i += 1) machine.step(DT, createIntentFrame());
+    machine.render(0, 16);
+    expect(render.rectsOf(Palette.popcorn).map((rect) => rect.y)[0]).toBeGreaterThan(
+      before[0] ?? 0,
+    );
+    expect(render.rectsOf(Palette.starNear).map((rect) => rect.y)).not.toEqual(starsBefore);
+  });
+});
+
+describe('SceneMachine — effects per run (ADR-0010, 02-sequence-fixed-step-tick)', () => {
+  /** A run whose first Diver is shot at once: it explodes on screen. */
+  const TARGET: LevelScript = {
+    events: [{ at: 0, archetype: DIVER, count: 1, spawn: { x: 120, y: -8 } }],
+  };
+
+  function exploding(): ReturnType<typeof setup> {
+    const render = new RecordingRender();
+    const machine = new SceneMachine(
+      render,
+      new Starfield(() => 0.5),
+      { blink: true, hitFlash: true, explosions: true },
+      () => new Run(TARGET),
+    );
     machine.step(DT, createIntentFrame());
-    machine.render(0.9, 16);
-    expect(render.rects).toEqual(early);
+    machine.step(DT, pressed(Button.Confirm));
+    const fire = createIntentFrame();
+    fire.held = Button.Fire;
+    for (let i = 0; i < 200; i += 1) {
+      machine.step(DT, fire);
+      machine.render(1, 0);
+      if (render.drew(Palette.explosionHot)) break;
+    }
+    return { machine, render };
+  }
+
+  it('freezes effects in a frame that ran a frozen step, the count-in handoff included', () => {
+    const { machine, render } = exploding();
+    machine.step(DT, pressed(Button.Pause));
+    machine.step(DT, pressed(Button.Confirm));
+    for (let i = 0; i < 60; i += 1) machine.step(DT, createIntentFrame()); // last one hands over
+    machine.render(0, 250); // Playing now, but this frame ran frozen steps: it ages nothing
+    expect(render.drew(Palette.explosionHot)).toBe(true);
+    machine.render(0, 250); // still drawn at age 0 (hot), then aged to 250 ms
+    expect(render.drew(Palette.explosionHot)).toBe(true);
+    machine.render(0, 250); // 250 ms: cool, then 500 ms
+    machine.render(0, 250);
+    expect(render.drew(Palette.explosionHot) || render.drew(Palette.explosionCool)).toBe(false);
+  });
+
+  it('gives a new run a new presenter: no effect carries over from the previous run', () => {
+    // A Diver shot at once (an explosion, never aged: no render), then three that kill the ship.
+    const script: LevelScript = {
+      events: [0, 2, 6.5, 11].map((at) => ({
+        at,
+        archetype: DIVER,
+        count: 1,
+        spawn: { x: 120, y: -8 },
+      })),
+    };
+    const render = new RecordingRender();
+    const machine = new SceneMachine(
+      render,
+      new Starfield(() => 0.5),
+      { blink: true, hitFlash: true, explosions: true },
+      () => new Run(script),
+    );
+    machine.step(DT, createIntentFrame());
+    machine.step(DT, pressed(Button.Confirm));
+    const fire = createIntentFrame();
+    fire.held = Button.Fire;
+    // Shoots the first Diver (hit near step 64); the last shot leaves the field before 2 s.
+    for (let i = 0; i < 70; i += 1) machine.step(DT, fire);
+    machine.render(1, 0); // a zero frame time never ages it
+    expect(render.drew(Palette.explosionHot)).toBe(true);
+    for (let i = 0; i < 3000 && machine.scene === Scene.Playing; i += 1) {
+      machine.step(DT, createIntentFrame());
+    }
+    expect(machine.scene).toBe(Scene.GameOver);
+    machine.step(DT, pressed(Button.Confirm)); // to the title
+    machine.step(DT, pressed(Button.Confirm)); // a new run
+    machine.render(1, 0);
+    expect(render.drew(Palette.explosionHot)).toBe(false);
   });
 });

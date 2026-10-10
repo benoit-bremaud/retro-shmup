@@ -1,4 +1,4 @@
-import { HUD_FONT_CELL } from '../domain/ports/render-port';
+import { HUD_FONT_CELL, TITLE_FONT_CELL } from '../domain/ports/render-port';
 import type { FontId, RenderPort, RenderRegion, SpriteId } from '../domain/ports/render-port';
 import { Palette } from '../domain/presentation/palette';
 import {
@@ -8,8 +8,12 @@ import {
   SCREEN_HEIGHT,
   SCREEN_WIDTH,
 } from '../domain/presentation/screen';
-import { HUD_GLYPH_COLUMNS, HUD_GLYPH_ROWS, HUD_GLYPH_SCALE, hudGlyph } from './hud-font';
+import { GLYPH_COLUMNS, GLYPH_ROWS, hudGlyph, titleGlyph } from './hud-font';
 import type { Viewport } from './viewport';
+
+// Logical pixels per glyph pixel: HUD_FONT_CELL and TITLE_FONT_CELL are built on them.
+const HUD_SCALE = 2;
+const TITLE_SCALE = 4;
 
 /**
  * The part of `CanvasRenderingContext2D` the renderer uses; a real context satisfies it, and tests
@@ -34,7 +38,7 @@ export interface RenderSurface {
  *
  * @remarks The camera offset (screen shake) moves field-region draws only, at draw time: the HUD
  * never shakes (ADR-0014). `drawSprite` fails closed until the asset brick loads a sprite sheet;
- * `drawText` draws the `hud` digits from its own glyph table and fails closed on anything else.
+ * `drawText` draws the placeholder `hud` and `title` glyphs and fails closed on anything else.
  */
 export class Canvas2DRenderer implements RenderPort {
   private region: RenderRegion = 'hud';
@@ -88,34 +92,28 @@ export class Canvas2DRenderer implements RenderPort {
   }
 
   drawText(text: string, x: number, y: number, font: FontId): void {
-    if (font !== 'hud') {
-      throw new Error(
-        `Canvas2DRenderer: no bitmap font "${font}" loaded yet, cannot draw "${text}"`,
-      );
-    }
-    this.offscreen.fillStyle = Palette.hudText;
+    const title = font === 'title';
+    const scale = title ? TITLE_SCALE : HUD_SCALE;
+    const advance = title ? TITLE_FONT_CELL.width : HUD_FONT_CELL.width;
+    this.offscreen.fillStyle = title ? Palette.titleText : Palette.hudText;
+    const glyphOf = title ? titleGlyph : hudGlyph;
     for (let i = 0; i < text.length; i += 1) {
       const code = text.codePointAt(i);
-      const rows = code === undefined ? undefined : hudGlyph(code);
+      const rows = code === undefined ? undefined : glyphOf(code);
       if (rows === undefined) {
-        throw new Error(`Canvas2DRenderer: no hud glyph for "${text.charAt(i)}" in "${text}"`);
+        throw new Error(`Canvas2DRenderer: no ${font} glyph for "${text.charAt(i)}" in "${text}"`);
       }
-      this.drawGlyph(rows, x + i * HUD_FONT_CELL.width, y);
+      this.drawGlyph(rows, x + i * advance, y, scale);
     }
   }
 
-  // One 2 × 2 block per lit glyph pixel, through the same origin and rounding as drawRect.
-  private drawGlyph(rows: readonly number[], x: number, y: number): void {
-    for (let row = 0; row < HUD_GLYPH_ROWS; row += 1) {
+  // One block per lit glyph pixel, through the same origin and rounding as drawRect.
+  private drawGlyph(rows: readonly number[], x: number, y: number, scale: number): void {
+    for (let row = 0; row < GLYPH_ROWS; row += 1) {
       const mask = rows[row] ?? 0;
-      for (let column = 0; column < HUD_GLYPH_COLUMNS; column += 1) {
-        if ((mask & (1 << (HUD_GLYPH_COLUMNS - 1 - column))) === 0) continue;
-        this.fillLogical(
-          x + column * HUD_GLYPH_SCALE,
-          y + row * HUD_GLYPH_SCALE,
-          HUD_GLYPH_SCALE,
-          HUD_GLYPH_SCALE,
-        );
+      for (let column = 0; column < GLYPH_COLUMNS; column += 1) {
+        if ((mask & (1 << (GLYPH_COLUMNS - 1 - column))) === 0) continue;
+        this.fillLogical(x + column * scale, y + row * scale, scale, scale);
       }
     }
   }

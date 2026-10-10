@@ -88,6 +88,14 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, EnemySpawner,
     moveAll(this.enemyBullets, dt);
   }
 
+  /**
+   * Marks every player bullet spent: released at the next sweep (Game over, GDD v0.6 §4.4). Today
+   * no shot outlives the 1.5 s death sequence; this keeps the score frozen if slower shots come.
+   */
+  spendPlayerBullets(): void {
+    for (let i = 0; i < this.playerBullets.count; i += 1) this.playerBullets.at(i).spent = true;
+  }
+
   /** Step 6, the single release point: each list releases its spent or departed items. */
   sweep(): void {
     this.playerBullets.sweep(isBulletDone);
