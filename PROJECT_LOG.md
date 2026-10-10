@@ -8,6 +8,36 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-09
 
+### Online playable build (branch `chore/deploy`) — ADR-0004, ADR-0008
+
+- The owner asked for a playable build online, reached from the portfolio, before the enemies
+  brick (D) and the other devices (C2). Order now: deployment, then D, then C2.
+- `public/_headers` (ADR-0008 decision 4): a CSP limited to the game's own files with
+  `frame-ancestors 'self' https://benoitbremaud.fr`, plus `nosniff`, `Referrer-Policy`,
+  `Permissions-Policy`, `Cross-Origin-Opener-Policy` and `Strict-Transport-Security`. The page's inline style moved to a
+  stylesheet so the CSP needs no `'unsafe-inline'`. Checked by serving the build locally with the
+  same CSP: the game runs with no violation.
+- Address: `retro-shmup.pages.dev` until the commercial title is final (ADR-0008 decision 1).
+- Pages project `retro-shmup` created on 2026-10-10 (Cloudflare dashboard, GitHub App access
+  granted to this repository by the owner; build `pnpm build`, output `dist`, `NODE_VERSION`
+  22.23.3, `PNPM_VERSION` 10.30.3). The first production deployment, from `main` at `d8fcb73`,
+  answers 200 at `https://retro-shmup.pages.dev` and is playable; it predates the headers of
+  this PR, which the merge deploys.
+- Codex (PR #10): ADR-0016's follow-ups now include the portfolio pull request.
+- **Decision**: `ADR-0016 deploy every playable build` (owner, 2026-10-09) — partially
+  supersedes ADR-0008 decision 5, which waited for the vertical slice; every merge to `main`
+  now deploys, and the portfolio card says the game is in development.
+- Pre-push review: added `Strict-Transport-Security` (security policy CONFIG-2), declared
+  `fullscreen` and `gamepad` for the game itself, removed `data:` from the CSP with no asset
+  inlined by Vite.
+- Local note: `pnpm` lives in the asdf shims, which `~/.zshrc` does not load; outside an
+  nvm-and-asdf shell, run `~/.asdf/shims/pnpm`.
+
+### PR #8 merged (`d8fcb73`) — first playable build on keyboard, closes #7
+
+- All six checks green; Codex reviewed with no comment. The owner play-tested it ("c'est
+  rigolo") and opened brick C2 (issue #9: touch with the portrait screen, gamepad, mouse).
+
 ### First playable build on keyboard (branch `feat/game`) — issue #7, brick C1
 
 - Domain: tuning records of GDD v0.5 with the seconds-to-steps conversion; `Player` (fly-in,

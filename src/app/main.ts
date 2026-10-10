@@ -1,6 +1,7 @@
 // Composition root (ADR-0003): creates the adapters, wires them through the ports and starts the
 // frame loop. The only module allowed to touch window, document, requestAnimationFrame and
 // Math.random (ADR-0014). Covered by the browser smoke test (ADR-0003 §7), not by unit tests.
+import './style.css';
 import { Canvas2DRenderer } from '../adapters/canvas2d-renderer';
 import { DeviceInput } from '../adapters/input/device-input';
 import type { InputEnvironment } from '../adapters/input/device-input';
