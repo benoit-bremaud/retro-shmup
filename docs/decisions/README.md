@@ -14,7 +14,7 @@ The design decisions these ADRs implement are fixed in the
 | ADR-0005 | Licensing | MIT for the code; assets under their own licences in `public/assets/` with `CREDITS.md`. |
 | ADR-0006 | Player data | `localStorage` only, versioned key, no personal data beyond three initials; no backend in 1.0. |
 | ADR-0007 | Quality gate | Local-first: husky hooks run gitleaks, lint, typecheck, tests with coverage and the local SonarQube gate before every push; CI keeps Gitleaks and a light `ci.yml` only. |
-| ADR-0008 | Public hosting | One first-level subdomain per game on `benoitbremaud.fr` (own Pages project, own `_headers`); catalogue page `/jeux/` on the portfolio. |
+| ADR-0008 | Public hosting | One first-level subdomain per game on `benoitbremaud.fr` (own Pages project, own `_headers`); catalogue page `/jeux/` on the portfolio (decision 3 superseded by ADR-0017). |
 | ADR-0009 | Input and audio contracts | Flat reusable intent frame (movement, held / pressed masks, device, tap), bindings and capture, gestures in the input adapter, audio mix control. |
 | ADR-0010 | Presentation outside the outcome | Separate random streams, time effects in the loop, `RunPresenter`, one ordered bus per run, `DropTable` as data, HUD region. |
 | ADR-0011 | Toolchain | pnpm, Vite 8, TypeScript ~6.0 (typescript-eslint support), Vitest 5, ESLint 10 strict type-checked, Prettier on code, husky hooks running `make verify`. |
@@ -23,4 +23,4 @@ The design decisions these ADRs implement are fixed in the
 | ADR-0014 | Logical screen and render regions | Partially supersedes ADR-0001 (off-screen size, scale formula, field-only shake at draw time): 480 × 320 logical screen (field centred, 120 px HUD bands), integer scale in device pixels, domain `dt` in seconds. |
 | ADR-0015 | Device input and the portrait screen | Partially supersedes ADR-0014 (decision 6; decisions 1 to 4 now landscape-only): portrait screen chosen when it fits with the larger integer scale, `RenderPort.layout()`, `DeviceInput` as a façade with injected browser objects, devices combined, gamepad polling, Pointer Events and gestures, default bindings. |
 | ADR-0016 | Deploy every playable build | Partially supersedes ADR-0008 (decision 5): the Pages project is created at the first playable build; every merge to `main` deploys; the portfolio card says the game is in development. |
-| ADR-0017 | Games catalogue in the projects page | Partially supersedes ADR-0008 (decision 3): the games catalogue is the "Jeux" category of `benoitbremaud.fr/projets/`; each card shows status, play and code links; the thumbnail waits for sprites. |
+| ADR-0017 | Games catalogue in the projects page | Partially supersedes ADR-0008 (decision 3) and the catalogue address of ADR-0016: the games catalogue is the "Jeux" category of `benoitbremaud.fr/projets/`; each card shows status, play and code links; the thumbnail waits for sprites. |

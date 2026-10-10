@@ -12,15 +12,13 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 - While the portfolio's `/jeux/` page was in review (benoit-bremaud/benoitbremaud.fr#14), the owner
   decided that games are one category of projects among others, and that friends' projects may be
-  shown too. The portfolio gets a `/projets/` page grouped by category (Jeux, IoT et matériel, Web
-  et infrastructure, Automatisation et data; only non-empty ones shown) and a "Projets d'amis"
-  section that appears with its first card.
+  shown too. PR #14 is reworked into a `/projets/` page grouped by category (Jeux, IoT et
+  matériel, Web et infrastructure, Automatisation et data; only non-empty ones shown), with a
+  "Projets d'amis" section that appears with its first card.
 - **Decision**: `ADR-0017 games catalogue in the projects page` (owner, 2026-10-10) — partially
-  supersedes ADR-0008 decision 3; the catalogue is `benoitbremaud.fr/projets/#jeux`, the card
-  thumbnail waits for sprites.
-- Working rules updated: a standing merge authorization (merge when every check is green and every
-  comment answered, then delete the head branch), and a progress percentage after every finished
-  task.
+  supersedes ADR-0008 decision 3 and the catalogue address of ADR-0016; the catalogue is
+  `benoitbremaud.fr/projets/#jeux`, the card thumbnail waits for sprites. GDD §13, the Decision
+  record and the architecture overview follow.
 
 ### PR #10 merged (`4ef9303`) — the playable build online, ADR-0016
 

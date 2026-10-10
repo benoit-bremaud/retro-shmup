@@ -2,7 +2,8 @@
 
 **Status:** Accepted — 2026-10-10. **Partially supersedes ADR-0008**: decision 3 (the catalogue as
 the static page `https://benoitbremaud.fr/jeux/`, with a thumbnail on each card) and the related
-wording of its follow-up 4. ADR-0008 decisions 1, 2 and 4 and ADR-0016 stand unchanged.
+wording of its follow-up 4; **and ADR-0016**: the catalogue address in its decision 3 and its
+follow-up 3. ADR-0008 decisions 1, 2 and 4 and the rest of ADR-0016 stand unchanged.
 
 ## Context
 
@@ -10,7 +11,7 @@ wording of its follow-up 4. ADR-0008 decisions 1, 2 and 4 and ADR-0016 stand unc
   per game with thumbnail, pitch, status and link.
 - While that page was in review (benoit-bremaud/benoitbremaud.fr#14), the owner pointed out that
   games are one kind of project among others: IoT and hardware, web and infrastructure,
-  automation and data, and future ones. He also wants to show projects by developer friends.
+  automation and data, and future ones. The owner also wants to show projects by developer friends.
 - The portfolio is a hand-written static site with no build step; every extra page is maintained
   by hand.
 
@@ -39,9 +40,11 @@ wording of its follow-up 4. ADR-0008 decisions 1, 2 and 4 and ADR-0016 stand unc
 
 - The game's public entry point from the portfolio is `/projets/#jeux`; a future game is one more
   card in that category.
-- The portfolio's specification, use cases and tests carry the projects page
-  (benoit-bremaud/benoitbremaud.fr#14).
-- ADR-0016 follow-up 3 (the portfolio pull request) is that pull request.
+- The portfolio's specification, use cases and tests carry the projects page once
+  benoit-bremaud/benoitbremaud.fr#14 is reworked from its `/jeux/` version.
+- ADR-0016 follow-up 3 now delivers the Jeux category card of `/projets/` instead of a `/jeux/`
+  page.
+- GDD v0.5 §13 and the Decision record point to `/projets/#jeux` (updated with this ADR).
 
 ## References
 
