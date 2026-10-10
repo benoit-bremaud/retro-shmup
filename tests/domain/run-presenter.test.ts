@@ -5,6 +5,7 @@ import type { Bullet } from '../../src/domain/game/bullet';
 import { DIVER, Enemy, GUNNER, POPCORN } from '../../src/domain/game/enemy';
 import { Palette } from '../../src/domain/presentation/palette';
 import { RunPresenter } from '../../src/domain/presentation/run-presenter';
+import { EventBus } from '../../src/domain/game/events';
 import type { ReadonlyActiveList } from '../../src/domain/game/active-list';
 import { RecordingRender } from '../support/recording-render';
 import type { RecordedRect } from '../support/recording-render';
@@ -32,6 +33,11 @@ function bullet(x: number, y: number, previousY: number): Bullet {
   };
 }
 
+/** A presenter over a fresh bus; the effect switches on, the blink as given. */
+function presenter(render: RecordingRender, blink: boolean, bus = new EventBus()): RunPresenter {
+  return new RunPresenter(render, { blink, hitFlash: true, explosions: true }, bus);
+}
+
 /** A fixed active list for presenter tests: the presenter only reads `count` and `at`. */
 function listOf<T>(items: readonly T[]): ReadonlyActiveList<T> {
   return {
@@ -55,6 +61,9 @@ function snapshot(
     enemyBullets: listOf<Bullet>([]),
     enemies: listOf<Enemy>([]),
     lives: 3,
+    score: 0,
+    multiplier: 1,
+    chainRatio: 0,
     ...extra,
   };
 }
@@ -67,7 +76,7 @@ describe('RunPresenter — ship and bullets (05-state-scenes, first playable)', 
   it('draws the ship in the field region, its hull centred on the interpolated position', () => {
     const render = new RecordingRender();
     const moved = ship({ previousPosition: { x: 100, y: 272 }, position: { x: 110, y: 272 } });
-    new RunPresenter(render, { blink: true }).draw(snapshot(moved), 0.5);
+    presenter(render, true).draw(snapshot(moved), 0.5, 16);
     const hull = hullRects(render)[0];
     expect(hull?.region).toBe('field');
     expect((hull?.x ?? 0) + (hull?.w ?? 0) / 2).toBe(105);
@@ -75,7 +84,7 @@ describe('RunPresenter — ship and bullets (05-state-scenes, first playable)', 
 
   it('covers the ship centre with the hull colour, the smoke test oracle', () => {
     const render = new RecordingRender();
-    new RunPresenter(render, { blink: true }).draw(snapshot(ship()), 0);
+    presenter(render, true).draw(snapshot(ship()), 0, 16);
     const covers = hullRects(render).some(
       (r) => r.x <= 120 && 120 < r.x + r.w && r.y <= 272 && 272 < r.y + r.h,
     );
@@ -84,7 +93,7 @@ describe('RunPresenter — ship and bullets (05-state-scenes, first playable)', 
 
   it('draws each active bullet centred on its interpolated position', () => {
     const render = new RecordingRender();
-    new RunPresenter(render, { blink: true }).draw(snapshot(ship(), [bullet(50, 100, 106)]), 0.5);
+    presenter(render, true).draw(snapshot(ship(), [bullet(50, 100, 106)]), 0.5, 16);
     const shot = render.rects.find((rect) => rect.colour === Palette.playerShot);
     expect(shot).toEqual({ region: 'field', x: 49, y: 99, w: 2, h: 8, colour: Palette.playerShot });
   });
@@ -103,20 +112,20 @@ describe('RunPresenter — invulnerability blink (GDD v0.5 §4.1)', () => {
   ])('%s at protection step %i: visible %s (3 blinks per second)', (state, steps, visible) => {
     const render = new RecordingRender();
     const protectedShip = ship({ state, protectionSteps: steps });
-    new RunPresenter(render, { blink: true }).draw(snapshot(protectedShip), 0);
+    presenter(render, true).draw(snapshot(protectedShip), 0, 16);
     expect(hullRects(render).length > 0).toBe(visible);
   });
 
   it('never hides a vulnerable ship', () => {
     const render = new RecordingRender();
-    new RunPresenter(render, { blink: true }).draw(snapshot(ship({ protectionSteps: 10 })), 0);
+    presenter(render, true).draw(snapshot(ship({ protectionSteps: 10 })), 0, 16);
     expect(hullRects(render).length).toBeGreaterThan(0);
   });
 
   it('keeps the ship visible when the blink effect is switched off', () => {
     const render = new RecordingRender();
     const protectedShip = ship({ state: PlayerState.Entering, protectionSteps: 10 });
-    new RunPresenter(render, { blink: false }).draw(snapshot(protectedShip), 0);
+    presenter(render, false).draw(snapshot(protectedShip), 0, 16);
     expect(hullRects(render).length).toBeGreaterThan(0);
   });
 });
@@ -131,10 +140,7 @@ describe('RunPresenter — enemies, enemy bullets and the HUD (enemies brick)', 
   it('draws each role in its own colour, none the hull colour (the smoke-test oracle)', () => {
     const render = new RecordingRender();
     const enemies = [enemyAt(POPCORN, 40, 40), enemyAt(DIVER, 80, 40), enemyAt(GUNNER, 160, 80)];
-    new RunPresenter(render, { blink: true }).draw(
-      snapshot(ship(), [], { enemies: listOf(enemies) }),
-      0,
-    );
+    presenter(render, true).draw(snapshot(ship(), [], { enemies: listOf(enemies) }), 0, 16);
     expect(render.rectsOf(Palette.popcorn)).toEqual([
       { region: 'field', x: 32, y: 32, w: 16, h: 16, colour: Palette.popcorn },
     ]);
@@ -147,10 +153,7 @@ describe('RunPresenter — enemies, enemy bullets and the HUD (enemies brick)', 
     const shot = bullet(120, 272, 272);
     shot.width = 4;
     shot.height = 4;
-    new RunPresenter(render, { blink: true }).draw(
-      snapshot(ship(), [], { enemyBullets: listOf([shot]) }),
-      0,
-    );
+    presenter(render, true).draw(snapshot(ship(), [], { enemyBullets: listOf([shot]) }), 0, 16);
     const hullIndex = render.rects.findIndex((r) => r.colour === Palette.shipHull);
     const shotIndex = render.rects.findIndex((r) => r.colour === Palette.enemyShot);
     expect(shotIndex).toBeGreaterThan(hullIndex);
@@ -158,7 +161,7 @@ describe('RunPresenter — enemies, enemy bullets and the HUD (enemies brick)', 
 
   it('hides a Dead ship', () => {
     const render = new RecordingRender();
-    new RunPresenter(render, { blink: false }).draw(snapshot(ship({ state: PlayerState.Dead })), 0);
+    presenter(render, false).draw(snapshot(ship({ state: PlayerState.Dead })), 0, 16);
     expect(hullRects(render)).toEqual([]);
   });
 
@@ -169,7 +172,7 @@ describe('RunPresenter — enemies, enemy bullets and the HUD (enemies brick)', 
     [0, 0],
   ])('with %i lives, draws %i reserve-life icons in the left band', (lives, icons) => {
     const render = new RecordingRender();
-    new RunPresenter(render, { blink: true }).draw(snapshot(ship(), [], { lives }), 0);
+    presenter(render, true).draw(snapshot(ship(), [], { lives }), 0, 16);
     const drawn = render.rectsOf(Palette.lifeIcon);
     expect(drawn).toHaveLength(icons);
     for (const icon of drawn) {

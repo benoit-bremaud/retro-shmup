@@ -62,7 +62,11 @@ export class SceneMachine {
   private readonly createRun: () => InRun;
   private readonly renderer: RenderPort;
   private readonly starfield: Starfield;
-  private readonly presenter: RunPresenter;
+  private readonly effects: Readonly<EffectSettings>;
+  /** Built with each run, so no effect or listener outlives its run (ADR-0010). */
+  private presenter: RunPresenter | undefined;
+  /** A frozen step ran since the last render: that frame ages no effect (count-in handoff). */
+  private frozenStepSinceRender = false;
 
   /** `createRun` builds each new run; tests pass a short level script, the game the default. */
   constructor(
@@ -74,7 +78,7 @@ export class SceneMachine {
     this.renderer = render;
     this.starfield = starfield;
     this.createRun = createRun;
-    this.presenter = new RunPresenter(render, effects);
+    this.effects = effects;
   }
 
   get scene(): Scene {
@@ -82,10 +86,12 @@ export class SceneMachine {
   }
 
   timeScale(): number {
-    return this.current === Scene.Playing ? this.presenter.timeScale() : 1;
+    if (this.current !== Scene.Playing || this.presenter === undefined) return 1;
+    return this.presenter.timeScale();
   }
 
   step(dt: number, frame: Readonly<IntentFrame>): void {
+    if (SCENE_TRAITS[this.current].frozen) this.frozenStepSinceRender = true;
     switch (this.current) {
       case Scene.Boot:
         // Nothing to load yet (no assets, no save document). The title takes this step's frame,
@@ -115,7 +121,9 @@ export class SceneMachine {
   private stepTitle(frame: Readonly<IntentFrame>): void {
     this.backgroundSteps += 1;
     if ((frame.pressed & Button.Confirm) !== 0 || frame.tapRegion !== 'none') {
-      this.run = this.createRun(); // InRun entry creates the run.
+      const run = this.createRun(); // InRun entry creates the run and its presenter.
+      this.run = run;
+      this.presenter = new RunPresenter(this.renderer, this.effects, run.events());
       this.current = Scene.Playing;
     }
   }
@@ -160,14 +168,18 @@ export class SceneMachine {
     this.gameOverLeft -= 1;
     if ((frame.pressed & Button.Confirm) === 0 && this.gameOverLeft > 0) return;
     this.run = undefined;
+    this.presenter = undefined;
     this.current = Scene.Title;
   }
 
-  render(alpha: number, _wallDtMs: number): void {
+  render(alpha: number, wallDtMs: number): void {
     const r = this.renderer;
     const traits = SCENE_TRAITS[this.current];
     // A frozen scene draws its current positions: nothing wobbles between two positions.
     const frameAlpha = traits.frozen ? 1 : alpha;
+    // Effects never age in a frozen frame, nor in one that ran a frozen step (the handoff).
+    const effectMs = traits.frozen || this.frozenStepSinceRender ? 0 : wallDtMs;
+    this.frozenStepSinceRender = false;
     r.clear();
     // The bands first: the presenter draws the HUD contents over them.
     r.setRegion('hud');
@@ -176,8 +188,8 @@ export class SceneMachine {
     // Frozen scenes draw the starfield at alpha 1 too, so it never steps back at the pause.
     const scroll = traits.scrolls || traits.frozen ? frameAlpha : 0;
     this.starfield.draw(r, (this.backgroundSteps + scroll) * STEP_SECONDS);
-    if (traits.drawsRun && this.run !== undefined) {
-      this.presenter.draw(this.run.snapshot(), frameAlpha);
+    if (traits.drawsRun && this.run !== undefined && this.presenter !== undefined) {
+      this.presenter.draw(this.run.snapshot(), frameAlpha, effectMs);
     }
     this.drawOverlays();
     r.present();

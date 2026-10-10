@@ -65,7 +65,11 @@ const input = new DeviceInput(environment);
 input.setBindings(DEFAULT_BINDINGS);
 
 // Presentation randomness is unseeded on purpose: it never touches the outcome (ADR-0010).
-const scenes: FrameTarget = new SceneMachine(renderer, new Starfield(Math.random), { blink: true });
+const scenes: FrameTarget = new SceneMachine(renderer, new Starfield(Math.random), {
+  blink: true,
+  hitFlash: true,
+  explosions: true,
+});
 const loop = new FrameLoop(new PerformanceClock(), input, scenes, (callback) => {
   requestAnimationFrame(callback);
 });

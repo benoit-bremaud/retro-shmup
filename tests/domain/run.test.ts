@@ -105,3 +105,20 @@ describe('Run — events of the enemies brick (ADR-0010, enemy-destroyed sequenc
     expect(JSON.stringify(run.snapshot().player)).toBe(before);
   });
 });
+
+describe('Run — scoring (GDD §8, ADR-0010 wording note)', () => {
+  it('subscribes its ScoreKeeper first: a later listener already reads the new score', () => {
+    const script: LevelScript = {
+      events: [{ at: 0, archetype: DIVER, count: 1, spawn: { x: 120, y: -8 } }],
+    };
+    const run = new Run(script);
+    let seen = -1;
+    run.events().subscribe(GameEventKind.EnemyDestroyed, () => {
+      seen = run.snapshot().score;
+    });
+    for (let i = 0; i < 120 && seen < 0; i += 1) run.step(DT, frame(Button.Fire));
+    expect(seen).toBe(150);
+    expect(run.snapshot().multiplier).toBe(1);
+    expect(run.snapshot().chainRatio).toBeGreaterThan(0);
+  });
+});

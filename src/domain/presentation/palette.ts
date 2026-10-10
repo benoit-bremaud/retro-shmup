@@ -18,6 +18,12 @@ export const Palette = {
   gunner: '#9f7aea',
   enemyShot: '#ff6bcb',
   lifeIcon: '#38b2ac',
+  chainTrack: '#2d3561',
+  chainBar: '#f6ad55',
+  // Game-feel effects (GDD §9.4).
+  hitFlash: '#fafafa',
+  explosionHot: '#fbd38d',
+  explosionCool: '#c05621',
   // HUD digits (hud font) and the overlays of the frozen scenes.
   hudText: '#fdf6e3',
   veil: '#05060fb3',

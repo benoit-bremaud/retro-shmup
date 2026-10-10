@@ -4,5 +4,10 @@
  * until C2 adds the portrait strip.
  */
 export const HUD_LAYOUT = {
-  lives: { x: 8, y: 56, size: 8, spacing: 12 },
+  /** 8 digits, zero-padded. */
+  score: { x: 8, y: 8, digits: 8 },
+  /** `×` then one digit. */
+  multiplier: { x: 8, y: 24 },
+  chainBar: { x: 8, y: 38, width: 64, height: 4 },
+  lives: { x: 8, y: 52, size: 8, spacing: 12 },
 } as const;

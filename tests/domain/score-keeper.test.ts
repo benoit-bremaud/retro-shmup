@@ -1,0 +1,82 @@
+import { describe, expect, it } from 'vitest';
+import { createGameEvent, EventBus, GameEventKind } from '../../src/domain/game/events';
+import { ScoreKeeper } from '../../src/domain/game/score-keeper';
+
+function setup(): { bus: EventBus; keeper: ScoreKeeper; kill: (value?: number) => void } {
+  const bus = new EventBus();
+  const keeper = new ScoreKeeper(bus);
+  const destroyed = createGameEvent(GameEventKind.EnemyDestroyed);
+  const kill = (value = 100): void => {
+    destroyed.value = value;
+    bus.publish(destroyed);
+  };
+  return { bus, keeper, kill };
+}
+
+/** `steps` fixed steps without a kill, as `Run.step` ticks the keeper at step 7. */
+function wait(keeper: ScoreKeeper, steps: number): void {
+  for (let i = 0; i < steps; i += 1) keeper.tick();
+}
+
+/** A kill at step 5 then the tick of step 7, as in one `Run.step`. */
+function killStep(keeper: ScoreKeeper, kill: (value?: number) => void, value = 100): void {
+  kill(value);
+  keeper.tick();
+}
+
+describe('ScoreKeeper — points and chain (GDD §8)', () => {
+  it('scores a kill at its base value at ×1', () => {
+    const { keeper, kill } = setup();
+    killStep(keeper, kill, 150);
+    expect(keeper.score).toBe(150);
+    expect(keeper.multiplier).toBe(1);
+  });
+
+  it('scores the 5th chained kill at ×1 and the 6th at ×2', () => {
+    const { keeper, kill } = setup();
+    for (let i = 0; i < 5; i += 1) killStep(keeper, kill);
+    expect(keeper.score).toBe(500);
+    killStep(keeper, kill);
+    expect(keeper.score).toBe(700);
+  });
+
+  it('extends the chain with a kill exactly 120 steps later; 121 steps breaks it', () => {
+    const extended = setup();
+    for (let i = 0; i < 5; i += 1) killStep(extended.keeper, extended.kill);
+    wait(extended.keeper, 119);
+    killStep(extended.keeper, extended.kill); // 120 steps after the previous kill
+    expect(extended.keeper.score).toBe(700);
+
+    const broken = setup();
+    for (let i = 0; i < 5; i += 1) killStep(broken.keeper, broken.kill);
+    wait(broken.keeper, 120);
+    killStep(broken.keeper, broken.kill); // 121 steps after
+    expect(broken.keeper.score).toBe(600);
+    expect(broken.keeper.multiplier).toBe(1);
+  });
+
+  it('caps the multiplier at ×8', () => {
+    const { keeper, kill } = setup();
+    for (let i = 0; i < 50; i += 1) killStep(keeper, kill);
+    expect(keeper.multiplier).toBe(8);
+  });
+
+  it('resets the chain and empties the bar on death', () => {
+    const { bus, keeper, kill } = setup();
+    for (let i = 0; i < 7; i += 1) killStep(keeper, kill);
+    bus.publish(createGameEvent(GameEventKind.PlayerDied));
+    expect(keeper.multiplier).toBe(1);
+    expect(keeper.chainRatio).toBe(0);
+  });
+
+  it('fills the chain bar after a kill and empties it exactly when the chain breaks', () => {
+    const { keeper, kill } = setup();
+    expect(keeper.chainRatio).toBe(0);
+    killStep(keeper, kill);
+    expect(keeper.chainRatio).toBe(1);
+    wait(keeper, 119);
+    expect(keeper.chainRatio).toBeCloseTo(1 / 120, 9);
+    wait(keeper, 1);
+    expect(keeper.chainRatio).toBe(0);
+  });
+});

@@ -11,6 +11,7 @@ import { LevelDirector } from './level-director';
 import { LEVEL_1 } from './level-script';
 import type { LevelScript } from './level-script';
 import type { PlayerState } from './player';
+import { ScoreKeeper } from './score-keeper';
 import { World } from './world';
 
 /** How a run stands after a step (class diagram); levels end with the level brick. */
@@ -40,6 +41,10 @@ export interface WorldSnapshot {
   readonly enemies: ReadonlyActiveList<Enemy>;
   /** Lives left, the ship in play included; the HUD shows the reserve, `lives − 1`. */
   readonly lives: number;
+  readonly score: number;
+  readonly multiplier: number;
+  /** The chain bar, 0 to 1. */
+  readonly chainRatio: number;
 }
 
 /** What the scene machine may do with a run: step it and read it (class diagram, view A). */
@@ -56,17 +61,19 @@ export interface RunView {
 
 /**
  * The simulation of one run (class diagram: `Simulation`, `RunView`, `HitRules`). `step` follows
- * the fixed order of the class diagram; the bomb slot (3) and scoring arrive with later bricks.
+ * the fixed order of the class diagram; the bomb slot (3) arrives with the pickups and rules brick.
  */
 export class Run implements Simulation, RunView, HitRules {
   private readonly world = new World();
   private readonly director: LevelDirector;
   private readonly bus = new EventBus();
+  // Built right after the bus, so it is subscribed first (ADR-0010 wording note).
+  private readonly scoreKeeper = new ScoreKeeper(this.bus);
   private readonly enemyHitEvent = createGameEvent(GameEventKind.EnemyHit);
   private readonly enemyDestroyedEvent = createGameEvent(GameEventKind.EnemyDestroyed);
   private readonly playerDiedEvent = createGameEvent(GameEventKind.PlayerDied);
   private currentOutcome: RunOutcome = RunOutcome.Playing;
-  private readonly snapshotView: WorldSnapshot = createSnapshot(this.world);
+  private readonly snapshotView: WorldSnapshot = createSnapshot(this.world, this.scoreKeeper);
 
   constructor(script: LevelScript = LEVEL_1) {
     this.director = new LevelDirector(script);
@@ -85,7 +92,8 @@ export class Run implements Simulation, RunView, HitRules {
     // (5) collisions only mark; (6) the single release point.
     CollisionResolver.resolve(this.world, this);
     this.world.sweep();
-    // (7) timers advance.
+    // (7) timers advance: the chain, then the ship.
+    this.scoreKeeper.tick();
     this.world.player.advanceTimers();
     // (8) the outcome: Game over once the last death sequence has ended.
     if (this.world.player.isOut) this.currentOutcome = RunOutcome.GameOver;
@@ -138,7 +146,7 @@ export class Run implements Simulation, RunView, HitRules {
   }
 }
 
-function createSnapshot(world: World): WorldSnapshot {
+function createSnapshot(world: World, scoreKeeper: ScoreKeeper): WorldSnapshot {
   return {
     player: world.player,
     playerBullets: world.playerBullets,
@@ -146,6 +154,15 @@ function createSnapshot(world: World): WorldSnapshot {
     enemies: world.enemies,
     get lives(): number {
       return world.player.lives;
+    },
+    get score(): number {
+      return scoreKeeper.score;
+    },
+    get multiplier(): number {
+      return scoreKeeper.multiplier;
+    },
+    get chainRatio(): number {
+      return scoreKeeper.chainRatio;
     },
   };
 }
