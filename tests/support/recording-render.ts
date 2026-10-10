@@ -55,7 +55,7 @@ export class RecordingRender implements RenderPort {
   drawText(text: string, x: number, y: number, font: FontId): void {
     if (font !== 'hud') throw new Error(`no glyph in font ${font}`);
     for (let i = 0; i < text.length; i += 1) {
-      if (!isHudGlyph(text.charCodeAt(i))) throw new Error(`no hud glyph for "${text}"`);
+      if (!isHudGlyph(text.codePointAt(i) ?? -1)) throw new Error(`no hud glyph for "${text}"`);
     }
     this.texts.push({ region: this.region, x, y, text, font });
   }

@@ -95,7 +95,8 @@ export class Canvas2DRenderer implements RenderPort {
     }
     this.offscreen.fillStyle = Palette.hudText;
     for (let i = 0; i < text.length; i += 1) {
-      const rows = hudGlyph(text.charCodeAt(i));
+      const code = text.codePointAt(i);
+      const rows = code === undefined ? undefined : hudGlyph(code);
       if (rows === undefined) {
         throw new Error(`Canvas2DRenderer: no hud glyph for "${text.charAt(i)}" in "${text}"`);
       }
