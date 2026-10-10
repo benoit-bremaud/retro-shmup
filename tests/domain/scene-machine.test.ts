@@ -3,7 +3,7 @@ import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
 import { Palette } from '../../src/domain/presentation/palette';
 import { Starfield } from '../../src/domain/presentation/starfield';
-import { DIVER } from '../../src/domain/game/enemy';
+import { DIVER, POPCORN } from '../../src/domain/game/enemy';
 import type { LevelScript } from '../../src/domain/game/level-script';
 import { Run } from '../../src/domain/game/run';
 import { Scene, SceneMachine } from '../../src/domain/scenes/scene-machine';
@@ -260,12 +260,16 @@ describe('SceneMachine — Paused and Count-in (meta/05-state-scenes, pause rule
 
 /** Three Divers straight down on an idle ship at rest: three deaths, then Game over. */
 const KILLER: LevelScript = {
-  events: [2, 6.5, 11].map((at) => ({
-    at,
-    archetype: DIVER,
-    count: 1,
-    spawn: { x: 120, y: -8 },
-  })),
+  events: [
+    ...[2, 6.5, 11].map((at) => ({
+      at,
+      archetype: DIVER,
+      count: 1,
+      spawn: { x: 120, y: -8 },
+    })),
+    // Far from the ship (x 0 to 80): still flying when the run ends, so Game over shows it move.
+    { at: 14, archetype: POPCORN, count: 1, spawn: { x: 40, y: -8 } },
+  ],
 };
 
 function gameOverFixture(): ReturnType<typeof setup> {
@@ -323,11 +327,15 @@ describe('SceneMachine — Game over (GDD §4.4, meta/05-state-scenes)', () => {
   it('keeps the run and the starfield moving behind it, arcade style', () => {
     const { machine, render } = gameOverFixture();
     machine.render(0, 16);
-    const before = render.rects.filter((rect) => rect.region === 'field').map((rect) => rect.y);
+    const before = render.rectsOf(Palette.popcorn).map((rect) => rect.y);
+    const starsBefore = render.rectsOf(Palette.starNear).map((rect) => rect.y);
+    expect(before).toHaveLength(1);
     for (let i = 0; i < 30; i += 1) machine.step(DT, createIntentFrame());
     machine.render(0, 16);
-    const after = render.rects.filter((rect) => rect.region === 'field').map((rect) => rect.y);
-    expect(after).not.toEqual(before);
+    expect(render.rectsOf(Palette.popcorn).map((rect) => rect.y)[0]).toBeGreaterThan(
+      before[0] ?? 0,
+    );
+    expect(render.rectsOf(Palette.starNear).map((rect) => rect.y)).not.toEqual(starsBefore);
   });
 });
 
@@ -362,10 +370,11 @@ describe('SceneMachine — effects per run (ADR-0010, 02-sequence-fixed-step-tic
     machine.step(DT, pressed(Button.Pause));
     machine.step(DT, pressed(Button.Confirm));
     for (let i = 0; i < 60; i += 1) machine.step(DT, createIntentFrame()); // last one hands over
-    machine.render(0, 250); // Playing now, but this frame ran frozen steps
+    machine.render(0, 250); // Playing now, but this frame ran frozen steps: it ages nothing
     expect(render.drew(Palette.explosionHot)).toBe(true);
-    machine.render(0, 250); // plain Playing frames age it: 250 ms, then 500 ms
-    machine.render(0, 250);
+    machine.render(0, 250); // still drawn at age 0 (hot), then aged to 250 ms
+    expect(render.drew(Palette.explosionHot)).toBe(true);
+    machine.render(0, 250); // 250 ms: cool, then 500 ms
     machine.render(0, 250);
     expect(render.drew(Palette.explosionHot) || render.drew(Palette.explosionCool)).toBe(false);
   });

@@ -129,3 +129,14 @@ describe('World — enemies and enemy bullets (GDD v0.6 §5.2.1, class diagram n
     ]);
   });
 });
+
+describe('World — Game over (GDD v0.6 §4.4)', () => {
+  it('spends every player bullet, released at the next sweep', () => {
+    const world = new World();
+    spawnAt(world, 100, 200);
+    spawnAt(world, 120, 200);
+    world.spendPlayerBullets();
+    world.sweep();
+    expect(world.playerBullets.count).toBe(0);
+  });
+});

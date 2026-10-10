@@ -47,7 +47,7 @@ sequenceDiagram
     FL->>Scenes: step(1/60 s, frame)
     alt [scene is Playing and Pause in pressed]
       Note over Scenes: enter Paused — the run does not step
-    else [scene is Playing, or Count-in on its last step without Pause]
+    else [scene is Playing, Game over, or Count-in on its last step without Pause]
       Note over Scenes: a last Count-in step hands over to Playing first — 05-state-scenes
       Scenes->>Run: step(1/60 s, frame)
       Scenes->>Run: outcome()
@@ -81,9 +81,9 @@ sequenceDiagram
   the clamp bounds the catch-up to 250 ms, consumed by the Paused scene.
 - **The scene machine draws the frame**: it draws the starfield from its background
   clock, counted in steps of the scrolling scenes (05-state-scenes), passes the run's snapshot to
-  `RunPresenter.draw(snapshot, alpha)`, then the HUD region. In the first playable it draws the
-  empty HUD bands itself; the HUD contents move into `RunPresenter` with scoring and are drawn
-  after the bands. The presenter takes `wallDtMs` when its first wall-clock effect lands.
+  `RunPresenter.draw(snapshot, alpha, wallDtMs)`. It draws the HUD bands first; the presenter
+  draws the HUD contents over them and ages its effects by `wallDtMs`. In `Game over` the run
+  keeps stepping without the ship (GDD v0.6 §4.4), with no outcome check.
 - **Frozen scenes draw at `alpha = 1`**: `Paused` and `Count-in` take every step
   without stepping the run, while the loop keeps computing `alpha`; `SceneMachine.render` picks
   `alpha = 1` once for the whole frame, starfield and snapshot, so the frozen picture never

@@ -51,7 +51,7 @@ type InRun = Simulation & RunView;
 
 /**
  * The screens and their transitions (meta/05-state-scenes): Boot → Title → InRun { Playing ⇄
- * Paused ⇄ Count-in } → Game over → Title. The finished run stays read-only until the title. It
+ * Paused ⇄ Count-in } → Game over → Title. Game over keeps stepping the run without the ship; the run is released at the title. It
  * satisfies the frame loop's `FrameTarget` structurally, so the domain
  * never imports the loop. It owns the background clock, so the starfield scrolls on the title and
  * in play without a jump at the start, and freezes with the run.
@@ -215,7 +215,7 @@ export class SceneMachine {
     }
   }
 
-  // Empty bands until the HUD contents land with scoring and pickups.
+  // The HUD bands; the presenter draws their contents over them.
   private drawHudBands(): void {
     const r = this.renderer;
     const rightBandX = FIELD_X + FIELD_WIDTH;

@@ -141,7 +141,9 @@ The enemies brick adds `Paused`, `Count-in` and `Game over`, and removes the pau
   `NameEntry` branch until the high scores exist (screens brick). Arcade style (GDD v0.6 §4.4):
   the run keeps stepping without the ship — the script, enemies and their bullets go on, the
   player's last bullets are spent so the score never moves — the starfield scrolls, and a large
-  "GAME OVER" from the message catalogue (`title` font) is drawn over a dim veil. The screens
+  "GAME OVER" from the message catalogue (`title` font) is drawn over a dim veil. The HUD keeps
+  reading the run: the score stays, while a chain restarted during the death sequence still
+  drains its bar. The screens
   brick adds the other languages and the options that choose one.
 - **Frozen scenes** (`Paused`, `Count-in`) take every step without stepping the run
   (except the last Count-in step, which hands over to `Playing`, above)

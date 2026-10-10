@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PlayerState } from '../../src/domain/game/player';
 import type { Bullet } from '../../src/domain/game/bullet';
-import { DIVER } from '../../src/domain/game/enemy';
+import { DIVER, POPCORN } from '../../src/domain/game/enemy';
 import { GameEventKind } from '../../src/domain/game/events';
 import type { LevelScript } from '../../src/domain/game/level-script';
 import { Run, RunOutcome } from '../../src/domain/game/run';
@@ -88,12 +88,16 @@ describe('Run — events of the enemies brick (ADR-0010, enemy-destroyed sequenc
 
   it('plays on without the ship after GAME_OVER: the script goes on, the score never moves', () => {
     const script: LevelScript = {
-      events: [2, 6.5, 11].map((at) => ({
-        at,
-        archetype: DIVER,
-        count: 1,
-        spawn: { x: 120, y: -8 },
-      })),
+      events: [
+        ...[2, 6.5, 11].map((at) => ({
+          at,
+          archetype: DIVER,
+          count: 1,
+          spawn: { x: 120, y: -8 },
+        })),
+        // Due after the Game over (about 15 s): it spawns only if the run plays on.
+        { at: 20, archetype: POPCORN, count: 1, spawn: { x: 40, y: -8 } },
+      ],
     };
     const run = new Run(script);
     for (let i = 0; i < 3000 && run.outcome() === RunOutcome.Playing; i += 1) {
@@ -109,6 +113,18 @@ describe('Run — events of the enemies brick (ADR-0010, enemy-destroyed sequenc
     expect(snapshot.lives).toBe(0);
     expect(snapshot.playerBullets.count).toBe(0);
     expect(run.outcome()).toBe(RunOutcome.GameOver);
+    // The 20 s Popcorn spawns only if the run kept stepping after the Game over.
+    let popcornSeen = false;
+    const run2 = new Run(script);
+    for (let i = 0; i < 1500; i += 1) {
+      run2.step(DT, frame(0));
+      const enemies = run2.snapshot().enemies;
+      for (let e = 0; e < enemies.count; e += 1) {
+        if (enemies.at(e).archetype === POPCORN)
+          popcornSeen = run2.outcome() === RunOutcome.GameOver;
+      }
+    }
+    expect(popcornSeen).toBe(true);
   });
 });
 

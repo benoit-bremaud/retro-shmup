@@ -96,9 +96,10 @@ export class Canvas2DRenderer implements RenderPort {
     const scale = title ? TITLE_SCALE : HUD_SCALE;
     const advance = title ? TITLE_FONT_CELL.width : HUD_FONT_CELL.width;
     this.offscreen.fillStyle = title ? Palette.titleText : Palette.hudText;
+    const glyphOf = title ? titleGlyph : hudGlyph;
     for (let i = 0; i < text.length; i += 1) {
       const code = text.codePointAt(i);
-      const rows = code === undefined ? undefined : title ? titleGlyph(code) : hudGlyph(code);
+      const rows = code === undefined ? undefined : glyphOf(code);
       if (rows === undefined) {
         throw new Error(`Canvas2DRenderer: no ${font} glyph for "${text.charAt(i)}" in "${text}"`);
       }
