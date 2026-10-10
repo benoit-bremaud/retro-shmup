@@ -299,7 +299,8 @@ the player's tiny hitbox already carries the fairness (§4.1).
   never cuts a legal pattern short *(v0.6)*. A spawn beyond a pool is
   dropped (ADR-0002): an enemy refused by a full pool simply never exists, and a formation counts
   it as refused, so destroying every member that did appear still earns the full-formation P.
-  At most 4 formations at once *(initial)*.
+  Up to 16 formations at once, one per enemy slot; the level simulation tests check a level
+  never needs more *(initial)*.
 - The hit flash (§9.4) lasts about 33 ms of wall time; the explosion burst lasts about 0.3 s
   (ADR-0010), at most 16 at once, the oldest recycled first.
 
