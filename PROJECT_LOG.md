@@ -6,6 +6,32 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ---
 
+## 2026-10-10
+
+### Games catalogue in the portfolio's projects page (branch `docs/projects-catalogue`) — ADR-0017
+
+- While the portfolio's `/jeux/` page was in review (benoit-bremaud/benoitbremaud.fr#14), the owner
+  decided that games are one category of projects among others, and that friends' projects may be
+  shown too. The portfolio gets a `/projets/` page grouped by category (Jeux, IoT et matériel, Web
+  et infrastructure, Automatisation et data; only non-empty ones shown) and a "Projets d'amis"
+  section that appears with its first card.
+- **Decision**: `ADR-0017 games catalogue in the projects page` (owner, 2026-10-10) — partially
+  supersedes ADR-0008 decision 3; the catalogue is `benoitbremaud.fr/projets/#jeux`, the card
+  thumbnail waits for sprites.
+- Working rules updated: a standing merge authorization (merge when every check is green and every
+  comment answered, then delete the head branch), and a progress percentage after every finished
+  task.
+
+### PR #10 merged (`4ef9303`) — the playable build online, ADR-0016
+
+- Cloudflare Pages project `retro-shmup` created on 2026-10-10 at the owner's request, through the
+  owner's Chrome session; the owner granted the Cloudflare Pages GitHub App access to this
+  repository. Production deploys from `main`.
+- After the merge, `https://retro-shmup.pages.dev` serves the game with its six security headers
+  (CSP, HSTS, COOP, Permissions-Policy, nosniff, Referrer-Policy), checked with `curl -sI` and in
+  the browser: the game runs under the CSP with no console error. One Codex comment (the
+  portfolio pull request missing from ADR-0016's follow-ups) was fixed and answered.
+
 ## 2026-10-09
 
 ### Online playable build (branch `chore/deploy`) — ADR-0004, ADR-0008
