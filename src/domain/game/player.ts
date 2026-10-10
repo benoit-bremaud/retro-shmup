@@ -4,7 +4,7 @@ import { FIELD_HEIGHT, FIELD_WIDTH } from './geometry';
 import type { Vec2 } from './geometry';
 import { PlayerTuning, toSteps } from './tuning';
 import { Weapon } from './weapon';
-import type { BulletSpawner } from './weapon';
+import type { PlayerShotSpawner } from './weapon';
 
 /** Lifecycle of the ship (05-state-player); `Dead` arrives with collisions. */
 export const PlayerState = {
@@ -52,7 +52,7 @@ export class Player {
    * Step 2 of `Run.step`: the fly-in, or the movement the frame asks for and the weapon. The
    * spawner is a parameter, as for the enemies' attack patterns: the player never stores it.
    */
-  update(frame: Readonly<IntentFrame>, dt: number, spawner: BulletSpawner): void {
+  update(frame: Readonly<IntentFrame>, dt: number, spawner: PlayerShotSpawner): void {
     this.previousPosition.x = this.position.x;
     this.previousPosition.y = this.position.y;
     if (this.currentState === PlayerState.Entering) {

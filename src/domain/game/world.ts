@@ -1,28 +1,21 @@
-import { FixedPool } from '../pool/fixed-pool';
+import { ActiveList } from './active-list';
 import { Bullet } from './bullet';
 import { FIELD_HEIGHT, FIELD_WIDTH } from './geometry';
 import { Player } from './player';
 import { PLAYER_BULLET_POOL_SIZE } from './tuning';
-import type { BulletSpawner, ShotSpec } from './weapon';
+import type { PlayerShotSpawner, ShotSpec } from './weapon';
 
 /**
- * What is on the field during a run (class diagram, view A): the player and the pools. Active
- * bullets are references into the pool, kept in a preallocated list (class diagram notes).
+ * What is on the field during a run (class diagram, view A): the player and the active lists,
+ * each over its own pool (class diagram notes, active lists).
  */
-export class World implements BulletSpawner {
+export class World implements PlayerShotSpawner {
   readonly player = new Player();
-  /** The first `playerBulletCount` entries are the active bullets. */
-  readonly playerBullets: Bullet[] = new Array<Bullet>(PLAYER_BULLET_POOL_SIZE);
-  private activePlayerBullets = 0;
-  private readonly playerBulletPool = new FixedPool(PLAYER_BULLET_POOL_SIZE, () => new Bullet());
-
-  get playerBulletCount(): number {
-    return this.activePlayerBullets;
-  }
+  readonly playerBullets = new ActiveList(PLAYER_BULLET_POOL_SIZE, () => new Bullet());
 
   /** An empty pool drops the shot: the loop never allocates (ADR-0002). */
   spawnPlayerBullet(x: number, y: number, shot: Readonly<ShotSpec>): void {
-    const bullet = this.playerBulletPool.acquire();
+    const bullet = this.playerBullets.add();
     if (bullet === undefined) return;
     bullet.position.x = x;
     bullet.position.y = y;
@@ -34,15 +27,12 @@ export class World implements BulletSpawner {
     bullet.height = shot.height;
     bullet.damage = shot.damage;
     bullet.pierceLeft = shot.pierce;
-    this.playerBullets[this.activePlayerBullets] = bullet;
-    this.activePlayerBullets += 1;
   }
 
   /** Step 4 of `Run.step`. */
   moveBullets(dt: number): void {
-    for (let i = 0; i < this.activePlayerBullets; i += 1) {
-      const bullet = this.playerBullets[i];
-      if (bullet === undefined) continue;
+    for (let i = 0; i < this.playerBullets.count; i += 1) {
+      const bullet = this.playerBullets.at(i);
       bullet.previousPosition.x = bullet.position.x;
       bullet.previousPosition.y = bullet.position.y;
       bullet.position.x += bullet.velocity.x * dt;
@@ -50,20 +40,9 @@ export class World implements BulletSpawner {
     }
   }
 
-  /**
-   * Step 6 of `Run.step`: bullets fully outside the field go back to the pool. Backwards,
-   * swap-with-last, then release — the only place an entry leaves either list (class diagram notes).
-   */
-  releaseOffscreen(): void {
-    for (let i = this.activePlayerBullets - 1; i >= 0; i -= 1) {
-      const bullet = this.playerBullets[i];
-      if (bullet === undefined || !isOutsideField(bullet)) continue;
-      const last = this.activePlayerBullets - 1;
-      const lastBullet = this.playerBullets[last];
-      if (lastBullet !== undefined) this.playerBullets[i] = lastBullet;
-      this.activePlayerBullets = last;
-      this.playerBulletPool.release(bullet);
-    }
+  /** Step 6 of `Run.step`, the single release point: bullets fully outside the field leave. */
+  sweep(): void {
+    this.playerBullets.sweep(isOutsideField);
   }
 }
 

@@ -134,6 +134,26 @@ export default defineConfig(
   },
   {
     // Flat config replaces rule options: the domain patterns are repeated, plus the ban on the
+    // outcome depending on how it is shown — game rules never import presentation or scenes
+    // (ADR-0010; colours are picked by the presenter, never stored in archetype data).
+    files: ['src/domain/game/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            ...DOMAIN_IMPORT_PATTERNS,
+            {
+              group: ['**/presentation/**', '**/scenes/**'],
+              message: 'Game rules never depend on presentation or scenes (ADR-0010).',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // Flat config replaces rule options: the domain patterns are repeated, plus the ban on the
     // gameplay Random — presentation uses its own unseeded generator (ADR-0010).
     files: ['src/domain/presentation/**/*.ts'],
     rules: {

@@ -1,4 +1,5 @@
 import type { IntentFrame } from '../ports/input-port';
+import type { ReadonlyActiveList } from './active-list';
 import type { Bullet } from './bullet';
 import type { Vec2 } from './geometry';
 import type { PlayerState } from './player';
@@ -25,9 +26,7 @@ export interface PlayerSnapshot {
  */
 export interface WorldSnapshot {
   readonly player: PlayerSnapshot;
-  /** The live pool list: only the first `playerBulletCount` entries are active. */
-  readonly playerBullets: readonly Readonly<Bullet>[];
-  readonly playerBulletCount: number;
+  readonly playerBullets: ReadonlyActiveList<Bullet>;
 }
 
 /**
@@ -46,7 +45,7 @@ export class Run {
     // (4) bullets move.
     this.world.moveBullets(dt);
     // (6) bodies leaving the screen are released.
-    this.world.releaseOffscreen();
+    this.world.sweep();
     // (7) timers advance. (8) the outcome stays PLAYING until enemies exist.
     this.world.player.advanceTimers();
   }
@@ -64,8 +63,5 @@ function createSnapshot(world: World): WorldSnapshot {
   return {
     player: world.player,
     playerBullets: world.playerBullets,
-    get playerBulletCount(): number {
-      return world.playerBulletCount;
-    },
   };
 }

@@ -2,45 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { PlayerState } from '../../src/domain/game/player';
 import type { PlayerSnapshot, WorldSnapshot } from '../../src/domain/game/run';
 import type { Bullet } from '../../src/domain/game/bullet';
-import type { RenderPort, RenderRegion } from '../../src/domain/ports/render-port';
 import { Palette } from '../../src/domain/presentation/palette';
 import { RunPresenter } from '../../src/domain/presentation/run-presenter';
-
-interface Rect {
-  region: RenderRegion;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  colour: string;
-}
-
-/** Records the rectangles drawn, with the region they were drawn in. */
-class RecordingRender implements RenderPort {
-  region: RenderRegion = 'hud';
-  readonly rects: Rect[] = [];
-  setRegion(region: RenderRegion): void {
-    this.region = region;
-  }
-  clear(): void {
-    // Not used by the presenter.
-  }
-  drawSprite(): void {
-    throw new Error('no sprite before the assets brick');
-  }
-  drawRect(x: number, y: number, w: number, h: number, colour: string): void {
-    this.rects.push({ region: this.region, x, y, w, h, colour });
-  }
-  drawText(): void {
-    throw new Error('no text before the screens brick');
-  }
-  setCameraOffset(): void {
-    // Not used by the presenter.
-  }
-  present(): void {
-    // Not used by the presenter.
-  }
-}
+import type { ReadonlyActiveList } from '../../src/domain/game/active-list';
+import { RecordingRender } from '../support/recording-render';
+import type { RecordedRect } from '../support/recording-render';
 
 function ship(overrides: Partial<PlayerSnapshot> = {}): PlayerSnapshot {
   return {
@@ -52,7 +18,7 @@ function ship(overrides: Partial<PlayerSnapshot> = {}): PlayerSnapshot {
   };
 }
 
-function bullet(x: number, y: number, previousY: number): Readonly<Bullet> {
+function bullet(x: number, y: number, previousY: number): Bullet {
   return {
     position: { x, y },
     previousPosition: { x, y: previousY },
@@ -64,12 +30,24 @@ function bullet(x: number, y: number, previousY: number): Readonly<Bullet> {
   };
 }
 
-function snapshot(player: PlayerSnapshot, bullets: Readonly<Bullet>[] = []): WorldSnapshot {
-  return { player, playerBullets: bullets, playerBulletCount: bullets.length };
+/** A fixed active list for presenter tests: the presenter only reads `count` and `at`. */
+function listOf<T>(items: readonly T[]): ReadonlyActiveList<T> {
+  return {
+    count: items.length,
+    at(index: number): T {
+      const item = items[index];
+      if (item === undefined) throw new RangeError(`no item at ${String(index)}`);
+      return item;
+    },
+  };
 }
 
-function hullRects(render: RecordingRender): Rect[] {
-  return render.rects.filter((rect) => rect.colour === Palette.shipHull);
+function snapshot(player: PlayerSnapshot, bullets: Bullet[] = []): WorldSnapshot {
+  return { player, playerBullets: listOf(bullets) };
+}
+
+function hullRects(render: RecordingRender): RecordedRect[] {
+  return render.rectsOf(Palette.shipHull);
 }
 
 describe('RunPresenter — ship and bullets (05-state-scenes, first playable)', () => {

@@ -1,43 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
-import type { RenderPort, RenderRegion } from '../../src/domain/ports/render-port';
 import { Palette } from '../../src/domain/presentation/palette';
 import { Starfield } from '../../src/domain/presentation/starfield';
 import { Scene, SceneMachine } from '../../src/domain/scenes/scene-machine';
+import { RecordingRender } from '../support/recording-render';
 
 const DT = 1 / 60;
-
-/** Records the colours drawn per region, and how many frames were presented. */
-class RecordingRender implements RenderPort {
-  private region: RenderRegion = 'hud';
-  readonly colours: { region: RenderRegion; colour: string }[] = [];
-  presented = 0;
-  setRegion(region: RenderRegion): void {
-    this.region = region;
-  }
-  clear(): void {
-    this.colours.length = 0;
-  }
-  drawSprite(): void {
-    throw new Error('no sprite before the assets brick');
-  }
-  drawRect(_x: number, _y: number, _w: number, _h: number, colour: string): void {
-    this.colours.push({ region: this.region, colour });
-  }
-  drawText(): void {
-    throw new Error('no text before the screens brick');
-  }
-  setCameraOffset(): void {
-    // Not used by the scenes yet.
-  }
-  present(): void {
-    this.presented += 1;
-  }
-  drew(colour: string): boolean {
-    return this.colours.some((entry) => entry.colour === colour);
-  }
-}
 
 function setup(): { machine: SceneMachine; render: RecordingRender } {
   const render = new RecordingRender();

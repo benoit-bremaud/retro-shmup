@@ -1,39 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { STARFIELD_LAYERS, Starfield } from '../../src/domain/presentation/starfield';
 import { FIELD_HEIGHT, FIELD_WIDTH } from '../../src/domain/presentation/screen';
-import type { RenderPort } from '../../src/domain/ports/render-port';
-
-interface Rect {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
-
-class RecordingRender implements RenderPort {
-  rects: Rect[] = [];
-  setRegion(): void {
-    // The caller selects the field.
-  }
-  clear(): void {
-    this.rects = [];
-  }
-  drawSprite(): void {
-    throw new Error('not used');
-  }
-  drawRect(x: number, y: number, w: number, h: number): void {
-    this.rects.push({ x, y, w, h });
-  }
-  drawText(): void {
-    throw new Error('not used');
-  }
-  setCameraOffset(): void {
-    // Not used.
-  }
-  present(): void {
-    // Not used.
-  }
-}
+import { RecordingRender } from '../support/recording-render';
+import type { RecordedRect } from '../support/recording-render';
 
 /** A deterministic stand-in for the unseeded presentation randomness. */
 function sequence(): () => number {
@@ -44,7 +13,7 @@ function sequence(): () => number {
   };
 }
 
-function draw(field: Starfield, timeSeconds: number): Rect[] {
+function draw(field: Starfield, timeSeconds: number): RecordedRect[] {
   const render = new RecordingRender();
   field.draw(render, timeSeconds);
   return render.rects;
