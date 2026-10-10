@@ -95,8 +95,9 @@ sequenceDiagram
   `spent` mark (spent bodies and bullets are skipped by the rest of the step) prevent a double score, a
   double roll and a double formation count when two bullets or a bomb and a bullet meet the same
   enemy in one step.
-- **Mark now, release at step 6**: `World.sweep()` is the only caller of `pool.release`
-  (04-class-domain, mark then release), so no pool ever sees a double release. `ENEMY_DESTROYED`
+- **Mark now, release at step 6**: `World.sweep()` is the single entry point of step 6 and
+  delegates to each `ActiveList.sweep`, the only caller of `pool.release` (04-class-domain, mark
+  then release), so no pool ever sees a double release. `ENEMY_DESTROYED`
   carries its position and size tier because `E` is gone before the frame is drawn.
 - **Spawning is a direct call, never a handler** (ADR-0010): pickups, the formation reward and
   the `spent` mark happen in `Run.destroyEnemy`, in this fixed order — the pool release waits for

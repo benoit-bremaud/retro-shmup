@@ -337,7 +337,7 @@ classDiagram
     <<data>>
     +at: number
     +count: number
-    +interval: number
+    +interval: number [0..1]
     +spawn: Vec2
     +hover: Vec2 [0..1]
     +path: PathId
@@ -419,11 +419,11 @@ classDiagram
 | Chain: 2 s window, step every 5 kills, ×8 cap, reset on death (§8) | `ScoreKeeper.chainKills`, `chainTimer`, `multiplier()` |
 | Tally: full formations, no bomb, no miss, bombs left (§8) | `LevelTally`, reset at each level; on `LEVEL_CLEARED` `ScoreKeeper` adds the bonuses; `RunView.tally()` feeds the results screen |
 | Bomb used (§4.5, §8) | `BOMB_USED` → `ScoreKeeper` sets `tally.bombUsed` (no-bomb bonus lost) |
-| Chain expiry, inclusive window (v0.6 §8) | `chainTimer` counts the steps left in the window: 120 on a kill, −1 when there is no chain (start, death). `ScoreKeeper.tick` (step 7, after the collisions) decrements it, and the chain breaks when it falls below 0, so a kill 120 steps after the previous one still extends it and one 121 steps after does not; `chainRatio` = max(`chainTimer`, 0) / 120 |
+| Chain expiry, inclusive window (v0.6 §8) | `chainTimer` counts the steps left in the window: 120 on a kill, −1 when there is no chain (start, death). `ScoreKeeper.tick` (step 7, after the collisions) decrements it, and the chain breaks when it falls below 0, so a kill 120 steps after the previous one still extends it and one 121 steps after does not; `chainRatio` = (`chainTimer` + 1) / 120, full right after a kill and empty exactly when the chain breaks |
 | Difficulty knobs (§10) | `DifficultyProfile`; the HUD caps (9 lives, 5 bombs, level 5) are constants, not knobs |
 | Clamp to the field, fly-in (v0.5 §4.1) | `Player.update`: clamp applied once `Entering` ends; fly-in path in 05-state-player |
 | Enemy roles of the enemies brick (v0.6 §5.2.1) | `PathMovement` (S curve from `ScriptEvent.spawn`, mirrored by `mirror`), `DiveMovement` (`Body.diveTarget` captured at the dive, heading kept until the enemy leaves), `EnterHoldLeave` (spawn → `ScriptEvent.hover` → back); `AimedAttack` counts `fireTimer` only while `Body.armed`, which the movement sets (during the hold for `EnterHoldLeave`); a zero aim vector fires straight down |
-| Script rows, groups, loop (v0.6 §7.2.1) | `ScriptEvent.interval`, `spawn`, `hover`, expanded at load into single spawns that each keep their source event and member rank; the members of one event form a `Formation` only when `EnemyArchetype.formation` is set (Popcorn): `LevelDirector` acquires a pooled `Formation` (total = `count`) when rank 0 is due, whether or not that enemy gets a pool slot, attaches the following ranks of that event in the same loop pass, and a new pass starts a new `Formation`; a member refused by a full enemy pool counts as `refused`; `isCleared()` = destroyed > 0 and destroyed + refused = total (the engine limit never costs the player the reward); the `Formation` returns to its pool once `isResolved()` (destroyed + escaped + refused = total); with the formation pool empty, the members spawn without a formation; `PathMovement` mirrored negates the offset from the axis x0; `LevelScript.loopAt` wraps `scriptTime` to 0 (interim, enemies brick) |
+| Script rows, groups, loop (v0.6 §7.2.1) | `ScriptEvent.interval` is absent on a one-enemy row ("—" in the GDD) and required above one: the script is checked at load and a row breaking the rule throws a `RangeError`; `spawn`, `hover`, expanded at load into single spawns that each keep their source event and member rank; the members of one event form a `Formation` only when `EnemyArchetype.formation` is set (Popcorn): `LevelDirector` acquires a pooled `Formation` (total = `count`) when rank 0 is due, whether or not that enemy gets a pool slot, attaches the following ranks of that event in the same loop pass, and a new pass starts a new `Formation`; a member refused by a full enemy pool counts as `refused`; `isCleared()` = destroyed > 0 and destroyed + refused = total (the engine limit never costs the player the reward); the `Formation` returns to its pool once `isResolved()` (destroyed + escaped + refused = total); with the formation pool empty, the members spawn without a formation; `PathMovement` mirrored negates the offset from the axis x0; `LevelScript.loopAt` wraps `scriptTime` to 0 (interim, enemies brick) |
 | Leaving the field (v0.6 §5.2.1) | `Body.entered` set once the enemy overlaps the field; `World.sweep` releases an entered enemy fully outside it, with no score |
 | Pools (v0.6 §5.2.1) | sizes from the GDD; a request on a full pool is dropped (ADR-0002) |
 | Game over time (v0.6 §4.4) | `SceneTuning` in the scene machine, not `Run` (meta/05-state-scenes) |
@@ -462,7 +462,8 @@ classDiagram
   multiplied by `dt` in seconds (ADR-0014). The domain never counts time by subtracting `dt`.
 - **Mark, then release**: from step 3 to step 5 a destroyed body or a consumed bullet is only
   marked `spent` (reset on acquire), and every pass skips spent items. Step 6 is `World.sweep()`,
-  the only caller of `pool.release`: a spent item is released with no escape counted; an active
+  its single entry point, which delegates to each `ActiveList.sweep`, the only caller of
+  `pool.release`: a spent item is released with no escape counted; an active
   item fully outside the field (an enemy once `entered`) is released and, in a formation, counts
   as escaped.
 - **Active lists**: each list (player bullets, enemy bullets, enemies, later pickups) is one

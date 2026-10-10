@@ -1,7 +1,7 @@
 # State machine diagram — meta — screens and their transitions (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.5 §3.4,
-> §4.2, §9.1, §9.3
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.6 §3.4,
+> §4.2, §4.4, §5.2.1, §7.2.1, §8, §9.1, §9.2, §9.3
 > **Related ADRs**: ADR-0006 (save document), ADR-0009 (gestures, automatic pause), ADR-0010
 > (one run, one bus), ADR-0015 (pause in the first playable)
 > **Realizes**: UC1–UC7 of [01-use-case](../system/01-use-case.md) at the screen level; the
