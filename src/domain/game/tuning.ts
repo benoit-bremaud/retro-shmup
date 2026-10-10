@@ -44,5 +44,11 @@ export const SpreadLevel1 = {
   damage: 1,
 } as const;
 
+/** Times of the frozen scenes (GDD §4.4, §9.1); the scene machine converts them with toSteps. */
+export const SceneTuning = {
+  countInSeconds: 1,
+  gameOverSeconds: 3,
+} as const;
+
 /** Player bullets alive at once at level 1: about 9, so 16 leaves headroom (class diagram). */
 export const PLAYER_BULLET_POOL_SIZE = 16;

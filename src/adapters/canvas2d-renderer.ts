@@ -1,3 +1,4 @@
+import { HUD_FONT_CELL } from '../domain/ports/render-port';
 import type { FontId, RenderPort, RenderRegion, SpriteId } from '../domain/ports/render-port';
 import { Palette } from '../domain/presentation/palette';
 import {
@@ -7,6 +8,7 @@ import {
   SCREEN_HEIGHT,
   SCREEN_WIDTH,
 } from '../domain/presentation/screen';
+import { HUD_GLYPH_COLUMNS, HUD_GLYPH_ROWS, HUD_GLYPH_SCALE, hudGlyph } from './hud-font';
 import type { Viewport } from './viewport';
 
 /**
@@ -31,8 +33,8 @@ export interface RenderSurface {
  * integer factor with smoothing off.
  *
  * @remarks The camera offset (screen shake) moves field-region draws only, at draw time: the HUD
- * never shakes (ADR-0014). `drawSprite` and `drawText` fail closed until the asset brick loads a
- * sprite sheet and the bitmap fonts.
+ * never shakes (ADR-0014). `drawSprite` fails closed until the asset brick loads a sprite sheet;
+ * `drawText` draws the `hud` digits from its own glyph table and fails closed on anything else.
  */
 export class Canvas2DRenderer implements RenderPort {
   private region: RenderRegion = 'hud';
@@ -81,20 +83,53 @@ export class Canvas2DRenderer implements RenderPort {
   }
 
   drawRect(x: number, y: number, w: number, h: number, colour: string): void {
+    this.offscreen.fillStyle = colour;
+    this.fillLogical(x, y, w, h);
+  }
+
+  drawText(text: string, x: number, y: number, font: FontId): void {
+    if (font !== 'hud') {
+      throw new Error(
+        `Canvas2DRenderer: no bitmap font "${font}" loaded yet, cannot draw "${text}"`,
+      );
+    }
+    this.offscreen.fillStyle = Palette.hudText;
+    for (let i = 0; i < text.length; i += 1) {
+      const rows = hudGlyph(text.charCodeAt(i));
+      if (rows === undefined) {
+        throw new Error(`Canvas2DRenderer: no hud glyph for "${text.charAt(i)}" in "${text}"`);
+      }
+      this.drawGlyph(rows, x + i * HUD_FONT_CELL.width, y);
+    }
+  }
+
+  // One 2 × 2 block per lit glyph pixel, through the same origin and rounding as drawRect.
+  private drawGlyph(rows: readonly number[], x: number, y: number): void {
+    for (let row = 0; row < HUD_GLYPH_ROWS; row += 1) {
+      const mask = rows[row] ?? 0;
+      for (let column = 0; column < HUD_GLYPH_COLUMNS; column += 1) {
+        if ((mask & (1 << (HUD_GLYPH_COLUMNS - 1 - column))) === 0) continue;
+        this.fillLogical(
+          x + column * HUD_GLYPH_SCALE,
+          y + row * HUD_GLYPH_SCALE,
+          HUD_GLYPH_SCALE,
+          HUD_GLYPH_SCALE,
+        );
+      }
+    }
+  }
+
+  // Region origin, camera offset for the field, whole logical pixels.
+  private fillLogical(x: number, y: number, w: number, h: number): void {
     const inField = this.region === 'field';
     const originX = inField ? FIELD_X + this.cameraX : 0;
     const originY = inField ? this.cameraY : 0;
-    this.offscreen.fillStyle = colour;
     this.offscreen.fillRect(
       Math.round(originX + x),
       Math.round(originY + y),
       Math.round(w),
       Math.round(h),
     );
-  }
-
-  drawText(text: string, _x: number, _y: number, font: FontId): void {
-    throw new Error(`Canvas2DRenderer: no bitmap font "${font}" loaded yet, cannot draw "${text}"`);
   }
 
   setCameraOffset(dx: number, dy: number): void {

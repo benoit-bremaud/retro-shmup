@@ -12,6 +12,10 @@ export const Palette = {
   shipWing: '#2c7a7b',
   shipCockpit: '#f6e05e',
   playerShot: '#ffd166',
+  // HUD digits (hud font) and the overlays of the frozen scenes.
+  hudText: '#fdf6e3',
+  veil: '#05060fb3',
+  pauseIcon: '#ffffff',
 } as const;
 
 export type PaletteColour = (typeof Palette)[keyof typeof Palette];
