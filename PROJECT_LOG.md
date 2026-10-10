@@ -8,6 +8,17 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-10
 
+### PR #13 merged (`994c787`) — enemies brick design (D0)
+
+- GDD v0.6 and the UML of the enemies brick are on `main`. The review ran over 19 commits:
+  20 Codex and 6 Copilot findings plus 2 late Codex threads, each studied, scored and validated
+  by the owner. Merged on the owner's request with CI green and every thread answered; Codex had
+  not re-reviewed the last two commits (`c198cd3`, `7df0401`) after two requests.
+- Further `--no-verify` pushes (ADR-0013, npm registry timeouts): `4ed856a` and `3c512a8`, each
+  after the rest of `make verify` passed, SonarQube included.
+- Next: D1 in four PRs — R (refactor), P (pause), E (enemies, lives, game over), S (score, HUD,
+  effects; closes #12).
+
 ### Design of the enemies brick (branch `docs/enemies-design`) — GDD v0.6, issue #12
 
 - Owner decisions (all recommended): roles Popcorn, Diver and Gunner; the designed
