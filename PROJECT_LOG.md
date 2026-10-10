@@ -8,6 +8,16 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-10
 
+### PR #17 merged (`3b1f97d`) — D1 E: enemies, collisions, lives and game over
+
+- Popcorn, Diver and Gunner from the looping GDD §7.2.1 script; 3 lives, a 4 × 4 hitbox,
+  respawn after 1.5 s, Game over. The owner played it ("pas mal du tout"), then asked for a
+  large GAME OVER over a scene that keeps moving: recorded as a GDD v0.6 change and built in
+  PR S (scored options, owner choices: title font A–Z with a message catalogue; the run plays
+  on without the ship, arcade style).
+- No automated reviewer (quotas): a thorough pre-push review (0 Must, 2 Should and 6 Nice
+  fixed), CI green, `make verify` green after fixing Sonar S1940 and S4043.
+
 ### PR #15 merged (`e75d40e`) — D1 P: Paused and Count-in
 
 - `P` or `Esc` pauses (veil, two-bar icon, frozen field and starfield); `Enter` or `Esc` starts
