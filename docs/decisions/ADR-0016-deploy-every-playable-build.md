@@ -36,7 +36,8 @@ on Cloudflare before the vertical slice) and the timing of its follow-ups 1, 2 a
 ## Consequences
 
 - The public game is unfinished; the catalogue card says so.
-- The security headers ship with the first deployment (ADR-0008 decision 4).
+- The security headers (ADR-0008 decision 4) ship with the pull request that adopts this ADR; the
+  first production deployment, made when the project was created, predates them.
 - Saves made inside a portfolio embed are separate from saves made on the game's own address, since
   the two are different sites (ADR-0006); the catalogue links to the game rather than embedding it.
 - Follow-ups, in order, each recorded in the project log when done:
