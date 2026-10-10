@@ -27,6 +27,12 @@ interface EnemyArchetype  {
 }
 ```
 
+*Wording note, 2026-10-10 (enemies brick design, owner-approved):* the sketch above is
+illustrative; the class diagram (`gameplay/04-class-domain`) refines its names without changing
+this decision — `EnemyState` is `Body`, and `BulletSpawner` is split into `PlayerShotSpawner` (the
+weapon's) and `EnemyShotSpawner` (the attack patterns'), so an attack can never fire a player
+bullet. `DropTable` is data since ADR-0010.
+
 Archetypes are typed data: a level script (§7.1) references them by name; tuning values marked *(initial)* in the GDD live in these records, never in code paths.
 
 **2. Each pattern is admitted by exactly one named force.**
