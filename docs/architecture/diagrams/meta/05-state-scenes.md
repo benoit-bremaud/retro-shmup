@@ -104,8 +104,7 @@ stateDiagram-v2
 
 The first playable build implements part of this machine; each later brick adds states until the
 diagram above is complete. The game it ships is described by the GDD and the ADRs; this section
-alone records the build order and three interim deviations: the run starts at `Playing`, the start
-has no gesture guard, and `Playing` ignores `Pause`.
+alone records the build order and the interim deviations of each brick.
 
 - **States**: `Boot` → `Title` → `InRun { Playing }`. `Boot` loads nothing yet (no assets, no
   save document); `InRun` entry creates the run and exit releases it, as above.
@@ -119,12 +118,31 @@ has no gesture guard, and `Playing` ignores `Pause`.
   `Gesture prompt` lands with audio. That brick decides where the "a gesture happened" signal
   lives (the intent frame, or `AudioPort`, which owns the unlock), and makes a touch start count
   as a gesture on `pointerup` (ADR-0015 decision 8).
-- **Interim deviation, pause**: the input adapter already synthesizes `Pause` (ADR-0009,
-  ADR-0015 decision 5), but `Playing` ignores it until `Paused` and `Count-in` land, no later than
-  the enemies brick: with nothing to hit the ship, an unpaused hidden tab costs nothing. Until
-  then `Playing --> Paused` and the "pause before the step" rule of 02-sequence-fixed-step-tick
-  are not implemented. A test pins "`Playing` ignores `Pause`", so it fails, and the deviation is
-  removed on purpose, when `Paused` lands.
+- **Interim deviation, pause** (first playable only): the input adapter already synthesizes
+  `Pause` (ADR-0009, ADR-0015 decision 5), but `Playing` ignores it until `Paused` and `Count-in`
+  land with the enemies brick. A test pins "`Playing` ignores `Pause`", so it fails, and the
+  deviation is removed on purpose, when `Paused` lands.
+
+### Enemies brick additions
+
+The enemies brick adds `Paused`, `Count-in` and `Game over`, and removes the pause deviation above.
+
+- **Paused** follows the pause rules above: `Pause` in `Playing` enters it before the run steps;
+  `Confirm` or `Back` starts `Count-in`; `Pause` in `Count-in` returns to `Paused`. **Interim
+  deviation, pause menu**: the menu's options, quit and confirm-quit choices need text and arrive
+  with the screens brick; until then `Paused` offers resume only. It draws the frozen field
+  under a dim veil and a two-bar pause icon made of rectangles.
+- **Count-in** shows a 3-2-1 with the HUD digits for 1 s (60 steps), the run still frozen.
+- **Game over**: `InRun --> GameOver` when the outcome is `GAME_OVER`. **Interim deviation,
+  name entry**: `GameOver --> Title` on `Confirm` or after the game-over time (GDD §4.4), with no
+  `NameEntry` branch until the high scores exist (screens brick). It draws the frozen field under
+  a dim veil, without text.
+- **Frozen scenes** (`Paused`, `Count-in`, `Game over`) take every step without stepping the run,
+  do not advance the background clock (the starfield freezes with the run), and draw the run's
+  snapshot at `alpha = 1`, its current positions, so nothing wobbles between two positions.
+- **Interim deviation, level script**: the level script holds the first rows of GDD §7.2 (0 s, 8 s,
+  18 s, 32 s) and loops after its last event, until the level brick adds the rest of level 1,
+  the warning and the boss. No `LEVEL_CLEARED` before then.
 
 ### Presentation of the first playable
 
@@ -137,6 +155,10 @@ has no gesture guard, and `Playing` ignores `Pause`.
   freezes with hit-stop. The `Paused` scene decides whether it keeps scrolling.
 - **Interim deviation, blink**: the blink is always on; its non-flashing replacement and its
   reduced-motion default (GDD §9.3, §9.7) arrive with the options screen (screens brick).
+- **Enemies brick**: enemies and enemy bullets are rectangles in palette colours that differ
+  from the ship's hull colour (the smoke-test oracle); the left HUD band shows the score, the
+  multiplier, the chain bar and the lives, with digits drawn by the renderer until the bitmap
+  fonts of the screens brick (`drawText` with the `hud` font accepts digits and `×` only).
 - **Smoke test** (the single browser test, ADR-0003): Chromium only, against the built bundle.
   The ship's palette colour is absent at its resting point on the title, then present there after
   `Enter` and at least 30 frames. The logic time per step is measured and logged against the
@@ -148,4 +170,5 @@ has no gesture guard, and `Playing` ignores `Pause`.
 |---|---|
 | C1 — first playable on keyboard | the subset above; `Player`, `PlayerState`, `Weapon` with Spread level 1, player bullets; `RunPresenter`; `DeviceInput` with its façade and the `keyboard` module; ADR-0015 decisions 4 (keyboard part), 5 (lost focus), 6 and 9; the smoke test |
 | C2 — the other devices | ADR-0015 decisions 1–3 (portrait screen, `layout()`), the `pointer` and `gamepad` modules and the arbitration function (decisions 4, 5, 7, 8); start by `A`, tap or click |
-| Later bricks | touch pause button with `Paused` (enemies brick), touch bomb button with the bomb effect (pickups and rules brick); until then the second-finger tap is the only touch bomb |
+| D — enemies | Popcorn, Diver, Gunner as archetype data and stateless strategies; `LevelDirector` with the looping first rows of level 1; enemy and enemy-bullet pools; `CollisionResolver`; lives, `hit()`, `Dead` and respawn; `EventBus` with `ScoreKeeper` (points and chain); `RunOutcome.GAME_OVER`; `Paused`, `Count-in`, `Game over`; HUD digits, chain bar and life icons; hit flash and small explosion behind effect switches |
+| Later bricks | touch pause button with C2 (touch input comes after the enemies brick), touch bomb button with the bomb effect (pickups and rules brick); until then the second-finger tap is the only touch bomb |

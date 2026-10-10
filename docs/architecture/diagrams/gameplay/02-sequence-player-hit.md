@@ -39,13 +39,13 @@ sequenceDiagram
   else [Vulnerable, shield held]
     Note over Pl: shield = false, Invulnerable for 0.5 s
     Pl-->>CR: ABSORBED
-    CR->>W: release the bullet (a body is unaffected)
+    CR->>W: mark the bullet inactive, released at step 6 (a body is unaffected)
     CR->>Bus: publish PLAYER_HIT (detail = absorbed)
     Bus->>P: shield break effect and SFX
   else [Vulnerable, no shield]
     Note over Pl: lives −= 1, state Dead
     Pl-->>CR: DIED
-    CR->>W: release the bullet (a body is unaffected)
+    CR->>W: mark the bullet inactive, released at step 6 (a body is unaffected)
     CR->>Run: playerDied()
     Note over Run: bombs = DifficultyProfile.bombsPerLife
     Run->>Wp: powerDown()

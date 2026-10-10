@@ -8,6 +8,24 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-10
 
+### Design of the enemies brick (branch `docs/enemies-design`) — GDD v0.6, issue #12
+
+- Owner decisions (all recommended): roles Popcorn, Diver and Gunner; the designed
+  `LevelDirector` with the first rows of level 1, looping until the level brick; HUD digits drawn
+  by the renderer until the bitmap fonts; wordless Paused, Count-in and Game over; no pickup drop
+  before the pickups brick, so no gameplay randomness in this brick.
+- GDD v0.6 §5.2.1 records the initial values of the three roles, the enemy bullets and the pools;
+  §4.4 the 3 s game-over time; §9.2 the life icons and chain bar.
+- UML: the enemies-brick additions and interim deviations of the scene machine; collisions mark
+  at step 5 and release at step 6 (enemy-destroyed and player-hit sequences, class notes); frozen
+  scenes draw at alpha 1 (tick sequence); the touch pause button moves to C2.
+
+### PR #11 merged (`2a90e17`) and portfolio PR benoit-bremaud/benoitbremaud.fr#14 merged (`5a21024`)
+
+- ADR-0017 is on `main`; the portfolio serves `https://benoitbremaud.fr/projets/` with the four
+  categories and the retro-shmup card linking to the game (checked in production). Codex reviewed
+  both with no comment, after a re-review was requested on the reworked portfolio PR.
+
 ### Games catalogue in the portfolio's projects page (branch `docs/projects-catalogue`) — ADR-0017
 
 - While the portfolio's `/jeux/` page was in review (benoit-bremaud/benoitbremaud.fr#14), the owner

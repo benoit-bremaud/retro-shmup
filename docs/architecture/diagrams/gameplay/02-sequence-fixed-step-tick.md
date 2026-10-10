@@ -82,6 +82,9 @@ sequenceDiagram
   `RunPresenter.draw(snapshot, alpha)`, then the HUD region. In the first playable it draws the
   empty HUD bands itself; the HUD contents move into `RunPresenter` with scoring and are drawn
   after the bands. The presenter takes `wallDtMs` when its first wall-clock effect lands.
+- **Frozen scenes draw at `alpha = 1`**: `Paused`, `Count-in` and `Game over` take every step
+  without stepping the run, while the loop keeps computing `alpha`; they draw the snapshot at its
+  current positions so the frozen picture never wobbles between two positions.
 - **One input read per step**: a press is consumed by exactly one step even when a frame runs
   several, and a tap shorter than a step is not lost (latched by the adapter).
 - **Time effects never touch the run**: during hit-stop `s` falls to 0 and the loop takes no

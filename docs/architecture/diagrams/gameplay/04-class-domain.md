@@ -432,6 +432,8 @@ classDiagram
 - **Units**: timers and cooldowns are whole numbers of steps, counted down by 1 each step, and
   converted from the GDD's seconds once, at load (counted in steps: ADR-0002); velocities are pixels per second,
   multiplied by `dt` in seconds (ADR-0014). The domain never counts time by subtracting `dt`.
+- **Mark, then release**: the collision pass (step 5) only marks bodies and bullets inactive and
+  skips inactive ones; step 6 releases every inactive or off-screen item once.
 - **Active lists**: removal while iterating is backwards, swap-with-last, then `pool.release` —
   the only place either list changes. The player-bullet pool holds 16 bullets *(initial)*; a request on an empty pool is dropped (ADR-0002).
 - **Weapon strategy**: while `SpreadPattern` is the only pattern, `Weapon` calls it directly; the

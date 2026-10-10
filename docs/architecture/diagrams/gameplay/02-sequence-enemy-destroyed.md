@@ -42,7 +42,7 @@ sequenceDiagram
   CR->>E: hp −= B.damage
   CR->>B: recordHit(E.serial)
   opt [B.pierceLeft = 0]
-    CR->>W: release B to the player-bullet pool
+    CR->>B: mark inactive (released at step 6)
   end
   CR->>Bus: publish ENEMY_HIT (subject = E.serial)
   Bus->>P: white flash on E, hit SFX
@@ -83,16 +83,19 @@ sequenceDiagram
       Run->>Bus: publish PICKUP_SPAWNED (detail = kind)
       Bus->>P: first-time label if this kind is new in the run
     end
-    Run->>W: release E to the enemy pool, marked inactive
+    Run->>E: mark inactive (released at step 6)
   end
 ```
 
 ## Notes
 
-- **Destroyed at most once**: the guard `[hp was > 0 and is now ≤ 0]` and the immediate release
-  (inactive enemies are skipped by the rest of the pass, the pool release is safe during
-  iteration) prevent a double score, a double roll and a double formation count when two bullets
-  or a bomb and a bullet meet the same enemy in one step.
+- **Destroyed at most once**: the guard `[hp was > 0 and is now ≤ 0]` and the inactive mark
+  (inactive bodies and bullets are skipped by the rest of the pass) prevent a double score, a
+  double roll and a double formation count when two bullets or a bomb and a bullet meet the same
+  enemy in one step.
+- **Mark now, release at step 6**: the collision pass only marks; step 6 of `Run.step` compacts
+  the active lists and releases each inactive item to its pool once (04-class-domain, active
+  lists), so no pool ever sees a double release.
 - **Spawning is a direct call, never a handler** (ADR-0010): pickups, the formation reward and
   the pool release happen in `Run.destroyEnemy`, in this fixed order; only `ScoreKeeper` changes
   state from a handler, and the presenter only reacts.

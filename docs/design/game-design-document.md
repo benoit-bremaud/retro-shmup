@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Vertical slice — v0.5 (2026-10-08): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot) |
+| **Status** | Vertical slice — v0.6 (2026-10-10): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot); v0.6 adds the initial values of the enemies brick |
 | **Working title** | *retro-shmup* (codename; the commercial title is still open) |
 | **Genre** | Retro vertical-scrolling shoot'em up (shmup), 16-bit aesthetic |
 | **Platform** | Web browser (desktop first, mobile playable), TypeScript + native Canvas 2D |
@@ -210,7 +210,8 @@ is held or not, so tapping never fires faster than holding. One level-1 shot dea
   4. bombs are reset to **2** (`bombsPerLife`, §10),
   5. the ship respawns after 1.5 s with 2 s of invulnerability.
   Lives at 0 → **Game over** after the 1.5 s death sequence *(v0.4: the last explosion plays out)*
-  (no continues in 1.0).
+  (no continues in 1.0). The Game over screen lasts **3 s** *(initial, v0.6)*, or less when the
+  player confirms.
 
 ### 4.5 Bombs
 
@@ -271,6 +272,22 @@ roles on three size tiers cover every wave the three levels need.
 - Every enemy flashes white for 2 frames when hit (palette flash, no extra sprite) and shares a
   common explosion animation scaled by size tier.
 - Enemies that leave the screen alive simply despawn (no penalty, no score).
+
+### 5.2.1 Initial values of the first roles *(v0.6)*
+
+All values *(initial)*, tuned in playtests. Hitboxes are the full sprite box of each size tier;
+the player's tiny hitbox already carries the fairness (§4.1).
+
+| | Popcorn | Diver | Gunner |
+|---|---|---|---|
+| Hitbox | 16 × 16 | 16 × 16 | 32 × 32 |
+| Movement | groups of 6, one every 1/3 s, along an S curve or its mirror, at 70 px/s | enters from the top at 60 px/s for 1 s, then dives in a straight line at **180 px/s** toward where the ship was at that moment | enters from the top to y 80 in 1 s, hovers **3.5 s**, leaves upward at 60 px/s |
+| Attack | none | contact only | **1 aimed bullet** every 1.5 s while hovering (the first 1.5 s after it stops) |
+
+- **Enemy bullets**: 4 × 4 px at **75 px/s**, straight toward the ship's position when fired.
+- **At most** 48 enemy bullets and 16 enemies at once; a spawn beyond that is dropped (ADR-0002).
+- The hit flash lasts 2 frames of wall time; the explosion is a short burst of about 0.3 s, scaled
+  by size tier, drawn with the presentation randomness (ADR-0010).
 
 ### 5.3 Composition model
 
@@ -378,7 +395,8 @@ timer. On touch, an on-screen letter grid.
 ### 9.2 HUD (outside the 240 × 320 play field)
 
 Left: score, chain multiplier + timer bar, lives, bombs. Right: level number and name, weapon
-colour and power level (1–5 pips), shield indicator. Boss HP bar at the top of the play field
+colour and power level (1–5 pips), shield indicator. Lives are drawn as small ship icons and the
+chain timer as a shrinking bar *(v0.6)*. Boss HP bar at the top of the play field
 during a boss fight. On narrow screens the HUD collapses into the top strip of the portrait
 screen (§3.1) *(v0.5)*.
 
@@ -572,3 +590,5 @@ fully playable at release quality, used to validate the design before producing 
 | Touch target *(v0.5)* | Absolute, 32 px above the first finger on the field; lifting keeps the ship in place | See ADR-0015, Alternatives considered |
 | Stick *(v0.5)* | Radial dead zone, speed proportional to tilt up to the maximum, d-pad wins | See ADR-0015, Alternatives considered |
 | Spawn and clamp *(v0.5)* | Straight fly-in from below the field; whole sprite kept in the field; blink 3 times per second (§4.1) | Centre-only clamp (wings clipped by the field edge); a faster arcade blink (above the photosensitivity threshold) |
+| Enemy values *(v0.6)* | §5.2.1: full-box hitboxes, 75 px/s aimed bullets, Diver dive at 180 px/s, Gunner hover 3.5 s with one aimed bullet every 1.5 s | Hitboxes smaller than the sprite (the player's 4 × 4 hitbox already gives the fairness); three-bullet volleys from the start (kept for later levels) |
+| Game over time *(v0.6)* | 3 s, shortened by Confirm | Waiting for Confirm only (a player who walked away sees a frozen screen forever) |
