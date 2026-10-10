@@ -275,6 +275,7 @@ classDiagram
   class EnemyArchetype {
     <<data>>
     +id: string
+    +formation: boolean
   }
   class EnemyStats {
     <<data>>
@@ -418,7 +419,7 @@ classDiagram
 | Difficulty knobs (§10) | `DifficultyProfile`; the HUD caps (9 lives, 5 bombs, level 5) are constants, not knobs |
 | Clamp to the field, fly-in (v0.5 §4.1) | `Player.update`: clamp applied once `Entering` ends; fly-in path in 05-state-player |
 | Enemy roles of the enemies brick (v0.6 §5.2.1) | `PathMovement` (S curve from `ScriptEvent.spawn`, mirrored by `mirror`), `DiveMovement` (`Body.diveTarget` captured at the dive, heading kept until the enemy leaves), `EnterHoldLeave` (spawn → `ScriptEvent.hover` → back); `AimedAttack` counts `fireTimer` only while `Body.armed`, which the movement sets (during the hold for `EnterHoldLeave`); a zero aim vector fires straight down |
-| Script rows, groups, loop (v0.6 §7.2.1) | `ScriptEvent.interval`, `spawn`, `hover`, expanded into single spawns at load; `LevelScript.loopAt` wraps `scriptTime` to 0 (interim, enemies brick) |
+| Script rows, groups, loop (v0.6 §7.2.1) | `ScriptEvent.interval`, `spawn`, `hover`, expanded into single spawns at load; the members of one event form a `Formation` only when `EnemyArchetype.formation` is set (Popcorn); `PathMovement` mirrored negates the offset from the axis x0; `LevelScript.loopAt` wraps `scriptTime` to 0 (interim, enemies brick) |
 | Leaving the field (v0.6 §5.2.1) | `Body.entered` set once the enemy overlaps the field; `World.sweep` releases an entered enemy fully outside it, with no score |
 | Pools (v0.6 §5.2.1) | sizes from the GDD; a request on a full pool is dropped (ADR-0002) |
 | Game over time (v0.6 §4.4) | `SceneTuning` in the scene machine, not `Run` (meta/05-state-scenes) |
@@ -496,5 +497,9 @@ classDiagram
 - **`HitRules`** is declared in the collision module and realized by `Run`: `CollisionResolver`
   and the bomb path call it, and no other client sees it, since the scene machine holds the run
   as `Simulation & RunView`. `damageBoss` joins it with the boss brick.
+- **Brick subsets**: this diagram is the 1.0 model. A brick implements a subset of a type's
+  fields and associations, recorded in the build order of meta/05-state-scenes, never weakened
+  here: in the enemies brick `LevelScript` holds only its events and `loopAt` (interim), and
+  `warningAt` and the `BossDefinition` arrive, required, with the level brick.
 - **Not modelled**: geometric helpers (`Vec2`, `Rect`), ids (`SpriteId`, `PathId`), `KillCause`
   (shot or bomb), `WorldSnapshot` (the read-only view returned to the presenter), `ActiveList`.

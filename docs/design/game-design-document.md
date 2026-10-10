@@ -285,8 +285,9 @@ the player's tiny hitbox already carries the fairness (§4.1).
 | Attack | none | contact only | **1 aimed bullet** per volley: the first 1.5 s after it stops, then every 1.5 s while hovering (2 bullets per hover) |
 
 - **S curve**: x = x0 + 40 · sin(2π · y / 160), the enemy moving down at 70 px/s from y −8 and
-  leaving through the bottom; its mirror is x → 240 − x. The group size, x0, the mirror, the spawn
-  and hover points are script data (§7.2.1), never role constants.
+  leaving through the bottom; mirrored, the oscillation starts on the other side of its axis:
+  x = x0 − 40 · sin(2π · y / 160). The group size, x0, the mirror, the spawn and hover points are
+  script data (§7.2.1), never role constants.
 - **Aim**: a Gunner aims, and a Diver dives, at the ship's current position whatever its state;
   when the ship is exactly on the shooter, the shot or dive goes straight down.
 - **Enemy bullets**: 4 × 4 px at **75 px/s**, straight toward the ship's position when fired.
@@ -351,14 +352,17 @@ Length *(initial)*: ~120 s of waves + ≤ 90 s of boss per level.
 
 ### 7.2.1 Script data of the first enemy rows *(v0.6, initial)*
 
-Coordinates are play-field pixels (240 × 320, y down); "spawn" is where an enemy appears,
-"hover" where a Gunner stops. Members of a group appear one every `interval`.
+Coordinates are play-field pixels (240 × 320, y down); "spawn" is where an enemy appears (for the
+S curve, x0 is the curve's axis), "hover" where a Gunner stops. Members of a group appear one every
+`interval`. Only Popcorn groups are formations (§5.2): a lone enemy or a group of another role
+never is.
 
 | t (s) | Archetype | Count | Interval | Spawn | Hover / path |
 |---|---|---|---|---|---|
 | 0 | Popcorn | 6 | 1/3 s | x0 80, y −8 | S curve |
 | 8 | Popcorn | 6 | 1/3 s | x0 160, y −8 | S curve, mirrored |
-| 8 | Diver | 2 | 0 | x 80 and x 160, y −8 | dive |
+| 8 | Diver | 1 | — | x 80, y −8 | dive |
+| 8 | Diver | 1 | — | x 160, y −8 | dive |
 | 18 | Gunner | 1 | — | (−16, 80) | (60, 80) |
 | 18 | Gunner | 1 | — | (256, 80) | (180, 80) |
 | 32 | Popcorn | 8 | 1/3 s | x0 120, y −8 | S curve |
