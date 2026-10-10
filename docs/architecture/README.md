@@ -15,7 +15,7 @@ flowchart LR
   Player(["Player<br/>(browser, desktop or phone)"])
   Owner(["Owner<br/>(developer)"])
   Game["retro-shmup<br/>(static web game)"]
-  Portfolio["benoitbremaud.fr<br/>(portfolio, /jeux/ catalogue)"]
+  Portfolio["benoitbremaud.fr<br/>(portfolio, /projets/ page)"]
   Pages["Cloudflare Pages<br/>(pages.dev, then the game subdomain)"]
   Itch["itch.io<br/>(storefront)"]
   GitHub["GitHub<br/>(source, CI, releases)"]
