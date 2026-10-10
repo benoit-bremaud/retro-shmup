@@ -489,8 +489,8 @@ classDiagram
 - **Fixed order of `Run.step`** — the determinism contract (ADR-0002): (1) `LevelDirector.tick`
   spawns due events; (2) the player moves and its `Weapon` fires; (3) a pressed bomb is applied;
   (4) enemies, boss and bullets move, their strategies act; (5) `CollisionResolver` runs (bullets
-  vs enemies and boss, then hazards vs player, then pickups vs player); (6) bodies leaving the
-  screen are released, formations count escapes; (7) `ScoreKeeper.tick` and the boss and player
+  vs enemies and boss, then hazards vs player, then pickups vs player); (6) `World.sweep()` releases
+  spent items and bodies leaving the screen, formations count escapes; (7) `ScoreKeeper.tick` and the boss and player
   timers advance; (8) the outcome is updated — a level end is deferred while the player is `Dead`,
   and a final death (no life left) sets `GAME_OVER`, which wins over a pending level end.
 - **HUD data**: `WorldSnapshot` exposes the HUD values as getters, read by `RunPresenter` each

@@ -99,7 +99,8 @@ sequenceDiagram
   (04-class-domain, mark then release), so no pool ever sees a double release. `ENEMY_DESTROYED`
   carries its position and size tier because `E` is gone before the frame is drawn.
 - **Spawning is a direct call, never a handler** (ADR-0010): pickups, the formation reward and
-  the pool release happen in `Run.destroyEnemy`, in this fixed order; only `ScoreKeeper` changes
+  the `spent` mark happen in `Run.destroyEnemy`, in this fixed order — the pool release waits for
+  `World.sweep()` at step 6; only `ScoreKeeper` changes
   state from a handler, and the presenter only reacts.
 - **Subscription order**: `ScoreKeeper` first (subscribed by `Run`'s constructor), `RunPresenter`
   second (subscribed by the scene machine). `ScoreKeeper` publishes
