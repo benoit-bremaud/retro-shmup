@@ -136,7 +136,8 @@ The enemies brick adds `Paused`, `Count-in` and `Game over`, and removes the pau
   with the screens brick; until then `Paused` offers resume only. It draws the frozen field
   under a dim veil and a two-bar pause icon made of rectangles.
 - **Count-in** shows a 3-2-1 with the HUD digits, centred on the field, for 1 s (GDD §9.1), the
-  run still frozen.
+  run still frozen. On its last step it hands over to `Playing` and the run steps in that
+  same step, so the first resumed frame interpolates forward from the frozen picture, never back.
 - **Game over**: `InRun --> GameOver` when the outcome is `GAME_OVER`. **Interim deviation,
   name entry**: `GameOver --> Title` on `Confirm` or after the game-over time (GDD §4.4), with no
   `NameEntry` branch until the high scores exist (screens brick). It draws the frozen field of
@@ -182,8 +183,8 @@ The enemies brick adds `Paused`, `Count-in` and `Game over`, and removes the pau
   (landscape only until C2) drawn by a `drawHud` function that `RunPresenter` calls. Digits are
   drawn by the renderer until the bitmap fonts of the screens brick: a font draws only its glyph
   set and throws on any other character, `hud` being `0-9` and `×` (the `RenderPort` contract).
-  Each HUD value keeps its last number and string and formats again only when the number changes,
-  so drawing the HUD allocates nothing.
+  Numbers are drawn digit by digit (`% 10`, one `drawText` per digit from a constant table of
+  one-character strings), with no cache and no formatting, so drawing the HUD never allocates.
 - **Smoke test** (the single browser test, ADR-0003): Chromium only, against the built bundle.
   The ship's palette colour is absent at its resting point on the title, then present there after
   `Enter` and at least 30 frames. The logic time per step is measured and logged against the

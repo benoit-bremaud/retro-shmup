@@ -204,7 +204,7 @@ classDiagram
   }
   class EventBus {
     <<interface>>
-    +subscribe(kind, handler) void
+    +subscribe(kind, handler) Unsubscribe
     +publish(event: GameEvent) void
   }
   class GameEvent {
@@ -479,7 +479,7 @@ classDiagram
   `value` = score, `detail` = size tier — since the body is released at step 6, before the frame
   is drawn. `Run`'s constructor subscribes its own `ScoreKeeper` first, the only handler allowed
   to change state; the scene machine then subscribes the run's `RunPresenter` through
-  `RunView.events()`, which cannot publish. Spawns (death release, formation P,
+  `RunView.events()`, a subscribe-only view that also drops the `Unsubscribe` result `EventBus.subscribe` returns (ADR-0003). Spawns (death release, formation P,
   cargo) are direct calls inside `Run.step`, never handlers.
 - **Interpolation**: every moving object keeps `previousPosition`; `RunView.snapshot()` exposes
   previous and current positions so `RunPresenter` interpolates with `alpha` (ADR-0002) without
