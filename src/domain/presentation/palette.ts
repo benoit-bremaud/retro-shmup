@@ -26,6 +26,7 @@ export const Palette = {
   explosionCool: '#c05621',
   // HUD digits (hud font) and the overlays of the frozen scenes.
   hudText: '#fdf6e3',
+  titleText: '#fc8181',
   veil: '#05060fb3',
   pauseIcon: '#ffffff',
 } as const;

@@ -79,9 +79,11 @@ export class Run implements Simulation, RunView, HitRules {
     this.director = new LevelDirector(script);
   }
 
-  /** One fixed step; `dt` is in seconds (ADR-0014). A finished run never steps again. */
+  /**
+   * One fixed step; `dt` is in seconds (ADR-0014). After `GAME_OVER` the run plays on without the
+   * ship, as on an arcade cabinet (GDD v0.6 §4.4): the ship stays out and the score never moves.
+   */
   step(dt: number, frame: Readonly<IntentFrame>): void {
-    if (this.currentOutcome !== RunOutcome.Playing) return;
     // (1) the level script spawns what is due.
     this.director.tick(this.world);
     // (2) the player moves and its weapon fires.
@@ -95,8 +97,12 @@ export class Run implements Simulation, RunView, HitRules {
     // (7) timers advance: the chain, then the ship.
     this.scoreKeeper.tick();
     this.world.player.advanceTimers();
-    // (8) the outcome: Game over once the last death sequence has ended.
-    if (this.world.player.isOut) this.currentOutcome = RunOutcome.GameOver;
+    // (8) the outcome: Game over once the last death sequence has ended. The ship's last
+    // bullets are spent then, so nothing scores while the run plays on.
+    if (this.currentOutcome === RunOutcome.Playing && this.world.player.isOut) {
+      this.currentOutcome = RunOutcome.GameOver;
+      this.world.spendPlayerBullets();
+    }
   }
 
   outcome(): RunOutcome {

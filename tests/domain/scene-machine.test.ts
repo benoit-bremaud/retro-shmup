@@ -311,14 +311,23 @@ describe('SceneMachine — Game over (GDD §4.4, meta/05-state-scenes)', () => {
     expect(machine.scene).toBe(Scene.GameOver);
   });
 
-  it('draws the finished run, frozen, under a veil', () => {
+  it('shows a large GAME OVER from the catalogue over a veil', () => {
     const { machine, render } = gameOverFixture();
-    machine.render(0.1, 16);
-    const early = [...render.rects];
+    machine.render(0, 16);
     expect(render.drew(Palette.veil)).toBe(true);
-    machine.step(DT, createIntentFrame());
-    machine.render(0.9, 16);
-    expect(render.rects).toEqual(early);
+    expect(render.texts.filter((text) => text.font === 'title')).toEqual([
+      { region: 'field', x: 50, y: 150, text: 'GAME OVER', font: 'title' },
+    ]);
+  });
+
+  it('keeps the run and the starfield moving behind it, arcade style', () => {
+    const { machine, render } = gameOverFixture();
+    machine.render(0, 16);
+    const before = render.rects.filter((rect) => rect.region === 'field').map((rect) => rect.y);
+    for (let i = 0; i < 30; i += 1) machine.step(DT, createIntentFrame());
+    machine.render(0, 16);
+    const after = render.rects.filter((rect) => rect.region === 'field').map((rect) => rect.y);
+    expect(after).not.toEqual(before);
   });
 });
 

@@ -181,10 +181,22 @@ describe('Canvas2DRenderer — hud font (RenderPort contract, HUD_FONT_CELL)', (
     }).toThrow(/glyph/);
   });
 
-  it('throws for the title font until the bitmap fonts land', () => {
+  it('draws the title font at 4×, one 16 px cell per letter, in the title colour', () => {
+    const { renderer, offscreen } = setup();
+    renderer.drawText('LI', 0, 0, 'title');
+    const blocks = offscreen.calls.filter((call) =>
+      call.startsWith(`fillRect ${Palette.titleText} `),
+    );
+    // "L": 5 rows of the left column plus the 2 other bottom pixels; "I": 3 + 3 + 3.
+    expect(blocks).toHaveLength(7 + 9);
+    expect(blocks[0]).toBe(`fillRect ${Palette.titleText} 0,0,4,4`);
+    expect(blocks).toContain(`fillRect ${Palette.titleText} 16,0,4,4`);
+  });
+
+  it.each(['a', '1', '×'])('throws on %j in the title font (fail closed)', (text) => {
     const { renderer } = setup();
     expect(() => {
-      renderer.drawText('1', 0, 0, 'title');
-    }).toThrow(/font/);
+      renderer.drawText(text, 0, 0, 'title');
+    }).toThrow(/glyph/);
   });
 });

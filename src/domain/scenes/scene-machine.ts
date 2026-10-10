@@ -4,7 +4,9 @@ import { SceneTuning, STEP_SECONDS, toSteps } from '../game/tuning';
 import { Button } from '../ports/input-port';
 import type { IntentFrame } from '../ports/input-port';
 import type { RenderPort } from '../ports/render-port';
-import { drawCountIn, drawPauseIcon, drawVeil } from '../presentation/overlays';
+import { message } from '../i18n/messages';
+import type { Language } from '../i18n/messages';
+import { drawBanner, drawCountIn, drawPauseIcon, drawVeil } from '../presentation/overlays';
 import { Palette } from '../presentation/palette';
 import { RunPresenter } from '../presentation/run-presenter';
 import type { EffectSettings } from '../presentation/run-presenter';
@@ -37,7 +39,8 @@ const SCENE_TRAITS: Readonly<Record<Scene, SceneTraits>> = {
   [Scene.Playing]: { frozen: false, scrolls: true, drawsRun: true },
   [Scene.Paused]: { frozen: true, scrolls: false, drawsRun: true },
   [Scene.CountIn]: { frozen: true, scrolls: false, drawsRun: true },
-  [Scene.GameOver]: { frozen: true, scrolls: false, drawsRun: true },
+  // Arcade style: the run plays on without the ship behind GAME OVER (GDD v0.6 §4.4).
+  [Scene.GameOver]: { frozen: false, scrolls: true, drawsRun: true },
 };
 
 const COUNT_IN_STEPS = toSteps(SceneTuning.countInSeconds);
@@ -59,6 +62,8 @@ export class SceneMachine {
   private backgroundSteps = 0;
   private countInLeft = 0;
   private gameOverLeft = 0;
+  /** English until the options screen chooses (GDD §9.6). */
+  private readonly language: Language = 'en';
   private readonly createRun: () => InRun;
   private readonly renderer: RenderPort;
   private readonly starfield: Starfield;
@@ -112,7 +117,7 @@ export class SceneMachine {
         this.stepCountIn(dt, frame);
         return;
       case Scene.GameOver:
-        this.stepGameOver(frame);
+        this.stepGameOver(dt, frame);
         return;
     }
   }
@@ -163,8 +168,11 @@ export class SceneMachine {
     this.stepPlaying(dt, frame);
   }
 
-  // Confirm, or the game-over time, returns to the title; the run is released there.
-  private stepGameOver(frame: Readonly<IntentFrame>): void {
+  // The run plays on without the ship; Confirm, or the game-over time, returns to the title,
+  // where the run is released.
+  private stepGameOver(dt: number, frame: Readonly<IntentFrame>): void {
+    this.backgroundSteps += 1;
+    this.run?.step(dt, frame);
     this.gameOverLeft -= 1;
     if ((frame.pressed & Button.Confirm) === 0 && this.gameOverLeft > 0) return;
     this.run = undefined;
@@ -198,6 +206,7 @@ export class SceneMachine {
   private drawOverlays(): void {
     if (this.current === Scene.GameOver) {
       drawVeil(this.renderer);
+      drawBanner(this.renderer, message('gameOver', this.language));
     } else if (this.current === Scene.Paused) {
       drawVeil(this.renderer);
       drawPauseIcon(this.renderer);

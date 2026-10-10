@@ -23,8 +23,13 @@ const ZERO = 0x30;
 const NINE = 0x39;
 const TIMES = 0xd7;
 
-/** The `hud` glyph set of the RenderPort contract: digits and the multiplication sign. */
-function isHudGlyph(code: number): boolean {
+const LETTER_A = 0x41;
+const LETTER_Z = 0x5a;
+const SPACE = 0x20;
+
+/** The glyph sets of the RenderPort contract: `hud` digits and ×, `title` A–Z and space. */
+function isGlyph(code: number, font: FontId): boolean {
+  if (font === 'title') return (code >= LETTER_A && code <= LETTER_Z) || code === SPACE;
   return (code >= ZERO && code <= NINE) || code === TIMES;
 }
 
@@ -53,9 +58,10 @@ export class RecordingRender implements RenderPort {
   }
   /** Honours the RenderPort glyph contract, so domain tests fail like the real renderer. */
   drawText(text: string, x: number, y: number, font: FontId): void {
-    if (font !== 'hud') throw new Error(`no glyph in font ${font}`);
     for (let i = 0; i < text.length; i += 1) {
-      if (!isHudGlyph(text.codePointAt(i) ?? -1)) throw new Error(`no hud glyph for "${text}"`);
+      if (!isGlyph(text.codePointAt(i) ?? -1, font)) {
+        throw new Error(`no ${font} glyph for "${text}"`);
+      }
     }
     this.texts.push({ region: this.region, x, y, text, font });
   }

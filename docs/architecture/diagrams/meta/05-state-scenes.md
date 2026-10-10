@@ -77,8 +77,8 @@ stateDiagram-v2
 
 - **`InRun` entry creates the run** (`entry / new Run`, with its own event bus and `RunPresenter`);
   the run is released when `Title` is next entered (from `Confirm quit`, `Game over` or `Name
-  entry`). `Game over`, `Ending` and `Name entry` keep the finished run read-only (`RunView`),
-  never step it, and read its snapshot and score. A new run never inherits listeners of the
+  entry`). `Ending` and `Name entry` keep the finished run read-only (`RunView`), never step it,
+  and read its snapshot and score; `Game over` keeps stepping it without the ship (below). A new run never inherits listeners of the
   previous one (ADR-0010).
 - **Edges leaving `InRun` start from one substate**: Mermaid draws them from the composite
   boundary, so the label names the substate (`yes in Confirm quit`, `confirm in Results`); `Game
@@ -138,9 +138,12 @@ The enemies brick adds `Paused`, `Count-in` and `Game over`, and removes the pau
   same step, so the first resumed frame interpolates forward from the frozen picture, never back.
 - **Game over**: `InRun --> GameOver` when the outcome is `GAME_OVER`. **Interim deviation,
   name entry**: `GameOver --> Title` on `Confirm` or after the game-over time (GDD §4.4), with no
-  `NameEntry` branch until the high scores exist (screens brick). It draws the frozen field of
-  the finished run, kept read-only (notes above), under a dim veil, without text.
-- **Frozen scenes** (`Paused`, `Count-in`, `Game over`) take every step without stepping the run
+  `NameEntry` branch until the high scores exist (screens brick). Arcade style (GDD v0.6 §4.4):
+  the run keeps stepping without the ship — the script, enemies and their bullets go on, the
+  player's last bullets are spent so the score never moves — the starfield scrolls, and a large
+  "GAME OVER" from the message catalogue (`title` font) is drawn over a dim veil. The screens
+  brick adds the other languages and the options that choose one.
+- **Frozen scenes** (`Paused`, `Count-in`) take every step without stepping the run
   (except the last Count-in step, which hands over to `Playing`, above)
   and do not advance the background clock. `SceneMachine.render` picks the frame's alpha once:
   `alpha = 1` for the whole frame, starfield and snapshot, so nothing wobbles between two

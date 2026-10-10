@@ -84,7 +84,7 @@ sequenceDiagram
   `RunPresenter.draw(snapshot, alpha)`, then the HUD region. In the first playable it draws the
   empty HUD bands itself; the HUD contents move into `RunPresenter` with scoring and are drawn
   after the bands. The presenter takes `wallDtMs` when its first wall-clock effect lands.
-- **Frozen scenes draw at `alpha = 1`**: `Paused`, `Count-in` and `Game over` take every step
+- **Frozen scenes draw at `alpha = 1`**: `Paused` and `Count-in` take every step
   without stepping the run, while the loop keeps computing `alpha`; `SceneMachine.render` picks
   `alpha = 1` once for the whole frame, starfield and snapshot, so the frozen picture never
   wobbles, and hands the presenter `wallDtMs = 0`, so effects freeze too.

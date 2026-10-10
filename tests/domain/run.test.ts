@@ -86,7 +86,7 @@ describe('Run — events of the enemies brick (ADR-0010, enemy-destroyed sequenc
     expect(log).toEqual(['hit 1', 'destroyed 150 0 120']);
   });
 
-  it('stops stepping once the outcome is GAME_OVER', () => {
+  it('plays on without the ship after GAME_OVER: the script goes on, the score never moves', () => {
     const script: LevelScript = {
       events: [2, 6.5, 11].map((at) => ({
         at,
@@ -100,9 +100,15 @@ describe('Run — events of the enemies brick (ADR-0010, enemy-destroyed sequenc
       run.step(DT, frame(0));
     }
     expect(run.outcome()).toBe(RunOutcome.GameOver);
-    const before = JSON.stringify(run.snapshot().player);
-    run.step(DT, frame(0, 1));
-    expect(JSON.stringify(run.snapshot().player)).toBe(before);
+    const snapshot = run.snapshot();
+    const before = { ship: JSON.stringify(snapshot.player), score: snapshot.score };
+    const fire = frame(Button.Fire, 1);
+    for (let i = 0; i < 600; i += 1) run.step(DT, fire);
+    expect(JSON.stringify(snapshot.player)).toBe(before.ship);
+    expect(snapshot.score).toBe(before.score);
+    expect(snapshot.lives).toBe(0);
+    expect(snapshot.playerBullets.count).toBe(0);
+    expect(run.outcome()).toBe(RunOutcome.GameOver);
   });
 });
 
