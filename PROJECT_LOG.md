@@ -19,6 +19,22 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 - UML: the enemies-brick additions and interim deviations of the scene machine; collisions mark
   at step 5 and release at step 6 (enemy-destroyed and player-hit sequences, class notes); frozen
   scenes draw at alpha 1 (tick sequence); the touch pause button moves to C2.
+- Four-pass conception review (requirements, Clean/SOLID, KISS/YAGNI/DRY, pattern fit): 9 Must,
+  14 Should and 4 Nice, each validated by the owner one at a time. The ones that change the
+  design:
+  - script data in GDD §7.2.1 (spawn and hover points, intervals, S curve), looping at 45 s;
+  - Gunners fly straight from a spawn point to a hover point, sides and top alike;
+  - `entered` for despawning, `spent` with `World.sweep` as the single release point, `armed`
+    for the Gunner's fire;
+  - the finished run lives read-only until `Title`, one `RunPresenter` per run;
+  - `ENEMY_DESTROYED` carries position and size tier;
+  - `HitRules`, the split shot spawners, the subscribe-only `RunEvents`, and HUD values on the
+    snapshot;
+  - scene traits table, `ActiveList`, `applyDamage`, the re-entrant-publish guard on the bus,
+    and an ESLint rule keeping game code away from presentation;
+  - inclusive 2 s chain window, reserve-life icons;
+  - recorded interim deviations: no drops, formations, bombs, boss or `Random` in this brick;
+  - a wording note on ADR-0010: `Run` subscribes its own `ScoreKeeper`.
 
 ### PR #11 merged (`2a90e17`) and portfolio PR benoit-bremaud/benoitbremaud.fr#14 merged (`5a21024`)
 

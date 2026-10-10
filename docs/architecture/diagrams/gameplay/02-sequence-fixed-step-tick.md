@@ -59,14 +59,15 @@ sequenceDiagram
   end
   Note over FL: alpha = accumulator / STEP
   FL->>Scenes: render(alpha, wallDtMs)
+  Note over Scenes: frozen scene — alpha = 1 and wallDtMs = 0 for the whole frame
   Scenes->>Render: setRegion field, starfield at the background clock
   Scenes->>Run: snapshot()
   Run-->>Scenes: previous and current positions, HUD values
-  Scenes->>Presenter: draw(snapshot, alpha) — wallDtMs joins with the effects
+  Scenes->>Presenter: draw(snapshot, alpha, wallDtMs)
   Presenter->>Render: setRegion field, sprites at interpolated positions
-  Presenter->>Render: setRegion hud, score, chain, lives, bombs, weapon
+  Presenter->>Render: setRegion hud, drawHud — score, chain, lives
   Note over Presenter: effects advance by wallDtMs, unscaled — ADR-0010
-  Scenes->>Render: overlays of the scene (pause menu, cards)
+  Scenes->>Render: overlays of the scene — veil, pause icon, count-in
   Scenes->>Render: present()
 ```
 
@@ -83,14 +84,15 @@ sequenceDiagram
   empty HUD bands itself; the HUD contents move into `RunPresenter` with scoring and are drawn
   after the bands. The presenter takes `wallDtMs` when its first wall-clock effect lands.
 - **Frozen scenes draw at `alpha = 1`**: `Paused`, `Count-in` and `Game over` take every step
-  without stepping the run, while the loop keeps computing `alpha`; they draw the snapshot at its
-  current positions so the frozen picture never wobbles between two positions.
+  without stepping the run, while the loop keeps computing `alpha`; `SceneMachine.render` picks
+  `alpha = 1` once for the whole frame, starfield and snapshot, so the frozen picture never
+  wobbles, and hands the presenter `wallDtMs = 0`, so effects freeze too.
 - **One input read per step**: a press is consumed by exactly one step even when a frame runs
   several, and a tap shorter than a step is not lost (latched by the adapter).
 - **Time effects never touch the run**: during hit-stop `s` falls to 0 and the loop takes no
   step; the presenter keeps animating on unscaled `wallDtMs`, and the effect ends on wall time
   (ADR-0010). Outside `Playing` the scale is 1, so a slow motion never spills into the results
   or the pause. The boss timer and the chain window, counted in steps, are untouched.
-- **Rendering reads, never writes**: the presenter uses the `RunView` getters and the snapshot;
+- **Rendering reads, never writes**: the presenter uses the snapshot and its HUD getters;
   nothing on the render path changes simulation state.
 - Outside a run (menus) the same loop runs; `SceneMachine` draws its screen instead of delegating.
