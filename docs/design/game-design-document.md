@@ -294,7 +294,9 @@ the player's tiny hitbox already carries the fairness (§4.1).
 - **Leaving the field**: an enemy despawns (§5.2) only once it has been inside the field and is
   then fully outside it, so an enemy spawning outside the field is never removed on arrival.
 - **At most** 48 enemy bullets, 16 enemies and 16 player bullets at once; a spawn beyond that is
-  dropped (ADR-0002): an enemy refused by a full pool simply never exists.
+  dropped (ADR-0002): an enemy refused by a full pool simply never exists, and a formation counts
+  it as refused, so destroying every member that did appear still earns the full-formation P.
+  At most 4 formations at once *(initial)*.
 - The hit flash (§9.4) lasts about 33 ms of wall time; the explosion burst lasts about 0.3 s
   (ADR-0010), at most 16 at once, the oldest recycled first.
 
