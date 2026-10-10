@@ -30,7 +30,10 @@ function checkEvent(event: Readonly<ScriptEvent>, loopSteps: number): void {
   if (event.count === 1 && event.interval !== undefined) {
     throw new RangeError(`Level script: ${label} is one enemy, it takes no interval`);
   }
-  if (event.count > 1 && (event.interval === undefined || !(toSteps(event.interval) > 0))) {
+  const interval = event.interval;
+  const intervalMissing =
+    interval === undefined || !Number.isFinite(interval) || toSteps(interval) <= 0;
+  if (event.count > 1 && intervalMissing) {
     throw new RangeError(`Level script: ${label} is a group, it needs an interval`);
   }
   if (event.archetype.formation && event.count > 1) {
@@ -72,7 +75,8 @@ export class LevelDirector {
       }
     }
     // A stable sort keeps the script order among spawns due on the same step.
-    this.spawns = spawns.sort((a, b) => a.step - b.step);
+    spawns.sort((a, b) => a.step - b.step);
+    this.spawns = spawns;
   }
 
   /** Step 1 of `Run.step`: spawns every member due at this script step. */

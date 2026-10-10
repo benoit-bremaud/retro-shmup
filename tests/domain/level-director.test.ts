@@ -70,6 +70,10 @@ describe('LevelDirector — script walking (GDD v0.6 §7.2.1, class diagram)', (
       { at: Number.NaN, archetype: DIVER, count: 1, spawn: { x: 0, y: 0 } },
     ],
     [
+      'an interval that is not a number',
+      { at: 0, archetype: POPCORN, count: 6, interval: Number.NaN, spawn: { x: 0, y: 0 } },
+    ],
+    [
       'an interval that rounds to 0 steps',
       { at: 0, archetype: POPCORN, count: 6, interval: 0.001, spawn: { x: 0, y: 0 } },
     ],
