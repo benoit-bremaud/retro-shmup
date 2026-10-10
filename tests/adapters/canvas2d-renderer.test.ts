@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Canvas2DRenderer } from '../../src/adapters/canvas2d-renderer';
 import type { RenderSurface } from '../../src/adapters/canvas2d-renderer';
 import { computeViewport } from '../../src/adapters/viewport';
+import { HUD_FONT_CELL } from '../../src/domain/ports/render-port';
 import { Palette } from '../../src/domain/presentation/palette';
 
 class RecordingSurface implements RenderSurface {
@@ -117,13 +118,73 @@ describe('Canvas2DRenderer (ADR-0001, ADR-0010, ADR-0014)', () => {
     expect(offscreen.calls.at(-1)).toBe('restore');
   });
 
-  it('fails closed on sprites and text until assets are loaded', () => {
+  it('fails closed on sprites until the sprite sheet is loaded', () => {
     const { renderer } = setup();
     expect(() => {
       renderer.drawSprite('ship', 0, 0);
     }).toThrow(/sprite/);
+  });
+});
+
+/** The 2 × 2 blocks drawn for a text, as "x,y" pairs in logical-screen pixels. */
+function textBlocks(surface: RecordingSurface): string[] {
+  const prefix = `fillRect ${Palette.hudText} `;
+  return surface.calls
+    .filter((call) => call.startsWith(prefix))
+    .map((call) => call.slice(prefix.length).split(',').slice(0, 2).join(','));
+}
+
+describe('Canvas2DRenderer — hud font (RenderPort contract, HUD_FONT_CELL)', () => {
+  it('draws a digit as 2 × 2 blocks of its 3 × 5 glyph, from the top-left of its cell', () => {
+    const { renderer, offscreen } = setup();
+    renderer.drawText('1', 10, 20, 'hud');
+    // Glyph "1": 010 / 110 / 010 / 010 / 111.
+    expect(textBlocks(offscreen)).toEqual([
+      '12,20',
+      '10,22',
+      '12,22',
+      '12,24',
+      '12,26',
+      '10,28',
+      '12,28',
+      '14,28',
+    ]);
+    expect(
+      offscreen.calls.every((call) => !call.includes(Palette.hudText) || call.endsWith(',2,2')),
+    ).toBe(true);
+  });
+
+  it('advances one cell per character', () => {
+    const { renderer, offscreen } = setup();
+    renderer.drawText('11', 0, 0, 'hud');
+    expect(textBlocks(offscreen)).toContain(`${String(2 + HUD_FONT_CELL.width)},0`);
+  });
+
+  it('offsets field text by the field origin and the camera offset', () => {
+    const { renderer, offscreen } = setup();
+    renderer.setCameraOffset(1, 2);
+    renderer.setRegion('field');
+    renderer.drawText('1', 0, 0, 'hud');
+    expect(textBlocks(offscreen)[0]).toBe('123,2');
+  });
+
+  it('draws the multiplication sign U+00D7', () => {
+    const { renderer, offscreen } = setup();
+    renderer.drawText('×', 0, 0, 'hud');
+    expect(textBlocks(offscreen)).toEqual(['0,2', '4,2', '2,4', '0,6', '4,6']);
+  });
+
+  it.each(['A', ' ', '-', 'x'])('throws on %j, outside the glyph set (fail closed)', (text) => {
+    const { renderer } = setup();
     expect(() => {
-      renderer.drawText('SCORE', 0, 0, 'hud');
+      renderer.drawText(text, 0, 0, 'hud');
+    }).toThrow(/glyph/);
+  });
+
+  it('throws for the title font until the bitmap fonts land', () => {
+    const { renderer } = setup();
+    expect(() => {
+      renderer.drawText('1', 0, 0, 'title');
     }).toThrow(/font/);
   });
 });

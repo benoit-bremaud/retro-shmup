@@ -121,10 +121,8 @@ alone records the build order and the interim deviations of each brick.
   `Gesture prompt` lands with audio. That brick decides where the "a gesture happened" signal
   lives (the intent frame, or `AudioPort`, which owns the unlock), and makes a touch start count
   as a gesture on `pointerup` (ADR-0015 decision 8).
-- **Interim deviation, pause** (first playable only): the input adapter already synthesizes
-  `Pause` (ADR-0009, ADR-0015 decision 5), but `Playing` ignores it until `Paused` and `Count-in`
-  land with the enemies brick. A test pins "`Playing` ignores `Pause`", so it fails, and the
-  deviation is removed on purpose, when `Paused` lands.
+- ~~**Interim deviation, pause** (first playable only)~~: removed by the pause PR of the enemies
+  brick — `Paused` and `Count-in` landed and replaced the pinned "`Playing` ignores `Pause`" test.
 
 ### Enemies brick additions
 
