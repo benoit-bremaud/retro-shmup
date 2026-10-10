@@ -12,4 +12,6 @@ export class Bullet {
   height = 0;
   damage = 0;
   pierceLeft = 0;
+  /** Consumed this step: skipped by every pass, released at step 6 (mark, then release). */
+  spent = false;
 }

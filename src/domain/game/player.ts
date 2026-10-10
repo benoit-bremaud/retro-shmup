@@ -6,16 +6,25 @@ import { PlayerTuning, toSteps } from './tuning';
 import { Weapon } from './weapon';
 import type { PlayerShotSpawner } from './weapon';
 
-/** Lifecycle of the ship (05-state-player); `Dead` arrives with collisions. */
+/** Lifecycle of the ship (05-state-player). */
 export const PlayerState = {
   Entering: 'ENTERING',
   Invulnerable: 'INVULNERABLE',
   Vulnerable: 'VULNERABLE',
+  Dead: 'DEAD',
 } as const;
 export type PlayerState = (typeof PlayerState)[keyof typeof PlayerState];
 
+/** What a hit did (class diagram); `ABSORBED` arrives with the shield. */
+export const HitOutcome = {
+  Ignored: 'IGNORED',
+  Died: 'DIED',
+} as const;
+export type HitOutcome = (typeof HitOutcome)[keyof typeof HitOutcome];
+
 const FLY_IN_STEPS = toSteps(PlayerTuning.flyInSeconds);
 const INVULNERABLE_STEPS = toSteps(PlayerTuning.invulnerableSeconds);
+const RESPAWN_STEPS = toSteps(PlayerTuning.respawnSeconds);
 const MIN_X = PlayerTuning.halfSize;
 const MAX_X = FIELD_WIDTH - PlayerTuning.halfSize;
 const MIN_Y = PlayerTuning.halfSize;
@@ -39,6 +48,7 @@ export class Player {
   private stateSteps = FLY_IN_STEPS;
   /** Steps since the protection began; the blink phase comes from it, never from `stateSteps`. */
   private protection = 0;
+  private livesLeft: number = PlayerTuning.lives;
 
   get state(): PlayerState {
     return this.currentState;
@@ -48,6 +58,28 @@ export class Player {
     return this.protection;
   }
 
+  /** Lives left, the ship in play included (GDD §4.4). */
+  get lives(): number {
+    return this.livesLeft;
+  }
+
+  /** True once the last death sequence has ended: `Run` reads it at step 8 (05-state-player). */
+  get isOut(): boolean {
+    return this.currentState === PlayerState.Dead && this.livesLeft === 0 && this.stateSteps === 0;
+  }
+
+  /**
+   * Step 5 of `Run.step`: an enemy bullet or body overlaps the hitbox. Only a vulnerable ship
+   * dies; in every other state the hit passes through, so at most one life is lost per step.
+   */
+  hit(): HitOutcome {
+    if (this.currentState !== PlayerState.Vulnerable) return HitOutcome.Ignored;
+    this.livesLeft -= 1;
+    this.currentState = PlayerState.Dead;
+    this.stateSteps = RESPAWN_STEPS;
+    return HitOutcome.Died;
+  }
+
   /**
    * Step 2 of `Run.step`: the fly-in, or the movement the frame asks for and the weapon. The
    * spawner is a parameter, as for the enemies' attack patterns: the player never stores it.
@@ -55,6 +87,7 @@ export class Player {
   update(frame: Readonly<IntentFrame>, dt: number, spawner: PlayerShotSpawner): void {
     this.previousPosition.x = this.position.x;
     this.previousPosition.y = this.position.y;
+    if (this.currentState === PlayerState.Dead) return;
     if (this.currentState === PlayerState.Entering) {
       this.flyIn();
       return;
@@ -68,6 +101,10 @@ export class Player {
   /** Step 7 of `Run.step`: the state timer and the protection count. */
   advanceTimers(): void {
     if (this.currentState === PlayerState.Vulnerable) return;
+    if (this.currentState === PlayerState.Dead) {
+      this.advanceDeath();
+      return;
+    }
     this.protection += 1;
     this.stateSteps -= 1;
     if (this.stateSteps > 0) return;
@@ -77,6 +114,21 @@ export class Player {
     } else {
       this.currentState = PlayerState.Vulnerable;
     }
+  }
+
+  // The death sequence; with a life left the ship flies in again from the spawn point.
+  private advanceDeath(): void {
+    if (this.stateSteps > 0) this.stateSteps -= 1;
+    if (this.stateSteps > 0 || this.livesLeft === 0) return;
+    this.currentState = PlayerState.Entering;
+    this.stateSteps = FLY_IN_STEPS;
+    this.protection = 0;
+    this.position.x = PlayerTuning.spawnX;
+    this.position.y = PlayerTuning.spawnY;
+    this.previousPosition.x = PlayerTuning.spawnX;
+    this.previousPosition.y = PlayerTuning.spawnY;
+    // The cooldown froze while Dead: the first shot after the fly-in is immediate.
+    this.weapon.reset();
   }
 
   // Linear from the spawn point to the resting point over the fly-in steps.

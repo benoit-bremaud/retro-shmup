@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
-// The single browser smoke test (ADR-0003; 05-state-scenes, first playable): the built page loads,
-// the canvas paints, and Enter starts a run in which the ship appears at its resting point.
+// The single browser smoke test (ADR-0003; 05-state-scenes): the built page loads, the canvas
+// paints, and Enter starts a run in which the ship reaches its resting point and enemies appear.
 
 /** The hull colour `Palette.shipHull`, which no star uses. */
 const HULL = { r: 0x4f, g: 0xd1, b: 0xc5 };
@@ -22,6 +22,26 @@ async function hullAtRest(page: Page): Promise<boolean> {
     },
     { hull: HULL, rest: REST },
   );
+}
+
+/** The Popcorn colour `Palette.popcorn`, used by nothing else. */
+const POPCORN = { r: 0xf5, g: 0x65, b: 0x65 };
+
+/** True when a Popcorn is painted anywhere in the play field (field x 120 to 360). */
+async function popcornInField(page: Page): Promise<boolean> {
+  return page.evaluate((popcorn) => {
+    const canvas = document.querySelector<HTMLCanvasElement>('#screen');
+    const context = canvas?.getContext('2d');
+    if (canvas === null || context === null || context === undefined) return false;
+    const scale = canvas.width / 480;
+    const data = context.getImageData(120 * scale, 0, 240 * scale, canvas.height).data;
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i] === popcorn.r && data[i + 1] === popcorn.g && data[i + 2] === popcorn.b) {
+        return true;
+      }
+    }
+    return false;
+  }, POPCORN);
 }
 
 /** Number of painted (non-black) pixels: the canvas is not blank. */
@@ -65,7 +85,7 @@ async function scriptMsPerFrame(page: Page): Promise<number> {
   return ((after - before) * 1000) / Math.max(frames, 1);
 }
 
-test('the title paints, Enter starts a run, and the ship reaches its resting point', async ({
+test('the title paints, Enter starts a run, the ship reaches its resting point, enemies appear', async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -77,8 +97,12 @@ test('the title paints, Enter starts a run, and the ship reaches its resting poi
   expect(await hullAtRest(page)).toBe(false);
 
   await page.keyboard.press('Enter');
-  // Fly-in then invulnerability blink: once vulnerable, the ship is always drawn.
+  // Fly-in then invulnerability blink: once vulnerable, the ship is always drawn. The first
+  // Popcorn wave crosses y 272 near field x 42, the Divers dive from 9 s and the Gunners fire from
+  // 20 s, so nothing covers the hull at its resting point while this check runs.
   await expect.poll(() => hullAtRest(page), { timeout: 5000 }).toBe(true);
+  // The enemies brick: the first wave is on screen.
+  await expect.poll(() => popcornInField(page), { timeout: 5000 }).toBe(true);
 
   const msPerFrame = await scriptMsPerFrame(page);
   // Measured and logged against the 4 ms budget (ADR-0002 decision 7), not asserted: this is an

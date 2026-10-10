@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { PlayerState } from '../../src/domain/game/player';
 import type { PlayerSnapshot, WorldSnapshot } from '../../src/domain/game/run';
 import type { Bullet } from '../../src/domain/game/bullet';
+import { DIVER, Enemy, GUNNER, POPCORN } from '../../src/domain/game/enemy';
 import { Palette } from '../../src/domain/presentation/palette';
 import { RunPresenter } from '../../src/domain/presentation/run-presenter';
 import type { ReadonlyActiveList } from '../../src/domain/game/active-list';
@@ -27,6 +28,7 @@ function bullet(x: number, y: number, previousY: number): Bullet {
     height: 8,
     damage: 1,
     pierceLeft: 0,
+    spent: false,
   };
 }
 
@@ -42,8 +44,19 @@ function listOf<T>(items: readonly T[]): ReadonlyActiveList<T> {
   };
 }
 
-function snapshot(player: PlayerSnapshot, bullets: Bullet[] = []): WorldSnapshot {
-  return { player, playerBullets: listOf(bullets) };
+function snapshot(
+  player: PlayerSnapshot,
+  bullets: Bullet[] = [],
+  extra: Partial<WorldSnapshot> = {},
+): WorldSnapshot {
+  return {
+    player,
+    playerBullets: listOf(bullets),
+    enemyBullets: listOf<Bullet>([]),
+    enemies: listOf<Enemy>([]),
+    lives: 3,
+    ...extra,
+  };
 }
 
 function hullRects(render: RecordingRender): RecordedRect[] {
@@ -105,5 +118,64 @@ describe('RunPresenter — invulnerability blink (GDD v0.5 §4.1)', () => {
     const protectedShip = ship({ state: PlayerState.Entering, protectionSteps: 10 });
     new RunPresenter(render, { blink: false }).draw(snapshot(protectedShip), 0);
     expect(hullRects(render).length).toBeGreaterThan(0);
+  });
+});
+
+function enemyAt(archetype: typeof POPCORN, x: number, y: number): Enemy {
+  const enemy = new Enemy();
+  enemy.spawn(archetype, { spawn: { x, y } }, 1);
+  return enemy;
+}
+
+describe('RunPresenter — enemies, enemy bullets and the HUD (enemies brick)', () => {
+  it('draws each role in its own colour, none the hull colour (the smoke-test oracle)', () => {
+    const render = new RecordingRender();
+    const enemies = [enemyAt(POPCORN, 40, 40), enemyAt(DIVER, 80, 40), enemyAt(GUNNER, 160, 80)];
+    new RunPresenter(render, { blink: true }).draw(
+      snapshot(ship(), [], { enemies: listOf(enemies) }),
+      0,
+    );
+    expect(render.rectsOf(Palette.popcorn)).toEqual([
+      { region: 'field', x: 32, y: 32, w: 16, h: 16, colour: Palette.popcorn },
+    ]);
+    expect(render.drew(Palette.diver)).toBe(true);
+    expect(render.rectsOf(Palette.gunner)[0]).toMatchObject({ w: 32, h: 32 });
+  });
+
+  it('draws enemy bullets after the ship, so they stay visible over it', () => {
+    const render = new RecordingRender();
+    const shot = bullet(120, 272, 272);
+    shot.width = 4;
+    shot.height = 4;
+    new RunPresenter(render, { blink: true }).draw(
+      snapshot(ship(), [], { enemyBullets: listOf([shot]) }),
+      0,
+    );
+    const hullIndex = render.rects.findIndex((r) => r.colour === Palette.shipHull);
+    const shotIndex = render.rects.findIndex((r) => r.colour === Palette.enemyShot);
+    expect(shotIndex).toBeGreaterThan(hullIndex);
+  });
+
+  it('hides a Dead ship', () => {
+    const render = new RecordingRender();
+    new RunPresenter(render, { blink: false }).draw(snapshot(ship({ state: PlayerState.Dead })), 0);
+    expect(hullRects(render)).toEqual([]);
+  });
+
+  it.each([
+    [3, 2],
+    [2, 1],
+    [1, 0],
+    [0, 0],
+  ])('with %i lives, draws %i reserve-life icons in the left band', (lives, icons) => {
+    const render = new RecordingRender();
+    new RunPresenter(render, { blink: true }).draw(snapshot(ship(), [], { lives }), 0);
+    const drawn = render.rectsOf(Palette.lifeIcon);
+    expect(drawn).toHaveLength(icons);
+    for (const icon of drawn) {
+      expect(icon.region).toBe('hud');
+      expect(icon.x).toBeGreaterThanOrEqual(8);
+      expect(icon.x + icon.w).toBeLessThanOrEqual(120 - 8);
+    }
   });
 });

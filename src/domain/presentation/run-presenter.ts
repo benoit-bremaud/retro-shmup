@@ -1,8 +1,13 @@
+import type { Bullet } from '../game/bullet';
+import type { Enemy } from '../game/enemy';
 import { PlayerState } from '../game/player';
 import type { PlayerSnapshot, WorldSnapshot } from '../game/run';
+import type { ReadonlyActiveList } from '../game/active-list';
 import { PlayerTuning, STEPS_PER_SECOND } from '../game/tuning';
 import type { RenderPort } from '../ports/render-port';
+import { drawHud } from './hud';
 import { Palette } from './palette';
+import type { PaletteColour } from './palette';
 
 /** Game-feel switches the presenter honours (GDD §9.4); the options screen sets them later. */
 export interface EffectSettings {
@@ -17,14 +22,27 @@ function lerp(from: number, to: number, alpha: number): number {
 
 /** Visible for the first half of each blink, from a count that never restarts (GDD v0.5 §4.1). */
 function isShipVisible(player: PlayerSnapshot, effects: Readonly<EffectSettings>): boolean {
+  if (player.state === PlayerState.Dead) return false;
   if (!effects.blink || player.state === PlayerState.Vulnerable) return true;
   return Math.floor(player.protectionSteps / BLINK_HALF_PERIOD_STEPS) % 2 === 0;
 }
 
+/** The placeholder colour of a role, chosen here, never stored in archetype data (ADR-0010). */
+function enemyColour(enemy: Readonly<Enemy>): PaletteColour {
+  switch (enemy.archetype.id) {
+    case 'popcorn':
+      return Palette.popcorn;
+    case 'diver':
+      return Palette.diver;
+    case 'gunner':
+      return Palette.gunner;
+  }
+}
+
 /**
- * Draws the run in the play field from its snapshot (ADR-0010: presentation never changes the
- * outcome). Positions are interpolated with `alpha` (ADR-0002). The ship is a placeholder made of
- * palette rectangles until the assets brick.
+ * Draws the run from its snapshot (ADR-0010: presentation never changes the outcome): the field,
+ * then the HUD contents. Positions are interpolated with `alpha` (ADR-0002). Enemies, bullets and
+ * the ship are placeholder palette rectangles until the assets brick.
  */
 export class RunPresenter {
   private readonly render: RenderPort;
@@ -35,31 +53,38 @@ export class RunPresenter {
     this.effects = effects;
   }
 
-  /** Hit-stop and slow motion arrive with enemies; until then the run runs at full speed. */
+  /** Hit-stop and slow motion arrive with the game-feel effects; until then full speed. */
   timeScale(): number {
     return 1;
   }
 
-  /** Draws the bullets and the ship in the field region, which it selects. */
+  /** Enemies, player bullets, the ship, then enemy bullets on top; then the HUD contents. */
   draw(snapshot: WorldSnapshot, alpha: number): void {
     this.render.setRegion('field');
-    for (let i = 0; i < snapshot.playerBullets.count; i += 1) {
-      const bullet = snapshot.playerBullets.at(i);
-      const x = lerp(bullet.previousPosition.x, bullet.position.x, alpha);
-      const y = lerp(bullet.previousPosition.y, bullet.position.y, alpha);
-      this.render.drawRect(
-        x - bullet.width / 2,
-        y - bullet.height / 2,
-        bullet.width,
-        bullet.height,
-        Palette.playerShot,
-      );
+    for (let i = 0; i < snapshot.enemies.count; i += 1) {
+      const enemy = snapshot.enemies.at(i);
+      this.drawBox(enemy, alpha, enemyColour(enemy));
     }
+    this.drawBullets(snapshot.playerBullets, alpha, Palette.playerShot);
     const player = snapshot.player;
-    if (!isShipVisible(player, this.effects)) return;
-    const x = lerp(player.previousPosition.x, player.position.x, alpha);
-    const y = lerp(player.previousPosition.y, player.position.y, alpha);
-    this.drawShip(x, y);
+    if (isShipVisible(player, this.effects)) {
+      const x = lerp(player.previousPosition.x, player.position.x, alpha);
+      const y = lerp(player.previousPosition.y, player.position.y, alpha);
+      this.drawShip(x, y);
+    }
+    this.drawBullets(snapshot.enemyBullets, alpha, Palette.enemyShot);
+    drawHud(this.render, snapshot);
+  }
+
+  private drawBullets(bullets: ReadonlyActiveList<Bullet>, alpha: number, colour: string): void {
+    for (let i = 0; i < bullets.count; i += 1) this.drawBox(bullets.at(i), alpha, colour);
+  }
+
+  // A box centred on its interpolated position.
+  private drawBox(box: Readonly<Bullet> | Readonly<Enemy>, alpha: number, colour: string): void {
+    const x = lerp(box.previousPosition.x, box.position.x, alpha);
+    const y = lerp(box.previousPosition.y, box.position.y, alpha);
+    this.render.drawRect(x - box.width / 2, y - box.height / 2, box.width, box.height, colour);
   }
 
   // Placeholder silhouette inside the 32 × 32 sprite box; the hull covers the centre.

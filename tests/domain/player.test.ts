@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Player, PlayerState } from '../../src/domain/game/player';
+import { HitOutcome, Player, PlayerState } from '../../src/domain/game/player';
 import type { PlayerShotSpawner } from '../../src/domain/game/weapon';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
@@ -180,5 +180,102 @@ describe('Player — firing (GDD v0.5 §4.1, §4.3)', () => {
     const spawner = new CountingSpawner();
     step(player, firing(), 60, spawner);
     expect(spawner.shots).toBe(10);
+  });
+});
+
+const RESPAWN_STEPS = 90;
+
+/** A player past its fly-in and invulnerability: hits count. */
+function vulnerable(): Player {
+  const player = new Player();
+  step(player, idle(), FLY_IN_STEPS + INVULNERABLE_STEPS);
+  return player;
+}
+
+/** A hit as `Run.step` applies it: at step 5, between `update` (2) and `advanceTimers` (7). */
+function hitAndStep(player: Player): HitOutcome {
+  player.update(idle(), DT, new CountingSpawner());
+  const outcome = player.hit();
+  player.advanceTimers();
+  return outcome;
+}
+
+describe('Player — hits, lives and respawn (GDD §4.4, 05-state-player)', () => {
+  it('starts with 3 lives, the ship in play included', () => {
+    expect(new Player().lives).toBe(3);
+  });
+
+  it.each([
+    ['Entering', 0],
+    ['Invulnerable', FLY_IN_STEPS + 1],
+  ])('ignores a hit while %s', (_state, steps) => {
+    const player = new Player();
+    step(player, idle(), steps);
+    expect(player.hit()).toBe(HitOutcome.Ignored);
+    expect(player.lives).toBe(3);
+  });
+
+  it('dies on a hit while Vulnerable: one life lost, state Dead', () => {
+    const player = vulnerable();
+    expect(player.hit()).toBe(HitOutcome.Died);
+    expect(player.state).toBe(PlayerState.Dead);
+    expect(player.lives).toBe(2);
+  });
+
+  it('loses at most one life per step: a second hit while Dead is ignored', () => {
+    const player = vulnerable();
+    player.hit();
+    expect(player.hit()).toBe(HitOutcome.Ignored);
+    expect(player.lives).toBe(2);
+  });
+
+  it('neither moves nor fires while Dead', () => {
+    const player = vulnerable();
+    hitAndStep(player);
+    const where = { ...player.position };
+    const spawner = new CountingSpawner();
+    const moveAndFire = direction(1, 0);
+    moveAndFire.held = Button.Fire;
+    step(player, moveAndFire, 10, spawner);
+    expect(player.position).toEqual(where);
+    expect(spawner.shots).toBe(0);
+  });
+
+  it('flies in again 1.5 s after the death, from the spawn point, with no smear', () => {
+    const player = vulnerable();
+    hitAndStep(player);
+    step(player, idle(), RESPAWN_STEPS - 2);
+    expect(player.state).toBe(PlayerState.Dead);
+    step(player, idle());
+    expect(player.state).toBe(PlayerState.Entering);
+    expect(player.position).toEqual({ x: 120, y: 336 });
+    expect(player.previousPosition).toEqual(player.position);
+    expect(player.protectionSteps).toBe(0);
+  });
+
+  it('fires on its first controllable step after a respawn, even after dying mid-cooldown', () => {
+    const player = vulnerable();
+    const spawner = new CountingSpawner();
+    step(player, firing(), 1, spawner); // the cooldown starts
+    hitAndStep(player);
+    step(player, idle(), RESPAWN_STEPS - 1 + FLY_IN_STEPS);
+    const after = new CountingSpawner();
+    step(player, firing(), 1, after);
+    expect(after.shots).toBe(1);
+  });
+
+  it('is out only at the end of the last death sequence', () => {
+    const player = vulnerable();
+    for (let life = 0; life < 2; life += 1) {
+      hitAndStep(player);
+      step(player, idle(), RESPAWN_STEPS - 1 + FLY_IN_STEPS + INVULNERABLE_STEPS);
+    }
+    hitAndStep(player);
+    expect(player.lives).toBe(0);
+    step(player, idle(), RESPAWN_STEPS - 2);
+    expect(player.isOut).toBe(false);
+    step(player, idle());
+    expect(player.isOut).toBe(true);
+    expect(player.state).toBe(PlayerState.Dead);
   });
 });

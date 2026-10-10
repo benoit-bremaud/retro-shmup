@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { PLAYER_BULLET_POOL_SIZE } from '../../src/domain/game/tuning';
+import { DIVER, POPCORN } from '../../src/domain/game/enemy';
+import {
+  ENEMY_BULLET_POOL_SIZE,
+  ENEMY_POOL_SIZE,
+  PLAYER_BULLET_POOL_SIZE,
+} from '../../src/domain/game/tuning';
 import { World } from '../../src/domain/game/world';
 
 const DT = 1 / 60;
@@ -68,5 +73,59 @@ describe('World — player bullets (class diagram notes, GDD v0.5 §4.3)', () =>
     world.sweep();
     spawnAt(world, 100, 200);
     expect(ys(world)).toEqual([200]);
+  });
+});
+
+const POPCORN_ROW = { at: 0, archetype: POPCORN, count: 1, spawn: { x: 80, y: -8 } };
+
+describe('World — enemies and enemy bullets (GDD v0.6 §5.2.1, class diagram notes)', () => {
+  it('drops an enemy refused by a full pool, without consuming a serial', () => {
+    const world = new World();
+    for (let i = 0; i < ENEMY_POOL_SIZE + 2; i += 1) world.spawnEnemy(POPCORN_ROW);
+    expect(world.enemies.count).toBe(ENEMY_POOL_SIZE);
+    world.enemies.at(0).spent = true;
+    world.sweep();
+    world.spawnEnemy(POPCORN_ROW);
+    expect(world.enemies.at(world.enemies.count - 1).serial).toBe(ENEMY_POOL_SIZE + 1);
+  });
+
+  it('caps enemy bullets at 48 and drops the next request without allocating', () => {
+    const world = new World();
+    for (let i = 0; i < ENEMY_BULLET_POOL_SIZE + 1; i += 1) world.spawnEnemyBullet(100, 100, 0, 75);
+    expect(world.enemyBullets.count).toBe(ENEMY_BULLET_POOL_SIZE);
+  });
+
+  it('places a spawned Popcorn on its curve at once, with no smear', () => {
+    const world = new World();
+    world.spawnEnemy(POPCORN_ROW);
+    const popcorn = world.enemies.at(0);
+    expect(popcorn.position.x).not.toBe(80); // the curve at y −8 is off its axis
+    expect(popcorn.previousPosition).toEqual(popcorn.position);
+  });
+
+  it('keeps an enemy that spawns outside the field, then despawns it once it has left', () => {
+    const world = new World();
+    world.spawnEnemy({ at: 0, archetype: DIVER, count: 1, spawn: { x: 120, y: -8 } });
+    world.sweep();
+    expect(world.enemies.count).toBe(1);
+    for (let i = 0; i < 400 && world.enemies.count > 0; i += 1) {
+      world.moveEnemies(DT);
+      world.sweep();
+    }
+    expect(world.enemies.count).toBe(0);
+  });
+
+  it('releases spent bullets and enemies at the sweep', () => {
+    const world = new World();
+    spawnAt(world, 100, 200);
+    world.spawnEnemyBullet(100, 100, 0, 75);
+    world.spawnEnemy(POPCORN_ROW);
+    world.playerBullets.at(0).spent = true;
+    world.enemyBullets.at(0).spent = true;
+    world.enemies.at(0).spent = true;
+    world.sweep();
+    expect([world.playerBullets.count, world.enemyBullets.count, world.enemies.count]).toEqual([
+      0, 0, 0,
+    ]);
   });
 });
