@@ -293,7 +293,10 @@ the player's tiny hitbox already carries the fairness (§4.1).
 - **Enemy bullets**: 4 × 4 px at **75 px/s**, straight toward the ship's position when fired.
 - **Leaving the field**: an enemy despawns (§5.2) only once it has been inside the field and is
   then fully outside it, so an enemy spawning outside the field is never removed on arrival.
-- **At most** 48 enemy bullets, 16 enemies and 16 player bullets at once; a spawn beyond that is
+- **At most** 48 enemy bullets, 16 enemies and 16 player bullets at once. The 40 enemy bullets of
+  §5.2 and §6 are a readability limit for whoever writes waves and patterns, checked by the level
+  simulation tests (peak ≤ 40 over a whole level); the pool of 48 is the engine's safety net and
+  never cuts a legal pattern short *(v0.6)*. A spawn beyond a pool is
   dropped (ADR-0002): an enemy refused by a full pool simply never exists, and a formation counts
   it as refused, so destroying every member that did appear still earns the full-formation P.
   At most 4 formations at once *(initial)*.
