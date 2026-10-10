@@ -40,9 +40,10 @@ describe('overlays of the frozen scenes (meta/05-state-scenes, enemies brick add
     expect(render.texts).toEqual([
       {
         region: 'field',
-        x: (FIELD_WIDTH - (HUD_FONT_CELL.width - 2)) / 2,
+        x: (FIELD_WIDTH - HUD_FONT_CELL.glyphWidth) / 2,
         y: (FIELD_HEIGHT - HUD_FONT_CELL.height) / 2,
         text: digit,
+        font: 'hud',
       },
     ]);
   });

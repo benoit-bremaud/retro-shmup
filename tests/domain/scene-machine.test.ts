@@ -193,21 +193,38 @@ describe('SceneMachine — Paused and Count-in (meta/05-state-scenes, pause rule
     fixture.machine.step(DT, frame(Button.Pause));
     fixture.machine.step(DT, frame(Button.Confirm)); // Paused -> Count-in
     const frozen = hull(fixture, 1);
+    if (frozen === undefined) throw new Error('the ship is not drawn');
     for (let i = 0; i < 59; i += 1) fixture.machine.step(DT, frame(0, 1));
     expect(fixture.machine.scene).toBe(Scene.CountIn);
     expect(hull(fixture, 1)).toEqual(frozen);
     fixture.machine.step(DT, frame(0, 1));
     expect(fixture.machine.scene).toBe(Scene.Playing);
-    expect(hull(fixture, 1)?.x).toBeGreaterThan(frozen?.x ?? 0);
+    const resumed = hull(fixture, 1);
+    if (resumed === undefined) throw new Error('the ship is not drawn');
+    expect(resumed.x).toBeGreaterThan(frozen.x);
   });
 
   it('interpolates the first resumed frame forward from the frozen picture', () => {
     const fixture = playing();
+    fixture.machine.step(DT, frame(0, 1)); // previous and current positions now differ
+    const moving = hull(fixture, 0);
     fixture.machine.step(DT, frame(Button.Pause));
     fixture.machine.step(DT, frame(Button.Confirm));
-    const frozen = hull(fixture, 1);
+    const frozen = hull(fixture, 0); // a frozen frame ignores the loop alpha: current position
+    expect(frozen).toBeDefined();
+    expect(frozen).not.toEqual(moving);
     for (let i = 0; i < 60; i += 1) fixture.machine.step(DT, frame(0, 1));
     expect(hull(fixture, 0)).toEqual(frozen);
+  });
+
+  it('draws the starfield of a frozen scene at alpha 1, so it never steps back at the pause', () => {
+    const fixture = playing();
+    fixture.machine.render(1, 16);
+    const playingStars = fixture.render.rectsOf(Palette.starNear).map((star) => star.y);
+    fixture.machine.step(DT, frame(Button.Pause));
+    fixture.machine.render(0, 16);
+    const pausedStars = fixture.render.rectsOf(Palette.starNear).map((star) => star.y);
+    expect(pausedStars).toEqual(playingStars);
   });
 
   it('keeps the time scale at 1 in Paused and Count-in', () => {

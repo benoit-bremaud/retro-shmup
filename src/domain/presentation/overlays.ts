@@ -1,3 +1,4 @@
+import { SceneTuning, toSteps } from '../game/tuning';
 import { HUD_FONT_CELL } from '../ports/render-port';
 import type { RenderPort } from '../ports/render-port';
 import { Palette } from './palette';
@@ -7,10 +8,8 @@ import { FIELD_HEIGHT, FIELD_WIDTH } from './screen';
 const BAR_WIDTH = 6;
 const BAR_HEIGHT = 20;
 const BAR_GAP = 6;
-const STEPS_PER_DIGIT = 20;
 const COUNT_IN_DIGITS = ['1', '2', '3'] as const;
-// A glyph is one cell wide minus the advance between characters.
-const GLYPH_WIDTH = HUD_FONT_CELL.width - 2;
+const STEPS_PER_DIGIT = toSteps(SceneTuning.countInSeconds) / COUNT_IN_DIGITS.length;
 
 /**
  * Overlays of the frozen scenes (meta/05-state-scenes): pure draw functions, so the scene machine
@@ -37,7 +36,7 @@ export function drawCountIn(render: RenderPort, stepsLeft: number): void {
   render.setRegion('field');
   render.drawText(
     digit,
-    (FIELD_WIDTH - GLYPH_WIDTH) / 2,
+    (FIELD_WIDTH - HUD_FONT_CELL.glyphWidth) / 2,
     (FIELD_HEIGHT - HUD_FONT_CELL.height) / 2,
     'hud',
   );

@@ -9,10 +9,11 @@ export type SpriteId = string;
 export type FontId = 'hud' | 'title';
 
 /**
- * Cell of the `hud` font in logical pixels: 3 × 5 glyphs drawn 2× (6 × 10) plus a 2 px advance.
+ * Cell of the `hud` font in logical pixels: 3 × 5 glyphs drawn 2× (`glyphWidth` × 10) plus a 2 px
+ * advance.
  * The domain uses it to align and centre text; every `RenderPort` honours it.
  */
-export const HUD_FONT_CELL = { width: 8, height: 10 } as const;
+export const HUD_FONT_CELL = { width: 8, height: 10, glyphWidth: 6 } as const;
 
 /** Coordinate space of the next draw calls: the 240 × 320 play field or the HUD bands (ADR-0010). */
 export type RenderRegion = 'field' | 'hud';

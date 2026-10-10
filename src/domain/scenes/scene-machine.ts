@@ -20,7 +20,7 @@ export const Scene = {
 } as const;
 export type Scene = (typeof Scene)[keyof typeof Scene];
 
-/** What differs between scenes for drawing and timing, read by `step` and `render`. */
+/** What differs between scenes for drawing, read by `render`. */
 interface SceneTraits {
   /** The run does not step and the frame draws at alpha 1. */
   readonly frozen: boolean;
@@ -137,7 +137,8 @@ export class SceneMachine {
     const frameAlpha = traits.frozen ? 1 : alpha;
     r.clear();
     r.setRegion('field');
-    const scroll = traits.scrolls ? frameAlpha : 0;
+    // Frozen scenes draw the starfield at alpha 1 too, so it never steps back at the pause.
+    const scroll = traits.scrolls || traits.frozen ? frameAlpha : 0;
     this.starfield.draw(r, (this.backgroundSteps + scroll) * STEP_SECONDS);
     if (traits.drawsRun && this.run !== undefined) {
       this.presenter.draw(this.run.snapshot(), frameAlpha);

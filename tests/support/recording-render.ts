@@ -1,4 +1,4 @@
-import type { RenderPort, RenderRegion } from '../../src/domain/ports/render-port';
+import type { FontId, RenderPort, RenderRegion } from '../../src/domain/ports/render-port';
 
 /** A rectangle drawn through the port, with the region it was drawn in. */
 export interface RecordedRect {
@@ -16,6 +16,16 @@ export interface RecordedText {
   x: number;
   y: number;
   text: string;
+  font: FontId;
+}
+
+const ZERO = 0x30;
+const NINE = 0x39;
+const TIMES = 0xd7;
+
+/** The `hud` glyph set of the RenderPort contract: digits and the multiplication sign. */
+function isHudGlyph(code: number): boolean {
+  return (code >= ZERO && code <= NINE) || code === TIMES;
 }
 
 /**
@@ -41,8 +51,13 @@ export class RecordingRender implements RenderPort {
   drawRect(x: number, y: number, w: number, h: number, colour: string): void {
     this.rects.push({ region: this.region, x, y, w, h, colour });
   }
-  drawText(text: string, x: number, y: number): void {
-    this.texts.push({ region: this.region, x, y, text });
+  /** Honours the RenderPort glyph contract, so domain tests fail like the real renderer. */
+  drawText(text: string, x: number, y: number, font: FontId): void {
+    if (font !== 'hud') throw new Error(`no glyph in font ${font}`);
+    for (let i = 0; i < text.length; i += 1) {
+      if (!isHudGlyph(text.charCodeAt(i))) throw new Error(`no hud glyph for "${text}"`);
+    }
+    this.texts.push({ region: this.region, x, y, text, font });
   }
   setCameraOffset(): void {
     // No test reads the camera yet.
