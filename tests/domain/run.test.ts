@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PlayerState } from '../../src/domain/game/player';
+import type { Bullet } from '../../src/domain/game/bullet';
 import { Run } from '../../src/domain/game/run';
 import { PLAYER_BULLET_POOL_SIZE } from '../../src/domain/game/tuning';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
@@ -57,7 +58,7 @@ describe('Run — fixed step order (class diagram notes)', () => {
       for (let i = 0; i < 400; i += 1) run.step(DT, script(i));
       const { player, playerBullets } = run.snapshot();
       expect(playerBullets.count).toBeGreaterThan(0);
-      const bullets = [];
+      const bullets: Readonly<Bullet>[] = [];
       for (let i = 0; i < playerBullets.count; i += 1) bullets.push(playerBullets.at(i));
       return JSON.stringify({ player, bullets });
     };
