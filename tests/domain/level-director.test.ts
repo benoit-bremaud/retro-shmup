@@ -64,6 +64,15 @@ describe('LevelDirector — script walking (GDD v0.6 §7.2.1, class diagram)', (
       'a Popcorn formation of 3',
       { at: 0, archetype: POPCORN, count: 3, interval: 1, spawn: { x: 0, y: 0 } },
     ],
+    ['a negative time', { at: -1, archetype: DIVER, count: 1, spawn: { x: 0, y: 0 } }],
+    [
+      'a time that is not a number',
+      { at: Number.NaN, archetype: DIVER, count: 1, spawn: { x: 0, y: 0 } },
+    ],
+    [
+      'an interval that rounds to 0 steps',
+      { at: 0, archetype: POPCORN, count: 6, interval: 0.001, spawn: { x: 0, y: 0 } },
+    ],
     [
       'a group past the loop point',
       { at: 44, archetype: POPCORN, count: 6, interval: 1, spawn: { x: 0, y: 0 } },

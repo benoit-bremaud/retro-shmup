@@ -101,6 +101,21 @@ describe('CollisionResolver — hazards against the 4 × 4 hitbox (GDD §4.1, §
     expect(world.player.state).toBe(PlayerState.Vulnerable);
   });
 
+  it('ignores an enemy body that touches the sprite but not the hitbox', () => {
+    const world = vulnerableWorld();
+    enemyAt(world, DIVER, 120 + 11, 272); // 16 px wide: reaches x 123, the hitbox ends at 122
+    CollisionResolver.resolve(world, new Rules());
+    expect(world.player.state).toBe(PlayerState.Vulnerable);
+  });
+
+  it('consumes only the killing bullet: a second one in the same step passes through', () => {
+    const world = vulnerableWorld();
+    world.spawnEnemyBullet(120, 272, 0, 75);
+    world.spawnEnemyBullet(121, 272, 0, 75);
+    CollisionResolver.resolve(world, new Rules());
+    expect([world.enemyBullets.at(0).spent, world.enemyBullets.at(1).spent]).toEqual([true, false]);
+  });
+
   it('lets bullets pass through an invulnerable ship, without consuming them', () => {
     const world = new World();
     const idle = createIntentFrame();

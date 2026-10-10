@@ -3,6 +3,7 @@ import type { EnemyShotSpawner } from './attacks';
 import { Bullet } from './bullet';
 import { Enemy } from './enemy';
 import { FIELD_HEIGHT, FIELD_WIDTH } from './geometry';
+import type { Box } from './geometry';
 import type { EnemySpawner } from './level-director';
 import type { ScriptEvent } from './level-script';
 import type { WorldView } from './movements';
@@ -95,12 +96,6 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, EnemySpawner,
   }
 }
 
-interface Boxed {
-  readonly position: { readonly x: number; readonly y: number };
-  readonly width: number;
-  readonly height: number;
-}
-
 function placeBullet(bullet: Bullet, x: number, y: number, vx: number, vy: number): void {
   bullet.position.x = x;
   bullet.position.y = y;
@@ -122,7 +117,7 @@ function moveAll(bullets: ActiveList<Bullet>, dt: number): void {
   }
 }
 
-function isOutsideField(box: Boxed): boolean {
+function isOutsideField(box: Box): boolean {
   const halfWidth = box.width / 2;
   const halfHeight = box.height / 2;
   return (
@@ -133,7 +128,7 @@ function isOutsideField(box: Boxed): boolean {
   );
 }
 
-function overlapsField(box: Boxed): boolean {
+function overlapsField(box: Box): boolean {
   return !isOutsideField(box);
 }
 

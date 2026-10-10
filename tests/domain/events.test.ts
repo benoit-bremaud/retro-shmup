@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createGameEvent, EventBus, GameEventKind } from '../../src/domain/game/events';
+import type { GameEventKind as Kind } from '../../src/domain/game/events';
 
 describe('EventBus — per-run, synchronous, ordered (ADR-0003, ADR-0010)', () => {
   it('dispatches in subscription order', () => {
@@ -24,6 +25,12 @@ describe('EventBus — per-run, synchronous, ordered (ADR-0003, ADR-0010)', () =
     expect(() => {
       bus.publish(event);
     }).not.toThrow();
+  });
+
+  it('fails closed on an unknown kind', () => {
+    const bus = new EventBus();
+    const unknown = 7 as Kind;
+    expect(() => bus.subscribe(unknown, () => undefined)).toThrow(RangeError);
   });
 
   it('lets a handler publish another kind', () => {

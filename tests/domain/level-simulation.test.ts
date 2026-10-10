@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { Bullet } from '../../src/domain/game/bullet';
-import type { Enemy } from '../../src/domain/game/enemy';
 import { GameEventKind } from '../../src/domain/game/events';
 import type { GameEvent } from '../../src/domain/game/events';
 import { Run, RunOutcome } from '../../src/domain/game/run';
+import { ENEMY_BULLET_POOL_SIZE, ENEMY_POOL_SIZE } from '../../src/domain/game/tuning';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
 
@@ -72,23 +71,29 @@ describe('Level simulation — the enemies brick, headless', () => {
     expect(run.snapshot().lives).toBe(0);
   });
 
-  it('never uses more than the pools hold, and enemy bullets peak at 40 or fewer', () => {
+  it('never fills a pool (no spawn refused), and enemy bullets peak at 40 or fewer', () => {
     const run = new Run();
-    const enemies = new Set<Enemy>();
-    const bullets = new Set<Readonly<Bullet>>();
-    let peak = 0;
+    let peakEnemies = 0;
+    let peakBullets = 0;
     for (let i = 0; i < 3 * ONE_PASS; i += 1) {
       run.step(DT, scripted(i));
       const snapshot = run.snapshot();
-      for (let e = 0; e < snapshot.enemies.count; e += 1) enemies.add(snapshot.enemies.at(e));
-      for (let b = 0; b < snapshot.enemyBullets.count; b += 1) {
-        bullets.add(snapshot.enemyBullets.at(b));
-      }
-      peak = Math.max(peak, snapshot.enemyBullets.count);
+      peakEnemies = Math.max(peakEnemies, snapshot.enemies.count);
+      peakBullets = Math.max(peakBullets, snapshot.enemyBullets.count);
     }
-    expect(enemies.size).toBeLessThanOrEqual(16);
-    expect(bullets.size).toBeLessThanOrEqual(48);
-    expect(peak).toBeLessThanOrEqual(40);
+    expect(peakEnemies).toBeLessThan(ENEMY_POOL_SIZE);
+    expect(peakBullets).toBeLessThan(ENEMY_BULLET_POOL_SIZE);
+    expect(peakBullets).toBeLessThanOrEqual(40);
+  });
+
+  it('scores nothing for enemies that leave the field alive', () => {
+    const run = new Run();
+    let destroyed = 0;
+    run.events().subscribe(GameEventKind.EnemyDestroyed, () => {
+      destroyed += 1;
+    });
+    for (let i = 0; i < ONE_PASS; i += 1) run.step(DT, idle());
+    expect(destroyed).toBe(0);
   });
 
   it('loops the script: enemies keep spawning in the second and third passes', () => {

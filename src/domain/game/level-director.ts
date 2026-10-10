@@ -21,13 +21,16 @@ const MAX_FORMATION = 8;
  */
 function checkEvent(event: Readonly<ScriptEvent>, loopSteps: number): void {
   const label = `${event.archetype.id} at ${String(event.at)} s`;
+  if (!Number.isFinite(event.at) || event.at < 0) {
+    throw new RangeError(`Level script: ${label} needs a time of 0 s or more`);
+  }
   if (!Number.isInteger(event.count) || event.count < 1) {
     throw new RangeError(`Level script: ${label} needs a positive whole count`);
   }
   if (event.count === 1 && event.interval !== undefined) {
     throw new RangeError(`Level script: ${label} is one enemy, it takes no interval`);
   }
-  if (event.count > 1 && (event.interval === undefined || event.interval <= 0)) {
+  if (event.count > 1 && (event.interval === undefined || !(toSteps(event.interval) > 0))) {
     throw new RangeError(`Level script: ${label} is a group, it needs an interval`);
   }
   if (event.archetype.formation && event.count > 1) {

@@ -1,6 +1,7 @@
 import { applyDamage } from './body';
 import type { Bullet } from './bullet';
 import type { Enemy } from './enemy';
+import type { Box } from './geometry';
 import { HitOutcome } from './player';
 import type { Player } from './player';
 import { PlayerTuning } from './tuning';
@@ -15,12 +16,6 @@ export interface HitRules {
   enemyHit(enemy: Enemy): void;
   destroyEnemy(enemy: Enemy): void;
   playerDied(): void;
-}
-
-interface Box {
-  readonly position: { readonly x: number; readonly y: number };
-  readonly width: number;
-  readonly height: number;
 }
 
 function overlaps(a: Box, b: Box): boolean {
@@ -56,8 +51,9 @@ function shotsAgainstEnemies(world: World, rules: HitRules): void {
     const enemy = firstEnemyHitBy(world, bullet);
     if (enemy === undefined) continue;
     bullet.spent = true;
+    const destroyed = applyDamage(enemy, bullet.damage);
     rules.enemyHit(enemy);
-    if (applyDamage(enemy, bullet.damage)) rules.destroyEnemy(enemy);
+    if (destroyed) rules.destroyEnemy(enemy);
   }
 }
 

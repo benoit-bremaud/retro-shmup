@@ -8,7 +8,7 @@ export const GameEventKind = {
 } as const;
 export type GameEventKind = (typeof GameEventKind)[keyof typeof GameEventKind];
 
-const KIND_COUNT = 3;
+const KIND_COUNT = Object.keys(GameEventKind).length;
 
 /**
  * One reusable event object per kind (ADR-0010): `subject` is the serial of a live body,
@@ -47,8 +47,12 @@ export class EventBus implements RunEvents {
     for (let kind = 0; kind < KIND_COUNT; kind += 1) this.handlers.push([]);
   }
 
+  /**
+   * Unsubscribing from inside a handler of the same kind would skip the next handler of that
+   * dispatch: nothing does it, and `Run` never unsubscribes (the bus dies with its run).
+   */
   subscribe(kind: GameEventKind, handler: GameEventHandler): Unsubscribe {
-    const list = this.handlers[kind] ?? [];
+    const list = this.listOf(kind);
     list.push(handler);
     return () => {
       const index = list.indexOf(handler);
@@ -61,12 +65,19 @@ export class EventBus implements RunEvents {
     if ((this.dispatching & bit) !== 0) {
       throw new Error(`EventBus: re-entrant publish of kind ${String(event.kind)}`);
     }
-    const list = this.handlers[event.kind] ?? [];
+    const list = this.listOf(event.kind);
     this.dispatching |= bit;
     try {
       for (let i = 0; i < list.length; i += 1) list[i]?.(event);
     } finally {
       this.dispatching &= ~bit;
     }
+  }
+
+  // An unknown kind fails closed: a handler is never dropped in silence.
+  private listOf(kind: GameEventKind): GameEventHandler[] {
+    const list = this.handlers[kind];
+    if (list === undefined) throw new RangeError(`EventBus: unknown event kind ${String(kind)}`);
+    return list;
   }
 }
