@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Weapon } from '../../src/domain/game/weapon';
-import type { BulletSpawner, ShotSpec } from '../../src/domain/game/weapon';
+import type { PlayerShotSpawner, ShotSpec } from '../../src/domain/game/weapon';
 
 interface SpawnedShot extends ShotSpec {
   step: number;
@@ -9,7 +9,7 @@ interface SpawnedShot extends ShotSpec {
 }
 
 /** Records the shots it is asked to spawn, with the step they were fired on. */
-class RecordingSpawner implements BulletSpawner {
+class RecordingSpawner implements PlayerShotSpawner {
   step = 0;
   readonly shots: SpawnedShot[] = [];
   spawnPlayerBullet(x: number, y: number, shot: Readonly<ShotSpec>): void {

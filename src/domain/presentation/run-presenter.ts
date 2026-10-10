@@ -43,9 +43,8 @@ export class RunPresenter {
   /** Draws the bullets and the ship in the field region, which it selects. */
   draw(snapshot: WorldSnapshot, alpha: number): void {
     this.render.setRegion('field');
-    for (let i = 0; i < snapshot.playerBulletCount; i += 1) {
-      const bullet = snapshot.playerBullets[i];
-      if (bullet === undefined) continue;
+    for (let i = 0; i < snapshot.playerBullets.count; i += 1) {
+      const bullet = snapshot.playerBullets.at(i);
       const x = lerp(bullet.previousPosition.x, bullet.position.x, alpha);
       const y = lerp(bullet.previousPosition.y, bullet.position.y, alpha);
       this.render.drawRect(

@@ -29,16 +29,16 @@ describe('Run — fixed step order (class diagram notes)', () => {
     steps(run, frame(0), FLY_IN_STEPS);
     run.step(DT, frame(Button.Fire));
     const snapshot = run.snapshot();
-    expect(snapshot.playerBulletCount).toBe(1);
-    expect(snapshot.playerBullets[0]?.position.y).toBeCloseTo(256 - 6, 9);
-    expect(snapshot.playerBullets[0]?.previousPosition.y).toBe(256);
+    expect(snapshot.playerBullets.count).toBe(1);
+    expect(snapshot.playerBullets.at(0).position.y).toBeCloseTo(256 - 6, 9);
+    expect(snapshot.playerBullets.at(0).previousPosition.y).toBe(256);
   });
 
   it('releases bullets that leave the field, so a held fire never exhausts the pool', () => {
     const run = new Run();
     steps(run, frame(Button.Fire), FLY_IN_STEPS + 600);
-    expect(run.snapshot().playerBulletCount).toBeLessThan(PLAYER_BULLET_POOL_SIZE);
-    expect(run.snapshot().playerBulletCount).toBeGreaterThan(0);
+    expect(run.snapshot().playerBullets.count).toBeLessThan(PLAYER_BULLET_POOL_SIZE);
+    expect(run.snapshot().playerBullets.count).toBeGreaterThan(0);
   });
 
   it('exposes the ship to the presenter through the snapshot', () => {
@@ -55,12 +55,11 @@ describe('Run — fixed step order (class diagram notes)', () => {
     const play = (): string => {
       const run = new Run();
       for (let i = 0; i < 400; i += 1) run.step(DT, script(i));
-      const { player, playerBullets, playerBulletCount } = run.snapshot();
-      expect(playerBulletCount).toBeGreaterThan(0);
-      return JSON.stringify({
-        player,
-        bullets: playerBullets.slice(0, playerBulletCount),
-      });
+      const { player, playerBullets } = run.snapshot();
+      expect(playerBullets.count).toBeGreaterThan(0);
+      const bullets = [];
+      for (let i = 0; i < playerBullets.count; i += 1) bullets.push(playerBullets.at(i));
+      return JSON.stringify({ player, bullets });
     };
     expect(play()).toBe(play());
   });

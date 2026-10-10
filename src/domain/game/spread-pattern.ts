@@ -1,6 +1,6 @@
 import type { Vec2 } from './geometry';
 import { SpreadLevel1 } from './tuning';
-import type { BulletSpawner, ShotSpec } from './weapon';
+import type { PlayerShotSpawner, ShotSpec } from './weapon';
 
 const LEVEL_1_SHOT: ShotSpec = {
   vxPerSecond: 0,
@@ -16,7 +16,7 @@ const LEVEL_1_SHOT: ShotSpec = {
  * exists until pickups land; the per-level records then replace the single one.
  */
 export const SpreadPattern = {
-  fire(origin: Readonly<Vec2>, spawner: BulletSpawner): void {
+  fire(origin: Readonly<Vec2>, spawner: PlayerShotSpawner): void {
     spawner.spawnPlayerBullet(origin.x, origin.y - SpreadLevel1.noseOffset, LEVEL_1_SHOT);
   },
 } as const;

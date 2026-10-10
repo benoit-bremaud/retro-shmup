@@ -3,10 +3,11 @@ import { SpreadPattern } from './spread-pattern';
 import { SpreadLevel1, toSteps } from './tuning';
 
 /**
- * Where weapons put their shots (class diagram). Declared with the weapon code, its first user,
- * so the player and the world do not import each other. Enemy bullets join with the enemies.
+ * Where the player's weapon puts its shots (class diagram). Declared with the weapon code, its
+ * client, so the player and the world do not import each other; enemy attacks get their own
+ * spawner, so an attack can never fire a player bullet.
  */
-export interface BulletSpawner {
+export interface PlayerShotSpawner {
   /** A bullet centred on (x, y), shaped by a constant shot record: nothing is allocated per shot. */
   spawnPlayerBullet(x: number, y: number, shot: Readonly<ShotSpec>): void;
 }
@@ -37,7 +38,7 @@ export class Weapon {
   private cooldown = 0;
 
   /** Once per step; `origin` is the ship's centre. The spawner is never stored. */
-  tick(origin: Readonly<Vec2>, firing: boolean, spawner: BulletSpawner): void {
+  tick(origin: Readonly<Vec2>, firing: boolean, spawner: PlayerShotSpawner): void {
     if (this.cooldown > 0) this.cooldown -= 1;
     if (!firing || this.cooldown > 0) return;
     SpreadPattern.fire(origin, spawner);

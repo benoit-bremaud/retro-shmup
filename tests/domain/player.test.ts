@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Player, PlayerState } from '../../src/domain/game/player';
-import type { BulletSpawner } from '../../src/domain/game/weapon';
+import type { PlayerShotSpawner } from '../../src/domain/game/weapon';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
 
@@ -9,7 +9,7 @@ const FLY_IN_STEPS = 30;
 const INVULNERABLE_STEPS = 90;
 
 /** Counts the shots the player's weapon asks for. */
-class CountingSpawner implements BulletSpawner {
+class CountingSpawner implements PlayerShotSpawner {
   shots = 0;
   spawnPlayerBullet(): void {
     this.shots += 1;
@@ -21,7 +21,7 @@ function step(
   player: Player,
   frame: Readonly<IntentFrame>,
   times = 1,
-  spawner: BulletSpawner = new CountingSpawner(),
+  spawner: PlayerShotSpawner = new CountingSpawner(),
 ): void {
   for (let i = 0; i < times; i += 1) {
     player.update(frame, DT, spawner);
