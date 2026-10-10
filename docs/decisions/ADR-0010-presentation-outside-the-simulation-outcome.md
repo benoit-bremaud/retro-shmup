@@ -47,6 +47,11 @@ are added to those ADRs in a dedicated PR.
    two invariants: a handler never keeps a reference to the event, and a handler never publishes
    an event of the kind it is handling. An event carries `kind`, `position`, `value`, `subject`
    (the serial of the entity concerned) and `detail` (a kind or a flag).
+   *Wording note, 2026-10-10 (enemies brick design, owner-approved):* the order is unchanged, but
+   `Run`'s constructor subscribes its own `ScoreKeeper`, first by construction, so a headless run
+   scores without the scene machine; the scene machine then subscribes `RunPresenter`, created
+   with the run, through a subscribe-only view. The bus throws when a kind is published while it is
+   being dispatched, so the second invariant fails closed.
 5. **`DropTable` is data**: `{ kinds, rate }`, read by one roll function; a cargo set on the
    enemy by the level script overrides it. This replaces the Strategy sketch of ADR-0003.
 6. **`RenderPort` draws in two regions**: the play field (240 × 320) and the HUD bands. The

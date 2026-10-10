@@ -1,7 +1,7 @@
 # Traceability matrix — UML study (1.0)
 
 > **Scope**: the UML study of [docs/architecture](README.md) against the
-> [Game Design Document](../design/game-design-document.md) v0.5, ADR-0001 to ADR-0010,
+> [Game Design Document](../design/game-design-document.md) v0.6, ADR-0001 to ADR-0010,
 > ADR-0014 and ADR-0015 (ADR-0011 to ADR-0013 are tooling decisions with no UML realization).
 > **Purpose**: prove coverage — every use case is realized, every class and component is used,
 > nothing is orphaned. Update this file in the same change as any diagram.
@@ -21,7 +21,7 @@ Diagram abbreviations: **UC** [01-use-case](diagrams/system/01-use-case.md) · *
 |---|---|---|---|---|
 | UC1 Play a run | FrameLoop, SceneMachine, Run, RunPresenter, LevelScripts, all ports | SD-tick, SD-kill, SD-hit, STM-player, STM-boss, STM-scenes (`InRun`) | every class of CD | intro and level cards (STM-scenes) |
 | UC2 Pause the run | FrameLoop, SceneMachine, DeviceInput, WebAudioPlayer | SD-tick (pause decided before the step), STM-scenes (`Paused`, `Count-in`, `Confirm quit`) | — (scene level, no run class) | music ducking (ADR-0009) |
-| UC3 Record a high score | SceneMachine, SaveDocument, LocalStorageStore | STM-scenes (`Name entry` → `High scores`) | `RunView.score()` | insertion rule and storage failure (UC3 text, ADR-0006) |
+| UC3 Record a high score | SceneMachine, SaveDocument, LocalStorageStore | STM-scenes (`Name entry` → `High scores`) | `RunView.snapshot().score` | insertion rule and storage failure (UC3 text, ADR-0006) |
 | UC4 Consult the high scores | SceneMachine, SaveDocument, LocalStorageStore | STM-scenes (`High scores`) | — | unreadable or newer document (UC4 text, ADR-0006) |
 | UC5 Configure the game | SceneMachine, SaveDocument, WebAudioPlayer, DeviceInput | STM-scenes (`Options` from title and pause) | — | each option (GDD §9.3); fullscreen in the gesture handler (ADR-0009) |
 | UC6 Remap the controls | SceneMachine, DeviceInput, SaveDocument | — | — | slots, swap, capture (UC6 text, GDD §4.2, ADR-0009) |
@@ -37,7 +37,7 @@ whose conditional steps live in the use-case text (proportionality rule of the s
 | `Simulation`, `Run` | ✓ | ✓ | ✓ | outcome read by STM-scenes; step 8 by STM-player | §2, §7 |
 | `RunView`, `RunOutcome` | ✓ | | | STM-scenes guards | §9.2 |
 | `World` | | ✓ | ✓ | | §5 |
-| `WorldView`, `BulletSpawner` | | | | CD only — parameters of the strategies, covered by unit tests | §5.3 |
+| `WorldView`, `PlayerShotSpawner`, `EnemyShotSpawner`, `HitRules`, `RunEvents` | | | | CD only — parameters of the strategies, covered by unit tests | §5.3 |
 | `Player`, `PlayerState`, `HitOutcome` | | | ✓ | STM-player | §4.1, §4.4 |
 | `Weapon`, `WeaponKind`, `WeaponPattern`, `SpreadPattern`, `LaserPattern` | | | ✓ (`powerDown`) | | §4.3 |
 | `Bullet` | | ✓ (`canHit`, `recordHit`) | ✓ (released) | | §4.3 |
@@ -90,6 +90,7 @@ is a calculation covered by unit tests (ADR-0003), not by a diagram.
 | ADR-0015 portrait screen, devices together, injected browser objects, default bindings | CMP (Bootstrap, Canvas2DRenderer, DeviceInput), STM-scenes (first-playable subset, build order); tests: layout choice, pointer mapping, arbitration function, keyboard and gamepad rules, lost focus, default bindings (ADR-0015 Consequences) |
 | GDD v0.2–v0.4 rules surfaced by the study | GDD Decision record; CD rule table |
 | GDD v0.5 first-playable values (fly-in, clamp, blink, base shot) | STM-player notes (fly-in, blink, one timer), CD rule table and notes (clamp, Spread L1, units, active lists); tests: fly-in and state steps, clamp, cadence of 10 shots per 60 steps, bullet release, blink phase, smoke test (STM-scenes) |
+| GDD v0.6 enemy values and script rows (§5.2.1, §7.2.1), chain window, game-over time, reserve-life icons | STM-scenes (enemies brick additions, scene traits, frozen scenes, interim deviations), SD-kill and SD-hit (mark, then release at step 6), SD-tick (frozen scenes at alpha 1), CD rule table and notes (`HitRules`, spawners, `spent`, `entered`, `armed`, `ActiveList`, events, HUD data); tests: pool caps and dropped requests, S curve and mirror, Diver target captured at the dive, Gunner entry, hold and 2 bullets per hover, zero aim vector, entered-then-outside despawn, destroyed once with two bullets in one step, chain at the 5th and 6th kill and at +120 / +121 steps, death and respawn, game over after 3 s or Confirm, script loop at 45 s, frozen scenes at alpha 1 with effects frozen, re-entrant publish throws, determinism with effects on and off, enemy hitboxes 16 × 16 / 16 × 16 / 32 × 32, enemy bullets 4 × 4 at 75 px/s, hit flash about 33 ms and explosion about 0.3 s of wall time, at most 16 explosions with the oldest recycled, one life icon per reserve life, formation refused members still earn the P, chain bar full right after a kill and empty when the chain breaks, script rows checked at load (interval), an effect recorded in the last step of a multi-step frame drawn once at age 0, no effect aged by a frame that ran a frozen step (count-in handoff), a collected pickup released at step 6, peak enemy bullets ≤ 40 over the whole level script, a lone Popcorn never forms a formation and a Popcorn group outside 5 to 8 is rejected at load, a formation whose last rank is refused still earns its P once, the formation pool never empties over a level script; with hit-stop (later brick), a hit-stop born in a 30 Hz frame still freezes the next frame |
 
 ## 5. Known gaps (accepted)
 
