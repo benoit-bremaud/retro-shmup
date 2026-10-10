@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Vertical slice — v0.6 (2026-10-10): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot); v0.6 adds the initial values of the enemies brick |
+| **Status** | Vertical slice — v0.7 (2026-10-11): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot); v0.6 adds the initial values of the enemies brick; v0.7 settles the devices brick (portrait HUD strip, touch pause button, resuming and leaving Game over by tap or Start, mouse takeover, rotation pause) |
 | **Working title** | *retro-shmup* (codename; the commercial title is still open) |
 | **Genre** | Retro vertical-scrolling shoot'em up (shmup), 16-bit aesthetic |
 | **Platform** | Web browser (desktop first, mobile playable), TypeScript + native Canvas 2D |
@@ -145,9 +145,9 @@ Minimal, arcade style: one intro card (two sentences), one title card per level,
 | Priority | Input | Model |
 |---|---|---|
 | P0 | Keyboard | Move: arrows (primary), `W A S D` physical keys (secondary — the same keys read Z Q S D on AZERTY); opposite directions held together cancel. Fire `Space` / `Z` (hold = autofire); bomb `X` / left `Shift`; pause `P`; `Enter` (main or keypad) confirm; `Esc` pauses in play and goes back in menus (fixed). Remappable. |
-| P1 | Touch | The first finger on the play field drives the ship, which follows it **32 px above** *(initial)* so the thumb never hides it; lifting the finger leaves the ship where it is. Autofire always on; bomb = on-screen button or second-finger tap; pause = on-screen button. A touch that starts outside the play field is a tap on the HUD, never a move *(v0.5)*. |
-| P1 | Gamepad | Left stick (radial dead zone *(initial: 0.2)*) or d-pad move, the d-pad winning when pressed; `A` fire (hold = autofire); `B` bomb; `Start` pause (Gamepad API, standard mapping). The last pad used is the active one *(v0.5)*. Remappable. |
-| P2 | Mouse | Ship follows the cursor; autofire; right click bomb *(v0.5: `Space` stays the keyboard fire)*. |
+| P1 | Touch | The first finger on the play field drives the ship, which follows it **32 px above** *(initial)* so the thumb never hides it; lifting the finger leaves the ship where it is. Autofire always on; bomb = on-screen button or second-finger tap; pause = on-screen button. A touch that starts outside the play field is a tap on the HUD, never a move *(v0.5)*. The **pause button** sits in the top-right corner of the screen in both orientations — 48 × 32 at the right end of the portrait HUD strip, 48 × 48 at the top of the right landscape band — and is drawn in play, in the pause and during the count-in, never on the title or in Game over *(v0.7)*. |
+| P1 | Gamepad | Left stick (radial dead zone *(initial: 0.2)*) or d-pad move, the d-pad winning when pressed; `A` fire (hold = autofire); `B` bomb; `Start` pause (Gamepad API, standard mapping). The last pad used is the active one *(v0.5)*. Remappable. `Start` is also a fixed `confirm` *(v0.7)*: it starts from the title, resumes from the pause and leaves Game over, as `Esc` both pauses and goes back on the keyboard. |
+| P2 | Mouse | Ship follows the cursor; autofire; right click bomb *(v0.5: `Space` stays the keyboard fire)*. The cursor is a crosshair over the game, centred on the ship's hitbox *(v0.7)*. The mouse takes the ship only when it moves to another play-field pixel or presses a button on the field; a click outside the field (HUD, pause button) is a tap only, as for a finger *(v0.7)*. |
 
 Inputs are translated to **intents** (`move`, `fire`, `bomb`, `pause`, `confirm`, `back`) so no
 outcome ever depends on the device that produced them (one plain intent frame per step, ADR-0009;
@@ -211,7 +211,8 @@ is held or not, so tapping never fires faster than holding. One level-1 shot dea
   5. the ship respawns after 1.5 s with 2 s of invulnerability.
   Lives at 0 → **Game over** after the 1.5 s death sequence *(v0.4: the last explosion plays out)*
   (no continues in 1.0). The Game over screen lasts **3 s** *(initial, v0.6)*, or less when the
-  player confirms. It shows **GAME OVER** in large letters over the run, which keeps playing
+  player confirms — by `confirm`, a tap or a click, accepted only after a **1 s** lock *(initial,
+  v0.7)* so a player still hammering fire never skips it. It shows **GAME OVER** in large letters over the run, which keeps playing
   without the ship, as on an arcade cabinet: waves keep coming, enemies fly and fire, the score
   stays as it was *(v0.6, owner playtest)*.
 
@@ -423,7 +424,10 @@ confirmation, default "No"; a quit run is discarded and never offered the high-s
 count-in it returns to the pause at once; during a card or the results it is remembered and the
 pause opens at the first step of play. Only the `pause` intent opens the pause; `back` is ignored
 in play, so the gamepad `B` (bomb in play) never pauses. The keyboard `Esc` sends both `pause`
-and `back`: it pauses in play and resumes from the pause menu.
+and `back`: it pauses in play and resumes from the pause menu. *(v0.7)* A change of screen layout
+(a phone turned between portrait and landscape) is an automatic trigger too. Until the pause menu
+of the screens brick, any tap or click resumes from the pause (the 3-2-1 count-in guards against
+an accidental touch), and so does the gamepad `Start` (§4.2).
 
 **Name entry** *(v0.2)*: three characters from A–Z, 0–9, space and `.`, starting at `AAA`; no
 timer. On touch, an on-screen letter grid.
@@ -434,7 +438,9 @@ Left: score, chain multiplier + timer bar, lives, bombs. Right: level number and
 colour and power level (1–5 pips), shield indicator. Lives are drawn as small ship icons, one
 per reserve life (the ship in play not counted), and the chain timer as a shrinking bar *(v0.6)*. Boss HP bar at the top of the play field
 during a boss fight. On narrow screens the HUD collapses into the top strip of the portrait
-screen (§3.1) *(v0.5)*.
+screen (§3.1) *(v0.5)*: two rows with 4 px margins — score then the reserve lives on the first,
+the multiplier then the chain bar (aligned under the score) on the second — and the pause button
+in its top-right corner (§4.2) *(v0.7)*.
 
 ### 9.3 Options
 
@@ -632,3 +638,9 @@ fully playable at release quality, used to validate the design before producing 
 | Gunner entry *(v0.6)* | Straight line from a scripted spawn point to a scripted hover point, back the same way; sides and top share one movement (§7.2.1) | Every Gunner from the top in the enemies brick (a recorded deviation from §7.2, to undo later) |
 | Chain window *(v0.6)* | Inclusive: a kill exactly 2 s after the previous one extends the chain | Strict (needs a 119-step timer or a different step order) |
 | Lives icons *(v0.6)* | Reserve lives only, as in the arcade | Every life, the ship in play included |
+| Portrait HUD strip *(v0.7)* | Two rows, 4 px margins, pause button in the top-right corner | One row (8 lives overflow, no room for the button); the HUD font at 1× (unreadable); drawing over the field |
+| Touch pause button *(v0.7)* | Top-right corner in both orientations, drawn in play, pause and count-in | Top-left (competes with the score); the whole strip (accidental pauses); portrait only |
+| Resuming without a keyboard *(v0.7)* | Any tap or click, and the gamepad `Start` | Only the pause button (hard to discover); `Start` keeps doing nothing in the pause |
+| Leaving Game over *(v0.7)* | `confirm`, a tap or a click after a 1 s lock | No lock (hammering fire skips it); timer only |
+| Mouse cursor and takeover *(v0.7)* | Crosshair; takes the ship only on a real move or a press on the field | Default arrow (hides the ship); hidden cursor; any move or click takes the ship |
+| Rotation during play *(v0.7)* | Automatic pause | Play on while the screen rearranges |

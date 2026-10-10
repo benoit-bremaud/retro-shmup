@@ -6,7 +6,30 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ---
 
+## 2026-10-11
+
+### Design of the devices brick C2 (branch `docs/c2-design`) — GDD v0.7, ADR-0018, issue #9
+
+- A conception study found #9 written before the enemies brick: the HUD strip had no content
+  layout, the touch pause button had moved into C2, and the pause and Game over exits only took
+  keyboard or gamepad `Confirm`. Ten player-facing decisions were validated one at a time with
+  scored options (portrait strip in two rows; pause button top-right in both orientations; any
+  tap resumes; `Start` also confirms; Game over leaves on tap or confirm after a 1 s lock;
+  crosshair cursor; the mouse takes the ship only on a real move; rotation pauses; one smoke test
+  running a phone then a rotation; five PRs), then a technical batch of twelve as a whole.
+- GDD v0.7 (§4.2, §4.4, §9.1, §9.2, Decision record), ADR-0018 (partially supersedes ADR-0015
+  decisions 3, 4, 5, 7, 8), the scene machine's devices-brick section and build order, the
+  component table, the traceability matrix.
+
 ## 2026-10-10
+
+### PR #18 merged (`8272fc9`) — D1 S: score, HUD and effects; arcade Game over — brick D done
+
+- The score (8 digits), the chain (×1 to ×8, inclusive 2 s window, bar), the hit flash and the
+  explosions behind their switches, one presenter per run, and the arcade Game over (GDD v0.6
+  §4.4 after the owner's playtest). Issue #12 closed; the whole enemies brick is online.
+- No automated reviewer (quotas); a pre-push review (3 Should and 6 Nice fixed), CI green,
+  pushed with `--no-verify` after gitleaks and SonarQube passed by hand (npm timeouts).
 
 ### PR #17 merged (`3b1f97d`) — D1 E: enemies, collisions, lives and game over
 
