@@ -160,6 +160,7 @@ classDiagram
     <<pooled>>
     -position: Vec2
     -previousPosition: Vec2
+    -spent: boolean
   }
   class PickupKind {
     <<enumeration>>
@@ -460,7 +461,8 @@ classDiagram
 - **Units**: timers and cooldowns are whole numbers of steps, counted down by 1 each step, and
   converted from the GDD's seconds once, at load (counted in steps: ADR-0002); velocities are pixels per second,
   multiplied by `dt` in seconds (ADR-0014). The domain never counts time by subtracting `dt`.
-- **Mark, then release**: from step 3 to step 5 a destroyed body or a consumed bullet is only
+- **Mark, then release**: from step 3 to step 5 a destroyed body, a consumed bullet or a
+  collected pickup is only
   marked `spent` (reset on acquire), and every pass skips spent items. Step 6 is `World.sweep()`,
   its single entry point, which delegates to each `ActiveList.sweep`, the only caller of
   `pool.release`: a spent item is released with no escape counted; an active

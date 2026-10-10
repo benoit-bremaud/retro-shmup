@@ -147,7 +147,9 @@ The enemies brick adds `Paused`, `Count-in` and `Game over`, and removes the pau
   and do not advance the background clock. `SceneMachine.render` picks the frame's alpha once:
   `alpha = 1` for the whole frame, starfield and snapshot, so nothing wobbles between two
   positions (02-sequence-fixed-step-tick); and it hands the presenter `wallDtMs = 0`, so effects
-  freeze too.
+  freeze too. The scene machine sets a flag on every frozen step and clears it at render: a frame
+  that ran any frozen step — the count-in handoff frame included — ages no effect, so an effect
+  kept across the pause never loses up to the 250 ms clamp on resume.
 - **Scene traits**: what differs between scenes for drawing and timing (`frozen`, `scrolls`,
   `drawsRun`) is one data table, `SCENE_TRAITS`, read by `step`, `render` and `timeScale`; each
   scene keeps one private method for its transitions. The veil, the pause icon and the 3-2-1 are

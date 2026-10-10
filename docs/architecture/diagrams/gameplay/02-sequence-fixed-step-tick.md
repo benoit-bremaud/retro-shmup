@@ -60,7 +60,7 @@ sequenceDiagram
   end
   Note over FL: alpha = accumulator / STEP
   FL->>Scenes: render(alpha, wallDtMs)
-  Note over Scenes: frozen scene — alpha = 1 and wallDtMs = 0 for the whole frame
+  Note over Scenes: frozen scene — alpha = 1 for the whole frame — and wallDtMs = 0 for the effects whenever a frozen step ran since the last render, the count-in handoff frame included
   Scenes->>Render: setRegion field, starfield at the background clock
   Scenes->>Run: snapshot()
   Run-->>Scenes: previous and current positions, HUD values
