@@ -15,6 +15,9 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   rules away from presentation and scenes; tests share one `RecordingRender`.
 - Review: Codex hit its usage limit and could not review; Copilot (launched by the owner)
   recommended approval with no finding; CI green.
+- PR P (`feat/ui`) pushed with `--no-verify` (ADR-0013): the npm registry timed out in
+  `pnpm audit`; typecheck, lint, format, tests, gitleaks and the SonarQube gate passed (after
+  fixing Sonar S7758, `codePointAt`).
 
 ### PR #13 merged (`994c787`) — enemies brick design (D0)
 
