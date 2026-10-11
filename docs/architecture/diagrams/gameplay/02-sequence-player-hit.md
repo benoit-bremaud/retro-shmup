@@ -1,8 +1,9 @@
 # Sequence diagram — gameplay — the player is hit (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.4 §4.1,
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.8 §4.1,
 > §4.4, §4.6, §5.2, §8
-> **Related ADRs**: ADR-0002 (pools), ADR-0010 (bus per run, handler rules)
+> **Related ADRs**: ADR-0002 (pools), ADR-0010 (bus per run, handler rules), ADR-0019 (release
+> motion, `ABSORBED`, `shieldBroken`, `DifficultyProfile`)
 > **Realizes**: UC1 extensions 5b, 5c and 5c1 of [01-use-case](../system/01-use-case.md);
 > lifecycle in [05-state-player](05-state-player.md)
 
@@ -37,7 +38,7 @@ sequenceDiagram
     Pl-->>CR: IGNORED
     Note over CR: the bullet passes through — not released
   else [Vulnerable, shield held]
-    Note over Pl: shield = false, Invulnerable for 0.5 s
+    Note over Pl: shield = false, Invulnerable for 0.5 s, blink count restarted
     Pl-->>CR: ABSORBED
     Note over CR: the bullet's spent = true, released at step 6 (a body is unaffected)
     CR->>Run: shieldBroken()
@@ -48,12 +49,16 @@ sequenceDiagram
     Pl-->>CR: DIED
     Note over CR: the bullet's spent = true, released at step 6 (a body is unaffected)
     CR->>Run: playerDied()
-    Note over Run: bombs = DifficultyProfile.bombsPerLife
+    Note over Run: bombs = DifficultyProfile.bombsPerLife, at once — the HUD shows them during the explosion
     Run->>Wp: powerDown()
     Wp-->>Run: powerDropped — true if the level dropped, false at level 1
-    opt [powerDropped]
-      Run->>W: spawn P pickup of the current weapon colour at the death position
-      Run->>Bus: publish PICKUP_SPAWNED (detail = kind)
+    opt [powerDropped, the last life included]
+      Run->>W: spawnPickup(P of the current weapon kind, death x, death y, RELEASE)
+      Note over W: rises linearly over 0.8 s to y = max(death y − 48, 24), then falls at 20 px/s — x fixed at the death x, no sway
+      W-->>Run: spawned — false when the pickup pool is full
+      opt [spawned]
+        Run->>Bus: publish PICKUP_SPAWNED (detail = kind)
+      end
     end
     Run->>Bus: publish PLAYER_DIED
     activate Bus
@@ -76,6 +81,17 @@ sequenceDiagram
   `IGNORED`, `ABSORBED` or `DIED`; `Run.playerDied()` applies what needs the difficulty profile
   and the world — bombs, power, release.
 - **No release at power 1** (GDD v0.2 §4.4): `powerDown()` returns `false` and nothing spawns.
+  The weapon kind never changes on death.
+- **The release hop** (GDD v0.8 §4.4): the v0.2 drift at 40 px/s left the field 1.4 s after the
+  death, before the ship returns at 2 s. The `RELEASE` motion first rises, then falls at half the
+  normal speed: the rise is linear over 0.8 s whatever its height (clamped at y 24 it simply
+  rises less); x stays at the death x, with no sway, during the rise and the fall. From the
+  resting line it stays catchable about 4 s after control returns. It is
+  an ordinary P (the cap rule applies), released on the last life too — the run plays on after
+  Game over, and the rule stays uniform.
+- **Shield** (GDD v0.8 §4.4): a bullet or a body contact both consume the charge; the bullet is
+  spent, the body survives. `PLAYER_HIT` (detail = absorbed) is published by
+  `HitRules.shieldBroken()`, which `Run` realizes.
 - **Order**: the release pickup spawns before `PLAYER_DIED` is published, so every listener sees
   a consistent world; `ScoreKeeper` resets the chain before the presenter reacts.
 - **Bombs reset to the difficulty value** (`bombsPerLife`, GDD §10), not to a literal.

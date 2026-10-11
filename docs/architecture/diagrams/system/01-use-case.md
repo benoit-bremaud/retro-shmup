@@ -65,9 +65,11 @@ step depends on them.
   - 1a. Start comes from a gamepad before any click, tap or key press: the game asks for one,
     then continues at step 2 (browsers unlock audio and fullscreen only on such a gesture).
   - 5a. Player drops a bomb:
-    - 5a1. Stock > 0: enemy bullets are cancelled, every enemy including the boss takes heavy
-      damage, 1 s of invulnerability, the no-bomb bonus is lost (GDD §4.5).
-    - 5a2. Stock = 0: nothing happens.
+    - 5a1. Stock > 0 and the ship in control (GDD v0.8 §4.5 — not during the fly-in, the death
+      sequence or after Game over): enemy bullets are cancelled, every enemy on the field
+      including the boss takes heavy damage once, at least 1 s of invulnerability, the no-bomb
+      bonus is lost (GDD §4.5).
+    - 5a2. Stock = 0, or the ship not in control: nothing happens.
   - 5b. Player is hit while holding a shield charge: the charge absorbs the hit, short
     invulnerability, play continues (GDD §4.4).
   - 5c. Player is hit without a shield charge: one life is lost, chain resets to ×1, bombs reset

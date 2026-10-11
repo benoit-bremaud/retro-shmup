@@ -14,10 +14,26 @@ when it is chosen.
 ## Status
 
 **Vertical slice in progress.** The design is complete — GDD, the
-[ADRs](docs/decisions/README.md) and the UML study — and the code now follows it, one pull request per brick, up to level 1 at release
-quality. `pnpm install` then `pnpm dev` runs the first playable build on keyboard: press `Enter`
-on the title, then move with the arrows or `W A S D` and fire with `Space` or `Z`. No enemies
-yet; see CONTRIBUTING.md.
+[ADRs](docs/decisions/README.md) and the UML study — and the code follows it, one pull request
+per brick, up to level 1 at release quality. Every merge to `main` is playable at
+<https://retro-shmup.pages.dev> (ADR-0016).
+
+What the current build plays:
+
+- **Enemies**: Popcorn formations, Divers and Gunners from the first rows of level 1, looping
+  every 45 s until the level brick; aimed bullets, contact hits.
+- **Rules**: 3 lives, a 4 × 4 hitbox, death, respawn with invulnerability, the Spread at power
+  level 1; score with a chain multiplier ×1 to ×8; an arcade Game over over the running wave.
+- **Screens**: title, play, pause with a 3-2-1 count-in, Game over; a landscape screen with side
+  HUD bands, or a portrait screen with a top HUD strip on phones.
+- **Devices**: keyboard (arrows or `W A S D`, fire `Space` / `Z`, pause `P` / `Esc`, `Enter`),
+  touch (the ship follows the finger, autofire, a pause button), mouse (crosshair, autofire)
+  and gamepad (stick or d-pad, `A` fire, `Start` pause and confirm). The bomb inputs are wired
+  but have no effect until the player kit.
+
+Next: the player kit — Spread and Laser on five power levels, pickups, bombs, shield, the
+Carrier (GDD v0.8, ADR-0019). To run the game locally: `pnpm install` then `pnpm dev`; see
+CONTRIBUTING.md.
 
 Roadmap (GDD section 11):
 
@@ -34,7 +50,8 @@ Roadmap (GDD section 11):
 
 - [Game Design Document](docs/design/game-design-document.md) — the design contract, with the
   decision record of every rejected alternative.
-- [Architecture Decision Records](docs/decisions/) — Nygard format, one file per decision:
+- [Architecture Decision Records](docs/decisions/README.md) — Nygard format, one file per
+  decision; the index gives the gist of each and what it supersedes:
   - [ADR-0001](docs/decisions/ADR-0001-rendering-canvas2d-behind-render-port.md) — Native
     Canvas 2D rendering behind a minimal `RenderPort`
   - [ADR-0002](docs/decisions/ADR-0002-fixed-timestep-deterministic-simulation.md) — Fixed
@@ -52,6 +69,28 @@ Roadmap (GDD section 11):
     quality gate, minimal CI
   - [ADR-0008](docs/decisions/ADR-0008-hosting-per-game-subdomain-on-benoitbremaud-fr.md) —
     Public hosting: one subdomain per game on benoitbremaud.fr, catalogue on the portfolio
+  - [ADR-0009](docs/decisions/ADR-0009-intent-frame-and-audio-port-contracts.md) — Input and
+    audio contracts: intent frame, bindings, gestures, mix control
+  - [ADR-0010](docs/decisions/ADR-0010-presentation-outside-the-simulation-outcome.md) —
+    Presentation never changes the outcome of a run
+  - [ADR-0011](docs/decisions/ADR-0011-toolchain.md) — Toolchain: pnpm, Vite, TypeScript 6,
+    Vitest, ESLint, local quality hooks
+  - [ADR-0012](docs/decisions/ADR-0012-binding-shapes.md) — Shapes of the remappable bindings
+    and of the key capture
+  - [ADR-0013](docs/decisions/ADR-0013-quality-gate-and-ci-update.md) — Quality gate and CI
+    after going public
+  - [ADR-0014](docs/decisions/ADR-0014-logical-screen-and-render-regions.md) — Logical screen
+    480 × 320, render regions and step units
+  - [ADR-0015](docs/decisions/ADR-0015-device-input-and-portrait-screen.md) — Device input in
+    practice and the portrait screen
+  - [ADR-0016](docs/decisions/ADR-0016-deploy-every-playable-build.md) — Deploy every playable
+    build, from the first playable on
+  - [ADR-0017](docs/decisions/ADR-0017-games-catalogue-in-the-projects-page.md) — The games
+    catalogue is a category of the portfolio's projects page
+  - [ADR-0018](docs/decisions/ADR-0018-device-input-after-the-enemies-brick.md) — Device input
+    after the enemies brick: pause button, taps, takeover and rounding
+  - [ADR-0019](docs/decisions/ADR-0019-player-kit-seeded-randomness-tenths-weapons-as-data.md) —
+    Player kit: seeded randomness per run, damage in tenths, weapons as data
 - [Architecture and UML study](docs/architecture/README.md) — C4 context and containers, then
   the UML diagrams (Mermaid, PlantUML for use cases and components) and the traceability matrix.
 - [PROJECT_LOG.md](PROJECT_LOG.md) — operational logbook (what was done, why, by which PR).

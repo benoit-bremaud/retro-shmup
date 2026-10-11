@@ -1,8 +1,9 @@
 # State machine diagram — gameplay — the player ship (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.5 §4.1,
-> §4.4, §4.5
-> **Related ADRs**: ADR-0002 (timers counted in simulation steps)
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.8 §4.1,
+> §4.4, §4.5, §4.6
+> **Related ADRs**: ADR-0002 (timers counted in simulation steps), ADR-0019 (a duration per
+> cause, `useBomb`, `ABSORBED`)
 > **Realizes**: the `PlayerState` of [04-class-domain](04-class-domain.md); the timing side of
 > [02-sequence-player-hit](02-sequence-player-hit.md)
 
@@ -29,10 +30,10 @@ stateDiagram-v2
   [*] --> Entering : run starts
   Entering --> Invulnerable : after(fly-in 0.5 s) / timer = 1.5 s
   Invulnerable --> Vulnerable : timer elapsed
-  Vulnerable --> Invulnerable : hit [shield] / ABSORBED, timer = 0.5 s
-  Vulnerable --> Invulnerable : bomb [bombs > 0] / timer = 1 s
-  Invulnerable --> Invulnerable : bomb [bombs > 0] / timer = max(timer, 1 s)
-  Vulnerable --> Dead : hit [no shield] / DIED
+  Vulnerable --> Invulnerable : hit [shield] / ABSORBED, timer = 0.5 s, blink restarts
+  Vulnerable --> Invulnerable : bomb pressed [bombs > 0] / bombs − 1, timer = 1 s
+  Invulnerable --> Invulnerable : bomb pressed [bombs > 0] / bombs − 1, timer = max(timer, 1 s)
+  Vulnerable --> Dead : hit [no shield] / DIED, death effects at once
   Dead --> Entering : after(1.5 s) [lives > 0]
   Dead --> [*] : after(1.5 s) [lives = 0] / final death, read by Run at step 8
   Vulnerable --> Entering : next level starts
@@ -60,10 +61,25 @@ stateDiagram-v2
   pause and stays deterministic (ADR-0010).
 - **Hits are ignored** in `Entering`, `Invulnerable` and `Dead` (`HitOutcome.IGNORED`): bullets and
   bodies pass through. In `Dead` this guarantees at most one life lost per step.
-- **Bombs** work in `Vulnerable` and `Invulnerable` only; they never shorten an ongoing
-  invulnerability (`max`). With an empty stock the input does nothing.
+- **Bombs** work in `Vulnerable` and `Invulnerable` only (GDD v0.8 §4.5): a press while
+  `Entering` or `Dead`, after Game over (the ship stays `Dead`) or with an empty stock does
+  nothing, and the pause never steps the run. One bomb per press. They never shorten an ongoing
+  invulnerability (`max`). `Player.useBomb()` holds the guard; the run applies the effect at step
+  slot 3 (02-sequence-bomb), so the new state already holds for that step's collisions.
+- **A timer per cause** (ADR-0019): the one `stateSteps` timer is set with the duration of what
+  caused the state — fly-in 0.5 s, respawn invulnerability 1.5 s, shield 0.5 s, bomb
+  max(time left, 1 s), death sequence 1.5 s.
+- **Pickups** (GDD v0.8 §4.6) are collected in `Entering`, `Invulnerable` and `Vulnerable`, never
+  in `Dead` (`Player.canCollect()`); pass 4 of the collisions runs after the hazards, so a ship
+  entering `Dead` in a step collects nothing in it, and after Game over pickups fall past the
+  missing ship.
+- **Shield** (GDD v0.8 §4.4): a charge is held in any state and kept until used; only a hit in
+  `Vulnerable` consumes it, since the other states ignore hits. The absorbed hit restarts the
+  blink count, unlike the bomb from `Invulnerable`.
 - **A life is lost on the transition to `Dead`**: lives −1, bombs reset to `bombsPerLife`, power
-  −1 with its release (none at level 1), chain reset — see the sequence diagram.
+  −1 with its release (none at level 1, released on the last life too), chain reset — all at the
+  death step, so the HUD shows them during the explosion (GDD v0.8 §4.4); see the sequence
+  diagram.
 - **Game over after the explosion** (GDD v0.4 §4.4): the `Player` holds no reference to the run;
   when the death sequence ends with no life left, `Run` reads it at step 8 of `Run.step` and sets
   the outcome to `GAME_OVER`; the scene machine then shows Game over.

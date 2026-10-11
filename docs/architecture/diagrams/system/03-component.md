@@ -1,12 +1,13 @@
 # Component diagram — system — components, ports and the dependency rule (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.7 §3.1,
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.8 §3.1,
 > §4.2, §9, §13
 > **Related ADRs**: ADR-0001 (RenderPort), ADR-0002 (Clock, Random, loop), ADR-0003 (layout,
 > ports, dependency rule), ADR-0006 (StoragePort), ADR-0009 (input and audio contracts),
 > ADR-0010 (presentation outside the outcome), ADR-0014 (logical screen, regions, step units),
 > ADR-0015 (portrait screen, devices together, injected browser objects), ADR-0018 (pause
-> button, taps, mouse takeover, page-level pointer listeners)
+> button, taps, mouse takeover, page-level pointer listeners), ADR-0019 (run seed from the
+> composition root)
 > **Realizes**: the structure behind every use case of [01-use-case](01-use-case.md)
 
 ## Context
@@ -30,15 +31,15 @@ Source: [`03-component.puml`](03-component.puml) — regenerate the SVG with
 
 | Component | Directory | Responsibility | Depends on |
 |---|---|---|---|
-| Bootstrap | `src/app` | Creates the adapters, injects them through the ports with the environment — startup snapshot and `today()` (ADR-0009) — and starts the loop; on every resize and pixel-ratio change chooses the screen with `computeViewport`, resizes the off-screen canvas, reads the canvas rectangle once and hands the viewport to the renderer and the layout and rectangle to the input adapter (ADR-0018); passes `DeviceInput` its browser objects as one environment record (ADR-0015) | everything (composition root) |
+| Bootstrap | `src/app` | Creates the adapters, injects them through the ports with the environment — startup snapshot and `today()` (ADR-0009) — and starts the loop; on every resize and pixel-ratio change chooses the screen with `computeViewport`, resizes the off-screen canvas, reads the canvas rectangle once and hands the viewport to the renderer and the layout and rectangle to the input adapter (ADR-0018); passes `DeviceInput` its browser objects as one environment record (ADR-0015); gives the scene machine the run factory, which draws each run's seed with `Math.random` (ADR-0019) | everything (composition root) |
 | FrameLoop | `src/app` | `requestAnimationFrame` driver: wall time from `Clock`, multiplied by `SceneMachine.timeScale()` (ADR-0010), fed to the fixed-step accumulator (ADR-0002); per step reads one `IntentFrame` and calls `step`; per frame calls `render(alpha, wallDtMs)` with the unscaled wall time. Drives a `FrameTarget`, which `SceneMachine` satisfies structurally | SceneMachine, Clock, InputPort |
-| SceneMachine | `src/domain` | The screens of GDD §9.1 and their transitions; creates and steps the `Run`; draws menus; drives the music and the pause mix; loads and saves through `StoragePort`; pushes bindings, key capture and the fullscreen preference through `InputPort` (UC5, UC6) | Run, RunPresenter, SaveDocument, MessageCatalogue, ports |
-| Run | `src/domain` | The simulation of one run — outcome-relevant state only: entities, patterns, pools, event bus, scoring, collisions | LevelScripts, Random |
+| SceneMachine | `src/domain` | The screens of GDD §9.1 and their transitions; creates the `Run` through the factory Bootstrap gives it (the run seed stays outside the domain) and steps it; draws menus; drives the music and the pause mix; loads and saves through `StoragePort`; pushes bindings, key capture and the fullscreen preference through `InputPort` (UC5, UC6) | Run, RunPresenter, SaveDocument, MessageCatalogue, ports |
+| Run | `src/domain` | The simulation of one run — outcome-relevant state only: entities, patterns, pools, event bus, scoring, collisions; owns its `SeededRandom`, seeded from the run seed and the level index (ADR-0019) | LevelScripts, Random |
 | RunPresenter | `src/domain` | Draws the play field and the HUD from the run's interpolated view; owns particles and game-feel effects (unseeded randomness, timers in wall-clock ms); provides the time scale of hit-stop and slow motion; first-time pickup labels, score pop-ups; maps events to SFX (ADR-0010) | Run (read only), MessageCatalogue, RenderPort, AudioPort |
 | LevelScripts | `src/domain` | The three typed, declarative level scripts (GDD §7.1) and the archetype data (GDD §5) | — |
 | SaveDocument | `src/domain` | Schema, parsing (never throws) and serialization of the save document (ADR-0006) | — |
 | MessageCatalogue | `src/domain` | EN / FR strings by key (GDD §9.6) | — |
-| SeededRandom | `src/domain` | The deterministic PRNG behind `Random`, used by gameplay only | — |
+| SeededRandom | `src/domain` | The deterministic PRNG behind `Random`, used by gameplay only; one per run, owned by `Run` (ADR-0019) | — |
 | Canvas2DRenderer | `src/adapters` | Implements `RenderPort`: landscape or portrait off-screen surface (GDD §3.1), field region plus HUD bands or strip, integer scaling, the current `layout()` (ADR-0001, ADR-0010, ADR-0014, ADR-0015) | Canvas 2D |
 | WebAudioPlayer | `src/adapters` | Implements `AudioPort`: SFX, music, volumes, pause mix; suspends while the tab is hidden (ADR-0009) | Web Audio |
 | DeviceInput | `src/adapters` | Implements `InputPort` as a façade over `keyboard`, `pointer` (touch and mouse) and `gamepad` modules → one reusable `IntentFrame`; a browser-free arbitration function combines the devices; latches presses; synthesizes `Pause` on focus, tab or gamepad loss and on a layout change; inside its gesture handlers unlocks audio and requests fullscreen (ADR-0009, ADR-0015). Receives its browser objects from Bootstrap as one environment record of narrow interfaces — in the devices brick: the key and focus target, the page pointer target, the canvas rectangle (passed with the layout on each resize, ADR-0018) and the gamepad source | DOM events, Pointer Events, Gamepad API, Page Visibility, Fullscreen API |
@@ -58,7 +59,9 @@ Source: [`03-component.puml`](03-component.puml) — regenerate the SVG with
 - **Presentation is outcome-neutral** (ADR-0010): `RunPresenter` only reads the run and listens
   to its bus; it has its own randomness; hit-stop and slow motion are a time scale in the loop.
 - **`Random` is a port with a domain implementation**: the seed is injected, so the headless
-  simulation tests (ADR-0003) and future replays control it.
+  simulation tests (ADR-0003) and future replays control it. The seed itself comes from Bootstrap,
+  the only module allowed `Math.random` (ADR-0014 decision 7, ADR-0019); tests pass a fixed seed or a
+  scripted `Random` through the optional `RunConfig.createRandom` factory. The PlantUML source is unchanged: `Run ..> Random` already holds.
 - **Browser-gesture work stays in the adapter** (ADR-0009): audio unlock and fullscreen requests
   happen inside the input handlers, where browsers allow them; the domain only holds the
   "fullscreen wanted" preference.

@@ -1,9 +1,10 @@
 # State machine diagram — meta — screens and their transitions (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.7 §3.4,
-> §4.2, §4.4, §5.2.1, §7.2.1, §8, §9.1, §9.2, §9.3
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.8 §3.4,
+> §4.2, §4.3–§4.6, §5.2.1, §7.2.1, §7.3, §8, §9.1, §9.2, §9.3, §9.4
 > **Related ADRs**: ADR-0006 (save document), ADR-0009 (gestures, automatic pause), ADR-0010
-> (one run, one bus), ADR-0015 (pause in the first playable), ADR-0018 (taps, locks, pause button)
+> (one run, one bus), ADR-0015 (pause in the first playable), ADR-0018 (taps, locks, pause button),
+> ADR-0019 (run seed, player-kit build order)
 > **Realizes**: UC1–UC7 of [01-use-case](../system/01-use-case.md) at the screen level; the
 > `SceneMachine` component of [03-component](../system/03-component.md)
 
@@ -164,11 +165,13 @@ The enemies brick adds `Paused`, `Count-in` and `Game over`, and removes the pau
   wraps to 0 at 45 s, the slot of the absent Heavy (`LevelScript.loopAt`); enemies of the previous
   pass stay alive. It loops until the level brick adds the rest of level 1, the warning and the
   boss: no `LEVEL_CLEARED`, no `BossDefinition` and no `warningAt` before then.
-- **Interim deviation, drops and formations**: no `DropTable` roll, no full-formation P, no
+- ~~**Interim deviation, drops and formations**: no `DropTable` roll, no full-formation P, no
   `Formation` count, no death release of the weapon and no bombs until the pickups and rules
-  brick, so `Run` holds no `Random` yet and the determinism test compares (script, inputs) only.
-  The brick builds `PathMovement`, `DiveMovement`, `EnterHoldLeave`, `NoAttack` and
-  `AimedAttack`; `RingAttack` and `FanAttack` wait for the Heavy; only the event kinds the brick
+  brick, so `Run` holds no `Random` yet and the determinism test compares (script, inputs) only.~~
+  Removed by the player-kit brick (E-1 brings the seed, the drops and the formations; E-4 the
+  release and the bombs; player-kit brick additions below).
+- **Strategies of the enemies brick**: it builds `PathMovement`, `DiveMovement`,
+  `EnterHoldLeave`, `NoAttack` and `AimedAttack`; `RingAttack` and `FanAttack` wait for the Heavy; only the event kinds the brick
   publishes are added.
 - **Brick subset, enemies**: `Body` keeps only what the three roles need — `age` replaces
   `pathProgress` (the S curve is a closed form of the age), and `origin`, `hover`, `velocity`,
@@ -237,6 +240,58 @@ The devices brick makes the game playable on a phone, with a gamepad and with a 
 | `Count-in` | `Paused` | ignored | ignored | `Paused` (wins over `Confirm`, so `Start` returns to `Paused`) | ignored |
 | `Game over` | (not drawn) leaves after the lock | leaves after the lock | leaves after the lock | ignored | ignored |
 
+### Player-kit brick additions (E)
+
+The player-kit brick gives the player the whole kit of GDD v0.8 — both weapons on five levels,
+the five pickups, bombs, the shield and the death rule — with the drop sources and the Carrier
+(GDD v0.8 §4.3–§4.6, §5.2.1, §7.2.1, §9.2; ADR-0019). The Heavy, the ring and fan attacks, the
+boss and the end-of-level tally wait for the level brick (F).
+
+- **Run creation**: the composition root gives the scene machine a run factory that draws the
+  run seed with `Math.random`; the scene machine calls it on entering `InRun`, as today. Tests
+  pass a factory with a fixed seed, or a scripted `Random` through `RunConfig.createRandom`. Nothing else changes in the scenes:
+  pickups, bombs and the shield live inside `Run`, so `Paused`, `Count-in` and the frozen-scene
+  rules freeze them with everything else, and `Game over` lets the pickups fall past the missing
+  ship.
+- **Field drawing** (placeholders until the sprites): pickups are 16 × 16 shapes in their own
+  palette colours — a P capsule carrying the weapon badge's mark (three dots for P-red, a
+  vertical bar for P-blue), a hollow square for the Shield, a plus for the Bomb, a small ship
+  for the 1-UP — so no two kinds differ by colour only (GDD §9.7); the Carrier is a rectangle in
+  its own colour; Laser bolts in their own colour; the shield ring is a 36 × 36 outline of four
+  rectangles around the ship, drawn while a charge is held and hidden with the ship (`Dead`,
+  blink).
+- **HUD**: `HUD_LAYOUTS` gains `bombs`, `weapon` (`x`, `y`, `pipX`, `pipSpacing`) and `shield`
+  for both screens, at the GDD v0.8 §9.2 positions — portrait: bombs {x 76, y 19}, weapon
+  {x 140, y 19, pipX 152, pipSpacing 6}, shield {x 172, y 5}; landscape: bombs {x 8, y 66},
+  weapon {x 368, y 84, pipX 380, pipSpacing 6} (badge x 368–376, pips ending at x 407),
+  shield {x 368, y 100}. Icons are 8 × 8, pips
+  3 × 8; `hud.ts` draws them from the snapshot, with no text and no allocation.
+- **Effects**: `EffectSettings` gains `shake` and `bombFlash`, both on by default, separate
+  switches (GDD v0.8 §9.3, §9.4); the shake moves field draws only (ADR-0014), the flash tints
+  the field for about 300 ms of wall time and starts at most once per 1/3 s. Both freeze in the
+  frozen scenes like the other effects.
+- **Interim deviation, first-time labels**: no "SHIELD", "BOMB", "1UP" label (GDD §7.3) until the
+  bitmap fonts of the screens brick — the `title` font has only A–Z and space; `PICKUP_SPAWNED`
+  already carries the kind.
+- **Interim deviation, Bomb Carrier**: the level script holds a second Carrier at 40 s carrying a
+  Bomb (GDD v0.8 §7.2.1), the only Bomb source until the level brick brings the Heavy; the row is
+  removed then.
+- **Interim deviation, 1-UP unsourced**: the 1-UP pickup exists and is collectable, but no script
+  row carries it before the level brick (a 1-UP every 45 s loop would be too generous).
+- **Interim deviation, no touch bomb button**: no bomb button is drawn (GDD v0.8 §4.2); the
+  second-finger tap stays the only touch bomb, and the right click the mouse bomb. Revisited
+  with the options and screens.
+- **Interim deviation, weapon tables (E-1 → E-2)**: E-1 brings `Weapon.kind`, `level`,
+  `powerUp` and the HUD badge and pips, but until E-2 `WEAPONS` holds the level-1 Spread record
+  for every level and both kinds: the level, the kind and the pips change, the shot does not.
+- **Interim deviation, E-1 to E-4**: a Shield caught before E-4 sets the charge and its HUD icon
+  but absorbs nothing; Bomb pickups raise the stock (the cap bonus at 5) with no effect, the bomb
+  itself arriving in E-4; death keeps the power and the bombs until E-4 (no `powerDown`, no
+  release, no bombs reset).
+- **Brick subset, player kit**: `DifficultyProfile` holds only the knobs the brick reads (`lives`,
+  `bombsPerLife`, `dropRateScale`; the power lost on death stays a rule, one level); `FORMATION_CLEARED` and `BOMB_USED` are
+  published but `LevelTally` waits for the level brick; `damageBoss` waits for the boss.
+
 ### Build order
 
 | Brick | Delivers |
@@ -244,4 +299,5 @@ The devices brick makes the game playable on a phone, with a gamepad and with a 
 | C1 — first playable on keyboard | the subset above; `Player`, `PlayerState`, `Weapon` with Spread level 1, player bullets; `RunPresenter`; `DeviceInput` with its façade and the `keyboard` module; ADR-0015 decisions 4 (keyboard part), 5 (lost focus), 6 and 9; the smoke test |
 | D — enemies | Popcorn, Diver, Gunner as archetype data and stateless strategies; `LevelDirector` with the looping rows of GDD §7.2.1; `ActiveList` for player bullets, enemy bullets and enemies; `CollisionResolver` with `HitRules`; lives, `hit()`, `Dead` and respawn; `EventBus` with `ScoreKeeper` (points and chain); `RunOutcome.GAME_OVER`; `Paused`, `Count-in`, `Game over`; HUD digits, chain bar and life icons; hit flash and small explosion behind effect switches; an ESLint rule keeping `src/domain/game` from importing `presentation` and `scenes`; the `RenderPort` glyph-set contract |
 | C2 — the other devices | five PRs (ADR-0018): C2-0 this design; C2-A the browser-free arbitration (no behaviour change); C2-L the portrait screen (`RenderPort.layout()`, `HUD_LAYOUTS`, `hud.ts` draws bands or strip, page CSS); C2-P touch and mouse (`pointer` module, pause button, tap resume, Game over and title locks, crosshair, layout-change pause, the new smoke test); C2-G the gamepad (`gamepad` module, fixed `A`/`B`/`Start` roles) |
-| Later bricks | touch bomb button with the bomb effect (pickups and rules brick); until then the second-finger tap is the only touch bomb |
+| E — the player kit | five PRs (ADR-0019), each merge playable: E-0 this design; E-1 randomness, pickups and their sources (run seed, pickup pool, fall and sway, collision pass 4, P-red and P-blue, `Weapon.kind` and `level` with `powerUp`, the cap bonus, `Formation` with the formation P and `FORMATION_CLEARED`, `LevelScript.dominantColour`, the Gunner `DropTable` at 30 %, the `DifficultyProfile` subset, the HUD weapon badge and pips, the determinism test with a seed; until E-2, `WEAPONS` holds the level-1 Spread record for every level and both kinds: the level, the kind and the pips change, the shot does not); E-2 the weapons on levels 1 to 5 (the data tables, damage in tenths, Laser bolts, pierce memory, the player bullet pool at 80); E-3 the Carrier (`CrossMovement`, the archetype, cargo with its load checks, the §7.2.1 rows, the Shield, Bomb and 1-UP pickups collectable, the HUD shield and bomb icons as needed); E-4 the bomb, the shield and the death rule (step slot 3, `useBomb`, `BOMB_USED`, flash and shake, `ABSORBED`, `shieldBroken`, `PLAYER_HIT`, the ring, `powerDown` with the release hop and the bombs reset). The Carrier comes before the bomb, so Shield and Bomb are catchable as soon as they exist |
+| Later bricks | level brick F: the Heavy (the real Bomb and Shield source, replacing the interim Bomb Carrier), ring and fan attacks, 1-UP Carriers, the warning, the boss and `damageBoss`, the end-of-level tally; screens brick: the bitmap fonts with the first-time pickup labels, the options with the effect switches, a touch bomb button if the screens revisit it (GDD v0.8 §4.2) |
