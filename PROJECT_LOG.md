@@ -8,6 +8,25 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-11
 
+### Portrait screen C2-L (branch `feat/render`) — Refs #9
+
+- `LANDSCAPE` and `PORTRAIT` screen layouts; `computeViewport` picks the screen (larger integer
+  scale, landscape on a tie, larger unclamped scale at ×1 when neither fits) and `Viewport`
+  carries it; `RenderPort.layout()`; the renderer clips the field at the layout's field corner and
+  resets its region and camera on resize; `HUD_LAYOUTS` per layout kind and `hud.ts` draws the
+  bands or the portrait strip; the page stops scrolling, zooming and selection; the pixel ratio is
+  watched. The smoke test gained a portrait leg.
+- The portrait chain bar is 42 px, not the 44 px of the scene machine doc: 44 overshot the
+  score's last digit by 2 px, against the validated intent "ends under the score"; the doc is
+  corrected in the same commit.
+- Local pre-push review (no automated reviewer): no Must; two Should (import order, a stale class
+  doc) and two Nice fixed; the smoke-test sizes copied from `screen.ts` are left as they are.
+
+### PR #20 merged (`9faf701`) — C2-A browser-free arbitration
+
+- `arbitrate(state, samples, into)` with sequence-numbered `DeviceSample` records; no behaviour
+  change. CI green, local review only.
+
 ### PR #19 merged (`c94e5f5`) — C2-0 devices brick design
 
 - GDD v0.7 and ADR-0018 on `main`; issue #9 rewritten with 17 acceptance criteria. CI green, no

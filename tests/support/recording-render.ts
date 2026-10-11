@@ -1,4 +1,6 @@
 import type { FontId, RenderPort, RenderRegion } from '../../src/domain/ports/render-port';
+import { LANDSCAPE } from '../../src/domain/presentation/screen';
+import type { ScreenLayout } from '../../src/domain/presentation/screen';
 
 /** A rectangle drawn through the port, with the region it was drawn in. */
 export interface RecordedRect {
@@ -42,6 +44,8 @@ export class RecordingRender implements RenderPort {
   readonly rects: RecordedRect[] = [];
   readonly texts: RecordedText[] = [];
   presented = 0;
+  /** The screen the test draws on; landscape unless a test sets it. */
+  screen: ScreenLayout = LANDSCAPE;
 
   setRegion(region: RenderRegion): void {
     this.region = region;
@@ -64,6 +68,9 @@ export class RecordingRender implements RenderPort {
       }
     }
     this.texts.push({ region: this.region, x, y, text, font });
+  }
+  layout(): ScreenLayout {
+    return this.screen;
   }
   setCameraOffset(): void {
     // No test reads the camera yet.

@@ -8,7 +8,6 @@ import type { InputEnvironment } from '../adapters/input/device-input';
 import { PerformanceClock } from '../adapters/performance-clock';
 import { computeViewport } from '../adapters/viewport';
 import { DEFAULT_BINDINGS } from '../domain/input/default-bindings';
-import { SCREEN_HEIGHT, SCREEN_WIDTH } from '../domain/presentation/screen';
 import { Starfield } from '../domain/presentation/starfield';
 import { SceneMachine } from '../domain/scenes/scene-machine';
 import { FrameLoop } from './frame-loop';
@@ -20,31 +19,52 @@ function context2d(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
   return context;
 }
 
-const visible = document.querySelector<HTMLCanvasElement>('#screen');
-if (visible === null) throw new Error('Canvas #screen is missing from index.html');
+const found = document.querySelector<HTMLCanvasElement>('#screen');
+if (found === null) throw new Error('Canvas #screen is missing from index.html');
+const visible: HTMLCanvasElement = found;
 
 const offscreen = document.createElement('canvas');
-offscreen.width = SCREEN_WIDTH;
-offscreen.height = SCREEN_HEIGHT;
 const renderer = new Canvas2DRenderer(context2d(offscreen), offscreen, context2d(visible));
 
-function fitToWindow(canvas: HTMLCanvasElement): void {
+/**
+ * Chooses the logical screen for the window (ADR-0015 decision 1, ADR-0018 decision 6), sizes the
+ * off-screen canvas to it and the visible canvas to its integer scale, then hands the viewport to
+ * the renderer. Resizing a canvas resets its context, so the renderer resets its own state too.
+ */
+function fitToWindow(): void {
   const viewport = computeViewport(
     globalThis.innerWidth,
     globalThis.innerHeight,
     globalThis.devicePixelRatio,
   );
-  canvas.width = viewport.deviceWidth;
-  canvas.height = viewport.deviceHeight;
-  canvas.style.width = `${String(viewport.cssWidth)}px`;
-  canvas.style.height = `${String(viewport.cssHeight)}px`;
+  offscreen.width = viewport.layout.width;
+  offscreen.height = viewport.layout.height;
+  visible.width = viewport.deviceWidth;
+  visible.height = viewport.deviceHeight;
+  visible.style.width = `${String(viewport.cssWidth)}px`;
+  visible.style.height = `${String(viewport.cssHeight)}px`;
   renderer.resize(viewport);
 }
 
-fitToWindow(visible);
+fitToWindow();
 globalThis.addEventListener('resize', () => {
-  fitToWindow(visible);
+  fitToWindow();
 });
+
+// A window moved to a screen of another pixel ratio fires no `resize`: watch the ratio itself,
+// re-registering the query for the new ratio after each change (ADR-0018 decision 6).
+function watchPixelRatio(): void {
+  const query = globalThis.matchMedia(`(resolution: ${String(globalThis.devicePixelRatio)}dppx)`);
+  query.addEventListener(
+    'change',
+    () => {
+      fitToWindow();
+      watchPixelRatio();
+    },
+    { once: true },
+  );
+}
+watchPixelRatio();
 
 // The input adapter never touches a browser global: it gets these narrow hooks (ADR-0015).
 const environment: InputEnvironment = {

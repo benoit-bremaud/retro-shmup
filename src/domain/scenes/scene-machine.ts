@@ -6,11 +6,10 @@ import type { IntentFrame } from '../ports/input-port';
 import type { RenderPort } from '../ports/render-port';
 import { message } from '../i18n/messages';
 import type { Language } from '../i18n/messages';
+import { drawHudFrame } from '../presentation/hud';
 import { drawBanner, drawCountIn, drawPauseIcon, drawVeil } from '../presentation/overlays';
-import { Palette } from '../presentation/palette';
 import { RunPresenter } from '../presentation/run-presenter';
 import type { EffectSettings } from '../presentation/run-presenter';
-import { FIELD_WIDTH, FIELD_X, HUD_BAND_WIDTH, SCREEN_HEIGHT } from '../presentation/screen';
 import type { Starfield } from '../presentation/starfield';
 
 /** The scenes built so far (meta/05-state-scenes, build order). */
@@ -189,9 +188,8 @@ export class SceneMachine {
     const effectMs = traits.frozen || this.frozenStepSinceRender ? 0 : wallDtMs;
     this.frozenStepSinceRender = false;
     r.clear();
-    // The bands first: the presenter draws the HUD contents over them.
-    r.setRegion('hud');
-    this.drawHudBands();
+    // The HUD background first: the presenter draws the HUD contents over it.
+    drawHudFrame(r);
     r.setRegion('field');
     // Frozen scenes draw the starfield at alpha 1 too, so it never steps back at the pause.
     const scroll = traits.scrolls || traits.frozen ? frameAlpha : 0;
@@ -213,15 +211,5 @@ export class SceneMachine {
     } else if (this.current === Scene.CountIn) {
       drawCountIn(this.renderer, this.countInLeft);
     }
-  }
-
-  // The HUD bands; the presenter draws their contents over them.
-  private drawHudBands(): void {
-    const r = this.renderer;
-    const rightBandX = FIELD_X + FIELD_WIDTH;
-    r.drawRect(0, 0, HUD_BAND_WIDTH, SCREEN_HEIGHT, Palette.hudBand);
-    r.drawRect(rightBandX, 0, HUD_BAND_WIDTH, SCREEN_HEIGHT, Palette.hudBand);
-    r.drawRect(FIELD_X - 1, 0, 1, SCREEN_HEIGHT, Palette.hudEdge);
-    r.drawRect(rightBandX, 0, 1, SCREEN_HEIGHT, Palette.hudEdge);
   }
 }

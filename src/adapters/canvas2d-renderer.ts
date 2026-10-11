@@ -1,13 +1,8 @@
 import { HUD_FONT_CELL, TITLE_FONT_CELL } from '../domain/ports/render-port';
 import type { FontId, RenderPort, RenderRegion, SpriteId } from '../domain/ports/render-port';
 import { Palette } from '../domain/presentation/palette';
-import {
-  FIELD_HEIGHT,
-  FIELD_WIDTH,
-  FIELD_X,
-  SCREEN_HEIGHT,
-  SCREEN_WIDTH,
-} from '../domain/presentation/screen';
+import { FIELD_HEIGHT, FIELD_WIDTH, LANDSCAPE } from '../domain/presentation/screen';
+import type { ScreenLayout } from '../domain/presentation/screen';
 import { GLYPH_COLUMNS, GLYPH_ROWS, hudGlyph, titleGlyph } from './hud-font';
 import type { Viewport } from './viewport';
 
@@ -33,7 +28,8 @@ export interface RenderSurface {
 
 /**
  * Canvas 2D implementation of `RenderPort` (ADR-0001, ADR-0010, ADR-0014): draws at whole logical
- * pixels into a 480 × 320 off-screen surface, then copies it to the visible canvas scaled by an
+ * pixels into the off-screen surface of the current logical screen (480 × 320 landscape or
+ * 240 × 352 portrait, ADR-0015), then copies it to the visible canvas scaled by an
  * integer factor with smoothing off.
  *
  * @remarks The camera offset (screen shake) moves field-region draws only, at draw time: the HUD
@@ -44,8 +40,9 @@ export class Canvas2DRenderer implements RenderPort {
   private region: RenderRegion = 'hud';
   private cameraX = 0;
   private cameraY = 0;
-  private deviceWidth = SCREEN_WIDTH;
-  private deviceHeight = SCREEN_HEIGHT;
+  private layoutNow: ScreenLayout = LANDSCAPE;
+  private deviceWidth = LANDSCAPE.width;
+  private deviceHeight = LANDSCAPE.height;
   private readonly offscreen: RenderSurface;
   private readonly offscreenImage: CanvasImageSource;
   private readonly visible: RenderSurface;
@@ -57,10 +54,22 @@ export class Canvas2DRenderer implements RenderPort {
     this.visible = visible;
   }
 
-  /** Called by the composition root when the window is resized. */
+  /**
+   * Called by the composition root after it resized both canvases (ADR-0018 decision 6). Resizing
+   * a canvas resets its context, clip included, so the region goes back to `hud` without a
+   * `restore()`, and the camera to (0, 0).
+   */
   resize(viewport: Viewport): void {
+    this.layoutNow = viewport.layout;
     this.deviceWidth = viewport.deviceWidth;
     this.deviceHeight = viewport.deviceHeight;
+    this.region = 'hud';
+    this.cameraX = 0;
+    this.cameraY = 0;
+  }
+
+  layout(): ScreenLayout {
+    return this.layoutNow;
   }
 
   setRegion(region: RenderRegion): void {
@@ -68,7 +77,7 @@ export class Canvas2DRenderer implements RenderPort {
     if (region === 'field') {
       this.offscreen.save();
       this.offscreen.beginPath();
-      this.offscreen.rect(FIELD_X, 0, FIELD_WIDTH, FIELD_HEIGHT);
+      this.offscreen.rect(this.layoutNow.fieldX, this.layoutNow.fieldY, FIELD_WIDTH, FIELD_HEIGHT);
       this.offscreen.clip();
     } else {
       this.offscreen.restore();
@@ -79,7 +88,7 @@ export class Canvas2DRenderer implements RenderPort {
   clear(): void {
     this.setRegion('hud');
     this.offscreen.fillStyle = Palette.background;
-    this.offscreen.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    this.offscreen.fillRect(0, 0, this.layoutNow.width, this.layoutNow.height);
   }
 
   drawSprite(id: SpriteId, _x: number, _y: number): void {
@@ -121,8 +130,8 @@ export class Canvas2DRenderer implements RenderPort {
   // Region origin, camera offset for the field, whole logical pixels.
   private fillLogical(x: number, y: number, w: number, h: number): void {
     const inField = this.region === 'field';
-    const originX = inField ? FIELD_X + this.cameraX : 0;
-    const originY = inField ? this.cameraY : 0;
+    const originX = inField ? this.layoutNow.fieldX + this.cameraX : 0;
+    const originY = inField ? this.layoutNow.fieldY + this.cameraY : 0;
     this.offscreen.fillRect(
       Math.round(originX + x),
       Math.round(originY + y),

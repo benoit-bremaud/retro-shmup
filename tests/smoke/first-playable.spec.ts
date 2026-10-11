@@ -6,42 +6,84 @@ import type { Page } from '@playwright/test';
 
 /** The hull colour `Palette.shipHull`, which no star uses. */
 const HULL = { r: 0x4f, g: 0xd1, b: 0xc5 };
-/** The ship's resting point in the 480 × 320 landscape logical screen: field x 120 + 120. */
-const REST = { x: 240, y: 272 };
+/** The ship's resting point in play-field pixels (GDD §4.1). */
+const REST = { x: 120, y: 272 };
 
-/** True when the visible canvas shows the hull colour at the ship's resting point. */
-async function hullAtRest(page: Page): Promise<boolean> {
+interface Geometry {
+  readonly portrait: boolean;
+  readonly scale: number;
+  readonly fieldX: number;
+  readonly fieldY: number;
+}
+
+/**
+ * The screen in use, told by the canvas aspect (landscape 480 × 320, portrait 240 × 352,
+ * ADR-0015), so the probes need no hardcoded size.
+ */
+async function geometry(page: Page): Promise<Geometry> {
+  const size = await page.evaluate(() => {
+    const canvas = document.querySelector<HTMLCanvasElement>('#screen');
+    return { width: canvas?.width ?? 0, height: canvas?.height ?? 0 };
+  });
+  const portrait = size.height > size.width;
+  return {
+    portrait,
+    scale: size.width / (portrait ? 240 : 480),
+    fieldX: portrait ? 0 : 120,
+    fieldY: portrait ? 32 : 0,
+  };
+}
+
+/** True when the visible canvas shows `colour` at the device pixel (x, y). */
+async function colourAt(
+  page: Page,
+  x: number,
+  y: number,
+  colour: { r: number; g: number; b: number },
+): Promise<boolean> {
   return page.evaluate(
-    ({ hull, rest }) => {
-      const canvas = document.querySelector<HTMLCanvasElement>('#screen');
-      const context = canvas?.getContext('2d');
-      if (canvas === null || context === null || context === undefined) return false;
-      const scale = canvas.width / 480;
-      const pixel = context.getImageData(rest.x * scale + 1, rest.y * scale + 1, 1, 1).data;
-      return pixel[0] === hull.r && pixel[1] === hull.g && pixel[2] === hull.b;
+    ({ px, py, c }) => {
+      const context = document.querySelector<HTMLCanvasElement>('#screen')?.getContext('2d');
+      if (context === null || context === undefined) return false;
+      const pixel = context.getImageData(px, py, 1, 1).data;
+      return pixel[0] === c.r && pixel[1] === c.g && pixel[2] === c.b;
     },
-    { hull: HULL, rest: REST },
+    { px: x, py: y, c: colour },
   );
+}
+
+/** True when the hull colour is at the ship's resting point, in whichever screen is in use. */
+async function hullAtRest(page: Page): Promise<boolean> {
+  const g = await geometry(page);
+  return colourAt(page, (g.fieldX + REST.x) * g.scale + 1, (g.fieldY + REST.y) * g.scale + 1, HULL);
 }
 
 /** The Popcorn colour `Palette.popcorn`, used by nothing else. */
 const POPCORN = { r: 0xf5, g: 0x65, b: 0x65 };
 
-/** True when a Popcorn is painted anywhere in the play field (field x 120 to 360). */
+/** True when a Popcorn is painted anywhere in the play field, in whichever screen is in use. */
 async function popcornInField(page: Page): Promise<boolean> {
-  return page.evaluate((popcorn) => {
-    const canvas = document.querySelector<HTMLCanvasElement>('#screen');
-    const context = canvas?.getContext('2d');
-    if (canvas === null || context === null || context === undefined) return false;
-    const scale = canvas.width / 480;
-    const data = context.getImageData(120 * scale, 0, 240 * scale, canvas.height).data;
-    for (let i = 0; i < data.length; i += 4) {
-      if (data[i] === popcorn.r && data[i + 1] === popcorn.g && data[i + 2] === popcorn.b) {
-        return true;
+  const g = await geometry(page);
+  return page.evaluate(
+    ({ popcorn, x, y, w, h }) => {
+      const context = document.querySelector<HTMLCanvasElement>('#screen')?.getContext('2d');
+      if (context === null || context === undefined) return false;
+      const data = context.getImageData(x, y, w, h).data;
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i] === popcorn.r && data[i + 1] === popcorn.g && data[i + 2] === popcorn.b) {
+          return true;
+        }
       }
-    }
-    return false;
-  }, POPCORN);
+      return false;
+    },
+    {
+      popcorn: POPCORN,
+      x: g.fieldX * g.scale,
+      y: g.fieldY * g.scale,
+      w: 240 * g.scale,
+      h: 320 * g.scale,
+    },
+  );
 }
 
 /** Number of painted (non-black) pixels: the canvas is not blank. */
@@ -103,6 +145,12 @@ test('the title paints, Enter starts a run, the ship reaches its resting point, 
   await expect.poll(() => hullAtRest(page), { timeout: 5000 }).toBe(true);
   // The enemies brick: the first wave is on screen.
   await expect.poll(() => popcornInField(page), { timeout: 5000 }).toBe(true);
+
+  // The devices brick: a phone-sized window switches to the portrait screen without restarting
+  // the run — the ship is still at its resting point, now under the HUD strip (ADR-0015).
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(async () => (await geometry(page)).portrait).toBe(true);
+  await expect.poll(() => hullAtRest(page), { timeout: 5000 }).toBe(true);
 
   const msPerFrame = await scriptMsPerFrame(page);
   // Measured and logged against the 4 ms budget (ADR-0002 decision 7), not asserted: this is an

@@ -1,14 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import type { WorldSnapshot } from '../../src/domain/game/run';
 import { HUD_FONT_CELL } from '../../src/domain/ports/render-port';
-import { drawHud } from '../../src/domain/presentation/hud';
-import { HUD_LAYOUT } from '../../src/domain/presentation/hud-layout';
+import { drawHud, drawHudFrame } from '../../src/domain/presentation/hud';
+import { HUD_LAYOUTS, PORTRAIT_STRIP_EDGE } from '../../src/domain/presentation/hud-layout';
 import { Palette } from '../../src/domain/presentation/palette';
-import { HUD_BAND_WIDTH } from '../../src/domain/presentation/screen';
+import {
+  HUD_BAND_WIDTH,
+  HUD_STRIP_HEIGHT,
+  LANDSCAPE,
+  PORTRAIT,
+} from '../../src/domain/presentation/screen';
+import type { ScreenLayout } from '../../src/domain/presentation/screen';
+
 import { RecordingRender } from '../support/recording-render';
 
-function hudOf(values: Partial<WorldSnapshot>): RecordingRender {
+const HUD_LAYOUT = HUD_LAYOUTS.landscape;
+
+function hudOf(values: Partial<WorldSnapshot>, screen: ScreenLayout = LANDSCAPE): RecordingRender {
   const render = new RecordingRender();
+  render.screen = screen;
   const empty = {
     count: 0,
     at: (): never => {
@@ -83,5 +93,64 @@ describe('drawHud — left band (GDD §9.2, meta/05-state-scenes)', () => {
       expect(text.region).toBe('hud');
       expect(right(text.x, HUD_FONT_CELL.glyphWidth)).toBeLessThanOrEqual(HUD_BAND_WIDTH - 8);
     }
+  });
+});
+
+describe('drawHud — portrait strip (GDD v0.7 §9.2, meta/05-state-scenes devices brick)', () => {
+  it('puts the score, multiplier, chain bar and lives at the strip positions', () => {
+    const render = hudOf({ score: 1250, multiplier: 3, chainRatio: 1, lives: 3 }, PORTRAIT);
+    const portrait = HUD_LAYOUTS.portrait;
+    const score = render.texts.filter((text) => text.y === portrait.score.y);
+    expect(Math.min(...score.map((text) => text.x))).toBe(4);
+    expect(render.texts.find((text) => text.y === portrait.multiplier.y)?.x).toBe(4);
+    expect(render.rectsOf(Palette.chainTrack)[0]).toMatchObject({ x: 24, y: 21, w: 42, h: 4 });
+    expect(render.rectsOf(Palette.lifeIcon).map((icon) => icon.x)).toEqual([76, 88]);
+  });
+
+  it("ends the chain bar under the score's last digit", () => {
+    const portrait = HUD_LAYOUTS.portrait;
+    const scoreEnd =
+      portrait.score.x +
+      (portrait.score.digits - 1) * HUD_FONT_CELL.width +
+      HUD_FONT_CELL.glyphWidth;
+    expect(portrait.chainBar.x + portrait.chainBar.width).toBe(scoreEnd);
+  });
+
+  it('keeps everything inside the strip with 4 px margins, left of the pause button, 8 lives included', () => {
+    const render = hudOf({ score: 99_999_999, multiplier: 8, chainRatio: 1, lives: 9 }, PORTRAIT);
+    for (const rect of render.rects) {
+      expect(rect.x).toBeGreaterThanOrEqual(4);
+      expect(rect.x + rect.w).toBeLessThanOrEqual(PORTRAIT_STRIP_EDGE.width - 4);
+      expect(rect.y).toBeGreaterThanOrEqual(4);
+      expect(rect.y + rect.h).toBeLessThanOrEqual(HUD_STRIP_HEIGHT - 4);
+    }
+    for (const text of render.texts) {
+      expect(text.y + HUD_FONT_CELL.height).toBeLessThanOrEqual(HUD_STRIP_HEIGHT - 4);
+    }
+    expect(render.rectsOf(Palette.lifeIcon)).toHaveLength(8);
+  });
+});
+
+describe('drawHudFrame — the HUD background of each screen', () => {
+  it('draws the two landscape bands with their edge lines', () => {
+    const render = new RecordingRender();
+    drawHudFrame(render);
+    expect(render.rectsOf(Palette.hudBand).map((band) => [band.x, band.w, band.h])).toEqual([
+      [0, HUD_BAND_WIDTH, 320],
+      [360, HUD_BAND_WIDTH, 320],
+    ]);
+    expect(render.rectsOf(Palette.hudEdge).map((edge) => edge.x)).toEqual([119, 360]);
+  });
+
+  it('draws the portrait strip with its bottom edge line, up to the pause button', () => {
+    const render = new RecordingRender();
+    render.screen = PORTRAIT;
+    drawHudFrame(render);
+    expect(render.rectsOf(Palette.hudBand)).toEqual([
+      { region: 'hud', x: 0, y: 0, w: 240, h: HUD_STRIP_HEIGHT, colour: Palette.hudBand },
+    ]);
+    expect(render.rectsOf(Palette.hudEdge)).toEqual([
+      { region: 'hud', x: 0, y: 31, w: 192, h: 1, colour: Palette.hudEdge },
+    ]);
   });
 });

@@ -214,7 +214,7 @@ The devices brick makes the game playable on a phone, with a gamepad and with a 
   the presenter's field drawing are field-relative and need no change.
 - **Portrait strip** (240 × 32, `hud` coordinates): score {x 4, y 4}, 8 digits; reserve lives
   {x 76, y 5}, 8 px icons every 12 px (8 icons end at x 168); multiplier {x 4, y 18}; chain bar
-  {x 24, y 21, 44 × 4}, ending under the score's last digit; a 1 px edge line at y 31 over x 0 to
+  {x 24, y 21, 42 × 4}, ending under the score's last digit; a 1 px edge line at y 31 over x 0 to
   191; the pause button over the strip's right end. The landscape layout keeps its current
   positions.
 - **Pause button**: two 4 × 16 bars 4 px apart, centred in its rectangle, in its own palette
