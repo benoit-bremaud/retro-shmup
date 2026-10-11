@@ -38,15 +38,16 @@ function overlapsHitbox(player: Player, box: Box): boolean {
   );
 }
 
-// One hit: a bullet with no pass-through left is spent, a bolt passing through remembers the body.
+// One hit, in the order of the kill sequence: the damage, then a bullet with no pass-through
+// left is spent while a bolt passing through remembers the body, then the reports.
 function hitEnemy(bullet: Bullet, enemy: Enemy, rules: HitRules): void {
+  const destroyed = applyDamage(enemy, bullet.damage);
   if (bullet.pierceLeft === 0) {
     bullet.spent = true;
   } else {
     bullet.recordHit(enemy.serial);
     bullet.pierceLeft -= 1;
   }
-  const destroyed = applyDamage(enemy, bullet.damage);
   rules.enemyHit(enemy);
   if (destroyed) rules.destroyEnemy(enemy);
 }

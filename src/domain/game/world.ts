@@ -61,7 +61,8 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, EnemySpawner,
     placeBullet(bullet, x, y, vxPerSecond, vyPerSecond);
     bullet.width = EnemyBulletTuning.size;
     bullet.height = EnemyBulletTuning.size;
-    bullet.damage = EnemyBulletTuning.damage;
+    // An enemy bullet takes a life, not HP: its damage is never read (GDD §4.4).
+    bullet.damage = 0;
     bullet.pierceLeft = 0;
     bullet.forgetHits();
   }

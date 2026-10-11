@@ -8,6 +8,7 @@ import {
 import { WeaponKind } from '../../src/domain/game/weapon';
 import type { ShotSpec } from '../../src/domain/game/weapon';
 import { World } from '../../src/domain/game/world';
+import { shots } from '../support/shots';
 
 const DT = 1 / 60;
 
@@ -18,7 +19,7 @@ const SHOT: ShotSpec = {
   vyPerSecond: -360,
   width: 2,
   height: 8,
-  damage: 10,
+  damage: shots(1),
   pierce: 0,
   weapon: WeaponKind.Spread,
 };

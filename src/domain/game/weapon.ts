@@ -1,5 +1,5 @@
 import type { Vec2 } from './geometry';
-import { KitCaps, LaserTuning, SpreadTuning, toSteps } from './tuning';
+import { KitCaps, LaserTuning, PlayerTuning, SpreadTuning, toSteps } from './tuning';
 
 /** The two weapons (GDD §4.3), chosen by the colour of the last P caught. */
 export const WeaponKind = {
@@ -52,7 +52,7 @@ function spreadShot(degrees: number, damage: number): ShotSpec {
   const t = SpreadTuning;
   return {
     offsetX: 0,
-    offsetY: -t.noseOffset,
+    offsetY: -PlayerTuning.noseOffset,
     vxPerSecond: t.speed * Math.sin(degrees * DEGREES),
     vyPerSecond: -t.speed * Math.cos(degrees * DEGREES),
     width: t.width,
@@ -88,7 +88,7 @@ function laserLevel(width: number, damage: number, pierce: number): WeaponLevel 
     shots: [
       {
         offsetX: 0,
-        offsetY: -t.noseOffset - t.boltLength / 2,
+        offsetY: -PlayerTuning.noseOffset - t.boltLength / 2,
         vxPerSecond: 0,
         vyPerSecond: -t.speed,
         width,

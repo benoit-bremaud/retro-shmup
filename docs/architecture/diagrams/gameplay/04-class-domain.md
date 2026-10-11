@@ -193,6 +193,7 @@ classDiagram
     -spent: boolean
     +canHit(serial: number) boolean
     +recordHit(serial: number) void
+    +forgetHits() void
   }
   class Pickup {
     <<pooled>>

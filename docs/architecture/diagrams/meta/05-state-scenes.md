@@ -176,8 +176,8 @@ The enemies brick adds `Paused`, `Count-in` and `Game over`, and removes the pau
 - **Brick subset, enemies**: `Body` keeps only what the three roles need — `age` replaces
   `pathProgress` (the S curve is a closed form of the age), and `origin`, `hover`, `velocity`,
   `width` and `height` carry the spawn and hover points, the dive or leave heading and the
-  hitbox; `HitRules.destroyEnemy` takes no cause (only shots exist), and `Bullet` has no pierce
-  memory (`canHit`, `recordHit`) until the Laser.
+  hitbox; `HitRules.destroyEnemy` takes no cause (only shots exist), and ~~`Bullet` has no
+  pierce memory (`canHit`, `recordHit`) until the Laser~~ (lifted by E-2).
 
 ### Presentation of the first playable
 

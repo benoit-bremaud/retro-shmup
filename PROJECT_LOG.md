@@ -22,6 +22,12 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   bolts in their own colour (class diagram updated). Player bullet pool 16 → 80.
 - Visual check: headless captures with a temporary, uncommitted start at level 5 showed the
   Spread's five-stream fan and the Laser's pulsed 8 px bolts.
+- Local pre-push review: 1 Must fixed — tests wrote raw tenths, which ADR-0019 forbids; a
+  `shots(n)` test helper now expresses HP and damage in level-1 shots. Also: a test helper that
+  built the wrong level, a mutation-checked test that a reused bullet slot forgets its hits, a
+  one-hit Popcorn check over every shot of both tables, the hit steps in the kill sequence's
+  order, one `PlayerTuning.noseOffset`, the unused enemy-bullet damage removed, and the class
+  diagram and scene doc brought up to date.
 
 ### PR #26 merged (`57eb194`) — E-1 randomness, pickups and sources
 

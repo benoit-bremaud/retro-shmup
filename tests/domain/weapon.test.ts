@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Weapon, WEAPONS, WeaponKind } from '../../src/domain/game/weapon';
 import type { PlayerShotSpawner, ShotSpec } from '../../src/domain/game/weapon';
+import { shots } from '../support/shots';
 
 interface SpawnedShot extends ShotSpec {
   step: number;
@@ -71,7 +72,7 @@ describe('Weapon — Spread level 1 (GDD v0.5 §4.3)', () => {
         height: 8,
         offsetX: 0,
         offsetY: -16,
-        damage: 10,
+        damage: shots(1),
         pierce: 0,
         weapon: WeaponKind.Spread,
       },
@@ -112,53 +113,54 @@ function stream(degrees: number, damage: number): number[] {
 
 describe('WEAPONS — the Spread table (GDD v0.8 §4.3)', () => {
   it.each([
-    [1, [[0, 10]]],
+    [1, [[0, 1]]],
     [
       2,
       [
-        [0, 14],
-        [-6, 10],
-        [6, 10],
+        [0, 1.4],
+        [-6, 1],
+        [6, 1],
       ],
     ],
     [
       3,
       [
-        [0, 19],
-        [-12, 10],
-        [12, 10],
+        [0, 1.9],
+        [-12, 1],
+        [12, 1],
       ],
     ],
     [
       4,
       [
-        [0, 24],
-        [-6, 10],
-        [6, 10],
-        [-14, 10],
-        [14, 10],
+        [0, 2.4],
+        [-6, 1],
+        [6, 1],
+        [-14, 1],
+        [14, 1],
       ],
     ],
     [
       5,
       [
-        [0, 20],
-        [-8, 10],
-        [8, 10],
-        [-18, 10],
-        [18, 10],
+        [0, 2],
+        [-8, 1],
+        [8, 1],
+        [-18, 1],
+        [18, 1],
       ],
     ],
   ])('fires the level-%i streams at their angles, centre then sides', (level, streams) => {
     expect(volley(WeaponKind.Spread, level)).toEqual(
-      streams.map(([a, d]) => stream(a ?? 0, d ?? 0)),
+      streams.map(([angle, damage]) => stream(angle ?? 0, shots(damage ?? 0))),
     );
   });
 
   it('carries the power ratio on the centre stream: ×1.0, 1.4, 1.9, 2.4, 3.0 per second', () => {
+    const level1PerSecond = shots(1) * 10;
     const ratios = WEAPONS[WeaponKind.Spread].map((level) => {
       const centre = level.shots[0]?.damage ?? 0;
-      return Math.round(((centre * 60) / level.cooldownSteps / 100) * 10) / 10;
+      return Math.round(((centre * 60) / level.cooldownSteps / level1PerSecond) * 10) / 10;
     });
     expect(ratios).toEqual([1, 1.4, 1.9, 2.4, 3]);
   });
@@ -166,7 +168,7 @@ describe('WEAPONS — the Spread table (GDD v0.8 §4.3)', () => {
   it('never deals less than one level-1 shot with any bullet', () => {
     for (const kind of [WeaponKind.Spread, WeaponKind.Laser]) {
       for (const level of WEAPONS[kind]) {
-        for (const shot of level.shots) expect(shot.damage).toBeGreaterThanOrEqual(10);
+        for (const shot of level.shots) expect(shot.damage).toBeGreaterThanOrEqual(shots(1));
       }
     }
   });
@@ -174,16 +176,16 @@ describe('WEAPONS — the Spread table (GDD v0.8 §4.3)', () => {
 
 describe('WEAPONS — the Laser table (GDD v0.8 §4.3)', () => {
   it.each([
-    [1, 2, 10, 1],
-    [2, 3, 15, 1],
-    [3, 4, 20, 2],
-    [4, 6, 25, 2],
-    [5, 8, 30, 3],
+    [1, 2, 1, 1],
+    [2, 3, 1.5, 1],
+    [3, 4, 2, 2],
+    [4, 6, 2.5, 2],
+    [5, 8, 3, 3],
   ])(
-    'fires at level %i one 48 px bolt %i px wide, damage %i, passing through %i',
+    'fires at level %i one 48 px bolt %i px wide, %d level-1 shots, passing through %i',
     (level, width, damage, pierce) => {
       expect(volley(WeaponKind.Laser, level)).toEqual([
-        [0, -40, 0, -600, width, 48, damage, pierce],
+        [0, -40, 0, -600, width, 48, shots(damage), pierce],
       ]);
       expect(WEAPONS[WeaponKind.Laser][level - 1]?.cooldownSteps).toBe(6);
     },
@@ -194,8 +196,9 @@ describe('Weapon — firing the current table (GDD v0.8 §4.3)', () => {
   /** A weapon raised to `level` of `kind`. */
   function weaponAt(kind: WeaponKind, level: number): Weapon {
     const weapon = new Weapon();
-    for (let i = 1; i < level; i += 1) weapon.powerUp(kind);
-    weapon.powerUp(kind === WeaponKind.Spread ? WeaponKind.Spread : WeaponKind.Laser);
+    weapon.powerUp(kind);
+    for (let i = 2; i < level; i += 1) weapon.powerUp(kind);
+    expect([weapon.kind, weapon.level]).toEqual([kind, Math.max(level, 2)]);
     return weapon;
   }
 
@@ -214,7 +217,7 @@ describe('Weapon — firing the current table (GDD v0.8 §4.3)', () => {
     const spawner = new RecordingSpawner();
     fire(weaponAt(WeaponKind.Laser, 2), spawner, [true]);
     const bolt = spawner.shots[0];
-    expect(bolt).toMatchObject({ x: 100, y: 160, height: 48, weapon: WeaponKind.Laser });
+    expect(bolt).toMatchObject({ x: 100, y: 160, width: 3, height: 48, weapon: WeaponKind.Laser });
     expect((bolt?.y ?? 0) + (bolt?.height ?? 0) / 2).toBe(ORIGIN.y - 16);
   });
 });

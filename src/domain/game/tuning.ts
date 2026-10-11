@@ -22,6 +22,8 @@ export const PlayerTuning = {
   maxSpeed: 150,
   /** Half the 32 px sprite box: also the margin of the clamp to the field. */
   halfSize: 16,
+  /** Shots leave from the nose, this many pixels above the ship's centre (GDD §4.3). */
+  noseOffset: 16,
   spawnX: 120,
   /** Fully hidden below the 320 px field. */
   spawnY: 336,
@@ -50,8 +52,6 @@ export const SpreadTuning = {
   speed: 360,
   width: 2,
   height: 8,
-  /** The nose is this many pixels above the ship's centre. */
-  noseOffset: 16,
   /** Side streams deal one level-1 shot, in tenths. */
   sideDamage: L1_SHOT,
 } as const;
@@ -61,7 +61,6 @@ export const LaserTuning = {
   boltsPerSecond: 10,
   speed: 600,
   boltLength: 48,
-  noseOffset: 16,
 } as const;
 
 /** Times of the frozen scenes (GDD §4.4, §9.1); the scene machine converts them with toSteps. */
@@ -77,7 +76,6 @@ export const EnemyBulletTuning = {
   size: 4,
   /** Pixels per second. */
   speed: 75,
-  damage: 1,
 } as const;
 
 /** Popcorn S curve (GDD v0.6 §5.2.1): x = x0 ± amplitude · sin(2π · y / wavelength). */

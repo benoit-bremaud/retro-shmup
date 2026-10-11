@@ -6,6 +6,7 @@ import { DIVER, Enemy, GUNNER, POPCORN } from '../../src/domain/game/enemy';
 import type { EnemyArchetype, SpawnSpec } from '../../src/domain/game/enemy';
 import type { Vec2 } from '../../src/domain/game/geometry';
 import type { WorldView } from '../../src/domain/game/movements';
+import { shots } from '../support/shots';
 
 const DT = 1 / 60;
 
@@ -41,9 +42,9 @@ function run(enemy: Enemy, world: WorldView, steps: number, shots = new Recordin
 describe('applyDamage — destroyed at most once (class diagram notes)', () => {
   it('is true only on the step the HP crosses to 0', () => {
     const gunner = spawned(GUNNER, { spawn: { x: 0, y: 0 } });
-    expect(applyDamage(gunner, 70)).toBe(false);
-    expect(applyDamage(gunner, 10)).toBe(true);
-    expect(applyDamage(gunner, 10)).toBe(false);
+    expect(applyDamage(gunner, shots(7))).toBe(false);
+    expect(applyDamage(gunner, shots(1))).toBe(true);
+    expect(applyDamage(gunner, shots(1))).toBe(false);
   });
 });
 
@@ -69,9 +70,9 @@ describe('Enemy.spawn — resets every field (class diagram notes)', () => {
   it('takes the stats of its archetype, HP in tenths of a level-1 shot (GDD §5.2, ADR-0019)', () => {
     expect([POPCORN, DIVER, GUNNER].map((a) => [a.stats.width, a.stats.hp, a.stats.score])).toEqual(
       [
-        [16, 10, 100],
-        [16, 10, 150],
-        [32, 80, 300],
+        [16, shots(1), 100],
+        [16, shots(1), 150],
+        [32, shots(8), 300],
       ],
     );
   });

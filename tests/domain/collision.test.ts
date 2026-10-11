@@ -5,10 +5,12 @@ import { DIVER, GUNNER, POPCORN } from '../../src/domain/game/enemy';
 import type { Enemy, EnemyArchetype } from '../../src/domain/game/enemy';
 import type { Pickup } from '../../src/domain/game/pickup';
 import { PlayerState } from '../../src/domain/game/player';
-import { WeaponKind } from '../../src/domain/game/weapon';
+import { WEAPONS, WeaponKind } from '../../src/domain/game/weapon';
 import type { ShotSpec } from '../../src/domain/game/weapon';
+import { PLAYER_BULLET_POOL_SIZE } from '../../src/domain/game/tuning';
 import { World } from '../../src/domain/game/world';
 import { createIntentFrame } from '../../src/domain/ports/input-port';
+import { shots } from '../support/shots';
 
 const DT = 1 / 60;
 const SHOT: ShotSpec = {
@@ -18,7 +20,7 @@ const SHOT: ShotSpec = {
   vyPerSecond: -360,
   width: 2,
   height: 8,
-  damage: 10,
+  damage: shots(1),
   pierce: 0,
   weapon: WeaponKind.Spread,
 };
@@ -70,7 +72,7 @@ describe('CollisionResolver — shots against enemies (GDD §5.2, class diagram)
     world.spawnPlayerBullet(100, 100, SHOT);
     const rules = new Rules();
     CollisionResolver.resolve(world, rules);
-    expect(gunner.hp).toBe(70);
+    expect(gunner.hp).toBe(shots(7));
     expect(world.playerBullets.at(0).spent).toBe(true);
     expect(rules.hits).toBe(1);
   });
@@ -161,7 +163,7 @@ describe('CollisionResolver — hazards against the 4 × 4 hitbox (GDD §4.1, §
     const gunner = enemyAt(world, GUNNER, 120, 272);
     CollisionResolver.resolve(world, new Rules());
     expect(world.player.state).toBe(PlayerState.Dead);
-    expect(gunner.hp).toBe(80);
+    expect(gunner.hp).toBe(shots(8));
   });
 });
 
@@ -170,7 +172,7 @@ describe('CollisionResolver — Laser pass-throughs (GDD v0.8 §4.3)', () => {
     ...SHOT,
     width: 8,
     height: 48,
-    damage: 30,
+    damage: shots(3),
     pierce: 2,
     weapon: WeaponKind.Laser,
   };
@@ -184,7 +186,7 @@ describe('CollisionResolver — Laser pass-throughs (GDD v0.8 §4.3)', () => {
     world.spawnPlayerBullet(100, 85, BOLT);
     const rules = new Rules();
     CollisionResolver.resolve(world, rules);
-    expect([a.hp, b.hp, c.hp, d.hp]).toEqual([50, 50, 50, 80]);
+    expect([a.hp, b.hp, c.hp, d.hp]).toEqual([shots(5), shots(5), shots(5), shots(8)]);
     expect(world.playerBullets.at(0).spent).toBe(true);
     expect(rules.hits).toBe(3);
   });
@@ -199,7 +201,7 @@ describe('CollisionResolver — Laser pass-throughs (GDD v0.8 §4.3)', () => {
     expect(world.playerBullets.at(0).spent).toBe(false);
   });
 
-  it('kills a Popcorn with one Spread bullet at every level (at least one level-1 shot)', () => {
+  it('kills a Popcorn with one level-1 Spread bullet', () => {
     const world = new World();
     const popcorn = enemyAt(world, POPCORN, 100, 100);
     world.spawnPlayerBullet(100, 100, SHOT);
@@ -207,4 +209,39 @@ describe('CollisionResolver — Laser pass-throughs (GDD v0.8 §4.3)', () => {
     CollisionResolver.resolve(world, rules);
     expect(rules.destroyed).toEqual([popcorn.serial]);
   });
+});
+
+describe('CollisionResolver — bullet memory and every level (GDD v0.8 §4.3)', () => {
+  it('forgets the bodies of a released bolt: a reused slot hits that Gunner again', () => {
+    const world = new World();
+    const gunner = enemyAt(world, GUNNER, 100, 100);
+    // Harmless bolts, so the Gunner survives them all.
+    const bolt: ShotSpec = { ...SHOT, height: 48, damage: 0, pierce: 1, weapon: WeaponKind.Laser };
+    for (let i = 0; i < PLAYER_BULLET_POOL_SIZE; i += 1) world.spawnPlayerBullet(100, 100, bolt);
+    // Every slot now remembers the Gunner: whichever slot the next shot reuses, it remembers it.
+    const rules = new Rules();
+    CollisionResolver.resolve(world, rules);
+    for (let i = 0; i < world.playerBullets.count; i += 1) world.playerBullets.at(i).spent = true;
+    world.sweep();
+    expect(gunner.hp).toBe(shots(8));
+    world.spawnPlayerBullet(100, 100, SHOT);
+    CollisionResolver.resolve(world, rules);
+    expect(gunner.hp).toBe(shots(7));
+  });
+
+  it.each([WeaponKind.Spread, WeaponKind.Laser])(
+    'kills a Popcorn in one hit with every %s shot of every level',
+    (kind) => {
+      for (const level of WEAPONS[kind]) {
+        for (const shot of level.shots) {
+          const world = new World();
+          const popcorn = enemyAt(world, POPCORN, 100, 100);
+          world.spawnPlayerBullet(100, 100, shot);
+          const rules = new Rules();
+          CollisionResolver.resolve(world, rules);
+          expect(rules.destroyed).toEqual([popcorn.serial]);
+        }
+      }
+    },
+  );
 });
