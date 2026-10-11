@@ -8,6 +8,11 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-11
 
+### PR #19 merged (`c94e5f5`) — C2-0 devices brick design
+
+- GDD v0.7 and ADR-0018 on `main`; issue #9 rewritten with 17 acceptance criteria. CI green, no
+  automated reviewer (quotas); the four-pass conception review stood in.
+
 ### Design of the devices brick C2 (branch `docs/c2-design`) — GDD v0.7, ADR-0018, issue #9
 
 - A conception study found #9 written before the enemies brick: the HUD strip had no content

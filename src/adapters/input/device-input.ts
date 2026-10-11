@@ -5,8 +5,9 @@ import type {
   IntentFrame,
 } from '../../domain/ports/input-port';
 import { Button } from '../../domain/ports/input-port';
+import { arbitrate, createArbitration, createSample } from './arbitration';
+import type { DeviceSamples } from './arbitration';
 import { KeyboardModule } from './keyboard';
-import type { KeyboardSample } from './keyboard';
 
 /** The part of a `KeyboardEvent` the adapter reads. */
 export interface KeyEventLike {
@@ -32,18 +33,22 @@ export interface InputEnvironment {
 
 /**
  * The single `InputPort` implementation, a façade over per-device modules (ADR-0015 decision 4).
- * The keyboard is the only device of the first playable; the arbitration function arrives with
- * the second device.
+ * It numbers every keydown (later every pointer event and gamepad start), and combines the device
+ * samples with the
+ * browser-free `arbitrate` (ADR-0018 decision 9). The keyboard is the only device so far; the
+ * pointer and gamepad samples stay idle until their modules land.
  */
 export class DeviceInput implements InputPort {
   private readonly keyboard = new KeyboardModule();
-  private readonly keys: KeyboardSample = {
-    moving: false,
-    moveX: 0,
-    moveY: 0,
-    held: 0,
-    pressed: 0,
+  private readonly samples: DeviceSamples = {
+    keyboard: createSample(),
+    touch: createSample(),
+    mouse: createSample(),
+    gamepad: createSample(),
   };
+  private readonly arbitration = createArbitration();
+  /** The façade's sequence number: one per input event (ADR-0018 decision 9). */
+  private seq = 0;
   /** One `Pause` press for lost focus, delivered by the next `read` (ADR-0009). */
   private automaticPause = false;
 
@@ -51,7 +56,8 @@ export class DeviceInput implements InputPort {
     environment.onKeyDown((event) => {
       // A browser shortcut (Ctrl, Cmd or Alt held) is never a game input and keeps its action.
       if (event.ctrlKey || event.metaKey || event.altKey) return;
-      if (this.keyboard.keyDown(event.code, event.repeat)) event.preventDefault();
+      this.seq += 1;
+      if (this.keyboard.keyDown(event.code, event.repeat, this.seq)) event.preventDefault();
     });
     environment.onKeyUp((event) => {
       this.keyboard.keyUp(event.code);
@@ -59,18 +65,15 @@ export class DeviceInput implements InputPort {
     environment.onFocusLost(() => {
       // Clear first: no key release arrives after a blur (ADR-0015 decision 5).
       this.keyboard.release();
+      this.arbitration.clearedAt = this.seq;
       this.automaticPause = true;
     });
   }
 
   read(into: IntentFrame): void {
-    this.keyboard.sample(this.keys);
-    into.device = 'keyboard';
-    into.moveKind = this.keys.moving ? 'direction' : 'none';
-    into.moveX = this.keys.moveX;
-    into.moveY = this.keys.moveY;
-    into.held = this.keys.held;
-    into.pressed = this.keys.pressed | (this.automaticPause ? Button.Pause : 0);
+    this.keyboard.sample(this.samples.keyboard);
+    arbitrate(this.arbitration, this.samples, into);
+    if (this.automaticPause) into.pressed |= Button.Pause;
     this.automaticPause = false;
     into.tapRegion = 'none';
     into.tapX = 0;
