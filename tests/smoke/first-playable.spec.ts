@@ -1,8 +1,13 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
-// The single browser smoke test (ADR-0003; 05-state-scenes): the built page loads, the canvas
-// paints, and Enter starts a run in which the ship reaches its resting point and enemies appear.
+// The single browser smoke test (ADR-0003; 05-state-scenes; ADR-0018 Consequences): a phone in
+// portrait, then a rotation. A tap on the HUD strip starts a run, the ship reaches its resting
+// point, the pause button pauses, a tap resumes; a landscape window pauses without restarting the
+// run, `Esc` resumes, and enemies appear.
+
+// A phone: 390 × 844 CSS pixels at pixel ratio 2, with touch (ADR-0018 Consequences).
+test.use({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true });
 
 /** The hull colour `Palette.shipHull`, which no star uses. */
 const HULL = { r: 0x4f, g: 0xd1, b: 0xc5 };
@@ -56,6 +61,36 @@ async function colourAt(
 async function hullAtRest(page: Page): Promise<boolean> {
   const g = await geometry(page);
   return colourAt(page, (g.fieldX + REST.x) * g.scale + 1, (g.fieldY + REST.y) * g.scale + 1, HULL);
+}
+
+/** `Palette.pauseIcon`, drawn only in `Paused`: two bars centred on the field. */
+const PAUSE_ICON = { r: 0xff, g: 0xff, b: 0xff };
+/** A pixel inside the pause icon's left bar, in play-field pixels (overlays.ts). */
+const PAUSE_ICON_PIXEL = { x: 113, y: 160 };
+
+/** True when the pause icon shows, so the scene is `Paused`. */
+async function paused(page: Page): Promise<boolean> {
+  const g = await geometry(page);
+  return colourAt(
+    page,
+    (g.fieldX + PAUSE_ICON_PIXEL.x) * g.scale + 1,
+    (g.fieldY + PAUSE_ICON_PIXEL.y) * g.scale + 1,
+    PAUSE_ICON,
+  );
+}
+
+/** Taps the logical-screen pixel (x, y) through the canvas client rectangle. */
+async function tapScreen(page: Page, x: number, y: number): Promise<void> {
+  const g = await geometry(page);
+  const rect = await page.evaluate(() => {
+    const box = document.querySelector('#screen')?.getBoundingClientRect();
+    return { left: box?.left ?? 0, top: box?.top ?? 0, width: box?.width ?? 0 };
+  });
+  const cssPerPixel = rect.width / (g.portrait ? 240 : 480);
+  await page.touchscreen.tap(
+    rect.left + (x + 0.5) * cssPerPixel,
+    rect.top + (y + 0.5) * cssPerPixel,
+  );
 }
 
 /** The Popcorn colour `Palette.popcorn`, used by nothing else. */
@@ -127,30 +162,50 @@ async function scriptMsPerFrame(page: Page): Promise<number> {
   return ((after - before) * 1000) / Math.max(frames, 1);
 }
 
-test('the title paints, Enter starts a run, the ship reaches its resting point, enemies appear', async ({
+test('a phone starts, pauses and resumes by touch; a rotation pauses without restarting the run', async ({
   page,
 }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('./');
 
   await expect.poll(() => paintedPixels(page)).toBeGreaterThan(0);
+  expect((await geometry(page)).portrait).toBe(true);
   expect(await hullAtRest(page)).toBe(false);
 
-  await page.keyboard.press('Enter');
-  // Fly-in then invulnerability blink: once vulnerable, the ship is always drawn. The first
-  // Popcorn wave crosses y 272 near field x 42, the Divers dive from 9 s and the Gunners fire from
-  // 20 s, so nothing covers the hull at its resting point while this check runs.
+  // A tap on the HUD strip, left of the pause button, starts a run. Fly-in then invulnerability
+  // blink: once vulnerable, the ship is always drawn. The first Popcorn wave crosses y 272 near
+  // field x 42 and the Divers dive from 9 s, so nothing covers the hull at rest during the checks.
+  await tapScreen(page, 20, 10);
   await expect.poll(() => hullAtRest(page), { timeout: 5000 }).toBe(true);
+  // Past the 2 s fly-in and invulnerability blink, the ship is always drawn: the single checks
+  // below never catch an "off" blink frame.
+  await page.waitForTimeout(2100);
+  await expect.poll(() => hullAtRest(page), { timeout: 2000 }).toBe(true);
+
+  // The pause button (portrait: x 192 to 239, y 0 to 31) pauses.
+  await tapScreen(page, 215, 16);
+  await expect.poll(() => paused(page), { timeout: 2000 }).toBe(true);
+
+  // Any tap resumes (interim tap resume); a HUD tap, so no finger steers the ship. After the
+  // 1 s count-in the pause is gone and the ship is still at rest.
+  await tapScreen(page, 20, 10);
+  await page.waitForTimeout(1200);
+  expect(await paused(page)).toBe(false);
+  await expect.poll(() => hullAtRest(page), { timeout: 2000 }).toBe(true);
+
+  // A rotation to landscape pauses (GDD v0.7 §9.1); Esc resumes the same run: after the count-in
+  // the ship is at its last point, not flying in again from the spawn.
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect.poll(async () => (await geometry(page)).portrait).toBe(false);
+  await expect.poll(() => paused(page), { timeout: 2000 }).toBe(true);
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(1200);
+  expect(await paused(page)).toBe(false);
+  expect(await hullAtRest(page)).toBe(true);
+
   // The enemies brick: the first wave is on screen.
   await expect.poll(() => popcornInField(page), { timeout: 5000 }).toBe(true);
-
-  // The devices brick: a phone-sized window switches to the portrait screen without restarting
-  // the run — the ship is still at its resting point, now under the HUD strip (ADR-0015).
-  await page.setViewportSize({ width: 390, height: 844 });
-  await expect.poll(async () => (await geometry(page)).portrait).toBe(true);
-  await expect.poll(() => hullAtRest(page), { timeout: 5000 }).toBe(true);
 
   const msPerFrame = await scriptMsPerFrame(page);
   // Measured and logged against the 4 ms budget (ADR-0002 decision 7), not asserted: this is an

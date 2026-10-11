@@ -26,10 +26,47 @@ const visible: HTMLCanvasElement = found;
 const offscreen = document.createElement('canvas');
 const renderer = new Canvas2DRenderer(context2d(offscreen), offscreen, context2d(visible));
 
+// The input adapter never touches a browser global: it gets these narrow hooks (ADR-0015).
+const environment: InputEnvironment = {
+  onKeyDown: (listener) => {
+    globalThis.addEventListener('keydown', listener);
+  },
+  onKeyUp: (listener) => {
+    globalThis.addEventListener('keyup', listener);
+  },
+  onFocusLost: (listener) => {
+    globalThis.addEventListener('blur', listener);
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) listener();
+    });
+  },
+  onPointerDown: (listener) => {
+    globalThis.addEventListener('pointerdown', listener);
+  },
+  onPointerMove: (listener) => {
+    globalThis.addEventListener('pointermove', listener);
+  },
+  onPointerUp: (listener) => {
+    globalThis.addEventListener('pointerup', listener);
+  },
+  onPointerCancel: (listener) => {
+    globalThis.addEventListener('pointercancel', listener);
+  },
+};
+const input = new DeviceInput(environment);
+input.setBindings(DEFAULT_BINDINGS);
+
+// The right button bombs, so the page never opens its context menu (ADR-0018 decision 10).
+globalThis.addEventListener('contextmenu', (event) => {
+  event.preventDefault();
+});
+
 /**
  * Chooses the logical screen for the window (ADR-0015 decision 1, ADR-0018 decision 6), sizes the
  * off-screen canvas to it and the visible canvas to its integer scale, then hands the viewport to
- * the renderer. Resizing a canvas resets its context, so the renderer resets its own state too.
+ * the renderer and, with the canvas client rectangle read once here, to the input adapter
+ * (ADR-0018 decision 6). Resizing a canvas resets its context, so the renderer resets its own
+ * state too.
  */
 function fitToWindow(): void {
   const viewport = computeViewport(
@@ -44,6 +81,7 @@ function fitToWindow(): void {
   visible.style.width = `${String(viewport.cssWidth)}px`;
   visible.style.height = `${String(viewport.cssHeight)}px`;
   renderer.resize(viewport);
+  input.resize(viewport.layout, visible.getBoundingClientRect());
 }
 
 fitToWindow();
@@ -65,24 +103,6 @@ function watchPixelRatio(): void {
   );
 }
 watchPixelRatio();
-
-// The input adapter never touches a browser global: it gets these narrow hooks (ADR-0015).
-const environment: InputEnvironment = {
-  onKeyDown: (listener) => {
-    globalThis.addEventListener('keydown', listener);
-  },
-  onKeyUp: (listener) => {
-    globalThis.addEventListener('keyup', listener);
-  },
-  onFocusLost: (listener) => {
-    globalThis.addEventListener('blur', listener);
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) listener();
-    });
-  },
-};
-const input = new DeviceInput(environment);
-input.setBindings(DEFAULT_BINDINGS);
 
 // Presentation randomness is unseeded on purpose: it never touches the outcome (ADR-0010).
 const scenes: FrameTarget = new SceneMachine(renderer, new Starfield(Math.random), {

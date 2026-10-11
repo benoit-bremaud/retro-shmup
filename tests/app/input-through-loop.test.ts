@@ -7,7 +7,7 @@ import { DEFAULT_BINDINGS } from '../../src/domain/input/default-bindings';
 import { Button } from '../../src/domain/ports/input-port';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
 
-/** Captures the key listener only; focus is never lost here. */
+/** Captures the key listener only; focus is never lost and no pointer moves here. */
 class KeyOnlyEnvironment implements InputEnvironment {
   private keyDown: ((event: KeyEventLike) => void) | undefined;
   onKeyDown(listener: (event: KeyEventLike) => void): void {
@@ -18,6 +18,18 @@ class KeyOnlyEnvironment implements InputEnvironment {
   }
   onFocusLost(): void {
     // Focus is never lost in this scenario.
+  }
+  onPointerDown(): void {
+    // No pointer in this scenario.
+  }
+  onPointerMove(): void {
+    // No pointer in this scenario.
+  }
+  onPointerUp(): void {
+    // No pointer in this scenario.
+  }
+  onPointerCancel(): void {
+    // No pointer in this scenario.
   }
   press(code: string): void {
     this.keyDown?.({

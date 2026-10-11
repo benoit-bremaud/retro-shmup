@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { DeviceInput } from '../../src/adapters/input/device-input';
 import type { InputEnvironment, KeyEventLike } from '../../src/adapters/input/device-input';
+import type { PointerEventLike } from '../../src/adapters/input/pointer';
 import { DEFAULT_BINDINGS } from '../../src/domain/input/default-bindings';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
+import { LANDSCAPE, PORTRAIT } from '../../src/domain/presentation/screen';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
 
 type Modifier = 'ctrl' | 'meta' | 'alt';
@@ -12,6 +14,9 @@ class FakeEnvironment implements InputEnvironment {
   private keyDown: ((event: KeyEventLike) => void) | undefined;
   private keyUp: ((event: KeyEventLike) => void) | undefined;
   private focusLost: (() => void) | undefined;
+  private readonly pointer: Partial<
+    Record<'down' | 'move' | 'up' | 'cancel', (event: PointerEventLike) => void>
+  > = {};
   readonly prevented: string[] = [];
 
   onKeyDown(listener: (event: KeyEventLike) => void): void {
@@ -22,6 +27,30 @@ class FakeEnvironment implements InputEnvironment {
   }
   onFocusLost(listener: () => void): void {
     this.focusLost = listener;
+  }
+  onPointerDown(listener: (event: PointerEventLike) => void): void {
+    this.pointer.down = listener;
+  }
+  onPointerMove(listener: (event: PointerEventLike) => void): void {
+    this.pointer.move = listener;
+  }
+  onPointerUp(listener: (event: PointerEventLike) => void): void {
+    this.pointer.up = listener;
+  }
+  onPointerCancel(listener: (event: PointerEventLike) => void): void {
+    this.pointer.cancel = listener;
+  }
+
+  /** A pointer event at CSS pixel (x, y); the tests' canvas maps 1 CSS pixel to 1 logical pixel. */
+  point(
+    kind: 'down' | 'move' | 'up' | 'cancel',
+    pointerType: string,
+    x: number,
+    y: number,
+    buttons = 0,
+    pointerId = 1,
+  ): void {
+    this.pointer[kind]?.({ pointerId, pointerType, clientX: x, clientY: y, buttons });
   }
 
   down(code: string, repeat = false, modifier: Modifier | null = null): void {
@@ -232,5 +261,80 @@ describe('DeviceInput — browser shortcuts (Ctrl, Cmd, Alt)', () => {
     env.down('ShiftLeft');
     input.read(frame);
     expect(frame.pressed).toBe(Button.Bomb);
+  });
+});
+
+describe('DeviceInput — touch and mouse through the façade (ADR-0018)', () => {
+  const ONE_TO_ONE = { left: 0, top: 0, width: 480, height: 320 };
+
+  function pointerSetup(): ReturnType<typeof setup> {
+    const fixture = setup();
+    fixture.input.resize(LANDSCAPE, ONE_TO_ONE);
+    return fixture;
+  }
+
+  it('delivers a tap to one read, in its region coordinates', () => {
+    const { env, input, frame } = pointerSetup();
+    env.point('down', 'touch', 450, 20);
+    input.read(frame);
+    expect(frame).toMatchObject({ tapRegion: 'hud', tapX: 450, tapY: 20, device: 'touch' });
+    input.read(frame);
+    expect(frame.tapRegion).toBe('none');
+  });
+
+  it('steers with a finger and autofires while touch owns the movement', () => {
+    const { env, input, frame } = pointerSetup();
+    env.point('down', 'touch', 200, 250);
+    input.read(frame);
+    expect(frame).toMatchObject({ moveKind: 'target', moveX: 80, moveY: 218, held: Button.Fire });
+  });
+
+  it('masks the touch autofire once a key moves the ship again', () => {
+    const { env, input, frame } = pointerSetup();
+    env.point('down', 'touch', 200, 250);
+    env.point('up', 'touch', 200, 250);
+    env.down('ArrowLeft');
+    input.read(frame);
+    expect(frame).toMatchObject({ moveKind: 'direction', held: 0, device: 'keyboard' });
+  });
+
+  it('lets the mouse take the ship only by a move on the field', () => {
+    const { env, input, frame } = pointerSetup();
+    env.down('ArrowLeft');
+    env.point('move', 'mouse', 30, 40);
+    input.read(frame);
+    expect(frame.moveKind).toBe('direction');
+    env.point('move', 'mouse', 200, 250);
+    input.read(frame);
+    expect(frame).toMatchObject({ moveKind: 'target', moveX: 80, moveY: 250, device: 'mouse' });
+  });
+
+  it('pauses once when the layout kind changes, never on the first resize or the same kind', () => {
+    const { input, frame } = setup();
+    input.resize(LANDSCAPE, ONE_TO_ONE);
+    input.resize(LANDSCAPE, { left: 0, top: 0, width: 960, height: 640 });
+    input.read(frame);
+    expect(frame.pressed).toBe(0);
+    input.resize(PORTRAIT, { left: 0, top: 0, width: 240, height: 352 });
+    input.read(frame);
+    expect(frame.pressed).toBe(Button.Pause);
+    input.read(frame);
+    expect(frame.pressed).toBe(0);
+  });
+
+  it('releases the steering finger and drops the tap when focus is lost', () => {
+    const { env, input, frame } = pointerSetup();
+    env.point('down', 'touch', 200, 250);
+    env.loseFocus();
+    input.read(frame);
+    expect(frame).toMatchObject({ moveKind: 'none', tapRegion: 'none', pressed: Button.Pause });
+  });
+
+  it('clears the mouse owner on lost focus: no movement, autofire masked', () => {
+    const { env, input, frame } = pointerSetup();
+    env.point('move', 'mouse', 200, 250);
+    env.loseFocus();
+    input.read(frame);
+    expect(frame).toMatchObject({ moveKind: 'none', held: 0, pressed: Button.Pause });
   });
 });

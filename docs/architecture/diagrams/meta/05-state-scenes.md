@@ -222,7 +222,7 @@ The devices brick makes the game playable on a phone, with a gamepad and with a 
   `Paused`, `Count-in`), whatever the device.
 - **Locks**: from the step that enters `Game over`, `Confirm` and taps are ignored for
   `toSteps(gameOverLockSeconds)` = 60 steps and accepted from the 61st; the 180-step timer counts
-  from the same entry. A `Title` entered from `Game over` applies the same 60-step lock; the first
+  from the same entry (the entering step is step 0 for both). A `Title` entered from `Game over` applies the same 60-step lock; the first
   `Title` never does.
 - **Interim deviation, tap resume**: until the pause menu (screens brick), any tap or click also
   starts `Count-in` from `Paused`.

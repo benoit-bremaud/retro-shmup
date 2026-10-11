@@ -1,7 +1,7 @@
 import type { WorldSnapshot } from '../game/run';
 import { HUD_FONT_CELL } from '../ports/render-port';
 import type { RenderPort } from '../ports/render-port';
-import { HUD_LAYOUTS, PORTRAIT_STRIP_EDGE } from './hud-layout';
+import { HUD_LAYOUTS, PAUSE_BUTTONS, PORTRAIT_STRIP_EDGE } from './hud-layout';
 import { Palette } from './palette';
 import { FIELD_WIDTH, HUD_BAND_WIDTH, HUD_STRIP_HEIGHT } from './screen';
 
@@ -56,4 +56,24 @@ export function drawHud(render: RenderPort, snapshot: WorldSnapshot): void {
   for (let i = 0; i < reserve; i += 1) {
     render.drawRect(lives.x + i * lives.spacing, lives.y, lives.size, lives.size, Palette.lifeIcon);
   }
+}
+
+// Pause button glyph: two 4 × 16 bars, 4 px apart (05-state-scenes, devices brick additions).
+const PAUSE_BAR_WIDTH = 4;
+const PAUSE_BAR_HEIGHT = 16;
+const PAUSE_BAR_GAP = 4;
+
+/**
+ * Draws the touch pause button of the current screen (GDD v0.7 §4.2): two bars centred in its
+ * rectangle, over the band colour. The scene machine calls it in the scenes whose `pauseButton`
+ * trait is true, whatever the device.
+ */
+export function drawPauseButton(render: RenderPort): void {
+  render.setRegion('hud');
+  const button = PAUSE_BUTTONS[render.layout().kind];
+  const left = button.x + (button.width - 2 * PAUSE_BAR_WIDTH - PAUSE_BAR_GAP) / 2;
+  const top = button.y + (button.height - PAUSE_BAR_HEIGHT) / 2;
+  render.drawRect(left, top, PAUSE_BAR_WIDTH, PAUSE_BAR_HEIGHT, Palette.pauseButton);
+  const right = left + PAUSE_BAR_WIDTH + PAUSE_BAR_GAP;
+  render.drawRect(right, top, PAUSE_BAR_WIDTH, PAUSE_BAR_HEIGHT, Palette.pauseButton);
 }

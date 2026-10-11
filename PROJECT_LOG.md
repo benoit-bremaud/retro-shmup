@@ -8,6 +8,29 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-11
 
+### Touch and mouse C2-P (branch `feat/input`) — Refs #9
+
+- `PointerModule` (Pointer Events on the page, pen as touch): the first finger on the field steers
+  32 px above it, a second finger on the field bombs, a touch outside the field is a HUD tap only;
+  the mouse takes the ship only by a move to another field pixel or a left press on the field, the
+  right button bombs on the field only; a HUD tap replaces a pending field tap. `DeviceInput`
+  numbers every pointer event, takes `resize(layout, rect)` once per resize and pauses when the
+  layout kind changes. The page suppresses the context menu (the Codex finding deferred from #21)
+  and the canvas shows a crosshair.
+- Domain: `PAUSE_BUTTONS` and `isPauseTap` beside `HUD_LAYOUTS`, `drawPauseButton`, the scene
+  trait `pauseButton`, the scene × input table (pause-button tap, interim tap resume) and the 1 s
+  lock on Game over and on the title after it; `InputTuning.touchOffsetY`.
+- The lock counts like the 3 s Game over timer: the entering step is step 0, steps 1 to 60 ignore
+  `Confirm` and taps, the 61st accepts them.
+- The smoke test now runs the ADR-0018 script: a 390 × 844 phone at pixel ratio 2 with touch,
+  then a rotation to 1280 × 900. `Paused` is detected by the white pause icon, since the veil is
+  translucent and has no fixed colour.
+
+### PR #21 merged (`3858a9a`) — C2-L portrait screen
+
+- One Codex finding (P2, context menu not suppressed) answered inline and deferred to C2-P by
+  owner choice. CI green.
+
 ### Portrait screen C2-L (branch `feat/render`) — Refs #9
 
 - `LANDSCAPE` and `PORTRAIT` screen layouts; `computeViewport` picks the screen (larger integer
