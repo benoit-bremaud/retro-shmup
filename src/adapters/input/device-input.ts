@@ -14,6 +14,8 @@ import { KeyboardModule } from './keyboard';
 import { PointerModule } from './pointer';
 import type { CanvasRect, PointerEventLike } from './pointer';
 
+const NO_PADS: GamepadList = [];
+
 /** The part of a `KeyboardEvent` the adapter reads. */
 export interface KeyEventLike {
   readonly code: string;
@@ -115,13 +117,26 @@ export class DeviceInput implements InputPort {
     this.pointer.sampleMouse(this.samples.mouse);
     // The poll applies after this read's events (ADR-0015 decision 5); a lost active pad pauses.
     this.seq += 1;
-    if (this.gamepad.poll(this.environment.gamepads(), this.seq)) this.automaticPause = true;
+    if (this.gamepad.poll(this.padsOrNone(), this.seq)) this.automaticPause = true;
     this.gamepad.sample(this.samples.gamepad);
     arbitrate(this.arbitration, this.samples, into);
     if (this.automaticPause) into.pressed |= Button.Pause;
     this.automaticPause = false;
     this.pointer.takeTap(into);
     into.fullscreen = false; // reported by the browser once fullscreen lands with the options
+  }
+
+  /**
+   * The pads, or none when the browser refuses them: `getGamepads` throws when the `gamepad`
+   * Permissions-Policy is denied (an embedding iframe) or is missing outside a secure context.
+   * Failing closed to "no pad" keeps every other device playing (issue #9).
+   */
+  private padsOrNone(): GamepadList {
+    try {
+      return this.environment.gamepads();
+    } catch {
+      return NO_PADS;
+    }
   }
 
   setBindings(bindings: Bindings): void {

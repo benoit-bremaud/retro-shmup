@@ -370,6 +370,18 @@ describe('DeviceInput — gamepad through the façade (ADR-0015 decisions 5 and 
     expect(frame).toMatchObject({ moveX: -1, device: 'keyboard' });
   });
 
+  it('reads no pad when the browser refuses them, and keeps the other devices playing', () => {
+    const { env, input, frame } = setup();
+    env.gamepads = () => {
+      throw new Error('SecurityError: gamepad is not allowed');
+    };
+    env.down('ArrowLeft');
+    expect(() => {
+      input.read(frame);
+    }).not.toThrow();
+    expect(frame).toMatchObject({ moveX: -1, device: 'keyboard' });
+  });
+
   it('pauses once when the active pad disconnects', () => {
     const { env, input, frame } = setup();
     env.pads = [pad([0])];

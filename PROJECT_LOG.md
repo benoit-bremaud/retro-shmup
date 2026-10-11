@@ -12,13 +12,15 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 - `GamepadModule`, polled once per read after the events (ADR-0015 decisions 5 and 7): standard
   mapping only; presses found against the previous poll, kept per pad as a button mask; the active
-  pad is the last one with input, and losing it (missing, disconnected) pauses once. The fixed
+  pad is the last one with input, and losing it (missing, disconnected or no longer `standard`)
+  pauses once; a press of a pad that is not active is dropped, never delivered later. The fixed
   roles sit on the indices — 0 `Confirm`, 1 `Back`, 9 `Confirm` — whatever the bindings
   (ADR-0018 decision 3). The d-pad wins and is normalized on diagonals; the left stick goes
   through the 0.2 radial dead zone, a rescale, a clamp to length 1 and a quantization toward zero
   to 1/256 (decision 5). A lost focus keeps the previous poll, so a held button is no new press.
 - `InputTuning` gains the stick dead zone and steps; the façade gets `gamepads()` from the
-  composition root. No gamepad in the smoke test (Playwright cannot emulate one); the module and
+  composition root and treats a throwing `getGamepads` (Permissions-Policy denied in an iframe,
+  insecure context) as no pad, so the loop never dies (issue #9). No gamepad in the smoke test (Playwright cannot emulate one); the module and
   the façade are unit-tested with fake pads.
 - Floating point: (0.6 − 0.2) / 0.8 is 0.49999…, so quantizing toward zero gives 127/256, one
   step below 0.5. Accepted: toward zero is what keeps the length at or under 1.

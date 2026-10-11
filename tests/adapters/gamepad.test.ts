@@ -169,6 +169,15 @@ describe('GamepadModule — active pad (GDD §4.2, ADR-0009 automatic pause)', (
     expect(sampleOf(module)).toMatchObject({ held: Button.Bomb, inputSeq: 2 });
   });
 
+  it('drops the press of a pad that is not active instead of delivering it later', () => {
+    const module = gamepad();
+    module.poll([pad([START]), pad([A])], 1);
+    sampleOf(module);
+    module.poll([pad([START]), pad([A])], 2);
+    module.poll([pad([START, B]), pad([A])], 3);
+    expect(sampleOf(module).pressed).toBe(Button.Bomb | Button.Back);
+  });
+
   it.each([
     ['missing', null],
     ['disconnected', pad([], 0, 0, { connected: false })],

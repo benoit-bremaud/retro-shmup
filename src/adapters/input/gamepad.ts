@@ -130,7 +130,8 @@ export class GamepadModule {
     const x = ((mask & this.rightMask) !== 0 ? 1 : 0) - ((mask & this.leftMask) !== 0 ? 1 : 0);
     const y = ((mask & this.downMask) !== 0 ? 1 : 0) - ((mask & this.upMask) !== 0 ? 1 : 0);
     if (x !== 0 || y !== 0) {
-      // The d-pad wins, normalized so a diagonal is never faster than the maximum speed.
+      // The d-pad wins when it gives a direction, normalized so a diagonal is never faster than
+      // the maximum speed; opposite directions cancel to none, and the stick applies.
       const diagonal = x !== 0 && y !== 0 ? Math.SQRT1_2 : 1;
       into.moving = true;
       into.moveX = x * diagonal;
@@ -155,7 +156,8 @@ export class GamepadModule {
     }
     const pressedNow = mask & ~(this.previous[slot] ?? 0);
     this.previous[slot] = mask;
-    this.pressedOf[slot] = (this.pressedOf[slot] ?? 0) | pressedNow;
+    // Overwritten each poll: a press of a pad that is not active is dropped, never delivered late.
+    this.pressedOf[slot] = pressedNow;
     this.readStick(pad, slot);
     const stickOut = this.stickX[slot] !== 0 || this.stickY[slot] !== 0;
     const stickStart = stickOut && this.stickWasOut[slot] !== true;
