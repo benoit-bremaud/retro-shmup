@@ -163,13 +163,18 @@ export class GamepadModule {
     this.previous[slot] = mask;
     // Overwritten each poll: a press of a pad that is not active is dropped, never delivered late.
     this.pressedOf[slot] = pressedNow;
+    const oldX = this.stickX[slot];
+    const oldY = this.stickY[slot];
     this.readStick(pad, slot);
     const stickOut = this.stickX[slot] !== 0 || this.stickY[slot] !== 0;
     const stickStart = stickOut && this.stickWasOut[slot] !== true;
+    // Any new stick position outside the dead zone is input, so the last pad used is the active
+    // one (GDD §4.2); only leaving the dead zone starts a movement.
+    const stickMoved = stickOut && (this.stickX[slot] !== oldX || this.stickY[slot] !== oldY);
     this.stickWasOut[slot] = stickOut;
     const moveMask = this.upMask | this.downMask | this.leftMask | this.rightMask;
     if ((pressedNow & moveMask) !== 0 || stickStart) this.startSeq = seq;
-    if (pressedNow !== 0 || stickStart) {
+    if (pressedNow !== 0 || stickMoved) {
       this.active = slot;
       this.inputSeq = seq;
     }
