@@ -1,15 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import { CollisionResolver } from '../../src/domain/game/collision';
 import type { HitRules } from '../../src/domain/game/collision';
-import { DIVER, GUNNER } from '../../src/domain/game/enemy';
+import { DIVER, GUNNER, POPCORN } from '../../src/domain/game/enemy';
 import type { Enemy, EnemyArchetype } from '../../src/domain/game/enemy';
 import type { Pickup } from '../../src/domain/game/pickup';
 import { PlayerState } from '../../src/domain/game/player';
+import { WeaponKind } from '../../src/domain/game/weapon';
+import type { ShotSpec } from '../../src/domain/game/weapon';
 import { World } from '../../src/domain/game/world';
 import { createIntentFrame } from '../../src/domain/ports/input-port';
 
 const DT = 1 / 60;
-const SHOT = { vxPerSecond: 0, vyPerSecond: -360, width: 2, height: 8, damage: 1, pierce: 0 };
+const SHOT: ShotSpec = {
+  offsetX: 0,
+  offsetY: 0,
+  vxPerSecond: 0,
+  vyPerSecond: -360,
+  width: 2,
+  height: 8,
+  damage: 10,
+  pierce: 0,
+  weapon: WeaponKind.Spread,
+};
 
 /** The run's side of the collisions, recorded; marks a destroyed enemy like `Run` does. */
 class Rules implements HitRules {
@@ -58,7 +70,7 @@ describe('CollisionResolver — shots against enemies (GDD §5.2, class diagram)
     world.spawnPlayerBullet(100, 100, SHOT);
     const rules = new Rules();
     CollisionResolver.resolve(world, rules);
-    expect(gunner.hp).toBe(7);
+    expect(gunner.hp).toBe(70);
     expect(world.playerBullets.at(0).spent).toBe(true);
     expect(rules.hits).toBe(1);
   });
@@ -149,6 +161,50 @@ describe('CollisionResolver — hazards against the 4 × 4 hitbox (GDD §4.1, §
     const gunner = enemyAt(world, GUNNER, 120, 272);
     CollisionResolver.resolve(world, new Rules());
     expect(world.player.state).toBe(PlayerState.Dead);
-    expect(gunner.hp).toBe(8);
+    expect(gunner.hp).toBe(80);
+  });
+});
+
+describe('CollisionResolver — Laser pass-throughs (GDD v0.8 §4.3)', () => {
+  const BOLT: ShotSpec = {
+    ...SHOT,
+    width: 8,
+    height: 48,
+    damage: 30,
+    pierce: 2,
+    weapon: WeaponKind.Laser,
+  };
+
+  it('passes through two enemies, full damage to each, and is spent on the third', () => {
+    const world = new World();
+    const a = enemyAt(world, GUNNER, 100, 60);
+    const b = enemyAt(world, GUNNER, 100, 80);
+    const c = enemyAt(world, GUNNER, 100, 100);
+    const d = enemyAt(world, GUNNER, 100, 110);
+    world.spawnPlayerBullet(100, 85, BOLT);
+    const rules = new Rules();
+    CollisionResolver.resolve(world, rules);
+    expect([a.hp, b.hp, c.hp, d.hp]).toEqual([50, 50, 50, 80]);
+    expect(world.playerBullets.at(0).spent).toBe(true);
+    expect(rules.hits).toBe(3);
+  });
+
+  it('hits a body it overlaps for several steps only once', () => {
+    const world = new World();
+    const gunner = enemyAt(world, GUNNER, 100, 100);
+    world.spawnPlayerBullet(100, 100, BOLT);
+    const rules = new Rules();
+    for (let i = 0; i < 3; i += 1) CollisionResolver.resolve(world, rules);
+    expect(gunner.hp).toBe(50);
+    expect(world.playerBullets.at(0).spent).toBe(false);
+  });
+
+  it('kills a Popcorn with one Spread bullet at every level (at least one level-1 shot)', () => {
+    const world = new World();
+    const popcorn = enemyAt(world, POPCORN, 100, 100);
+    world.spawnPlayerBullet(100, 100, SHOT);
+    const rules = new Rules();
+    CollisionResolver.resolve(world, rules);
+    expect(rules.destroyed).toEqual([popcorn.serial]);
   });
 });

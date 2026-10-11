@@ -177,6 +177,7 @@ classDiagram
     +height: number
     +damage: number
     +pierce: number
+    +weapon: WeaponKind
   }
   class Bullet {
     <<pooled>>
@@ -186,6 +187,7 @@ classDiagram
     -hitbox: Rect
     -damage: number
     -pierceLeft: number
+    -weapon: WeaponKind
     -alreadyHit: number[3]
     -alreadyHitCount: number
     -spent: boolean

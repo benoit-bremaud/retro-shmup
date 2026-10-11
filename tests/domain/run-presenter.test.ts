@@ -3,7 +3,7 @@ import { Pickup, PickupKind } from '../../src/domain/game/pickup';
 import { WeaponKind } from '../../src/domain/game/weapon';
 import { PlayerState } from '../../src/domain/game/player';
 import type { PlayerSnapshot, WorldSnapshot } from '../../src/domain/game/run';
-import type { Bullet } from '../../src/domain/game/bullet';
+import { Bullet } from '../../src/domain/game/bullet';
 import { DIVER, Enemy, GUNNER, POPCORN } from '../../src/domain/game/enemy';
 import { Palette } from '../../src/domain/presentation/palette';
 import { RunPresenter } from '../../src/domain/presentation/run-presenter';
@@ -22,17 +22,21 @@ function ship(overrides: Partial<PlayerSnapshot> = {}): PlayerSnapshot {
   };
 }
 
-function bullet(x: number, y: number, previousY: number): Bullet {
-  return {
-    position: { x, y },
-    previousPosition: { x, y: previousY },
-    velocity: { x: 0, y: -360 },
-    width: 2,
-    height: 8,
-    damage: 1,
-    pierceLeft: 0,
-    spent: false,
-  };
+function bullet(
+  x: number,
+  y: number,
+  previousY: number,
+  weapon: WeaponKind = WeaponKind.Spread,
+): Bullet {
+  const shot = new Bullet();
+  shot.position.x = x;
+  shot.position.y = y;
+  shot.previousPosition.x = x;
+  shot.previousPosition.y = previousY;
+  shot.width = weapon === WeaponKind.Laser ? 4 : 2;
+  shot.height = weapon === WeaponKind.Laser ? 48 : 8;
+  shot.weapon = weapon;
+  return shot;
 }
 
 /** A presenter over a fresh bus; the effect switches on, the blink as given. */
@@ -212,6 +216,18 @@ describe('RunPresenter — pickups (meta/05-state-scenes, player-kit additions)'
       [99, 49, 2, 2],
       [103, 49, 2, 2],
       [139, 56, 2, 8],
+    ]);
+  });
+});
+
+describe('RunPresenter — shot colours per weapon (meta/05-state-scenes, player-kit additions)', () => {
+  it('draws Spread bullets and Laser bolts each in its own colour, read from the bullet', () => {
+    const render = new RecordingRender();
+    const shots = [bullet(100, 100, 100), bullet(140, 100, 100, WeaponKind.Laser)];
+    presenter(render, false).draw(snapshot(ship(), shots), 1, 16);
+    expect(render.rectsOf(Palette.playerShot)).toHaveLength(1);
+    expect(render.rectsOf(Palette.laserShot)).toEqual([
+      { region: 'field', x: 138, y: 76, w: 4, h: 48, colour: Palette.laserShot },
     ]);
   });
 });

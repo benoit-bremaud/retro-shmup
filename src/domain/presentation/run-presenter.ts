@@ -8,6 +8,7 @@ import type { GameEvent, RunEvents } from '../game/events';
 import { PlayerState } from '../game/player';
 import type { PlayerSnapshot, WorldSnapshot } from '../game/run';
 import { PlayerTuning, STEPS_PER_SECOND } from '../game/tuning';
+import { WeaponKind } from '../game/weapon';
 import type { RenderPort } from '../ports/render-port';
 import { Explosions, HitFlashes } from './effects';
 import { drawHud } from './hud';
@@ -83,7 +84,7 @@ export class RunPresenter {
     }
     this.explosions.draw(this.render);
     this.drawPickups(snapshot.pickups, alpha);
-    this.drawBullets(snapshot.playerBullets, alpha, Palette.playerShot);
+    this.drawPlayerShots(snapshot.playerBullets, alpha);
     const player = snapshot.player;
     if (isShipVisible(player, this.effects)) {
       const x = lerp(player.previousPosition.x, player.position.x, alpha);
@@ -127,6 +128,15 @@ export class RunPresenter {
       } else {
         r.drawRect(x - 1, y - 4, 2, 8, Palette.pickupMark);
       }
+    }
+  }
+
+  // Each shot in its weapon's colour, read from the bullet, never from its size.
+  private drawPlayerShots(bullets: ReadonlyActiveList<Bullet>, alpha: number): void {
+    for (let i = 0; i < bullets.count; i += 1) {
+      const bullet = bullets.at(i);
+      const colour = bullet.weapon === WeaponKind.Laser ? Palette.laserShot : Palette.playerShot;
+      this.drawBox(bullet, alpha, colour);
     }
   }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Weapon } from '../../src/domain/game/weapon';
+import { Weapon, WEAPONS, WeaponKind } from '../../src/domain/game/weapon';
 import type { PlayerShotSpawner, ShotSpec } from '../../src/domain/game/weapon';
 
 interface SpawnedShot extends ShotSpec {
@@ -69,9 +69,152 @@ describe('Weapon — Spread level 1 (GDD v0.5 §4.3)', () => {
         vyPerSecond: -360,
         width: 2,
         height: 8,
-        damage: 1,
+        offsetX: 0,
+        offsetY: -16,
+        damage: 10,
         pierce: 0,
+        weapon: WeaponKind.Spread,
       },
     ]);
+  });
+});
+
+/** The volley of `kind` at `level`, as (x offset, y offset, vx, vy, w, h, damage, pierce). */
+function volley(kind: WeaponKind, level: number): number[][] {
+  const record = WEAPONS[kind][level - 1];
+  if (record === undefined) throw new RangeError('no such level');
+  return record.shots.map((s) => [
+    s.offsetX,
+    s.offsetY,
+    Math.round(s.vxPerSecond * 1000) / 1000,
+    Math.round(s.vyPerSecond * 1000) / 1000,
+    s.width,
+    s.height,
+    s.damage,
+    s.pierce,
+  ]);
+}
+
+/** A stream along `degrees` from straight up at 360 px/s, rounded like `volley`. */
+function stream(degrees: number, damage: number): number[] {
+  const radians = (degrees * Math.PI) / 180;
+  return [
+    0,
+    -16,
+    Math.round(360 * Math.sin(radians) * 1000) / 1000,
+    Math.round(-360 * Math.cos(radians) * 1000) / 1000,
+    2,
+    8,
+    damage,
+    0,
+  ];
+}
+
+describe('WEAPONS — the Spread table (GDD v0.8 §4.3)', () => {
+  it.each([
+    [1, [[0, 10]]],
+    [
+      2,
+      [
+        [0, 14],
+        [-6, 10],
+        [6, 10],
+      ],
+    ],
+    [
+      3,
+      [
+        [0, 19],
+        [-12, 10],
+        [12, 10],
+      ],
+    ],
+    [
+      4,
+      [
+        [0, 24],
+        [-6, 10],
+        [6, 10],
+        [-14, 10],
+        [14, 10],
+      ],
+    ],
+    [
+      5,
+      [
+        [0, 20],
+        [-8, 10],
+        [8, 10],
+        [-18, 10],
+        [18, 10],
+      ],
+    ],
+  ])('fires the level-%i streams at their angles, centre then sides', (level, streams) => {
+    expect(volley(WeaponKind.Spread, level)).toEqual(
+      streams.map(([a, d]) => stream(a ?? 0, d ?? 0)),
+    );
+  });
+
+  it('carries the power ratio on the centre stream: ×1.0, 1.4, 1.9, 2.4, 3.0 per second', () => {
+    const ratios = WEAPONS[WeaponKind.Spread].map((level) => {
+      const centre = level.shots[0]?.damage ?? 0;
+      return Math.round(((centre * 60) / level.cooldownSteps / 100) * 10) / 10;
+    });
+    expect(ratios).toEqual([1, 1.4, 1.9, 2.4, 3]);
+  });
+
+  it('never deals less than one level-1 shot with any bullet', () => {
+    for (const kind of [WeaponKind.Spread, WeaponKind.Laser]) {
+      for (const level of WEAPONS[kind]) {
+        for (const shot of level.shots) expect(shot.damage).toBeGreaterThanOrEqual(10);
+      }
+    }
+  });
+});
+
+describe('WEAPONS — the Laser table (GDD v0.8 §4.3)', () => {
+  it.each([
+    [1, 2, 10, 1],
+    [2, 3, 15, 1],
+    [3, 4, 20, 2],
+    [4, 6, 25, 2],
+    [5, 8, 30, 3],
+  ])(
+    'fires at level %i one 48 px bolt %i px wide, damage %i, passing through %i',
+    (level, width, damage, pierce) => {
+      expect(volley(WeaponKind.Laser, level)).toEqual([
+        [0, -40, 0, -600, width, 48, damage, pierce],
+      ]);
+      expect(WEAPONS[WeaponKind.Laser][level - 1]?.cooldownSteps).toBe(6);
+    },
+  );
+});
+
+describe('Weapon — firing the current table (GDD v0.8 §4.3)', () => {
+  /** A weapon raised to `level` of `kind`. */
+  function weaponAt(kind: WeaponKind, level: number): Weapon {
+    const weapon = new Weapon();
+    for (let i = 1; i < level; i += 1) weapon.powerUp(kind);
+    weapon.powerUp(kind === WeaponKind.Spread ? WeaponKind.Spread : WeaponKind.Laser);
+    return weapon;
+  }
+
+  it('fires the five Spread streams of level 5 every 4 steps (15 per second)', () => {
+    const spawner = new RecordingSpawner();
+    fire(
+      weaponAt(WeaponKind.Spread, 5),
+      spawner,
+      Array.from({ length: 60 }, () => true),
+    );
+    expect(spawner.shots).toHaveLength(15 * 5);
+    expect(spawner.shots.filter((s) => s.step === 4)).toHaveLength(5);
+  });
+
+  it('places a Laser bolt with its lower end at the nose', () => {
+    const spawner = new RecordingSpawner();
+    fire(weaponAt(WeaponKind.Laser, 2), spawner, [true]);
+    const bolt = spawner.shots[0];
+    expect(bolt).toMatchObject({ x: 100, y: 160, height: 48, weapon: WeaponKind.Laser });
+    expect((bolt?.y ?? 0) + (bolt?.height ?? 0) / 2).toBe(ORIGIN.y - 16);
   });
 });

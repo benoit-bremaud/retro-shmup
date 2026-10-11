@@ -16,6 +16,7 @@ export type SizeTier = (typeof SizeTier)[keyof typeof SizeTier];
 
 /** Stats of a role (GDD §5.2, v0.6 §5.2.1). Hitboxes are the full sprite box. */
 export interface EnemyStats {
+  /** In tenths of a level-1 shot (ADR-0019). */
   readonly hp: number;
   readonly width: number;
   readonly height: number;
@@ -47,7 +48,7 @@ export interface EnemyArchetype {
 
 export const POPCORN: EnemyArchetype = {
   id: 'popcorn',
-  stats: { hp: 1, width: 16, height: 16, score: 100, tier: SizeTier.Small },
+  stats: { hp: 10, width: 16, height: 16, score: 100, tier: SizeTier.Small },
   movement: PathMovement,
   attack: NoAttack,
   formation: true,
@@ -56,7 +57,7 @@ export const POPCORN: EnemyArchetype = {
 
 export const DIVER: EnemyArchetype = {
   id: 'diver',
-  stats: { hp: 1, width: 16, height: 16, score: 150, tier: SizeTier.Small },
+  stats: { hp: 10, width: 16, height: 16, score: 150, tier: SizeTier.Small },
   movement: DiveMovement,
   attack: NoAttack,
   formation: false,
@@ -65,7 +66,7 @@ export const DIVER: EnemyArchetype = {
 
 export const GUNNER: EnemyArchetype = {
   id: 'gunner',
-  stats: { hp: 8, width: 32, height: 32, score: 300, tier: SizeTier.Medium },
+  stats: { hp: 80, width: 32, height: 32, score: 300, tier: SizeTier.Medium },
   movement: EnterHoldLeave,
   attack: AimedAttack,
   formation: false,

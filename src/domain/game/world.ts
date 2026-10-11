@@ -51,6 +51,8 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, EnemySpawner,
     bullet.height = shot.height;
     bullet.damage = shot.damage;
     bullet.pierceLeft = shot.pierce;
+    bullet.weapon = shot.weapon;
+    bullet.forgetHits();
   }
 
   spawnEnemyBullet(x: number, y: number, vxPerSecond: number, vyPerSecond: number): void {
@@ -61,6 +63,7 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, EnemySpawner,
     bullet.height = EnemyBulletTuning.size;
     bullet.damage = EnemyBulletTuning.damage;
     bullet.pierceLeft = 0;
+    bullet.forgetHits();
   }
 
   /**

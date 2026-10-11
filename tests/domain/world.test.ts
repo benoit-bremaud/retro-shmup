@@ -5,11 +5,23 @@ import {
   ENEMY_POOL_SIZE,
   PLAYER_BULLET_POOL_SIZE,
 } from '../../src/domain/game/tuning';
+import { WeaponKind } from '../../src/domain/game/weapon';
+import type { ShotSpec } from '../../src/domain/game/weapon';
 import { World } from '../../src/domain/game/world';
 
 const DT = 1 / 60;
 
-const SHOT = { vxPerSecond: 0, vyPerSecond: -360, width: 2, height: 8, damage: 1, pierce: 0 };
+const SHOT: ShotSpec = {
+  offsetX: 0,
+  offsetY: 0,
+  vxPerSecond: 0,
+  vyPerSecond: -360,
+  width: 2,
+  height: 8,
+  damage: 10,
+  pierce: 0,
+  weapon: WeaponKind.Spread,
+};
 
 function spawnAt(world: World, x: number, y: number): void {
   world.spawnPlayerBullet(x, y, SHOT);

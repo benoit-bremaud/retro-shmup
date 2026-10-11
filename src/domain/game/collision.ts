@@ -38,25 +38,29 @@ function overlapsHitbox(player: Player, box: Box): boolean {
   );
 }
 
-function firstEnemyHitBy(world: World, bullet: Bullet): Enemy | undefined {
-  for (let i = 0; i < world.enemies.count; i += 1) {
-    const enemy = world.enemies.at(i);
-    if (!enemy.spent && overlaps(bullet, enemy)) return enemy;
+// One hit: a bullet with no pass-through left is spent, a bolt passing through remembers the body.
+function hitEnemy(bullet: Bullet, enemy: Enemy, rules: HitRules): void {
+  if (bullet.pierceLeft === 0) {
+    bullet.spent = true;
+  } else {
+    bullet.recordHit(enemy.serial);
+    bullet.pierceLeft -= 1;
   }
-  return undefined;
+  const destroyed = applyDamage(enemy, bullet.damage);
+  rules.enemyHit(enemy);
+  if (destroyed) rules.destroyEnemy(enemy);
 }
 
-// Pass 1: player bullets against enemies; a bullet hits one enemy and is consumed.
+// Pass 1: player bullets against enemies. A Spread bullet hits one enemy and is spent; a Laser bolt
+// passes through up to three, each body hit once, every one taking the full damage (GDD v0.8 §4.3).
 function shotsAgainstEnemies(world: World, rules: HitRules): void {
   for (let i = 0; i < world.playerBullets.count; i += 1) {
     const bullet = world.playerBullets.at(i);
-    if (bullet.spent) continue;
-    const enemy = firstEnemyHitBy(world, bullet);
-    if (enemy === undefined) continue;
-    bullet.spent = true;
-    const destroyed = applyDamage(enemy, bullet.damage);
-    rules.enemyHit(enemy);
-    if (destroyed) rules.destroyEnemy(enemy);
+    for (let j = 0; j < world.enemies.count && !bullet.spent; j += 1) {
+      const enemy = world.enemies.at(j);
+      if (enemy.spent || !overlaps(bullet, enemy) || !bullet.canHit(enemy.serial)) continue;
+      hitEnemy(bullet, enemy, rules);
+    }
   }
 }
 
