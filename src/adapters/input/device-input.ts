@@ -8,6 +8,8 @@ import { Button } from '../../domain/ports/input-port';
 import type { ScreenLayout } from '../../domain/presentation/screen';
 import { arbitrate, createArbitration, createSample } from './arbitration';
 import type { DeviceSamples } from './arbitration';
+import { GamepadModule } from './gamepad';
+import type { GamepadList } from './gamepad';
 import { KeyboardModule } from './keyboard';
 import { PointerModule } from './pointer';
 import type { CanvasRect, PointerEventLike } from './pointer';
@@ -25,7 +27,7 @@ export interface KeyEventLike {
 /**
  * The browser objects `DeviceInput` needs, injected by the composition root as one record of
  * narrow interfaces (ADR-0015 decision 4): the adapter never references a browser global. The
- * gamepad, fullscreen and audio-unlock members join with their devices.
+ * fullscreen and audio-unlock members join with the options and audio.
  */
 export interface InputEnvironment {
   onKeyDown(listener: (event: KeyEventLike) => void): void;
@@ -37,17 +39,20 @@ export interface InputEnvironment {
   onPointerMove(listener: (event: PointerEventLike) => void): void;
   onPointerUp(listener: (event: PointerEventLike) => void): void;
   onPointerCancel(listener: (event: PointerEventLike) => void): void;
+  /** `navigator.getGamepads()`, polled once per read. */
+  gamepads(): GamepadList;
 }
 
 /**
  * The single `InputPort` implementation, a façade over per-device modules (ADR-0015 decision 4).
- * It numbers every keydown and pointer event (later every gamepad start), and combines the device
- * samples with the browser-free `arbitrate` (ADR-0018 decision 9). The gamepad sample stays idle
- * until its module lands.
+ * It numbers every keydown and pointer event, then the gamepad poll last in each read, and
+ * combines the device samples with the browser-free `arbitrate` (ADR-0018 decision 9).
  */
 export class DeviceInput implements InputPort {
   private readonly keyboard = new KeyboardModule();
   private readonly pointer = new PointerModule();
+  private readonly gamepad = new GamepadModule();
+  private readonly environment: InputEnvironment;
   private readonly samples: DeviceSamples = {
     keyboard: createSample(),
     touch: createSample(),
@@ -61,6 +66,7 @@ export class DeviceInput implements InputPort {
   private automaticPause = false;
 
   constructor(environment: InputEnvironment) {
+    this.environment = environment;
     environment.onKeyDown((event) => {
       // A browser shortcut (Ctrl, Cmd or Alt held) is never a game input and keeps its action.
       if (event.ctrlKey || event.metaKey || event.altKey) return;
@@ -107,6 +113,10 @@ export class DeviceInput implements InputPort {
     this.keyboard.sample(this.samples.keyboard);
     this.pointer.sampleTouch(this.samples.touch);
     this.pointer.sampleMouse(this.samples.mouse);
+    // The poll applies after this read's events (ADR-0015 decision 5); a lost active pad pauses.
+    this.seq += 1;
+    if (this.gamepad.poll(this.environment.gamepads(), this.seq)) this.automaticPause = true;
+    this.gamepad.sample(this.samples.gamepad);
     arbitrate(this.arbitration, this.samples, into);
     if (this.automaticPause) into.pressed |= Button.Pause;
     this.automaticPause = false;
@@ -116,6 +126,7 @@ export class DeviceInput implements InputPort {
 
   setBindings(bindings: Bindings): void {
     this.keyboard.setBindings(bindings);
+    this.gamepad.setBindings(bindings);
   }
 
   /** Key capture arrives with the options screen. */

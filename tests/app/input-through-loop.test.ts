@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DeviceInput } from '../../src/adapters/input/device-input';
 import type { InputEnvironment, KeyEventLike } from '../../src/adapters/input/device-input';
+import type { GamepadList } from '../../src/adapters/input/gamepad';
 import { FrameLoop, STEP_MS } from '../../src/app/frame-loop';
 import type { FrameTarget } from '../../src/app/frame-loop';
 import { DEFAULT_BINDINGS } from '../../src/domain/input/default-bindings';
@@ -30,6 +31,9 @@ class KeyOnlyEnvironment implements InputEnvironment {
   }
   onPointerCancel(): void {
     // No pointer in this scenario.
+  }
+  gamepads(): GamepadList {
+    return [];
   }
   press(code: string): void {
     this.keyDown?.({

@@ -52,6 +52,7 @@ const environment: InputEnvironment = {
   onPointerCancel: (listener) => {
     globalThis.addEventListener('pointercancel', listener);
   },
+  gamepads: () => navigator.getGamepads(),
 };
 const input = new DeviceInput(environment);
 input.setBindings(DEFAULT_BINDINGS);
