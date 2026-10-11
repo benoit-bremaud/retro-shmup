@@ -81,11 +81,11 @@ const POPCORN_ROW = { at: 0, archetype: POPCORN, count: 1, spawn: { x: 80, y: -8
 describe('World — enemies and enemy bullets (GDD v0.6 §5.2.1, class diagram notes)', () => {
   it('drops an enemy refused by a full pool, without consuming a serial', () => {
     const world = new World();
-    for (let i = 0; i < ENEMY_POOL_SIZE + 2; i += 1) world.spawnEnemy(POPCORN_ROW);
+    for (let i = 0; i < ENEMY_POOL_SIZE + 2; i += 1) world.spawnEnemy(POPCORN_ROW, undefined);
     expect(world.enemies.count).toBe(ENEMY_POOL_SIZE);
     world.enemies.at(0).spent = true;
     world.sweep();
-    world.spawnEnemy(POPCORN_ROW);
+    world.spawnEnemy(POPCORN_ROW, undefined);
     expect(world.enemies.at(world.enemies.count - 1).serial).toBe(ENEMY_POOL_SIZE + 1);
   });
 
@@ -97,7 +97,7 @@ describe('World — enemies and enemy bullets (GDD v0.6 §5.2.1, class diagram n
 
   it('places a spawned Popcorn on its curve at once, with no smear', () => {
     const world = new World();
-    world.spawnEnemy(POPCORN_ROW);
+    world.spawnEnemy(POPCORN_ROW, undefined);
     const popcorn = world.enemies.at(0);
     expect(popcorn.position.x).not.toBe(80); // the curve at y −8 is off its axis
     expect(popcorn.previousPosition).toEqual(popcorn.position);
@@ -105,7 +105,7 @@ describe('World — enemies and enemy bullets (GDD v0.6 §5.2.1, class diagram n
 
   it('keeps an enemy that spawns outside the field, then despawns it once it has left', () => {
     const world = new World();
-    world.spawnEnemy({ at: 0, archetype: DIVER, count: 1, spawn: { x: 120, y: -8 } });
+    world.spawnEnemy({ at: 0, archetype: DIVER, count: 1, spawn: { x: 120, y: -8 } }, undefined);
     world.sweep();
     expect(world.enemies.count).toBe(1);
     for (let i = 0; i < 400 && world.enemies.count > 0; i += 1) {
@@ -119,7 +119,7 @@ describe('World — enemies and enemy bullets (GDD v0.6 §5.2.1, class diagram n
     const world = new World();
     spawnAt(world, 100, 200);
     world.spawnEnemyBullet(100, 100, 0, 75);
-    world.spawnEnemy(POPCORN_ROW);
+    world.spawnEnemy(POPCORN_ROW, undefined);
     world.playerBullets.at(0).spent = true;
     world.enemyBullets.at(0).spent = true;
     world.enemies.at(0).spent = true;

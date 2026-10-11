@@ -1,16 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import { DIVER, GUNNER, POPCORN } from '../../src/domain/game/enemy';
+import { Formation } from '../../src/domain/game/formation';
 import { LevelDirector } from '../../src/domain/game/level-director';
 import type { EnemySpawner } from '../../src/domain/game/level-director';
 import { LEVEL_1 } from '../../src/domain/game/level-script';
+import { PickupKind } from '../../src/domain/game/pickup';
 import type { LevelScript, ScriptEvent } from '../../src/domain/game/level-script';
 
 /** Records which archetype spawned on which tick (1 = the run's first step). */
 class Recorder implements EnemySpawner {
   tick = 0;
   readonly spawns: { tick: number; id: string; x: number }[] = [];
-  spawnEnemy(event: Readonly<ScriptEvent>): void {
+  readonly formations: Formation[] = [];
+  readonly members: (Formation | undefined)[] = [];
+  startFormation(size: number): Formation {
+    const formation = new Formation();
+    formation.start(size);
+    this.formations.push(formation);
+    return formation;
+  }
+  spawnEnemy(event: Readonly<ScriptEvent>, formation: Formation | undefined): void {
     this.spawns.push({ tick: this.tick, id: event.archetype.id, x: event.spawn.x });
+    this.members.push(formation);
   }
 }
 
@@ -82,13 +93,16 @@ describe('LevelDirector — script walking (GDD v0.6 §7.2.1, class diagram)', (
       { at: 44, archetype: POPCORN, count: 6, interval: 1, spawn: { x: 0, y: 0 } },
     ],
   ])('rejects %s at load (RangeError)', (_label, event) => {
-    expect(() => new LevelDirector({ loopAt: 45, events: [event] })).toThrow(RangeError);
+    expect(
+      () => new LevelDirector({ loopAt: 45, dominantColour: PickupKind.PRed, events: [event] }),
+    ).toThrow(RangeError);
   });
 
   it('accepts a lone Popcorn, which never forms a formation', () => {
     expect(
       () =>
         new LevelDirector({
+          dominantColour: PickupKind.PRed,
           events: [{ at: 0, archetype: POPCORN, count: 1, spawn: { x: 0, y: 0 } }],
         }),
     ).not.toThrow();

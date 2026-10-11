@@ -21,6 +21,7 @@ export class ScoreKeeper {
   constructor(events: RunEvents) {
     events.subscribe(GameEventKind.EnemyDestroyed, this.onEnemyDestroyed);
     events.subscribe(GameEventKind.PlayerDied, this.onPlayerDied);
+    events.subscribe(GameEventKind.PickupCollected, this.onPickupCollected);
   }
 
   get score(): number {
@@ -52,6 +53,11 @@ export class ScoreKeeper {
     this.points += event.value * this.multiplier;
     this.chainKills += 1;
     this.chainTimer = WINDOW_STEPS;
+  };
+
+  // The cap bonus is flat: never multiplied, and the chain does not move (GDD v0.8 §4.6).
+  private readonly onPickupCollected = (event: Readonly<GameEvent>): void => {
+    this.points += event.value;
   };
 
   private readonly onPlayerDied = (): void => {

@@ -1,4 +1,6 @@
 import type { WorldSnapshot } from '../game/run';
+import { KitCaps } from '../game/tuning';
+import { WeaponKind } from '../game/weapon';
 import { HUD_FONT_CELL } from '../ports/render-port';
 import type { RenderPort } from '../ports/render-port';
 import { HUD_LAYOUTS, PAUSE_BUTTONS, PORTRAIT_STRIP_EDGE } from './hud-layout';
@@ -55,6 +57,43 @@ export function drawHud(render: RenderPort, snapshot: WorldSnapshot): void {
   const reserve = Math.max(snapshot.lives - 1, 0);
   for (let i = 0; i < reserve; i += 1) {
     render.drawRect(lives.x + i * lives.spacing, lives.y, lives.size, lives.size, Palette.lifeIcon);
+  }
+  drawWeapon(render, snapshot);
+}
+
+// Weapon badge and pips (GDD v0.8 §9.2): told apart by shape, never by colour only (§9.7).
+const BADGE = 8;
+const PIP_WIDTH = 3;
+const PIP_HEIGHT = 8;
+
+/** The 8 × 8 badge: three dots side by side for the Spread, one vertical bar for the Laser. */
+function drawBadge(render: RenderPort, kind: WeaponKind, x: number, y: number): void {
+  if (kind === WeaponKind.Laser) {
+    render.drawRect(x + 3, y, 2, BADGE, Palette.laserBadge);
+    return;
+  }
+  for (let dot = 0; dot < 3; dot += 1) {
+    render.drawRect(x + dot * 3, y + 3, 2, 2, Palette.spreadBadge);
+  }
+}
+
+/** Filled up to the level, hollow above: the hollow pip is a 3 × 8 outline. */
+function drawPip(render: RenderPort, x: number, y: number, filled: boolean): void {
+  if (filled) {
+    render.drawRect(x, y, PIP_WIDTH, PIP_HEIGHT, Palette.pipOn);
+    return;
+  }
+  render.drawRect(x, y, 1, PIP_HEIGHT, Palette.pipOff);
+  render.drawRect(x + PIP_WIDTH - 1, y, 1, PIP_HEIGHT, Palette.pipOff);
+  render.drawRect(x + 1, y, 1, 1, Palette.pipOff);
+  render.drawRect(x + 1, y + PIP_HEIGHT - 1, 1, 1, Palette.pipOff);
+}
+
+function drawWeapon(render: RenderPort, snapshot: WorldSnapshot): void {
+  const { weapon } = HUD_LAYOUTS[render.layout().kind];
+  drawBadge(render, snapshot.weaponKind, weapon.x, weapon.y);
+  for (let pip = 0; pip < KitCaps.maxPower; pip += 1) {
+    drawPip(render, weapon.pipX + pip * weapon.pipSpacing, weapon.y, pip < snapshot.power);
   }
 }
 

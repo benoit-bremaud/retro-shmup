@@ -1,5 +1,5 @@
 /**
- * Gameplay tuning values of GDD v0.5, kept as data (ADR-0003): code paths read these records,
+ * Gameplay tuning values of the GDD, kept as data (ADR-0003): code paths read these records,
  * never literals. Values marked *(initial)* in the GDD are tuned in playtests.
  */
 
@@ -32,8 +32,8 @@ export const PlayerTuning = {
   blinksPerSecond: 3,
   /** The 4 × 4 hitbox centred on the ship (GDD §4.1): only it counts for hits. */
   hitboxSize: 4,
-  /** Lives at the start of a run, the ship in play included (GDD §4.4). */
-  lives: 3,
+  /** The full sprite box: pickups are caught with it, generously (GDD §4.6). */
+  collectSize: 32,
   /** The death sequence before the next fly-in (GDD §4.4). */
   respawnSeconds: 1.5,
 } as const;
@@ -102,3 +102,27 @@ export const ENEMY_BULLET_POOL_SIZE = 48;
 
 /** Player bullets alive at once at level 1: about 9, so 16 leaves headroom (class diagram). */
 export const PLAYER_BULLET_POOL_SIZE = 16;
+
+/** Pickups (GDD v0.8 §4.6): fall with a sway that is a closed form of their age, no draw. */
+export const PickupTuning = {
+  size: 16,
+  /** Pixels per second, downward. */
+  fallSpeed: 40,
+  swayAmplitude: 8,
+  swayPeriodSeconds: 2,
+  /** The sway axis is clamped so the whole box always stays on the field. */
+  minAxisX: 16,
+  maxAxisX: 224,
+} as const;
+
+/** Pickups on the field at once (GDD v0.8 §4.6); a spawn on a full pool is dropped (ADR-0019). */
+export const PICKUP_POOL_SIZE = 8;
+/** Popcorn formations alive at once (class diagram, ADR-0019). */
+export const FORMATION_POOL_SIZE = 16;
+
+/** Caps of the player kit (GDD v0.8 §4.4, §4.6). */
+export const KitCaps = {
+  maxPower: 5,
+  /** Paid when a pickup's effect cannot apply; never multiplied by the chain. */
+  capBonus: 1000,
+} as const;

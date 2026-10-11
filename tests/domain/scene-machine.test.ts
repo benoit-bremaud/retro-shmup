@@ -5,6 +5,7 @@ import { Palette } from '../../src/domain/presentation/palette';
 import { Starfield } from '../../src/domain/presentation/starfield';
 import { DIVER, POPCORN } from '../../src/domain/game/enemy';
 import type { LevelScript } from '../../src/domain/game/level-script';
+import { PickupKind } from '../../src/domain/game/pickup';
 import { Run } from '../../src/domain/game/run';
 import { Scene, SceneMachine } from '../../src/domain/scenes/scene-machine';
 import { PORTRAIT } from '../../src/domain/presentation/screen';
@@ -261,6 +262,7 @@ describe('SceneMachine — Paused and Count-in (meta/05-state-scenes, pause rule
 
 /** Three Divers straight down on an idle ship at rest: three deaths, then Game over. */
 const KILLER: LevelScript = {
+  dominantColour: PickupKind.PRed,
   events: [
     ...[2, 6.5, 11].map((at) => ({
       at,
@@ -279,7 +281,7 @@ function gameOverFixture(): ReturnType<typeof setup> {
     render,
     new Starfield(() => 0.5),
     { blink: true, hitFlash: true, explosions: true },
-    () => new Run(KILLER),
+    () => new Run({ script: KILLER }),
   );
   machine.step(DT, createIntentFrame());
   machine.step(DT, pressed(Button.Confirm));
@@ -370,6 +372,7 @@ describe('SceneMachine — Game over (GDD §4.4, meta/05-state-scenes)', () => {
 describe('SceneMachine — effects per run (ADR-0010, 02-sequence-fixed-step-tick)', () => {
   /** A run whose first Diver is shot at once: it explodes on screen. */
   const TARGET: LevelScript = {
+    dominantColour: PickupKind.PRed,
     events: [{ at: 0, archetype: DIVER, count: 1, spawn: { x: 120, y: -8 } }],
   };
 
@@ -379,7 +382,7 @@ describe('SceneMachine — effects per run (ADR-0010, 02-sequence-fixed-step-tic
       render,
       new Starfield(() => 0.5),
       { blink: true, hitFlash: true, explosions: true },
-      () => new Run(TARGET),
+      () => new Run({ script: TARGET }),
     );
     machine.step(DT, createIntentFrame());
     machine.step(DT, pressed(Button.Confirm));
@@ -410,6 +413,7 @@ describe('SceneMachine — effects per run (ADR-0010, 02-sequence-fixed-step-tic
   it('gives a new run a new presenter: no effect carries over from the previous run', () => {
     // A Diver shot at once (an explosion, never aged: no render), then three that kill the ship.
     const script: LevelScript = {
+      dominantColour: PickupKind.PRed,
       events: [0, 2, 6.5, 11].map((at) => ({
         at,
         archetype: DIVER,
@@ -422,7 +426,7 @@ describe('SceneMachine — effects per run (ADR-0010, 02-sequence-fixed-step-tic
       render,
       new Starfield(() => 0.5),
       { blink: true, hitFlash: true, explosions: true },
-      () => new Run(script),
+      () => new Run({ script: script }),
     );
     machine.step(DT, createIntentFrame());
     machine.step(DT, pressed(Button.Confirm));

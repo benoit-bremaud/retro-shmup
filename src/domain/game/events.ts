@@ -1,10 +1,16 @@
 import type { Vec2 } from './geometry';
 
-/** What the run tells its listeners (class diagram, ADR-0010); the enemies brick's subset. */
+/** What the run tells its listeners (class diagram, ADR-0010, ADR-0019); built so far. */
 export const GameEventKind = {
   EnemyHit: 0,
   EnemyDestroyed: 1,
   PlayerDied: 2,
+  /** `detail` = pickup kind; published only for a pickup that exists. */
+  PickupSpawned: 3,
+  /** `detail` = pickup kind, `value` = the cap bonus (0 or 1 000). */
+  PickupCollected: 4,
+  /** A whole Popcorn formation destroyed; `position` = its last member. */
+  FormationCleared: 5,
 } as const;
 export type GameEventKind = (typeof GameEventKind)[keyof typeof GameEventKind];
 

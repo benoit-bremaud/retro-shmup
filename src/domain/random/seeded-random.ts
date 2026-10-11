@@ -46,6 +46,17 @@ export class SeededRandom implements Random {
 
 const TWO_POW_32 = 2 ** 32;
 
+/**
+ * The seed of a level from the run's seed (ADR-0019): index 0 (level 1) mixes the run seed alone,
+ * each later level adds its 0-based index through the golden-ratio step, then MurmurHash3 fmix32.
+ */
+export function mixSeed(runSeed: number, levelIndex: number): number {
+  let z = (runSeed ^ Math.imul(levelIndex, 0x9e3779b9)) >>> 0;
+  z = Math.imul(z ^ (z >>> 16), 0x85ebca6b);
+  z = Math.imul(z ^ (z >>> 13), 0xc2b2ae35);
+  return (z ^ (z >>> 16)) >>> 0;
+}
+
 function rotl(x: number, k: number): number {
   return ((x << k) | (x >>> (32 - k))) >>> 0;
 }

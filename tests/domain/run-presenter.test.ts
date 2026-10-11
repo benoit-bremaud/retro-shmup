@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { Pickup, PickupKind } from '../../src/domain/game/pickup';
+import { WeaponKind } from '../../src/domain/game/weapon';
 import { PlayerState } from '../../src/domain/game/player';
 import type { PlayerSnapshot, WorldSnapshot } from '../../src/domain/game/run';
 import type { Bullet } from '../../src/domain/game/bullet';
@@ -60,6 +62,9 @@ function snapshot(
     playerBullets: listOf(bullets),
     enemyBullets: listOf<Bullet>([]),
     enemies: listOf<Enemy>([]),
+    pickups: listOf<Pickup>([]),
+    weaponKind: WeaponKind.Spread,
+    power: 1,
     lives: 3,
     score: 0,
     multiplier: 1,
@@ -132,7 +137,7 @@ describe('RunPresenter — invulnerability blink (GDD v0.5 §4.1)', () => {
 
 function enemyAt(archetype: typeof POPCORN, x: number, y: number): Enemy {
   const enemy = new Enemy();
-  enemy.spawn(archetype, { spawn: { x, y } }, 1);
+  enemy.spawn(archetype, { spawn: { x, y } }, 1, undefined);
   return enemy;
 }
 
@@ -180,5 +185,33 @@ describe('RunPresenter — enemies, enemy bullets and the HUD (enemies brick)', 
       expect(icon.x).toBeGreaterThanOrEqual(8);
       expect(icon.x + icon.w).toBeLessThanOrEqual(120 - 8);
     }
+  });
+});
+
+describe('RunPresenter — pickups (meta/05-state-scenes, player-kit additions)', () => {
+  function pickupAt(kind: PickupKind, x: number, y: number): Pickup {
+    const pickup = new Pickup();
+    pickup.spawn(kind, x, y, 1);
+    return pickup;
+  }
+
+  it('draws a 16 × 16 capsule in the P colour, marked by shape: three dots or a bar', () => {
+    const render = new RecordingRender();
+    const red = pickupAt(PickupKind.PRed, 100, 50);
+    const blue = pickupAt(PickupKind.PBlue, 140, 60);
+    presenter(render, false).draw(snapshot(ship(), [], { pickups: listOf([red, blue]) }), 1, 16);
+    expect(render.rectsOf(Palette.pickupRed)).toEqual([
+      { region: 'field', x: 92, y: 42, w: 16, h: 16, colour: Palette.pickupRed },
+    ]);
+    expect(render.rectsOf(Palette.pickupBlue)).toEqual([
+      { region: 'field', x: 132, y: 52, w: 16, h: 16, colour: Palette.pickupBlue },
+    ]);
+    const marks = render.rectsOf(Palette.pickupMark).map((r) => [r.x, r.y, r.w, r.h]);
+    expect(marks).toEqual([
+      [95, 49, 2, 2],
+      [99, 49, 2, 2],
+      [103, 49, 2, 2],
+      [139, 56, 2, 8],
+    ]);
   });
 });

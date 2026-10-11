@@ -1,6 +1,13 @@
 import type { Vec2 } from './geometry';
 import { SpreadPattern } from './spread-pattern';
-import { SpreadLevel1, toSteps } from './tuning';
+import { KitCaps, SpreadLevel1, toSteps } from './tuning';
+
+/** The two weapons (GDD §4.3), chosen by the colour of the last P caught. */
+export const WeaponKind = {
+  Spread: 'SPREAD',
+  Laser: 'LASER',
+} as const;
+export type WeaponKind = (typeof WeaponKind)[keyof typeof WeaponKind];
 
 /**
  * Where the player's weapon puts its shots (class diagram). Declared with the weapon code, its
@@ -31,11 +38,35 @@ const COOLDOWN_STEPS = toSteps(1 / SpreadLevel1.shotsPerSecond);
 
 /**
  * The player's weapon. The cooldown counts whole steps and runs whether fire is held or not, so
- * tapping never fires faster than holding (GDD v0.5 §4.3). While Spread is the only pattern it is
- * called directly; the look-up by weapon kind comes with the Laser.
+ * tapping never fires faster than holding (GDD v0.5 §4.3). A run starts with the Spread at level 1.
+ * Interim (E-1 → E-2, meta/05-state-scenes): every kind and level fires the level-1 Spread; the
+ * look-up in the weapon tables comes with them.
  */
 export class Weapon {
   private cooldown = 0;
+  private currentKind: WeaponKind = WeaponKind.Spread;
+  private currentLevel = 1;
+
+  get kind(): WeaponKind {
+    return this.currentKind;
+  }
+
+  /** The power level, 1 to 5, shared by both weapons (GDD §4.3). */
+  get level(): number {
+    return this.currentLevel;
+  }
+
+  /**
+   * A P of `kind` caught (GDD v0.8 §4.6): it selects that weapon, keeping the level and the
+   * cooldown, and raises the level by one; at level 5 it pays the cap bonus instead. Returns the
+   * points to award.
+   */
+  powerUp(kind: WeaponKind): number {
+    this.currentKind = kind;
+    if (this.currentLevel >= KitCaps.maxPower) return KitCaps.capBonus;
+    this.currentLevel += 1;
+    return 0;
+  }
 
   /** A new ship fires at once (05-state-player, fly-in). */
   reset(): void {

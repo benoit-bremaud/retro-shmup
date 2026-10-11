@@ -1,15 +1,24 @@
+import type { Formation } from './formation';
 import type { LevelScript, ScriptEvent } from './level-script';
 import { toSteps } from './tuning';
 
 /** Where the director puts the enemies it spawns (implemented by `World`). */
 export interface EnemySpawner {
-  spawnEnemy(event: Readonly<ScriptEvent>): void;
+  /** A new formation of `size` members, or `undefined` when the formation pool is full. */
+  startFormation(size: number): Formation | undefined;
+  spawnEnemy(event: Readonly<ScriptEvent>, formation: Formation | undefined): void;
 }
 
-/** A single spawn of the expanded script: the step it is due and its source event. */
+/** A single spawn of the expanded script: the step it is due, its source row and its rank. */
 interface Spawn {
   readonly step: number;
   readonly event: Readonly<ScriptEvent>;
+  readonly row: number;
+  readonly rank: number;
+}
+
+function formsFormation(event: Readonly<ScriptEvent>): boolean {
+  return event.archetype.formation && event.count > 1;
 }
 
 const MIN_FORMATION = 5;
@@ -59,6 +68,8 @@ export class LevelDirector {
   private readonly loopSteps: number;
   private scriptStep = 0;
   private cursor = 0;
+  /** The formation of each row's current pass: a new one at each pass's first member. */
+  private readonly formations: (Formation | undefined)[];
 
   constructor(script: LevelScript) {
     this.loopSteps =
@@ -71,19 +82,27 @@ export class LevelDirector {
       const first = toSteps(event.at);
       const every = toSteps(event.interval ?? 0);
       for (let rank = 0; rank < event.count; rank += 1) {
-        spawns.push({ step: first + rank * every, event });
+        spawns.push({ step: first + rank * every, event, row: i, rank });
       }
     }
+    this.formations = new Array<Formation | undefined>(script.events.length).fill(undefined);
     // A stable sort keeps the script order among spawns due on the same step.
     spawns.sort((a, b) => a.step - b.step);
     this.spawns = spawns;
   }
 
-  /** Step 1 of `Run.step`: spawns every member due at this script step. */
+  /**
+   * Step 1 of `Run.step`: spawns every member due at this script step. The first member of a
+   * Popcorn group starts the formation of this pass, so each loop pass is a new formation.
+   */
   tick(spawner: EnemySpawner): void {
     let next = this.spawns[this.cursor];
     while (next !== undefined && next.step <= this.scriptStep) {
-      spawner.spawnEnemy(next.event);
+      if (formsFormation(next.event) && next.rank === 0) {
+        this.formations[next.row] = spawner.startFormation(next.event.count);
+      }
+      const formation = formsFormation(next.event) ? this.formations[next.row] : undefined;
+      spawner.spawnEnemy(next.event, formation);
       this.cursor += 1;
       next = this.spawns[this.cursor];
     }

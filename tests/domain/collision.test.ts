@@ -3,6 +3,7 @@ import { CollisionResolver } from '../../src/domain/game/collision';
 import type { HitRules } from '../../src/domain/game/collision';
 import { DIVER, GUNNER } from '../../src/domain/game/enemy';
 import type { Enemy, EnemyArchetype } from '../../src/domain/game/enemy';
+import type { Pickup } from '../../src/domain/game/pickup';
 import { PlayerState } from '../../src/domain/game/player';
 import { World } from '../../src/domain/game/world';
 import { createIntentFrame } from '../../src/domain/ports/input-port';
@@ -25,6 +26,10 @@ class Rules implements HitRules {
   playerDied(): void {
     this.deaths += 1;
   }
+  readonly collected: number[] = [];
+  pickupCollected(pickup: Pickup): void {
+    this.collected.push(pickup.kind);
+  }
 }
 
 /** A world whose ship is vulnerable at its resting point (120, 272). */
@@ -39,7 +44,7 @@ function vulnerableWorld(): World {
 }
 
 function enemyAt(world: World, archetype: EnemyArchetype, x: number, y: number): Enemy {
-  world.spawnEnemy({ at: 0, archetype, count: 1, spawn: { x, y } });
+  world.spawnEnemy({ at: 0, archetype, count: 1, spawn: { x, y } }, undefined);
   const enemy = world.enemies.at(world.enemies.count - 1);
   enemy.position.x = x;
   enemy.position.y = y;

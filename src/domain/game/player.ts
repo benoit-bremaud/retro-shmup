@@ -1,9 +1,11 @@
 import { Button } from '../ports/input-port';
+import { NORMAL } from './difficulty';
 import type { IntentFrame } from '../ports/input-port';
 import { FIELD_HEIGHT, FIELD_WIDTH } from './geometry';
 import type { Vec2 } from './geometry';
+import { PickupKind } from './pickup';
 import { PlayerTuning, toSteps } from './tuning';
-import { Weapon } from './weapon';
+import { Weapon, WeaponKind } from './weapon';
 import type { PlayerShotSpawner } from './weapon';
 
 /** Lifecycle of the ship (05-state-player). */
@@ -48,7 +50,7 @@ export class Player {
   private stateSteps = FLY_IN_STEPS;
   /** Steps since the protection began; the blink phase comes from it, never from `stateSteps`. */
   private protection = 0;
-  private livesLeft: number = PlayerTuning.lives;
+  private livesLeft: number = NORMAL.lives;
 
   get state(): PlayerState {
     return this.currentState;
@@ -61,6 +63,28 @@ export class Player {
   /** Lives left, the ship in play included (GDD §4.4). */
   get lives(): number {
     return this.livesLeft;
+  }
+
+  get weaponKind(): WeaponKind {
+    return this.weapon.kind;
+  }
+
+  /** The power level, 1 to 5. */
+  get power(): number {
+    return this.weapon.level;
+  }
+
+  /** A ship on its way in or in control catches pickups; a dead one never does (GDD v0.8 §4.6). */
+  get canCollect(): boolean {
+    return this.currentState !== PlayerState.Dead;
+  }
+
+  /**
+   * Applies a caught pickup (class diagram, ADR-0019); returns the cap bonus to award, 0 when the
+   * effect applied.
+   */
+  collect(kind: PickupKind): number {
+    return this.weapon.powerUp(kind === PickupKind.PBlue ? WeaponKind.Laser : WeaponKind.Spread);
   }
 
   /** True once the last death sequence has ended: `Run` reads it at step 8 (05-state-player). */
