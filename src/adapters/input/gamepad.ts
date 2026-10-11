@@ -39,6 +39,11 @@ function maskOf(slots: BindingSlots<number>): number {
 const CONFIRM_MASK = bit(0) | bit(9);
 const BACK_MASK = bit(1);
 
+/** `value` when `mask` has any of `bits`, else 0. */
+function when(mask: number, bits: number, value: number): number {
+  return (mask & bits) === 0 ? 0 : value;
+}
+
 /** Quantizes toward zero, so a stick length never exceeds 1 (ADR-0018 decision 5); never -0. */
 function quantize(value: number): number {
   return Math.trunc(value * InputTuning.stickSteps) / InputTuning.stickSteps || 0;
@@ -127,8 +132,8 @@ export class GamepadModule {
     const mask = this.previous[slot] ?? 0;
     const pressed = this.pressedOf[slot] ?? 0;
     this.pressedOf[slot] = 0;
-    const x = ((mask & this.rightMask) !== 0 ? 1 : 0) - ((mask & this.leftMask) !== 0 ? 1 : 0);
-    const y = ((mask & this.downMask) !== 0 ? 1 : 0) - ((mask & this.upMask) !== 0 ? 1 : 0);
+    const x = when(mask, this.rightMask, 1) - when(mask, this.leftMask, 1);
+    const y = when(mask, this.downMask, 1) - when(mask, this.upMask, 1);
     if (x !== 0 || y !== 0) {
       // The d-pad wins when it gives a direction, normalized so a diagonal is never faster than
       // the maximum speed; opposite directions cancel to none, and the stick applies.
@@ -144,8 +149,8 @@ export class GamepadModule {
     into.held = this.buttonsOf(mask);
     into.pressed =
       this.buttonsOf(pressed) |
-      ((pressed & CONFIRM_MASK) !== 0 ? Button.Confirm : 0) |
-      ((pressed & BACK_MASK) !== 0 ? Button.Back : 0);
+      when(pressed, CONFIRM_MASK, Button.Confirm) |
+      when(pressed, BACK_MASK, Button.Back);
   }
 
   private pollPad(pad: GamepadLike, slot: number, seq: number): void {
@@ -188,9 +193,9 @@ export class GamepadModule {
 
   private buttonsOf(mask: number): number {
     return (
-      ((mask & this.fireMask) !== 0 ? Button.Fire : 0) |
-      ((mask & this.bombMask) !== 0 ? Button.Bomb : 0) |
-      ((mask & this.pauseMask) !== 0 ? Button.Pause : 0)
+      when(mask, this.fireMask, Button.Fire) |
+      when(mask, this.bombMask, Button.Bomb) |
+      when(mask, this.pauseMask, Button.Pause)
     );
   }
 }
