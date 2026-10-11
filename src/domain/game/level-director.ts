@@ -100,12 +100,12 @@ export class LevelDirector {
   tick(spawner: EnemySpawner): void {
     let next = this.spawns[this.cursor];
     while (next !== undefined && next.step <= this.scriptStep) {
-      if (!formsFormation(next.event)) {
-        spawner.spawnEnemy(next.event, undefined);
-      } else {
+      if (formsFormation(next.event)) {
         if (next.rank === 0) this.formations[next.row] = spawner.startFormation(next.event.count);
         const formation = this.formations[next.row];
         if (formation !== undefined) spawner.spawnEnemy(next.event, formation);
+      } else {
+        spawner.spawnEnemy(next.event, undefined);
       }
       this.cursor += 1;
       next = this.spawns[this.cursor];

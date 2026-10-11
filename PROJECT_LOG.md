@@ -35,6 +35,12 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   Also fixed: a full formation pool drops the whole group, `Weapon.powerUp` returns a boolean
   (`Player.collect` pays the cap bonus), tests for two pickups in one step, no collection after
   Game over, the formation peak over three passes, and a pinned `mixSeed`.
+- The SonarQube gate failed on the first push attempt: one S7735 (negated condition, fixed) and an
+  unreviewed security hotspot S2245 on the run seed's `Math.random()` in `main.ts`. Verified by
+  experiment (the gate passes without the call, and with a scoped exception, and fails without
+  it), then, by owner choice D, accepted as a versioned exception `e3` in
+  `sonar-project.properties`, scoped to S2245 in `src/app/main.ts` with its justification, like
+  e1 and e2 — rather than a "Safe" review stored only in the local SonarQube database.
 
 ### PR #24 merged (`0737abf`) — E-0 player-kit design
 
