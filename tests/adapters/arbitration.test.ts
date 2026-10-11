@@ -61,19 +61,25 @@ describe('arbitrate — several devices at once (ADR-0015 decision 5, ADR-0018 d
     expect(frame.pressed).toBe(Button.Pause | Button.Confirm);
   });
 
-  it('applies the autofire of touch and mouse only while one of them owns the movement', () => {
-    const s = samples();
-    s.mouse.held = Button.Fire;
-    s.mouse.autofire = true;
-    moving(s.mouse, 1);
-    moving(s.keyboard, 2);
-    const frame = createIntentFrame();
-    arbitrate(createArbitration(), s, frame);
-    expect(frame.held & Button.Fire).toBe(0);
-    moving(s.mouse, 3);
-    arbitrate(createArbitration(), s, frame);
-    expect(frame.held & Button.Fire).toBe(Button.Fire);
-  });
+  it.each(['touch', 'mouse'] as const)(
+    'applies the %s autofire only while touch or mouse owns the movement, lifted included',
+    (pointer) => {
+      const s = samples();
+      s[pointer].held = Button.Fire;
+      s[pointer].autofire = true;
+      moving(s[pointer], 1);
+      moving(s.keyboard, 2);
+      const frame = createIntentFrame();
+      arbitrate(createArbitration(), s, frame);
+      expect(frame.held & Button.Fire).toBe(0);
+      moving(s[pointer], 3);
+      arbitrate(createArbitration(), s, frame);
+      expect(frame.held & Button.Fire).toBe(Button.Fire);
+      s[pointer].moving = false; // finger lifted, or mouse at rest: still the owner
+      arbitrate(createArbitration(), s, frame);
+      expect(frame.held & Button.Fire).toBe(Button.Fire);
+    },
+  );
 
   it('names the last device with any input, moving or not', () => {
     const s = samples();

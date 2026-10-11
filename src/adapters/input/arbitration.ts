@@ -3,8 +3,9 @@ import { Button } from '../../domain/ports/input-port';
 
 /**
  * What one device contributes to an intent frame, filled in place by its module (ADR-0015
- * decision 4). Sequence numbers come from the façade, one per event and one per movement start,
- * so starts compare across devices without timestamps (ADR-0018 decision 9). 0 means never.
+ * decision 4). Sequence numbers come from the façade, one per input event; an event that starts a
+ * movement records the same number as its start, so starts compare across devices without
+ * timestamps (ADR-0018 decision 9). 0 means never.
  */
 export interface DeviceSample {
   moving: boolean;
@@ -17,7 +18,10 @@ export interface DeviceSample {
   startSeq: number;
   /** Sequence number of the last input of any kind. */
   inputSeq: number;
-  /** Its `Fire` is the always-on autofire of touch and mouse (ADR-0009). */
+  /**
+   * Its `Fire` is the always-on autofire of touch and mouse (ADR-0009); that `Fire` lives in
+   * `held` only, never in `pressed`, so the arbitration can mask it.
+   */
   autofire: boolean;
 }
 

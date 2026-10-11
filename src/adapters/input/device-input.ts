@@ -33,7 +33,8 @@ export interface InputEnvironment {
 
 /**
  * The single `InputPort` implementation, a façade over per-device modules (ADR-0015 decision 4).
- * It numbers every event and movement start, and combines the device samples with the
+ * It numbers every keydown (later every pointer event and gamepad start), and combines the device
+ * samples with the
  * browser-free `arbitrate` (ADR-0018 decision 9). The keyboard is the only device so far; the
  * pointer and gamepad samples stay idle until their modules land.
  */
