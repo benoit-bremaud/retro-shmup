@@ -157,6 +157,21 @@ describe('PointerModule — taps (ADR-0018 decisions 2 and 5)', () => {
     expect(tapOf(module)).toEqual({ tapRegion: 'hud', tapX: 20, tapY: 20 });
   });
 
+  it('takes back a pending tap whose finger is cancelled before the read', () => {
+    const module = pointer();
+    module.down(event('touch', 450, 20, 0, 4), 1);
+    module.cancel(event('touch', 450, 20, 0, 4));
+    expect(tapOf(module).tapRegion).toBe('none');
+  });
+
+  it('keeps a pending tap when another finger is cancelled', () => {
+    const module = pointer();
+    module.down(event('touch', 450, 20, 0, 4), 1);
+    module.down(event('touch', 200, 250, 0, 5), 2);
+    module.cancel(event('touch', 200, 250, 0, 5));
+    expect(tapOf(module)).toEqual({ tapRegion: 'hud', tapX: 450, tapY: 20 });
+  });
+
   it('consumes the tap on read', () => {
     const module = pointer();
     module.down(event('touch', 20, 20), 1);

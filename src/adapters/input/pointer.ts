@@ -49,6 +49,8 @@ export class PointerModule {
   private tapRegion: TapRegion = 'none';
   private tapX = 0;
   private tapY = 0;
+  /** The pointer that made the pending tap, so a cancel before the read can take it back. */
+  private tapPointer = 0;
 
   /** The finger that drives the ship, or `undefined` when none does. */
   private steering: number | undefined;
@@ -100,10 +102,10 @@ export class PointerModule {
     this.touchInput = seq;
     if (!this.inField()) {
       // A touch that starts outside the field is a tap only: never a move, never a bomb.
-      this.tap('hud');
+      this.tap('hud', event.pointerId);
       return;
     }
-    this.tap('field');
+    this.tap('field', event.pointerId);
     if (this.steering === undefined) {
       this.steering = event.pointerId;
       this.touchStart = seq;
@@ -133,12 +135,16 @@ export class PointerModule {
     this.lift(event);
   }
 
-  /** A cancelled finger is released with no tap (ADR-0018 decision 8). */
+  /**
+   * A cancelled finger is released with no tap (ADR-0018 decision 8): a tap it made that is still
+   * pending is taken back, so a palm or a system gesture never starts, resumes or pauses.
+   */
   cancel(event: PointerEventLike): void {
     if (event.pointerType === 'mouse') {
       this.mouseButtons = event.buttons;
       return;
     }
+    if (this.tapRegion !== 'none' && this.tapPointer === event.pointerId) this.tapRegion = 'none';
     this.lift(event);
   }
 
@@ -200,7 +206,7 @@ export class PointerModule {
       this.mouseInput = seq;
     }
     if ((pressedNow & LEFT_BUTTON) !== 0 && inside) {
-      this.tap(field ? 'field' : 'hud');
+      this.tap(field ? 'field' : 'hud', event.pointerId);
       this.mouseInput = seq;
       if (field) this.mouseStart = seq;
     }
@@ -251,11 +257,12 @@ export class PointerModule {
   }
 
   /** Within one read, a `hud` tap replaces a pending `field` tap; otherwise the first wins. */
-  private tap(region: Exclude<TapRegion, 'none'>): void {
+  private tap(region: Exclude<TapRegion, 'none'>, pointerId: number): void {
     if (this.tapRegion === 'hud') return;
     if (this.tapRegion === 'field' && region === 'field') return;
     const field = this.fieldOrigin();
     this.tapRegion = region;
+    this.tapPointer = pointerId;
     this.tapX = region === 'field' ? this.x - field.fieldX : this.x;
     this.tapY = region === 'field' ? this.y - field.fieldY : this.y;
   }
