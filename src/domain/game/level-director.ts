@@ -4,9 +4,10 @@ import { toSteps } from './tuning';
 
 /** Where the director puts the enemies it spawns (implemented by `World`). */
 export interface EnemySpawner {
-  /** A new formation of `size` members, or `undefined` when the formation pool is full. */
-  startFormation(size: number): Formation | undefined;
-  spawnEnemy(event: Readonly<ScriptEvent>, formation: Formation | undefined): void;
+  /** A new formation of `total` members, or `undefined` when the formation pool is full. */
+  startFormation(total: number): Formation | undefined;
+  /** False when a full enemy pool refused the spawn. */
+  spawnEnemy(event: Readonly<ScriptEvent>, formation: Formation | undefined): boolean;
 }
 
 /** A single spawn of the expanded script: the step it is due, its source row and its rank. */
@@ -93,16 +94,19 @@ export class LevelDirector {
 
   /**
    * Step 1 of `Run.step`: spawns every member due at this script step. The first member of a
-   * Popcorn group starts the formation of this pass, so each loop pass is a new formation.
+   * Popcorn group starts the formation of this pass, so each loop pass is a new formation; with
+   * the formation pool full, the whole pass of that group is dropped (class diagram).
    */
   tick(spawner: EnemySpawner): void {
     let next = this.spawns[this.cursor];
     while (next !== undefined && next.step <= this.scriptStep) {
-      if (formsFormation(next.event) && next.rank === 0) {
-        this.formations[next.row] = spawner.startFormation(next.event.count);
+      if (!formsFormation(next.event)) {
+        spawner.spawnEnemy(next.event, undefined);
+      } else {
+        if (next.rank === 0) this.formations[next.row] = spawner.startFormation(next.event.count);
+        const formation = this.formations[next.row];
+        if (formation !== undefined) spawner.spawnEnemy(next.event, formation);
       }
-      const formation = formsFormation(next.event) ? this.formations[next.row] : undefined;
-      spawner.spawnEnemy(next.event, formation);
       this.cursor += 1;
       next = this.spawns[this.cursor];
     }

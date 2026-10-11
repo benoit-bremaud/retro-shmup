@@ -58,14 +58,13 @@ export class Weapon {
 
   /**
    * A P of `kind` caught (GDD v0.8 §4.6): it selects that weapon, keeping the level and the
-   * cooldown, and raises the level by one; at level 5 it pays the cap bonus instead. Returns the
-   * points to award.
+   * cooldown, and raises the level by one. Returns false at level 5, where the level cannot rise.
    */
-  powerUp(kind: WeaponKind): number {
+  powerUp(kind: WeaponKind): boolean {
     this.currentKind = kind;
-    if (this.currentLevel >= KitCaps.maxPower) return KitCaps.capBonus;
+    if (this.currentLevel >= KitCaps.maxPower) return false;
     this.currentLevel += 1;
-    return 0;
+    return true;
   }
 
   /** A new ship fires at once (05-state-player, fly-in). */

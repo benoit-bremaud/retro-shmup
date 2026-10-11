@@ -9,10 +9,12 @@ import { NORMAL } from './difficulty';
 import type { Enemy } from './enemy';
 import { createGameEvent, EventBus, GameEventKind } from './events';
 import type { GameEvent, RunEvents } from './events';
+import type { Formation } from './formation';
 import type { Vec2 } from './geometry';
 import { LevelDirector } from './level-director';
+import type { EnemySpawner } from './level-director';
 import { LEVEL_1 } from './level-script';
-import type { LevelScript } from './level-script';
+import type { LevelScript, ScriptEvent } from './level-script';
 import type { Pickup, PickupKind } from './pickup';
 import type { PlayerState } from './player';
 import { ScoreKeeper } from './score-keeper';
@@ -88,7 +90,7 @@ export interface RunView {
  * The simulation of one run (class diagram: `Simulation`, `RunView`, `HitRules`). `step` follows
  * the fixed order of the class diagram; the bomb slot (3) arrives with the pickups and rules brick.
  */
-export class Run implements Simulation, RunView, HitRules {
+export class Run implements Simulation, RunView, HitRules, EnemySpawner {
   private readonly world = new World();
   private readonly director: LevelDirector;
   private readonly bus = new EventBus();
@@ -117,8 +119,8 @@ export class Run implements Simulation, RunView, HitRules {
    * ship, as on an arcade cabinet (GDD v0.6 §4.4): the ship stays out and the score never moves.
    */
   step(dt: number, frame: Readonly<IntentFrame>): void {
-    // (1) the level script spawns what is due.
-    this.director.tick(this.world);
+    // (1) the level script spawns what is due, through the run (refusals settle formations).
+    this.director.tick(this);
     // (2) the player moves and its weapon fires.
     this.world.player.update(frame, dt, this.world);
     // (4) enemies move and attack, then every bullet moves.
@@ -180,16 +182,41 @@ export class Run implements Simulation, RunView, HitRules {
     this.bus.publish(event);
     const dropped = this.rollDrop(enemy);
     const droppedSpawned = dropped !== NONE && this.world.spawnPickup(dropped, x, y);
-    const formation = enemy.formation;
-    let rewarded: number = NONE;
-    let rewardSpawned = false;
-    if (formation?.memberDestroyed(x, y) === true) {
-      rewarded = this.script.dominantColour;
-      rewardSpawned = this.world.spawnPickup(this.script.dominantColour, x, y);
-      this.publishAt(this.formationClearedEvent, x, y, 0, 0);
-    }
+    enemy.formation?.memberDestroyed(x, y);
+    const rewardSpawned = this.rewardIfCleared(enemy.formation);
     if (droppedSpawned) this.publishAt(this.pickupSpawnedEvent, x, y, 0, dropped);
-    if (rewardSpawned) this.publishAt(this.pickupSpawnedEvent, x, y, 0, rewarded);
+    if (rewardSpawned) this.publishReward(enemy.formation);
+  }
+
+  /** `EnemySpawner`, step 1: the world spawns; a refused member may complete its formation. */
+  startFormation(total: number): Formation | undefined {
+    return this.world.startFormation(total);
+  }
+
+  spawnEnemy(event: Readonly<ScriptEvent>, formation: Formation | undefined): boolean {
+    if (this.world.spawnEnemy(event, formation)) return true;
+    if (formation === undefined) return false;
+    formation.refused += 1;
+    if (this.rewardIfCleared(formation)) this.publishReward(formation);
+    return false;
+  }
+
+  /**
+   * The formation completion check (class diagram), run whenever a member is destroyed or
+   * refused: the first time every member that appeared is destroyed, the P of the dominant colour
+   * spawns at the last one and `FORMATION_CLEARED` is published. Returns whether the P exists.
+   */
+  private rewardIfCleared(formation: Formation | undefined): boolean {
+    if (formation?.isCleared() !== true) return false;
+    formation.rewarded = true;
+    this.publishAt(this.formationClearedEvent, formation.lastX, formation.lastY, 0, 0);
+    return this.world.spawnPickup(this.script.dominantColour, formation.lastX, formation.lastY);
+  }
+
+  private publishReward(formation: Formation | undefined): void {
+    if (formation === undefined) return;
+    const colour = this.script.dominantColour;
+    this.publishAt(this.pickupSpawnedEvent, formation.lastX, formation.lastY, 0, colour);
   }
 
   /** `HitRules`: the ship caught the pickup; the cap bonus, if any, is scored flat. */

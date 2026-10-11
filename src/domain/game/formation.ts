@@ -1,39 +1,40 @@
 /**
- * One pass of a Popcorn group (GDD §5.2, class diagram): destroying every member drops a P of
- * the level's dominant colour at the last one destroyed. A member that escapes, or that a full
- * pool refuses, settles the formation without clearing it. Pooled; released once settled.
+ * One pass of a Popcorn group (GDD §5.2, class diagram): destroying every member that appeared
+ * drops a P of the level's dominant colour at the last one destroyed. A member refused by a full
+ * enemy pool never existed, so it does not count against the player; one that escapes does.
+ * Pooled; released once every member is resolved.
  */
 export class Formation {
-  size = 0;
+  total = 0;
   destroyed = 0;
-  /** Members destroyed, escaped or refused: the formation is settled when it reaches `size`. */
-  settled = 0;
+  escaped = 0;
+  refused = 0;
   lastX = 0;
   lastY = 0;
+  rewarded = false;
 
-  start(size: number): void {
-    this.size = size;
+  start(total: number): void {
+    this.total = total;
     this.destroyed = 0;
-    this.settled = 0;
+    this.escaped = 0;
+    this.refused = 0;
     this.lastX = 0;
     this.lastY = 0;
+    this.rewarded = false;
   }
 
-  /** A member destroyed at (x, y); true when that was the last one: the formation is cleared. */
-  memberDestroyed(x: number, y: number): boolean {
+  memberDestroyed(x: number, y: number): void {
     this.destroyed += 1;
-    this.settled += 1;
     this.lastX = x;
     this.lastY = y;
-    return this.destroyed === this.size;
   }
 
-  /** A member that left the field alive, or was never spawned. */
-  memberLost(): void {
-    this.settled += 1;
+  /** Every member that appeared was destroyed, and the P is not paid yet. */
+  isCleared(): boolean {
+    return !this.rewarded && this.destroyed > 0 && this.destroyed + this.refused === this.total;
   }
 
-  get isSettled(): boolean {
-    return this.settled >= this.size;
+  isResolved(): boolean {
+    return this.destroyed + this.escaped + this.refused >= this.total;
   }
 }

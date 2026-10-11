@@ -19,9 +19,10 @@ class Recorder implements EnemySpawner {
     this.formations.push(formation);
     return formation;
   }
-  spawnEnemy(event: Readonly<ScriptEvent>, formation: Formation | undefined): void {
+  spawnEnemy(event: Readonly<ScriptEvent>, formation: Formation | undefined): boolean {
     this.spawns.push({ tick: this.tick, id: event.archetype.id, x: event.spawn.x });
     this.members.push(formation);
+    return true;
   }
 }
 

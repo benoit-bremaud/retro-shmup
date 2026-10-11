@@ -4,7 +4,7 @@ import type { IntentFrame } from '../ports/input-port';
 import { FIELD_HEIGHT, FIELD_WIDTH } from './geometry';
 import type { Vec2 } from './geometry';
 import { PickupKind } from './pickup';
-import { PlayerTuning, toSteps } from './tuning';
+import { KitCaps, PlayerTuning, toSteps } from './tuning';
 import { Weapon, WeaponKind } from './weapon';
 import type { PlayerShotSpawner } from './weapon';
 
@@ -84,7 +84,8 @@ export class Player {
    * effect applied.
    */
   collect(kind: PickupKind): number {
-    return this.weapon.powerUp(kind === PickupKind.PBlue ? WeaponKind.Laser : WeaponKind.Spread);
+    const kindOfP = kind === PickupKind.PBlue ? WeaponKind.Laser : WeaponKind.Spread;
+    return this.weapon.powerUp(kindOfP) ? 0 : KitCaps.capBonus;
   }
 
   /** True once the last death sequence has ended: `Run` reads it at step 8 (05-state-player). */

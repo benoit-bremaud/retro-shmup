@@ -29,6 +29,12 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   right band and on the second portrait row; P capsules marked by shape on the field.
 - A headless capture showed the first full formation's P caught by a ship holding fire at rest:
   two pips lit.
+- Local pre-push review: 1 Must fixed — a member refused by a full enemy pool counted against
+  the formation; `Formation` now counts destroyed, escaped and refused, and `Run` (the director's
+  spawner) runs the completion check on every destroy and refusal, as the class diagram says.
+  Also fixed: a full formation pool drops the whole group, `Weapon.powerUp` returns a boolean
+  (`Player.collect` pays the cap bonus), tests for two pickups in one step, no collection after
+  Game over, the formation peak over three passes, and a pinned `mixSeed`.
 
 ### PR #24 merged (`0737abf`) — E-0 player-kit design
 

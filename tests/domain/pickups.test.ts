@@ -7,11 +7,16 @@ import type { GameEvent } from '../../src/domain/game/events';
 import { Formation } from '../../src/domain/game/formation';
 import { LevelDirector } from '../../src/domain/game/level-director';
 import type { EnemySpawner } from '../../src/domain/game/level-director';
+import { LEVEL_1 } from '../../src/domain/game/level-script';
 import type { LevelScript, ScriptEvent } from '../../src/domain/game/level-script';
 import { Pickup, PickupKind } from '../../src/domain/game/pickup';
 import { PlayerState } from '../../src/domain/game/player';
 import { Run } from '../../src/domain/game/run';
-import { PICKUP_POOL_SIZE } from '../../src/domain/game/tuning';
+import {
+  ENEMY_POOL_SIZE,
+  FORMATION_POOL_SIZE,
+  PICKUP_POOL_SIZE,
+} from '../../src/domain/game/tuning';
 import { Weapon, WeaponKind } from '../../src/domain/game/weapon';
 import { World } from '../../src/domain/game/world';
 import { createIntentFrame } from '../../src/domain/ports/input-port';
@@ -107,17 +112,17 @@ describe('Weapon — kind and power level (GDD v0.8 §4.3, §4.6)', () => {
 
   it('raises the level by one per P and selects its weapon, keeping the level', () => {
     const weapon = new Weapon();
-    expect(weapon.powerUp(WeaponKind.Spread)).toBe(0);
-    expect(weapon.powerUp(WeaponKind.Laser)).toBe(0);
+    expect(weapon.powerUp(WeaponKind.Spread)).toBe(true);
+    expect(weapon.powerUp(WeaponKind.Laser)).toBe(true);
     expect([weapon.kind, weapon.level]).toEqual([WeaponKind.Laser, 3]);
   });
 
-  it('pays 1 000 at level 5, and an other-colour P still switches', () => {
+  it('cannot rise past level 5, and an other-colour P still switches', () => {
     const weapon = new Weapon();
     for (let i = 0; i < 4; i += 1) weapon.powerUp(WeaponKind.Spread);
     expect(weapon.level).toBe(5);
-    expect(weapon.powerUp(WeaponKind.Spread)).toBe(1000);
-    expect(weapon.powerUp(WeaponKind.Laser)).toBe(1000);
+    expect(weapon.powerUp(WeaponKind.Spread)).toBe(false);
+    expect(weapon.powerUp(WeaponKind.Laser)).toBe(false);
     expect([weapon.kind, weapon.level]).toEqual([WeaponKind.Laser, 5]);
   });
 
@@ -209,8 +214,9 @@ class FormationRecorder implements EnemySpawner {
     formation.start(size);
     return formation;
   }
-  spawnEnemy(_event: Readonly<ScriptEvent>, formation: Formation | undefined): void {
+  spawnEnemy(_event: Readonly<ScriptEvent>, formation: Formation | undefined): boolean {
     this.members.push(formation);
+    return true;
   }
 }
 
@@ -307,7 +313,7 @@ describe('Run — drops, formation P and collection (GDD v0.8 §4.6, §5.2; ADR-
     const run = new Run({ createRandom: () => scripted([]) });
     const formation = new Formation();
     formation.start(2);
-    formation.memberLost();
+    formation.escaped += 1;
     run.destroyEnemy(enemyAt(POPCORN, 70, 90, formation));
     expect(run.snapshot().pickups.count).toBe(0);
   });
@@ -333,5 +339,122 @@ describe('Run — drops, formation P and collection (GDD v0.8 §4.6, §5.2; ADR-
     expect(run.snapshot().multiplier).toBe(1);
     expect(run.snapshot().chainRatio).toBe(0);
     expect(log.at(-1)).toBe(`${String(COLLECTED)}:${String(PickupKind.PBlue)}:1000@100,200`);
+  });
+});
+
+const POPCORN_ROW: ScriptEvent = { at: 0, archetype: POPCORN, count: 1, spawn: { x: 120, y: 100 } };
+
+describe('Formations — refused members never count against the player (GDD v0.8 §5.2.1)', () => {
+  /** A run whose enemy pool is full: every further spawn is refused. */
+  function fullRun(): Run {
+    const run = new Run({ createRandom: () => scripted([]) });
+    for (let i = 0; i < ENEMY_POOL_SIZE; i += 1) run.spawnEnemy(POPCORN_ROW, undefined);
+    return run;
+  }
+
+  it('pays the P once every member that appeared is destroyed, a refused one before', () => {
+    const run = fullRun();
+    const log = logOf(run, [CLEARED, SPAWNED]);
+    const formation = new Formation();
+    formation.start(2);
+    expect(run.spawnEnemy(POPCORN_ROW, formation)).toBe(false);
+    run.destroyEnemy(enemyAt(POPCORN, 70, 90, formation));
+    expect(log).toEqual([`${String(CLEARED)}:0:0@70,90`, `${String(SPAWNED)}:0:0@70,90`]);
+  });
+
+  it('pays it in the step the last member is refused, after the others were destroyed', () => {
+    const run = fullRun();
+    const log = logOf(run, [CLEARED, SPAWNED]);
+    const formation = new Formation();
+    formation.start(2);
+    run.destroyEnemy(enemyAt(POPCORN, 50, 60, formation));
+    expect(log).toEqual([]);
+    run.spawnEnemy(POPCORN_ROW, formation);
+    expect(log).toEqual([`${String(CLEARED)}:0:0@50,60`, `${String(SPAWNED)}:0:0@50,60`]);
+  });
+
+  it('pays nothing for a formation whose every member was refused', () => {
+    const run = fullRun();
+    const formation = new Formation();
+    formation.start(1);
+    run.spawnEnemy(POPCORN_ROW, formation);
+    expect(formation.isCleared()).toBe(false);
+    expect(run.snapshot().pickups.count).toBe(0);
+  });
+
+  it('drops the whole group when the formation pool is full', () => {
+    const director = new LevelDirector({
+      dominantColour: PickupKind.PRed,
+      events: [
+        { at: 0, archetype: POPCORN, count: 5, interval: 0.25, spawn: { x: 80, y: -8 } },
+        { at: 0, archetype: GUNNER, count: 1, spawn: { x: -16, y: 80 }, hover: { x: 60, y: 80 } },
+      ],
+    });
+    const spawned: string[] = [];
+    const noFormation: EnemySpawner = {
+      startFormation: () => undefined,
+      spawnEnemy: (event) => {
+        spawned.push(event.archetype.id);
+        return true;
+      },
+    };
+    for (let i = 0; i < 120; i += 1) director.tick(noFormation);
+    expect(spawned).toEqual(['gunner']);
+  });
+
+  it('never needs more than 16 formations over three passes of level 1, nobody shooting', () => {
+    const world = new World();
+    const director = new LevelDirector(LEVEL_1);
+    let most = 0;
+    for (let i = 0; i < 3 * 2700; i += 1) {
+      director.tick(world);
+      world.moveEnemies(DT);
+      world.moveBullets(DT);
+      world.sweep();
+      most = Math.max(most, world.formations.count);
+    }
+    expect(most).toBeGreaterThan(0);
+    expect(most).toBeLessThan(FORMATION_POOL_SIZE);
+  });
+});
+
+describe('Pickups — several in one step, and after Game over (GDD v0.8 §4.6)', () => {
+  it('applies two pickups caught in one step in the order of the active list', () => {
+    const world = worldAfter(120);
+    world.spawnPickup(PickupKind.PRed, 120, 272);
+    world.spawnPickup(PickupKind.PBlue, 120, 272);
+    const run = new Run({ createRandom: () => scripted([]) });
+    const rules = new Collected();
+    CollisionResolver.resolve(world, rules);
+    expect(rules.kinds).toEqual([PickupKind.PRed, PickupKind.PBlue]);
+    for (const kind of rules.kinds) {
+      const pickup = new Pickup();
+      pickup.spawn(kind, 0, 0, 1);
+      run.pickupCollected(pickup);
+    }
+    expect([run.snapshot().weaponKind, run.snapshot().power]).toEqual([WeaponKind.Laser, 3]);
+  });
+
+  it('catches nothing once the last death sequence has ended', () => {
+    const world = worldAfter(120);
+    for (let life = 0; life < 3; life += 1) {
+      world.player.hit();
+      for (let i = 0; i < 300 && world.player.state !== PlayerState.Vulnerable; i += 1) {
+        world.player.update(createIntentFrame(), DT, world);
+        world.player.advanceTimers();
+      }
+    }
+    expect(world.player.isOut).toBe(true);
+    world.spawnPickup(PickupKind.PRed, world.player.position.x, world.player.position.y);
+    const rules = new Collected();
+    CollisionResolver.resolve(world, rules);
+    expect(rules.kinds).toEqual([]);
+  });
+});
+
+describe('mixSeed — the per-level seed (ADR-0019)', () => {
+  it('is pinned, so a change of the mix never goes unnoticed', () => {
+    expect(mixSeed(1, 0)).toBe(1364076727);
+    expect(mixSeed(1, 1)).toBe(920564995);
   });
 });

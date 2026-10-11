@@ -67,24 +67,24 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, EnemySpawner,
    * Step 1, from the level director. An enemy refused by a full pool never exists and takes no
    * serial (GDD v0.6 §5.2.1). Its movement places it at age 0, so it never smears.
    */
-  spawnEnemy(event: Readonly<ScriptEvent>, formation: Formation | undefined): void {
+  spawnEnemy(event: Readonly<ScriptEvent>, formation: Formation | undefined): boolean {
     const enemy = this.enemies.add();
-    if (enemy === undefined) {
-      // A refused member can never be destroyed: its formation is never cleared.
-      formation?.memberLost();
-      return;
-    }
+    if (enemy === undefined) return false;
     enemy.spawn(event.archetype, event, this.nextSerial, formation);
     this.nextSerial += 1;
     event.archetype.movement.tick(enemy, this, 0);
     enemy.previousPosition.x = enemy.position.x;
     enemy.previousPosition.y = enemy.position.y;
+    return true;
   }
 
-  /** A formation pass of `size` members; `undefined` on a full pool (its members spawn alone). */
-  startFormation(size: number): Formation | undefined {
+  /**
+   * A formation pass of `total` members; `undefined` on a full pool, and the director then drops
+   * the whole group, so no visible group ever lacks its reward (class diagram).
+   */
+  startFormation(total: number): Formation | undefined {
     const formation = this.formations.add();
-    formation?.start(size);
+    formation?.start(total);
     return formation;
   }
 
@@ -150,7 +150,9 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, EnemySpawner,
   sweep(): void {
     for (let i = 0; i < this.enemies.count; i += 1) {
       const enemy = this.enemies.at(i);
-      if (!enemy.spent && isEnemyDone(enemy)) enemy.formation?.memberLost();
+      if (!enemy.spent && isEnemyDone(enemy) && enemy.formation !== undefined) {
+        enemy.formation.escaped += 1;
+      }
     }
     this.playerBullets.sweep(isBulletDone);
     this.enemyBullets.sweep(isBulletDone);
@@ -208,7 +210,7 @@ function isPickupDone(pickup: Pickup): boolean {
 }
 
 function isFormationDone(formation: Formation): boolean {
-  return formation.isSettled;
+  return formation.isResolved();
 }
 
 // An enemy spawns outside the field: it leaves only once it has been inside (GDD v0.6 §5.2.1).
