@@ -1,9 +1,9 @@
 # State machine diagram — meta — screens and their transitions (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.6 §3.4,
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.7 §3.4,
 > §4.2, §4.4, §5.2.1, §7.2.1, §8, §9.1, §9.2, §9.3
 > **Related ADRs**: ADR-0006 (save document), ADR-0009 (gestures, automatic pause), ADR-0010
-> (one run, one bus), ADR-0015 (pause in the first playable)
+> (one run, one bus), ADR-0015 (pause in the first playable), ADR-0018 (taps, locks, pause button)
 > **Realizes**: UC1–UC7 of [01-use-case](../system/01-use-case.md) at the screen level; the
 > `SceneMachine` component of [03-component](../system/03-component.md)
 
@@ -69,7 +69,7 @@ stateDiagram-v2
   Ending --> NameEntry : confirm or after(ending time) [score enters the top 10]
   Ending --> Title : confirm or after(ending time) [otherwise]
   GameOver --> NameEntry : confirm or after(game over time) [score enters the top 10]
-  GameOver --> Title : confirm or after(game over time) [otherwise]
+  GameOver --> Title : confirm after the lock, or after(game over time) [otherwise]
   NameEntry --> HighScores : confirm / save the table
 ```
 
@@ -197,10 +197,45 @@ The enemies brick adds `Paused`, `Count-in` and `Game over`, and removes the pau
   set and throws on any other character, `hud` being `0-9` and `×` (the `RenderPort` contract).
   Numbers are drawn digit by digit (`% 10`, one `drawText` per digit from a constant table of
   one-character strings), with no cache and no formatting, so drawing the HUD never allocates.
-- **Smoke test** (the single browser test, ADR-0003): Chromium only, against the built bundle.
+- **Smoke test** (the single browser test, ADR-0003; extended by the devices brick, below):
+  Chromium only, against the built bundle.
   The ship's palette colour is absent at its resting point on the title, then present there after
   `Enter` and at least 30 frames. The logic time per step is measured and logged against the
   4 ms budget (ADR-0002 decision 7), not asserted.
+
+### Devices brick additions (C2)
+
+The devices brick makes the game playable on a phone, with a gamepad and with a mouse (GDD v0.7
+§4.2, §4.4, §9.1, §9.2; ADR-0015, ADR-0018).
+
+- **Screens**: `hud.ts` draws the whole HUD from `layout()` — the landscape bands or the portrait
+  strip, the pause button and the contents — at the `HUD_LAYOUTS` positions; the scene machine
+  only chooses when (traits). The field, the overlays (veil, pause icon, count-in, GAME OVER) and
+  the presenter's field drawing are field-relative and need no change.
+- **Portrait strip** (240 × 32, `hud` coordinates): score {x 4, y 4}, 8 digits; reserve lives
+  {x 76, y 5}, 8 px icons every 12 px (8 icons end at x 168); multiplier {x 4, y 18}; chain bar
+  {x 24, y 21, 44 × 4}, ending under the score's last digit; a 1 px edge line at y 31 over x 0 to
+  191; the pause button over the strip's right end. The landscape layout keeps its current
+  positions.
+- **Pause button**: two 4 × 16 bars 4 px apart, centred in its rectangle, in its own palette
+  colour over the band colour; drawn when the scene's `pauseButton` trait is true (`Playing`,
+  `Paused`, `Count-in`), whatever the device.
+- **Locks**: from the step that enters `Game over`, `Confirm` and taps are ignored for
+  `toSteps(gameOverLockSeconds)` = 60 steps and accepted from the 61st; the 180-step timer counts
+  from the same entry. A `Title` entered from `Game over` applies the same 60-step lock; the first
+  `Title` never does.
+- **Interim deviation, tap resume**: until the pause menu (screens brick), any tap or click also
+  starts `Count-in` from `Paused`.
+- **Interim deviation, gamepad start before a gesture**: unchanged (first-playable subset above);
+  the gesture prompt comes with audio.
+
+| Scene | Pause-button tap | Other tap or click | `Confirm` (Enter, A, Start) | `Pause` (P, Esc, Start) | `Back` (Esc, B) |
+|---|---|---|---|---|---|
+| `Title` | starts a run (after the lock) | starts a run (after the lock) | starts a run (after the lock) | ignored | ignored |
+| `Playing` | `Paused`, before the run steps | field: steering finger; HUD: nothing | ignored | `Paused`, before the run steps | ignored |
+| `Paused` | `Count-in` | `Count-in` (interim) | `Count-in` | ignored | `Count-in` |
+| `Count-in` | `Paused` | ignored | ignored | `Paused` (wins over `Confirm`, so `Start` returns to `Paused`) | ignored |
+| `Game over` | (not drawn) leaves after the lock | leaves after the lock | leaves after the lock | ignored | ignored |
 
 ### Build order
 
@@ -208,5 +243,5 @@ The enemies brick adds `Paused`, `Count-in` and `Game over`, and removes the pau
 |---|---|
 | C1 — first playable on keyboard | the subset above; `Player`, `PlayerState`, `Weapon` with Spread level 1, player bullets; `RunPresenter`; `DeviceInput` with its façade and the `keyboard` module; ADR-0015 decisions 4 (keyboard part), 5 (lost focus), 6 and 9; the smoke test |
 | D — enemies | Popcorn, Diver, Gunner as archetype data and stateless strategies; `LevelDirector` with the looping rows of GDD §7.2.1; `ActiveList` for player bullets, enemy bullets and enemies; `CollisionResolver` with `HitRules`; lives, `hit()`, `Dead` and respawn; `EventBus` with `ScoreKeeper` (points and chain); `RunOutcome.GAME_OVER`; `Paused`, `Count-in`, `Game over`; HUD digits, chain bar and life icons; hit flash and small explosion behind effect switches; an ESLint rule keeping `src/domain/game` from importing `presentation` and `scenes`; the `RenderPort` glyph-set contract |
-| C2 — the other devices | ADR-0015 decisions 1–3 (portrait screen, `layout()`, the portrait HUD layout), the `pointer` and `gamepad` modules and the arbitration function (decisions 4, 5, 7, 8); start by `A`, tap or click; the touch pause button |
+| C2 — the other devices | five PRs (ADR-0018): C2-0 this design; C2-A the browser-free arbitration (no behaviour change); C2-L the portrait screen (`RenderPort.layout()`, `HUD_LAYOUTS`, `hud.ts` draws bands or strip, page CSS); C2-P touch and mouse (`pointer` module, pause button, tap resume, Game over and title locks, crosshair, layout-change pause, the new smoke test); C2-G the gamepad (`gamepad` module, fixed `A`/`B`/`Start` roles) |
 | Later bricks | touch bomb button with the bomb effect (pickups and rules brick); until then the second-finger tap is the only touch bomb |
