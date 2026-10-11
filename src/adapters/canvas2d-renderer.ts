@@ -28,7 +28,8 @@ export interface RenderSurface {
 
 /**
  * Canvas 2D implementation of `RenderPort` (ADR-0001, ADR-0010, ADR-0014): draws at whole logical
- * pixels into a 480 × 320 off-screen surface, then copies it to the visible canvas scaled by an
+ * pixels into the off-screen surface of the current logical screen (480 × 320 landscape or
+ * 240 × 352 portrait, ADR-0015), then copies it to the visible canvas scaled by an
  * integer factor with smoothing off.
  *
  * @remarks The camera offset (screen shake) moves field-region draws only, at draw time: the HUD

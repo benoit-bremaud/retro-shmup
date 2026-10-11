@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { WorldSnapshot } from '../../src/domain/game/run';
 import { HUD_FONT_CELL } from '../../src/domain/ports/render-port';
 import { drawHud, drawHudFrame } from '../../src/domain/presentation/hud';
-import { HUD_LAYOUTS } from '../../src/domain/presentation/hud-layout';
+import { HUD_LAYOUTS, PORTRAIT_STRIP_EDGE } from '../../src/domain/presentation/hud-layout';
 import { Palette } from '../../src/domain/presentation/palette';
 import {
   HUD_BAND_WIDTH,
@@ -12,8 +12,9 @@ import {
 } from '../../src/domain/presentation/screen';
 import type { ScreenLayout } from '../../src/domain/presentation/screen';
 
-const HUD_LAYOUT = HUD_LAYOUTS.landscape;
 import { RecordingRender } from '../support/recording-render';
+
+const HUD_LAYOUT = HUD_LAYOUTS.landscape;
 
 function hudOf(values: Partial<WorldSnapshot>, screen: ScreenLayout = LANDSCAPE): RecordingRender {
   const render = new RecordingRender();
@@ -119,7 +120,7 @@ describe('drawHud — portrait strip (GDD v0.7 §9.2, meta/05-state-scenes devic
     const render = hudOf({ score: 99_999_999, multiplier: 8, chainRatio: 1, lives: 9 }, PORTRAIT);
     for (const rect of render.rects) {
       expect(rect.x).toBeGreaterThanOrEqual(4);
-      expect(rect.x + rect.w).toBeLessThanOrEqual(192 - 4);
+      expect(rect.x + rect.w).toBeLessThanOrEqual(PORTRAIT_STRIP_EDGE.width - 4);
       expect(rect.y).toBeGreaterThanOrEqual(4);
       expect(rect.y + rect.h).toBeLessThanOrEqual(HUD_STRIP_HEIGHT - 4);
     }

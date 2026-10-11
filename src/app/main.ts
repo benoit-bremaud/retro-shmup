@@ -31,7 +31,7 @@ const renderer = new Canvas2DRenderer(context2d(offscreen), offscreen, context2d
  * off-screen canvas to it and the visible canvas to its integer scale, then hands the viewport to
  * the renderer. Resizing a canvas resets its context, so the renderer resets its own state too.
  */
-function fitToWindow(canvas: HTMLCanvasElement): void {
+function fitToWindow(): void {
   const viewport = computeViewport(
     globalThis.innerWidth,
     globalThis.innerHeight,
@@ -39,16 +39,16 @@ function fitToWindow(canvas: HTMLCanvasElement): void {
   );
   offscreen.width = viewport.layout.width;
   offscreen.height = viewport.layout.height;
-  canvas.width = viewport.deviceWidth;
-  canvas.height = viewport.deviceHeight;
-  canvas.style.width = `${String(viewport.cssWidth)}px`;
-  canvas.style.height = `${String(viewport.cssHeight)}px`;
+  visible.width = viewport.deviceWidth;
+  visible.height = viewport.deviceHeight;
+  visible.style.width = `${String(viewport.cssWidth)}px`;
+  visible.style.height = `${String(viewport.cssHeight)}px`;
   renderer.resize(viewport);
 }
 
-fitToWindow(visible);
+fitToWindow();
 globalThis.addEventListener('resize', () => {
-  fitToWindow(visible);
+  fitToWindow();
 });
 
 // A window moved to a screen of another pixel ratio fires no `resize`: watch the ratio itself,
@@ -58,7 +58,7 @@ function watchPixelRatio(): void {
   query.addEventListener(
     'change',
     () => {
-      fitToWindow(visible);
+      fitToWindow();
       watchPixelRatio();
     },
     { once: true },
