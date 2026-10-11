@@ -200,3 +200,48 @@ describe('Canvas2DRenderer — hud font (RenderPort contract, HUD_FONT_CELL)', (
     }).toThrow(/glyph/);
   });
 });
+
+describe('Canvas2DRenderer — portrait screen (ADR-0015 decisions 1–3, ADR-0018 decision 6)', () => {
+  function portrait(): { renderer: Canvas2DRenderer; offscreen: RecordingSurface } {
+    const offscreen = new RecordingSurface();
+    const renderer = new Canvas2DRenderer(offscreen, image, new RecordingSurface());
+    renderer.resize(computeViewport(390, 844, 3));
+    return { renderer, offscreen };
+  }
+
+  it('reports the screen chosen by the viewport', () => {
+    expect(portrait().renderer.layout().kind).toBe('portrait');
+    expect(setup().renderer.layout().kind).toBe('landscape');
+  });
+
+  it('clips the field at (0, 32) under the HUD strip and offsets field draws there', () => {
+    const { renderer, offscreen } = portrait();
+    renderer.setRegion('field');
+    renderer.drawRect(10, 20, 2, 2, Palette.starNear);
+    expect(offscreen.calls).toEqual([
+      'save',
+      'beginPath',
+      'rect 0,32,240,320',
+      'clip',
+      `fillRect ${Palette.starNear} 10,52,2,2`,
+    ]);
+  });
+
+  it('clears the whole 240 × 352 portrait screen', () => {
+    const { renderer, offscreen } = portrait();
+    renderer.clear();
+    expect(offscreen.calls).toContain(`fillRect ${Palette.background} 0,0,240,352`);
+  });
+
+  it('resets its region and camera on resize without restore(), since the canvas reset them', () => {
+    const { renderer, offscreen } = setup();
+    renderer.setCameraOffset(3, 3);
+    renderer.setRegion('field');
+    offscreen.calls.length = 0;
+    renderer.resize(computeViewport(390, 844, 3));
+    expect(offscreen.calls).toEqual([]);
+    renderer.setRegion('field');
+    renderer.drawRect(0, 0, 1, 1, Palette.starFar);
+    expect(offscreen.calls.at(-1)).toBe(`fillRect ${Palette.starFar} 0,32,1,1`);
+  });
+});

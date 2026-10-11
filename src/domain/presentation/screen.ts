@@ -1,9 +1,36 @@
-// Logical screen of ADR-0014: the 240 × 320 play field centred between two HUD bands. The field
-// and band sizes are the inputs; the rest is derived so the geometry has a single source. The
-// landscape screen is as tall as the field.
-import { FIELD_WIDTH } from '../game/geometry';
+// Logical screens of ADR-0014 and ADR-0015: the 240 × 320 play field with the HUD beside it
+// (landscape bands) or above it (portrait strip). The field and HUD sizes are the inputs; every
+// other dimension is derived from them, so the geometry has a single source.
+import { FIELD_HEIGHT, FIELD_WIDTH } from '../game/geometry';
 
-export { FIELD_HEIGHT, FIELD_WIDTH, FIELD_HEIGHT as SCREEN_HEIGHT } from '../game/geometry';
+export { FIELD_HEIGHT, FIELD_WIDTH } from '../game/geometry';
+
+/** One logical screen (ADR-0015 decision 3): its size and where the field sits in it. */
+export interface ScreenLayout {
+  readonly kind: 'landscape' | 'portrait';
+  readonly width: number;
+  readonly height: number;
+  readonly fieldX: number;
+  readonly fieldY: number;
+}
+
+/** Width of each landscape HUD band, left and right of the field (GDD §3.1). */
 export const HUD_BAND_WIDTH = 120;
-export const FIELD_X = HUD_BAND_WIDTH;
-export const SCREEN_WIDTH = FIELD_WIDTH + 2 * HUD_BAND_WIDTH;
+/** Height of the portrait HUD strip above the field (GDD §3.1, v0.7 §9.2). */
+export const HUD_STRIP_HEIGHT = 32;
+
+export const LANDSCAPE: ScreenLayout = {
+  kind: 'landscape',
+  width: FIELD_WIDTH + 2 * HUD_BAND_WIDTH,
+  height: FIELD_HEIGHT,
+  fieldX: HUD_BAND_WIDTH,
+  fieldY: 0,
+};
+
+export const PORTRAIT: ScreenLayout = {
+  kind: 'portrait',
+  width: FIELD_WIDTH,
+  height: HUD_STRIP_HEIGHT + FIELD_HEIGHT,
+  fieldX: 0,
+  fieldY: HUD_STRIP_HEIGHT,
+};

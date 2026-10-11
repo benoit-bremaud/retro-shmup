@@ -18,7 +18,12 @@ export const HUD_FONT_CELL = { width: 8, height: 10, glyphWidth: 6 } as const;
 /** Cell of the `title` font: the same 3 × 5 glyphs drawn 4× (12 × 20) plus a 4 px advance. */
 export const TITLE_FONT_CELL = { width: 16, height: 20, glyphWidth: 12 } as const;
 
-/** Coordinate space of the next draw calls: the 240 × 320 play field or the HUD bands (ADR-0010). */
+import type { ScreenLayout } from '../presentation/screen';
+
+/**
+ * Coordinate space of the next draw calls: the 240 × 320 play field, or `hud`, the whole logical
+ * screen (ADR-0010, ADR-0018 decision 1).
+ */
 export type RenderRegion = 'field' | 'hud';
 
 /**
@@ -36,6 +41,8 @@ export interface RenderPort {
    * @throws Error on a character outside the font's glyph set, or a font with no glyph.
    */
   drawText(text: string, x: number, y: number, font: FontId): void;
+  /** The logical screen being drawn (ADR-0015 decision 3); read by scenes and presenters only. */
+  layout(): ScreenLayout;
   /** Screen shake; (0, 0) when the effect is disabled. */
   setCameraOffset(dx: number, dy: number): void;
   /** Copies the off-screen canvas to the visible one. */

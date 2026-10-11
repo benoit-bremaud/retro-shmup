@@ -1,16 +1,25 @@
-/* Page around the canvas: black letterbox, canvas centred, pixels kept sharp (ADR-0014). */
+/* Page around the canvas: black letterbox, canvas centred, pixels kept sharp (ADR-0014). The page
+   never scrolls, zooms, selects or highlights under a finger (ADR-0018 decision 10). */
 html,
 body {
   margin: 0;
   height: 100%;
   background: #000;
+  touch-action: none;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
   display: grid;
   place-items: center;
+  height: 100dvh;
 }
 
 #screen {
   image-rendering: pixelated;
+  touch-action: none;
 }

@@ -7,6 +7,7 @@ import { DIVER, POPCORN } from '../../src/domain/game/enemy';
 import type { LevelScript } from '../../src/domain/game/level-script';
 import { Run } from '../../src/domain/game/run';
 import { Scene, SceneMachine } from '../../src/domain/scenes/scene-machine';
+import { PORTRAIT } from '../../src/domain/presentation/screen';
 import { RecordingRender } from '../support/recording-render';
 import type { RecordedRect } from '../support/recording-render';
 
@@ -412,5 +413,18 @@ describe('SceneMachine — effects per run (ADR-0010, 02-sequence-fixed-step-tic
     machine.step(DT, pressed(Button.Confirm)); // a new run
     machine.render(1, 0);
     expect(render.drew(Palette.explosionHot)).toBe(false);
+  });
+});
+
+describe('SceneMachine — portrait screen (devices brick additions)', () => {
+  it('draws the portrait strip instead of the bands, and the field overlays as before', () => {
+    const fixture = playing();
+    fixture.render.screen = PORTRAIT;
+    fixture.machine.step(DT, frame(Button.Pause));
+    fixture.machine.render(1, 16);
+    expect(fixture.render.rectsOf(Palette.hudBand)).toEqual([
+      { region: 'hud', x: 0, y: 0, w: 240, h: 32, colour: Palette.hudBand },
+    ]);
+    expect(fixture.render.rectsOf(Palette.veil)[0]).toMatchObject({ region: 'field', x: 0, y: 0 });
   });
 });

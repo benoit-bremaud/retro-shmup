@@ -1,8 +1,9 @@
 import type { WorldSnapshot } from '../game/run';
 import { HUD_FONT_CELL } from '../ports/render-port';
 import type { RenderPort } from '../ports/render-port';
-import { HUD_LAYOUT } from './hud-layout';
+import { HUD_LAYOUTS, PORTRAIT_STRIP_EDGE } from './hud-layout';
 import { Palette } from './palette';
+import { FIELD_WIDTH, HUD_BAND_WIDTH, HUD_STRIP_HEIGHT } from './screen';
 
 // One-character strings, interned once: a number is drawn digit by digit, with no formatting and no
 // allocation (05-state-scenes, enemies brick presentation).
@@ -19,12 +20,32 @@ function drawNumber(render: RenderPort, value: number, x: number, y: number, dig
 }
 
 /**
- * Draws the HUD contents in the left band (GDD §9.2): the score, the multiplier, the chain bar and
- * the reserve lives (the ship in play not counted). Allocates nothing.
+ * Draws the HUD background of the current screen (GDD §3.1, §9.2): the two landscape bands with
+ * their edge lines, or the portrait strip with its bottom edge. Drawn in every scene, the title
+ * included; the contents go over it.
+ */
+export function drawHudFrame(render: RenderPort): void {
+  render.setRegion('hud');
+  const layout = render.layout();
+  if (layout.kind === 'portrait') {
+    render.drawRect(0, 0, layout.width, HUD_STRIP_HEIGHT, Palette.hudBand);
+    render.drawRect(0, PORTRAIT_STRIP_EDGE.y, PORTRAIT_STRIP_EDGE.width, 1, Palette.hudEdge);
+    return;
+  }
+  const rightBandX = layout.fieldX + FIELD_WIDTH;
+  render.drawRect(0, 0, HUD_BAND_WIDTH, layout.height, Palette.hudBand);
+  render.drawRect(rightBandX, 0, HUD_BAND_WIDTH, layout.height, Palette.hudBand);
+  render.drawRect(layout.fieldX - 1, 0, 1, layout.height, Palette.hudEdge);
+  render.drawRect(rightBandX, 0, 1, layout.height, Palette.hudEdge);
+}
+
+/**
+ * Draws the HUD contents (GDD §9.2) at the positions of the current screen: the score, the
+ * multiplier, the chain bar and the reserve lives (the ship in play not counted). Allocates nothing.
  */
 export function drawHud(render: RenderPort, snapshot: WorldSnapshot): void {
   render.setRegion('hud');
-  const { score, multiplier, chainBar, lives } = HUD_LAYOUT;
+  const { score, multiplier, chainBar, lives } = HUD_LAYOUTS[render.layout().kind];
   drawNumber(render, snapshot.score, score.x, score.y, score.digits);
   render.drawText(TIMES, multiplier.x, multiplier.y, 'hud');
   drawNumber(render, snapshot.multiplier, multiplier.x + HUD_FONT_CELL.width, multiplier.y, 1);
