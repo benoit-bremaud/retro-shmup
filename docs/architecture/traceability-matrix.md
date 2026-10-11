@@ -1,8 +1,8 @@
 # Traceability matrix — UML study (1.0)
 
 > **Scope**: the UML study of [docs/architecture](README.md) against the
-> [Game Design Document](../design/game-design-document.md) v0.7, ADR-0001 to ADR-0010,
-> ADR-0014, ADR-0015 and ADR-0018 (ADR-0011 to ADR-0013 are tooling decisions with no UML realization).
+> [Game Design Document](../design/game-design-document.md) v0.8, ADR-0001 to ADR-0010,
+> ADR-0014, ADR-0015, ADR-0018 and ADR-0019 (ADR-0011 to ADR-0013 are tooling decisions with no UML realization).
 > **Purpose**: prove coverage — every use case is realized, every class and component is used,
 > nothing is orphaned. Update this file in the same change as any diagram.
 
@@ -10,7 +10,8 @@ Diagram abbreviations: **UC** [01-use-case](diagrams/system/01-use-case.md) · *
 [03-component](diagrams/system/03-component.md) · **CD**
 [04-class-domain](diagrams/gameplay/04-class-domain.md) · **SD-tick** [02-sequence-fixed-step-tick](diagrams/gameplay/02-sequence-fixed-step-tick.md) ·
 **SD-kill** [02-sequence-enemy-destroyed](diagrams/gameplay/02-sequence-enemy-destroyed.md) ·
-**SD-hit** [02-sequence-player-hit](diagrams/gameplay/02-sequence-player-hit.md) · **STM-player**
+**SD-hit** [02-sequence-player-hit](diagrams/gameplay/02-sequence-player-hit.md) · **SD-bomb**
+[02-sequence-bomb](diagrams/gameplay/02-sequence-bomb.md) · **STM-player**
 [05-state-player](diagrams/gameplay/05-state-player.md) · **STM-boss**
 [05-state-boss](diagrams/gameplay/05-state-boss.md) · **STM-scenes**
 [05-state-scenes](diagrams/meta/05-state-scenes.md).
@@ -19,7 +20,7 @@ Diagram abbreviations: **UC** [01-use-case](diagrams/system/01-use-case.md) · *
 
 | Use case | Components (CMP) | Behaviour | Structure (CD) | Covered by text only |
 |---|---|---|---|---|
-| UC1 Play a run | FrameLoop, SceneMachine, Run, RunPresenter, LevelScripts, all ports | SD-tick, SD-kill, SD-hit, STM-player, STM-boss, STM-scenes (`InRun`) | every class of CD | intro and level cards (STM-scenes) |
+| UC1 Play a run | FrameLoop, SceneMachine, Run, RunPresenter, LevelScripts, SeededRandom, all ports | SD-tick, SD-kill, SD-hit, SD-bomb, STM-player, STM-boss, STM-scenes (`InRun`) | every class of CD | intro and level cards (STM-scenes) |
 | UC2 Pause the run | FrameLoop, SceneMachine, DeviceInput, WebAudioPlayer | SD-tick (pause decided before the step), STM-scenes (`Paused`, `Count-in`, `Confirm quit`) | — (scene level, no run class) | music ducking (ADR-0009) |
 | UC3 Record a high score | SceneMachine, SaveDocument, LocalStorageStore | STM-scenes (`Name entry` → `High scores`) | `RunView.snapshot().score` | insertion rule and storage failure (UC3 text, ADR-0006) |
 | UC4 Consult the high scores | SceneMachine, SaveDocument, LocalStorageStore | STM-scenes (`High scores`) | — | unreadable or newer document (UC4 text, ADR-0006) |
@@ -32,28 +33,29 @@ whose conditional steps live in the use-case text (proportionality rule of the s
 
 ## 2. Classes of the domain model → where they are used
 
-| Class (CD) | SD-tick | SD-kill | SD-hit | STM | GDD |
-|---|---|---|---|---|---|
-| `Simulation`, `Run` | ✓ | ✓ | ✓ | outcome read by STM-scenes; step 8 by STM-player | §2, §7 |
-| `RunView`, `RunOutcome` | ✓ | | | STM-scenes guards | §9.2 |
-| `World` | | ✓ | ✓ | | §5 |
-| `WorldView`, `PlayerShotSpawner`, `EnemyShotSpawner`, `HitRules`, `RunEvents` | | | | CD only — parameters of the strategies, covered by unit tests | §5.3 |
-| `Player`, `PlayerState`, `HitOutcome` | | | ✓ | STM-player | §4.1, §4.4 |
-| `Weapon`, `WeaponKind`, `WeaponPattern`, `SpreadPattern`, `LaserPattern` | | | ✓ (`powerDown`) | | §4.3 |
-| `Bullet` | | ✓ (`canHit`, `recordHit`) | ✓ (released) | | §4.3 |
-| `Pickup`, `PickupKind` | | ✓ (spawned) | ✓ (death release spawned) | | §4.6 |
-| `Pool<T>` | | ✓ (releases) | ✓ | | ADR-0002 |
-| `ScoreKeeper`, `LevelTally` | | ✓ | ✓ | STM-boss (bonuses) | §8 |
-| `CollisionResolver` | | ✓ | ✓ | | §4.1, §5.2 |
-| `LevelDirector`, `LevelScript` | | | | STM-boss (`warningAt`) | §7.1 |
-| `ScriptEvent` | | | | CD rule table (Carrier cargo, spawns) | §5.2, §7.1 |
-| `EventBus`, `GameEvent`, `GameEventKind` | | ✓ | ✓ | STM-boss (events) | ADR-0010 |
-| `DifficultyProfile` | | ✓ (`dropRateScale`) | ✓ (`bombsPerLife`) | | §10 |
-| `Body`, `Enemy`, `EnemyArchetype`, `EnemyStats`, `DropTable` | | ✓ | | | §5.2, §5.3 |
-| `MovementPattern`, `PathMovement`, `DiveMovement`, `EnterHoldLeave` | | | | STM-boss (phase strategies) | §5.2 |
-| `AttackPattern`, `NoAttack`, `AimedAttack`, `RingAttack`, `FanAttack` | | | | STM-boss (phase strategies) | §5.2 |
-| `Formation` | | ✓ | | | §5.2 |
-| `Boss`, `BossDefinition`, `BossPhaseSpec` | | (via `damageBoss`) | | STM-boss | §6 |
+| Class (CD) | SD-tick | SD-kill | SD-hit | SD-bomb | STM | GDD |
+|---|---|---|---|---|---|---|
+| `Simulation`, `Run`, `RunConfig` | ✓ | ✓ | ✓ | ✓ | outcome read by STM-scenes; step 8 by STM-player | §2, §7 |
+| `RunView`, `RunOutcome` | ✓ | | | | STM-scenes guards | §9.2 |
+| `Random` | | ✓ (drop draw) | | | | §4.6, §7.1 |
+| `World` | | ✓ | ✓ | ✓ (`cancelEnemyBullets`) | | §5 |
+| `WorldView`, `PlayerShotSpawner`, `EnemyShotSpawner`, `EnemySpawner`, `HitRules`, `RunEvents` | | ✓ (`HitRules`) | ✓ (`HitRules`) | | spawners: CD only (unit tests) | §5.3 |
+| `Player`, `PlayerState`, `HitOutcome` | | ✓ (`collect`) | ✓ | ✓ (`useBomb`) | STM-player | §4.1, §4.4, §4.5 |
+| `Weapon`, `WeaponKind`, `WeaponLevel`, `ShotSpec` | | | ✓ (`powerDown`) | | | §4.3 |
+| `Bullet` | | ✓ (`canHit`, `recordHit`) | ✓ (released) | ✓ (cancelled) | | §4.3 |
+| `Pickup`, `PickupKind`, `PickupMotion` | | ✓ (spawned, moved, collected) | ✓ (death release spawned) | ✓ (drops of bomb kills) | STM-player (collection guard) | §4.4, §4.6 |
+| `Pool<T>` | | ✓ (releases) | ✓ | ✓ | | ADR-0002 |
+| `ScoreKeeper`, `LevelTally` | | ✓ | ✓ | ✓ (`bombUsed`) | STM-boss (bonuses) | §8 |
+| `CollisionResolver` | | ✓ (passes 1 and 4) | ✓ (passes 2 and 3) | | | §4.1, §4.6, §5.2 |
+| `LevelDirector`, `LevelScript` | | ✓ (`dominantColour`, a formation per pass) | | | STM-boss (`warningAt`) | §7.1 |
+| `ScriptEvent` | | ✓ (cargo) | | | CD rule table (Carrier cargo, load checks, spawns) | §5.2, §7.1, §7.2.1 |
+| `EventBus`, `GameEvent`, `GameEventKind` | | ✓ | ✓ | ✓ (`BOMB_USED`) | STM-boss (events) | ADR-0010 |
+| `DifficultyProfile` | | ✓ (`dropRateScale`) | ✓ (`bombsPerLife`) | | | §10 |
+| `Body`, `Enemy`, `EnemyArchetype`, `EnemyStats`, `DropTable` | | ✓ | | ✓ (on-field damage) | | §5.2, §5.3 |
+| `MovementPattern`, `PathMovement`, `DiveMovement`, `EnterHoldLeave`, `CrossMovement` | | | | | STM-boss (phase strategies) | §5.2, §5.2.1 |
+| `AttackPattern`, `NoAttack`, `AimedAttack`, `RingAttack`, `FanAttack` | | | | | STM-boss (phase strategies) | §5.2 |
+| `Formation` | | ✓ | | ✓ (bomb kills count) | | §5.2, §4.6 |
+| `Boss`, `BossDefinition`, `BossPhaseSpec` | | (via `damageBoss`) | | (via `damageBoss`) | STM-boss | §6 |
 
 Every class is used by at least one behaviour diagram or by the GDD rule table of CD. The
 movement and attack strategies are exercised per archetype by the level scripts; their behaviour
@@ -63,15 +65,15 @@ is a calculation covered by unit tests (ADR-0003), not by a diagram.
 
 | Component (CMP) | Diagrams |
 |---|---|
-| Bootstrap | CMP |
+| Bootstrap | CMP (the run factory and its seed, ADR-0019) |
 | FrameLoop | SD-tick |
 | SceneMachine | SD-tick, STM-scenes |
-| Run | SD-tick, SD-kill, SD-hit, CD |
-| RunPresenter | SD-tick, SD-kill, SD-hit |
+| Run | SD-tick, SD-kill, SD-hit, SD-bomb, CD |
+| RunPresenter | SD-tick, SD-kill, SD-hit, SD-bomb (flash, shake) |
 | LevelScripts | CD (`LevelScript`, archetypes), STM-boss |
 | SaveDocument | STM-scenes (`Boot`, `Name entry`), UC3–UC6 text |
 | MessageCatalogue | CMP; implied by UC7 and the cards and menus of STM-scenes |
-| SeededRandom | SD-kill (`Random`) |
+| SeededRandom | SD-kill (`Random`), CD (`Run` owns it); in the code since PR #5 but unused by the game; owned by `Run` from the player-kit brick E-1 (ADR-0019) |
 | Canvas2DRenderer, DeviceInput, PerformanceClock | SD-tick (through `RenderPort`, `InputPort`, `Clock`), CMP |
 | WebAudioPlayer | SD-kill and SD-hit (SFX through the presenter), CMP |
 | LocalStorageStore | STM-scenes (`Boot`, `Name entry`), CMP |
@@ -93,6 +95,8 @@ is a calculation covered by unit tests (ADR-0003), not by a diagram.
 | GDD v0.5 first-playable values (fly-in, clamp, blink, base shot) | STM-player notes (fly-in, blink, one timer), CD rule table and notes (clamp, Spread L1, units, active lists); tests: fly-in and state steps, clamp, cadence of 10 shots per 60 steps, bullet release, blink phase, smoke test (STM-scenes) |
 | GDD v0.6 enemy values and script rows (§5.2.1, §7.2.1), chain window, game-over time, reserve-life icons | STM-scenes (enemies brick additions, scene traits, frozen scenes, interim deviations), SD-kill and SD-hit (mark, then release at step 6), SD-tick (frozen scenes at alpha 1), CD rule table and notes (`HitRules`, spawners, `spent`, `entered`, `armed`, `ActiveList`, events, HUD data); tests: pool caps and dropped requests, S curve and mirror, Diver target captured at the dive, Gunner entry, hold and 2 bullets per hover, zero aim vector, entered-then-outside despawn, destroyed once with two bullets in one step, chain at the 5th and 6th kill and at +120 / +121 steps, death and respawn, game over after 3 s or Confirm, script loop at 45 s, frozen scenes at alpha 1 with effects frozen, re-entrant publish throws, determinism with effects on and off, enemy hitboxes 16 × 16 / 16 × 16 / 32 × 32, enemy bullets 4 × 4 at 75 px/s, hit flash about 33 ms and explosion about 0.3 s of wall time, at most 16 explosions with the oldest recycled, one life icon per reserve life, formation refused members still earn the P, chain bar full right after a kill and empty when the chain breaks, script rows checked at load (interval), an effect recorded in the last step of a multi-step frame drawn once at age 0, no effect aged by a frame that ran a frozen step (count-in handoff), a collected pickup released at step 6, peak enemy bullets ≤ 40 over the whole level script, a lone Popcorn never forms a formation and a Popcorn group outside 5 to 8 is rejected at load, a formation whose last rank is refused still earns its P once, the formation pool never empties over a level script; with hit-stop (later brick), a hit-stop born in a 30 Hz frame still freezes the next frame |
 | GDD v0.7 devices brick (§4.2 pause button, Start as confirm, mouse cursor and takeover; §4.4 Game over and title locks; §9.1 rotation pause; §9.2 portrait strip) | STM-scenes (devices brick additions, scene × input table, build order), CMP (Bootstrap, DeviceInput); tests: screen choice table, portrait field clip and strip positions, pause button drawn only in Playing, Paused and Count-in, pause tap in Playing (before the step) and Count-in, any tap resumes from Paused, Start in Count-in returns to Paused, Game over and title locks at step 60 / 61, smoke test (portrait then rotation) |
+| ADR-0019 run seed, tenths, weapons as data, pickups, formations, bomb slot | CD (`RunConfig`, `Random`, `WeaponLevel`, `ShotSpec`, `Pickup`, `Formation`, `EnemySpawner`, `HitRules`, rule table and notes), SD-kill (seeded draw, pierce memory, collection pass), SD-hit (release motion, `ABSORBED`), SD-bomb (slot 3), STM-player (a timer per cause), CMP (Bootstrap, Run, SeededRandom), STM-scenes (player-kit brick additions, build order) |
+| GDD v0.8 player kit (§4.3 Spread and Laser tables; §4.4 release hop, shield, death effects at once; §4.5 bomb guard and one step; §4.6 pickup rules and P colours; §5.2.1 Carrier; §7.2.1 Carrier rows; §9.2 HUD items; §9.3, §9.4 bomb flash and shake) | CD rule table, SD-kill (both diagrams), SD-hit, SD-bomb, STM-player, STM-scenes (player-kit brick additions); tests: a drop forced by a scripted `Random` and none at r ≥ rate × scale, one draw choosing a Gunner's drop and colour, the formation P of the dominant colour at the last member once per pass (also above the field), sway and release hop as closed forms with x0 clamped, collection while `Entering`, `Invulnerable` and `Vulnerable` only and none in a death step, two pickups in one step applied in order (the last P sets the weapon), a spawn on a full pickup pool dropped, a pickup lost at the bottom, the cap bonus flat and outside the chain, an other-colour P at level 5 switches and pays, Spread streams, angles, cooldowns 6 and 4 steps and damage in tenths, a Popcorn dying in one hit at every level, a Laser bolt hitting N + 1 bodies each once with full damage, the cooldown kept across a switch, power down without a kind change, the release on the last life, bombs reset at the death step, bomb guard (not `Entering`, `Dead`, after Game over), one bomb per press, bullets cancelled and on-field enemies hit once (off-field ones untouched), bomb kills scored, chained and counted, `max(time left, 1 s)`, shield absorbing a bullet (spent) and a body (survives) with the blink restarted, a Carrier crossing at 60 px/s from either side with its cargo, cargo load checks (`RangeError`), the HUD items at their positions in both layouts, a bomb burst flashing at most 3 times per second, determinism with (seed, script, inputs) including `PICKUP_SPAWNED` and `PICKUP_COLLECTED` |
 
 ## 5. Known gaps (accepted)
 

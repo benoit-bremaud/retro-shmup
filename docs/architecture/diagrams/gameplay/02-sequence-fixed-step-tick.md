@@ -1,9 +1,10 @@
 # Sequence diagram — gameplay — one frame, fixed-step simulation (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.4 §9.1,
-> §9.4, §13
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.8 §4.5,
+> §9.1, §9.2, §9.4, §13
 > **Related ADRs**: ADR-0002 (fixed timestep, clamp, interpolation), ADR-0009 (intent frame,
-> press latching), ADR-0010 (time scale, wall-clock effects), ADR-0014 (step units)
+> press latching), ADR-0010 (time scale, wall-clock effects), ADR-0014 (step units),
+> ADR-0019 (bomb slot, HUD items)
 > **Realizes**: UC1 steps 5–8 and UC2 of [01-use-case](../system/01-use-case.md); components
 > of [03-component](../system/03-component.md)
 
@@ -50,6 +51,7 @@ sequenceDiagram
     else [scene is Playing, Game over, or Count-in on its last step without Pause]
       Note over Scenes: a last Count-in step hands over to Playing first — 05-state-scenes
       Scenes->>Run: step(1/60 s, frame)
+      Note right of Run: fixed order — 1 spawns, 2 player and weapon, 3 a pressed bomb, 4 moves, 5 collisions, 6 sweep, 7 timers, 8 outcome
       Scenes->>Run: outcome()
       Run-->>Scenes: PLAYING, LEVEL_CLEARED, RUN_CLEARED or GAME_OVER
       Note over Scenes: a change of outcome triggers a scene transition — 05-state-scenes
@@ -66,7 +68,7 @@ sequenceDiagram
   Run-->>Scenes: previous and current positions, HUD values
   Scenes->>Presenter: draw(snapshot, alpha, wallDtMs)
   Presenter->>Render: setRegion field, sprites at interpolated positions
-  Presenter->>Render: setRegion hud, drawHud — score, chain, lives
+  Presenter->>Render: setRegion hud, drawHud — score, chain, lives, bombs, shield, weapon badge and power pips
   Note over Presenter: draw first, then age the visual effects by wallDtMs, unscaled — ADR-0010 — so one recorded in this frame's steps is drawn at least once. A time effect (hit-stop, slow motion) recorded in this frame starts aging only after a later timeScale() has used it
   Scenes->>Render: overlays of the scene — veil, pause icon, count-in
   Scenes->>Render: present()
@@ -98,4 +100,9 @@ sequenceDiagram
   or the pause. The boss timer and the chain window, counted in steps, are untouched.
 - **Rendering reads, never writes**: the presenter uses the snapshot and its HUD getters;
   nothing on the render path changes simulation state.
+- **The bomb is decided inside the step** (GDD v0.8 §4.5, ADR-0019): a `Bomb` press reaches the run
+  in the same frame as any other press and is applied at slot 3 of `Run.step`
+  (02-sequence-bomb); in `Paused` and `Count-in` the run does not step, so a bomb pressed there
+  is never applied, and pickups freeze with everything else. The bomb flash and shake are
+  wall-clock effects of the presenter, frozen with the scene like the others.
 - Outside a run (menus) the same loop runs; `SceneMachine` draws its screen instead of delegating.

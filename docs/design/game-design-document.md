@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Vertical slice — v0.7 (2026-10-11): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot); v0.6 adds the initial values of the enemies brick; v0.7 settles the devices brick (portrait HUD strip, touch pause button, resuming and leaving Game over by tap or Start, mouse takeover, rotation pause) |
+| **Status** | Vertical slice — v0.8 (2026-10-11): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot); v0.6 adds the initial values of the enemies brick; v0.7 settles the devices brick (portrait HUD strip, touch pause button, resuming and leaving Game over by tap or Start, mouse takeover, rotation pause); v0.8 settles the player kit (Spread and Laser tables, the death release hop, bomb, shield and pickup rules, P colours, the Carrier, HUD icons) |
 | **Working title** | *retro-shmup* (codename; the commercial title is still open) |
 | **Genre** | Retro vertical-scrolling shoot'em up (shmup), 16-bit aesthetic |
 | **Platform** | Web browser (desktop first, mobile playable), TypeScript + native Canvas 2D |
@@ -145,7 +145,7 @@ Minimal, arcade style: one intro card (two sentences), one title card per level,
 | Priority | Input | Model |
 |---|---|---|
 | P0 | Keyboard | Move: arrows (primary), `W A S D` physical keys (secondary — the same keys read Z Q S D on AZERTY); opposite directions held together cancel. Fire `Space` / `Z` (hold = autofire); bomb `X` / left `Shift`; pause `P`; `Enter` (main or keypad) confirm; `Esc` pauses in play and goes back in menus (fixed). Remappable. |
-| P1 | Touch | The first finger on the play field drives the ship, which follows it **32 px above** *(initial)* so the thumb never hides it; lifting the finger leaves the ship where it is. Autofire always on; bomb = on-screen button or second-finger tap; pause = on-screen button. A touch that starts outside the play field is a tap on the HUD, never a move *(v0.5)*. The **pause button** sits in the top-right corner of the screen in both orientations — 48 × 32 at the right end of the portrait HUD strip, 48 × 48 at the top of the right landscape band — and is drawn in play, in the pause and during the count-in, never on the title or in Game over *(v0.7)*. |
+| P1 | Touch | The first finger on the play field drives the ship, which follows it **32 px above** *(initial)* so the thumb never hides it; lifting the finger leaves the ship where it is. Autofire always on; bomb = on-screen button or second-finger tap *(v0.8: the second-finger tap only, for now — no bomb button is drawn; the portrait strip is full and its right end is far from the thumb; revisited with the options and screens)*; pause = on-screen button. A touch that starts outside the play field is a tap on the HUD, never a move *(v0.5)*. The **pause button** sits in the top-right corner of the screen in both orientations — 48 × 32 at the right end of the portrait HUD strip, 48 × 48 at the top of the right landscape band — and is drawn in play, in the pause and during the count-in, never on the title or in Game over *(v0.7)*. |
 | P1 | Gamepad | Left stick (radial dead zone *(initial: 0.2)*) or d-pad move, the d-pad winning when pressed; `A` fire (hold = autofire); `B` bomb; `Start` pause (Gamepad API, standard mapping). The last pad used is the active one *(v0.5)*. Remappable. `Start` is also a fixed `confirm` *(v0.7)*: it starts from the title, resumes from the pause and leaves Game over, as `Esc` both pauses and goes back on the keyboard. |
 | P2 | Mouse | Ship follows the cursor; autofire; right click bomb *(v0.5: `Space` stays the keyboard fire)*. The cursor is a crosshair over the game, centred on the ship's hitbox *(v0.7)*. The mouse takes the ship only when it moves to another play-field pixel or presses a button on the field; a click outside the field (HUD, pause button) is a tap only, as for a finger *(v0.7)*. |
 
@@ -184,15 +184,49 @@ formations)*.
 
 | Weapon | Pickup | Character | Level 1 → 5 *(initial)* |
 |---|---|---|---|
-| **Spread** (red) | P-red | Wide fan of bullets, good against formations, lower single-target damage | 1 → 5 streams, widening fan, firing rate +40 % at L5 |
-| **Laser** (blue) | P-blue | Narrow piercing beam, high single-target damage, demands aim | Beam width 2 → 8 px, damage ×1 → ×3, pierces up to 1 → 3 enemies |
+| **Spread** (red) | P-red | Wide fan of bullets, good against formations, lower single-target damage | 1 → 5 streams, widening fan, firing rate +50 % at L5 *(v0.8: +40 % before; cooldowns are whole steps)* |
+| **Laser** (blue) | P-blue | Narrow piercing beam, high single-target damage, demands aim | Beam width 2 → 8 px, damage ×1 → ×3, passes through 1 → 3 enemies *(v0.8 wording; v0.2 said "pierces up to")* |
 
 Damage output grows roughly ×1.0 / ×1.4 / ×1.9 / ×2.4 / ×3.0 from L1 to L5 *(initial)*. Enemy HP
 is expressed in **level-1 shots** so this ratio is what the player feels as "power".
 
+**What the ratio measures** *(v0.8)*: the damage per second of the **aimed shot on one target** —
+the Spread's centre stream, or the Laser. The Spread's side streams add coverage, not power.
+Every player bullet deals **at least 1** (one level-1 shot), so a Popcorn always dies in one hit.
+Switching weapon keeps the power level and the running cooldown. The Laser's ratio is ×1.0 /
+1.5 / 2.0 / 2.5 / 3.0 (half-shot steps), its pass-throughs being its coverage.
+
+**Spread levels** *(initial, v0.8)*: every bullet is 2 × 8 px at 360 px/s and leaves from the
+nose; angles are measured from straight up, and a side stream flies along its angle.
+
+| Level | Streams | Angles | Rate | Centre damage | Side damage | Centre ratio |
+|---|---|---|---|---|---|---|
+| 1 | 1 | 0° | 10/s | 1 | — | ×1.0 |
+| 2 | 3 | 0°, ±6° | 10/s | 1.4 | 1 | ×1.4 |
+| 3 | 3 | 0°, ±12° | 10/s | 1.9 | 1 | ×1.9 |
+| 4 | 5 | 0°, ±6°, ±14° | 10/s | 2.4 | 1 | ×2.4 |
+| 5 | 5 | 0°, ±8°, ±18° | 15/s | 2.0 | 1 | ×3.0 |
+
+The level-5 rate is a cooldown of 4 steps (15/s, +50 %): cooldowns are whole steps, and the
+neighbours are 5 steps (+20 %) or 3 steps (+100 %), so the "+40 %" of v0.2 is not reachable.
+
+**Laser levels** *(initial, v0.8)*: the Laser fires **long bolts**, not a continuous beam:
+10 bolts per second at 600 px/s, each 48 px long, its lower end at the nose; the 12 px gaps between
+bolts read as a pulsed beam. A bolt **passes through** a number of enemies and hits each enemy at
+most once; every body it crosses takes its full damage; it is spent on the hit after its last
+pass-through.
+
+| Level | Width | Damage | Passes through | Enemies hit at most |
+|---|---|---|---|---|
+| 1 | 2 px | 1 | 1 | 2 |
+| 2 | 3 px | 1.5 | 1 | 2 |
+| 3 | 4 px | 2 | 2 | 3 |
+| 4 | 6 px | 2.5 | 2 | 3 |
+| 5 | 8 px | 3 | 3 | 4 |
+
 **Spread level 1** *(initial, v0.5)*: one stream straight up from the ship's nose (16 px above its
 centre), **10 shots per second**, bullets 2 × 8 px at **360 px/s** (the field crossed in under a
-second), gone once fully above the field. Holding fire shoots at that rate; the first shot leaves
+second), gone once fully above the field (side streams, v0.8: once fully outside the field). Holding fire shoots at that rate; the first shot leaves
 at once, including the first step with control after the fly-in. The cooldown runs whether fire
 is held or not, so tapping never fires faster than holding. One level-1 shot deals 1 damage.
 
@@ -202,14 +236,23 @@ is held or not, so tapping never fires faster than holding. One level-1 shot dea
   (HUD limit); extra lives only from **1-UP** pickups.
 - **Shield**: a pickup grants **one charge**, drawn as a ring around the ship. The next hit consumes
   the charge instead of a life (0.5 s invulnerability, no other penalty). Charges do not stack.
+  *(v0.8)* The ring is 36 × 36, an outline in its own colour (never the hull's). A bullet or a
+  body contact both consume the charge — the body survives, as for any contact (§5.2) — and the
+  0.5 s of invulnerability restart the blink. The charge is kept until used, across levels; a run
+  starts with none.
 - **On death**:
-  1. the current power level drops by **one** (never below 1),
+  1. the current power level drops by **one** (never below 1); the weapon kind is unchanged,
   2. a **P pickup of the current weapon colour** is released at the death position and drifts down
      slowly — catching it restores the lost level; at level 1 there is nothing to restore, so
-     nothing is released *(v0.2)*,
+     nothing is released *(v0.2)*. *(initial, v0.8)* It first **rises 48 px over 0.8 s**, to
+     y = max(death y − 48, 24), then **falls at 20 px/s** — the rise is linear over 0.8 s whatever its height (clamped at y 24 it simply rises less); x stays at the death x, with no sway, during the rise and the fall: from the resting line (y 272) it stays
+     catchable for about 4 s after control returns (2 s after the death). It is an ordinary P —
+     the cap rule of §4.6 applies — and it is released on the last life too, as on any other,
   3. the chain multiplier resets to ×1,
   4. bombs are reset to **2** (`bombsPerLife`, §10),
-  5. the ship respawns after 1.5 s with 2 s of invulnerability.
+  5. the ship respawns after 1.5 s with 2 s of invulnerability (the 0.5 s fly-in included, §4.1).
+  *(v0.8)* Steps 1 to 4 apply at the moment of death: the HUD shows the lower power and the
+  2 bombs during the explosion.
   Lives at 0 → **Game over** after the 1.5 s death sequence *(v0.4: the last explosion plays out)*
   (no continues in 1.0). The Game over screen lasts **3 s** *(initial, v0.6)*, or less when the
   player confirms — by `confirm`, a tap or a click, accepted only after a **1 s** lock *(initial,
@@ -220,10 +263,23 @@ is held or not, so tapping never fires faster than holding. One level-1 shot dea
 
 ### 4.5 Bombs
 
-- Stock **2 per life, maximum 5** *(initial)*; **Bomb** pickups add one.
-- Effect: every enemy bullet on screen is cancelled, every enemy **including the boss** takes heavy
+- Stock **2 per life, maximum 5** *(initial)*; **Bomb** pickups add one. A run starts with 2.
+- Effect: every enemy bullet on screen is cancelled, every enemy **including the boss** (on the field, v0.8) takes heavy
   damage *(initial: 30 level-1 shots — 5–10 % of a boss)*, the player is invulnerable for **1 s**,
   large screen shake (toggleable). With an empty stock the input does nothing.
+- **When** *(v0.8)*: only while the ship is in control — `Vulnerable` or `Invulnerable` (§4.1);
+  never during the fly-in, while dead, after Game over, nor in the pause (the run does not step).
+  One bomb per press: holding the button never chains bombs.
+- **One step** *(v0.8)*: the bomb acts in the step of the press, before that step's collisions:
+  it cancels the enemy bullets, then deals its damage **once** to every enemy whose box overlaps
+  the play field — an enemy still outside the field is untouched. Its kills follow the normal
+  path of a kill: score, chain, formation count, drops (cargo included) and the hit flash
+  (§5.2). The invulnerability is max(time left, 1 s), and the ship blinks during it (§4.1): a
+  bomb never shortens a protection.
+- **Feedback** *(v0.8)*: a tint flash of the play field (about 300 ms of wall time) and a shake of
+  the play field only (the HUD never shakes); two separate effects, each with its own switch
+  (§9.3, §9.4). A new flash starts only when the previous one started at least 1/3 s earlier, so
+  bombs dropped in a burst never flash more than 3 times per second (§9.7).
 - A bomb used is noted for the end-of-level tally (no-bomb bonus lost).
 
 ### 4.6 Pickups
@@ -236,17 +292,46 @@ leaves the bottom of the screen is lost.
 |---|---|---|---|
 | **P-red** | Red "P" capsule | Select Spread; +1 power level (max 5) | Gunner, full Popcorn formations, death release |
 | **P-blue** | Blue "P" capsule | Select Laser; +1 power level (max 5) | Gunner, full Popcorn formations, death release |
-| **Shield** | Cyan ring | One shield charge | Carrier, Heavy |
-| **Bomb** | Yellow "B" | +1 bomb (max 5) | Heavy, Carrier |
+| **Shield** | Ring, in its own colour (never the hull's) | One shield charge | Carrier, Heavy |
+| **Bomb** | Yellow plus-shaped "B" | +1 bomb (max 5) | Heavy, Carrier |
 | **1-UP** | Green ship icon | +1 life | Rare: specific Carriers in the level script |
+
+*(v0.8)* Placeholder shapes until the sprites: meta/05-state-scenes (player-kit brick additions).
 
 **Pickup at its cap** *(v0.2, one rule)*: when the effect cannot apply — power already 5, bombs
 already 5, a shield charge already held, lives already 9 — the pickup grants **1 000 points**
 instead. A P of the other colour still switches the weapon (level unchanged); at level 5 it
-switches **and** grants the 1 000 points *(v0.3)*.
+switches **and** grants the 1 000 points *(v0.3)*. *(v0.8)* The 1 000 points are flat: never
+multiplied by the chain; catching a pickup neither extends nor breaks the chain.
+
+**Pickup rules** *(initial, v0.8)*:
+
+- **Box and collection**: a pickup is a 16 × 16 box, collected when it overlaps the ship's full
+  32 × 32 sprite box. The ship collects while `Entering`, `Invulnerable` or `Vulnerable`; never
+  while `Dead` nor after Game over — the pickup keeps falling and is lost. A ship that dies in a
+  step collects nothing in that step. Several pickups caught in one step apply one after the
+  other, in the order of the active pickup list: a P-red and a P-blue caught together leave the
+  weapon of the last.
+- **Motion**: straight down at 40 px/s, swaying as a function of its age only:
+  x = x0 + 8 · sin(2π · age / 2 s), x0 being the spawn x clamped to 16–224 so the whole box stays
+  in the field. No random draw: the sway is the same on every replay. The death release has its
+  own motion (§4.4). Pickups freeze with the pause. A pickup is lost once its top edge reaches the
+  bottom of the field (y 320).
+- **At most 8** pickups at once *(initial)*; a spawn beyond that is dropped (ADR-0002), and the
+  level simulation tests check that a level never needs more. A death release is dropped like
+  any spawn on a full pool (accepted: the level simulation test checks the pool never fills with
+  the script's own drops).
+- **P colours**: a full Popcorn formation gives a P of the **level's dominant colour** — red
+  (Spread) in level 1 — at the position of the last member destroyed, even above the field; each
+  pass of a looping script row is a new formation. A Gunner drops at 30 % a P-red or a P-blue,
+  50 / 50, both decided by one random draw. The Carrier's cargo is chosen by the level script
+  (§5.2.1).
 
 Rule of thumb: everything that falls is good to catch. (This invariant is exactly what the 1.x
-"ejected pilots" candidate would challenge — see §12.)
+"ejected pilots" candidate would challenge — see §12.) *(v0.8)* One known tension: a P of the
+other colour switches the weapon, so a Laser player may avoid a red P. It still raises the power
+level by one (or pays 1 000 points at level 5), so catching it never costs power, only the
+colour; the player chooses, which is the point of two colours.
 
 ---
 
@@ -264,7 +349,7 @@ roles on three size tiers cover every wave the three levels need.
 |---|---|---|---|---|---|---|---|
 | **Popcorn** | "Where do I place my fire to clear the whole formation?" | Small (16 px) | 1 | Scripted formations of 5–8 along curves (S, sine, loop) | None, or one slow bullet per formation | None individually; **full formation destroyed = guaranteed P** of the level's dominant colour | 100 |
 | **Diver** | "Where must I *not* be?" | Small (16 px) | 1 | Enters, then dives straight at the player's position at the moment of the dive | Contact only | None | 150 |
-| **Gunner** | "Kill first, or dodge first?" | Medium (32 px) | 8 | Enters from top or side, hovers 3–4 s, leaves | 1–3 aimed bullets per volley, every 1.5 s | P-red or P-blue (role-specific) at **30 %** | 300 |
+| **Gunner** | "Kill first, or dodge first?" | Medium (32 px) | 8 | Enters from top or side, hovers 3–4 s, leaves | 1–3 aimed bullets per volley, every 1.5 s | P-red or P-blue (50 / 50 *(v0.8)*) at **30 %** | 300 |
 | **Carrier** | "Do I catch it before it leaves?" | Medium (32 px) | 4 | Crosses the screen laterally, never stops | None | **100 %**: Shield, Bomb or 1-UP as chosen by the level script | 500 |
 | **Heavy** | "How do I handle the pressure while I wear it down?" | Large (48–64 px) | 40 | Slow entry from the top, holds position 8–12 s, leaves | Bullet patterns: ring (12 bullets) or fan (5 bullets), every 2 s | Bomb or Shield at **60 %** | 1 000 |
 
@@ -281,13 +366,21 @@ roles on three size tiers cover every wave the three levels need.
 ### 5.2.1 Initial values of the first roles *(v0.6)*
 
 All values *(initial)*, tuned in playtests. Hitboxes are the full sprite box of each size tier;
-the player's tiny hitbox already carries the fairness (§4.1).
+the player's tiny hitbox already carries the fairness (§4.1). HP and damage stay expressed in
+level-1 shots (§4.3); the code counts them in tenths of a shot so that 1.4 or 2.5 leave no
+rounding residue (ADR-0019).
 
-| | Popcorn | Diver | Gunner |
-|---|---|---|---|
-| Hitbox | 16 × 16 | 16 × 16 | 32 × 32 |
-| Movement | one every 1/3 s along the S curve below, at **70 px/s** downward | enters from the top at 60 px/s for 1 s, then dives in a straight line at **180 px/s** toward where the ship was at that moment, and keeps that heading until it leaves the field | flies in a straight line from its spawn point to its hover point in 1 s, hovers **3.5 s**, then flies back the way it came at 60 px/s |
-| Attack | none | contact only | **1 aimed bullet** per volley: the first 1.5 s after it stops, then every 1.5 s while hovering (2 bullets per hover) |
+| | Popcorn | Diver | Gunner | Carrier *(v0.8)* |
+|---|---|---|---|---|
+| Hitbox | 16 × 16 | 16 × 16 | 32 × 32 | 32 × 32 |
+| HP | 1 | 1 | 8 | 4 |
+| Movement | one every 1/3 s along the S curve below, at **70 px/s** downward | enters from the top at 60 px/s for 1 s, then dives in a straight line at **180 px/s** toward where the ship was at that moment, and keeps that heading until it leaves the field | flies in a straight line from its spawn point to its hover point in 1 s, hovers **3.5 s**, then flies back the way it came at 60 px/s | crosses the field horizontally in a straight line at **60 px/s**, away from the side it spawned on (spawn x < 120 → moves right, otherwise left); never stops |
+| Attack | none | contact only | **1 aimed bullet** per volley: the first 1.5 s after it stops, then every 1.5 s while hovering (2 bullets per hover) | none (contact only) |
+| Drop | formation P (§4.6) | none | P-red or P-blue at 30 % (§4.6) | its cargo, always: Shield, Bomb or 1-UP, set by the script row; an escaped Carrier drops nothing; a bomb kill drops the cargo |
+| Score | 100 | 150 | 300 | 500 |
+
+The script is checked at load: a Carrier row without a cargo, a cargo on any other role, or a
+Carrier whose spawn box overlaps the field is rejected.
 
 - **S curve**: x = x0 + 40 · sin(2π · y / 160), the enemy moving down at 70 px/s from y −8 and
   leaving through the bottom; mirrored, the oscillation starts on the other side of its axis:
@@ -298,7 +391,8 @@ the player's tiny hitbox already carries the fairness (§4.1).
 - **Enemy bullets**: 4 × 4 px at **75 px/s**, straight toward the ship's position when fired.
 - **Leaving the field**: an enemy despawns (§5.2) only once it has been inside the field and is
   then fully outside it, so an enemy spawning outside the field is never removed on arrival.
-- **At most** 48 enemy bullets, 16 enemies and 16 player bullets at once. The 40 enemy bullets of
+- **At most** 48 enemy bullets, 16 enemies, 80 player bullets *(v0.8: 16 before; 5 streams ×
+  15/s × ≈ 0.85 s ≈ 64)* and 8 pickups (§4.6) at once. The 40 enemy bullets of
   §5.2 and §6 are a readability limit for whoever writes waves and patterns, checked by the level
   simulation tests (peak ≤ 40 over a whole level); the pool of 48 is the engine's safety net and
   never cuts a legal pattern short *(v0.6)*. A spawn beyond a pool is
@@ -376,20 +470,30 @@ never is.
 | 8 | Diver | 1 | — | x 160, y −8 | dive |
 | 18 | Gunner | 1 | — | (−16, 80) | (60, 80) |
 | 18 | Gunner | 1 | — | (256, 80) | (180, 80) |
+| 28 | Carrier | 1 | — | (−16, 64) | cross → right, cargo Shield *(v0.8)* |
 | 32 | Popcorn | 8 | 1/3 s | x0 120, y −8 | S curve |
 | 32 | Gunner | 1 | — | (120, −16) | (120, 80) |
+| 40 | Carrier | 1 | — | (256, 64) | cross ← left, cargo Bomb *(v0.8, interim)* |
+
+*(v0.8)* The level's dominant colour (§4.6) is red. The Bomb Carrier at 40 s is an interim row,
+recorded as a deviation in the scene machine: it gives the Bomb pickup a source until the level
+brick brings the Heavy, its real source, and is removed then. No 1-UP Carrier before the level
+brick: one per 45 s loop of the interim script would be far too generous.
 
 ### 7.3 Onboarding
 
 No tutorial screen. Level 1 teaches one mechanic per wave (above). The title screen shows the
 controls for the active input device, and the **first time** each pickup type appears in a run a
-small label ("SHIELD", "BOMB", "1UP") floats above it for 1 s.
+small label ("SHIELD", "BOMB", "1UP") floats above it for 1 s. *(v0.8)* The labels arrive with the
+bitmap fonts of the screens brick (the title font has only A–Z and space, no digit for "1UP");
+until then they are an interim deviation recorded in the scene machine.
 
 ---
 
 ## 8. Scoring
 
-- **Base points** per enemy (§5.2) and per boss (§6).
+- **Base points** per enemy (§5.2) and per boss (§6); a pickup at its cap gives a flat 1 000,
+  outside the chain (§4.6) *(v0.8)*.
 - **Chain multiplier ×1 … ×8** *(initial)*: every kill within **2 s** of the previous one extends the
   chain; the multiplier steps up every 5 chained kills (×2 at 5, ×3 at 10 … ×8 at 35) — a kill is
   scored at the current multiplier, then the chain steps up *(v0.4: the 5th kill scores ×1)*. The chain
@@ -443,20 +547,41 @@ screen (§3.1) *(v0.5)*: two rows with 4 px margins — score then the reserve l
 the multiplier then the chain bar (aligned under the score) on the second — and the pause button
 in its top-right corner (§4.2) *(v0.7)*. Positions and the 4 px margins are *(initial)*.
 
+**Player-kit items** *(initial, v0.8)*. Every icon differs by **shape**, not by colour only
+(§9.7), each in its own palette colour; icons are 8 × 8:
+
+| Item | Shape |
+|---|---|
+| Reserve life | a small ship (two rectangles) |
+| Bomb | a plus sign, one per bomb in stock |
+| Shield | a hollow square, while a charge is held |
+| Weapon badge | Spread: three dots side by side; Laser: one vertical bar |
+| Power | 5 pips of 3 × 8 px, every 6 px, filled up to the current level, hollow above |
+
+- **Portrait strip** (`hud` pixels; everything ends at x ≤ 188, left of the pause button; row 1
+  at y 4–14, row 2 at y 18–28): the shield icon on row 1 at x 172–180, y 5, after the lives; on
+  row 2 the bombs at x 76 + 12 i, y 19, under the lives (5 icons end at x 132), the weapon badge
+  at x 140–148, y 19, and the pips at x 152 + 6 i, ending at x 179.
+- **Landscape bands**: the bombs in the left band at {x 8, y 66}, after the lives at y 52, every
+  12 px. The right band starts below the pause button, at a margin x 368: y 56–76 stays reserved
+  for the level number and name (level and screens bricks), then the weapon badge and the pips at
+  y 84 (badge x 368–376, pips x 380 + 6 i, ending at x 407), and the shield icon at y 100.
+
 ### 9.3 Options
 
 Music and SFX volume (separate), key / gamepad remap (§4.2), language (EN / FR), fullscreen,
 and **visual effects**: one on/off switch per effect of §9.4, all default **on**. On first launch,
 when the browser reports `prefers-reduced-motion`, screen shake, white flashes, hit-stop and slow
 motion default to **off** *(v0.2)*, and so does the invulnerability blink, replaced by its
-non-flashing form *(v0.5)*. Browsers refuse fullscreen outside a user gesture: a change
+non-flashing form *(v0.5)*, and the bomb flash *(v0.8)*. Browsers refuse fullscreen outside a user gesture: a change
 made with a click, tap or key applies at once; otherwise the preference is applied at the next
 click, tap or key press, including during a run *(v0.4, ADR-0009)*.
 
 ### 9.4 Game feel (all effects individually toggleable in §9.3)
 
 Hit flash (white, about 33 ms *(v0.6)*), hit-stop on large kills (2–3 frames), screen shake on bombs and boss
-hits, invulnerability blink (non-flashing replacement when off, §9.7) *(v0.5)*, muzzle flash,
+hits (the play field only), bomb flash (a tint of the play field, about 300 ms, at most 3 per
+second *(v0.8)*), invulnerability blink (non-flashing replacement when off, §9.7) *(v0.5)*, muzzle flash,
 explosion particles with size-scaled bursts, floating score pop-ups, slow
 motion on boss death (0.5 s), boss "part breaks off" debris.
 
@@ -495,7 +620,10 @@ A single **Normal** profile ships in 1.0. The design nevertheless routes every d
 through one `DifficultyProfile` object (lives, bombs per life, shield charges, death penalty,
 enemy HP multiplier, bullet speed multiplier, drop-rate multiplier) so that **Easy** and **Hard**
 are one data line each in a later update, after itch.io feedback. YAGNI is respected: one
-instance, no selection UI, in 1.0.
+instance, no selection UI, in 1.0. *(v0.8)* The profile grows with the bricks that read its knobs:
+the player-kit brick brings lives, bombs per life and the drop-rate multiplier (ADR-0019); the
+death penalty stays a later knob, the rule being one level; the caps (power 5, bombs 5, lives 9, the 1 000-point bonus) are rules,
+not knobs.
 
 ---
 
@@ -554,7 +682,7 @@ playable.
 | Rendering | Native Canvas 2D behind a minimal `RenderPort`; a WebGL renderer may replace it later without touching gameplay | ADR-0001 |
 | Screen | Logical screen 480 × 320 (landscape) or 240 × 352 (portrait) around the 240 × 320 field, integer scale in device pixels | ADR-0014, ADR-0015 |
 | Input | One flat intent frame per step, physical-key bindings, gestures in the input adapter, devices combined | ADR-0009, ADR-0012, ADR-0015 |
-| Simulation | Fixed timestep 60 Hz with accumulator, render interpolation, seeded RNG — deterministic | ADR-0002 |
+| Simulation | Fixed timestep 60 Hz with accumulator, render interpolation, seeded RNG — deterministic; one seed per run, HP and damage in tenths of a shot, weapons as data | ADR-0002, ADR-0019 |
 | Architecture | Object composition + patterns (Strategy, State, Object Pool, event bus, Command, ports); no ECS, no deep inheritance; UML-first | ADR-0003 |
 | Delivery | Cloudflare Pages (PR preview = staging, `main` = prod), itch.io via butler on tagged releases | ADR-0004 |
 | Licensing | MIT for the code; assets under their own licences in `public/assets/` with `CREDITS.md` | ADR-0005 |
@@ -645,3 +773,15 @@ fully playable at release quality, used to validate the design before producing 
 | Leaving Game over *(v0.7)* | `confirm`, a tap or a click after a 1 s lock; the same lock on the title reached from Game over | No lock (hammering fire skips it and restarts a run); timer only |
 | Mouse cursor and takeover *(v0.7)* | Crosshair; takes the ship only on a real move or a press on the field | Default arrow (hides the ship); hidden cursor; any move or click takes the ship |
 | Rotation during play *(v0.7)* | Automatic pause | Play on while the screen rearranges |
+| Player-kit scope *(v0.8)* | One brick: Spread and Laser on 5 levels, the 5 pickups, bombs, shield, the death rule, the drop sources (formation P, Gunner, Carrier cargo), the Carrier, the HUD items; the Heavy, ring and fan attacks, the boss and the tally go to the level brick | The Carrier and the Heavy together (too big for one brick); no new enemy (Shield, Bomb and 1-UP unreachable) |
+| Power ratio *(v0.8)* | Measured on the aimed shot on one target (Spread centre stream, Laser); side streams add coverage; every bullet deals at least 1 (§4.3) | Literal 1 to 5 streams (no centre stream at even levels, 0.5-damage pairs, a Popcorn needing two hits); the ratio on the total output (side bullets under 1 damage) |
+| Spread level-5 rate *(v0.8)* | 15 shots/s, a 4-step cooldown (+50 %) | +40 % (14 shots/s, a cooldown of 4.3 steps: not a whole number); a 5-step cooldown (+20 %, too little to feel) |
+| Laser shape *(v0.8)* | Long pulsed bolts from the player bullet pool; "passes through N" enemies, so it hits N + 1; full damage on every body crossed, each body once | A continuous beam (segment collision, a new shape, damage per step); "hits at most N" (the level-1 Laser would equal the level-1 Spread) |
+| Death release motion *(v0.8)* | Rises 48 px over 0.8 s, then falls at 20 px/s; released on the last life too | The v0.2 drift at 40 px/s from the death point (gone 1.4 s after the death, before the ship returns at 2 s: uncatchable); a slower fall only; held in place until the respawn |
+| P colours *(v0.8)* | Formation P of the level's dominant colour (red in level 1); Gunner P red or blue, 50 / 50, from its one drop draw; the other-colour switch is accepted as a choice (§4.6) | The P takes the player's current colour (the second weapon would never be offered); a P cycling between colours (timing-based, unreadable at 16 px, colour-only information) |
+| Carrier *(v0.8)* | 32 × 32, 4 HP, 500 points, a straight horizontal crossing at 60 px/s, no attack, 100 % script cargo; Shield Carrier at 28 s; an interim Bomb Carrier at 40 s; no 1-UP before the level brick | A 1-UP Carrier in the 45 s interim loop (a life every loop, far too generous) |
+| Bomb timing and reach *(v0.8)* | One step, before the collisions; on-field enemies only, through the normal kill path; invulnerability max(time left, 1 s); usable in control only (`Vulnerable`, `Invulnerable`), one per press | Damage to enemies not yet on the field (kills the player never saw); a bomb during the fly-in or the death sequence (a free clear at every respawn, or a bomb lost to a dead ship); a fixed 1 s that can shorten a longer protection |
+| Touch bomb *(v0.8)* | No drawn bomb button for now; the second-finger tap stays the only touch bomb; revisited with the options and screens | A landscape-only button (two behaviours by orientation); the bomb-stock icon as the tap target (the portrait strip is full and far from the thumb); a button over the play field (hides play) |
+| Shield *(v0.8)* | One charge, a 36 × 36 ring outline in its own colour; absorbs a bullet or a body (the body survives), 0.5 s of invulnerability with the blink restarted; kept until used; none at the start | A ring in the hull's cyan (reads as part of the ship) |
+| HUD icons *(v0.8)* | Lives, bombs, shield, weapon badge and power pips told apart by shape (§9.2) | Icons told apart by colour only (§9.7) |
+| Pickup rules *(v0.8)* | 16 × 16 box against the ship's 32 × 32 box; sway as a pure function of age; collected while `Entering`, `Invulnerable` or `Vulnerable`, after the hazards of the step; several in one step in the order of the active pickup list; a pool of 8; the cap bonus flat, outside the chain | A random sway (a cosmetic consuming gameplay draws); collection while dead (a dead ship would still power up); the cap bonus multiplied by the chain |

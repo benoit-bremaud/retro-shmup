@@ -8,6 +8,51 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-11
 
+### Design of the player-kit brick E (branch `docs/e-design`) — GDD v0.8, ADR-0019
+
+- A conception study of the "pickups and rules" brick against GDD v0.7 and the code found one
+  real gap: the death release, written as a P falling at 40 px/s from the death point, left the
+  field 1.4 s after the death, before the ship returns at 2.0 s — uncatchable. It also found
+  the Spread "1 → 5 streams" and the Laser "pierces up to" ambiguous, the "+40 %" rate not a
+  whole number of steps, and no source for the Shield, Bomb and 1-UP pickups without a new
+  enemy.
+- Validated by the owner, each with a scored recommendation (all recommendations taken): scope A
+  (both weapons on 5 levels, the 5 pickups, bombs, shield, death rule, drop sources, the Carrier,
+  HUD items; Heavy, boss and tally to the level brick F); then ten player-facing decisions — the
+  power ratio on the aimed shot and the Spread table, the Laser as pulsed bolts that pass
+  through 1 to 3 enemies, the release hop (48 px up over 0.8 s, then 20 px/s), the P colours
+  (formation P red in level 1, Gunner red or blue 50 / 50), the Carrier and its rows (Shield at
+  28 s, an interim Bomb at 40 s, no 1-UP before F), the bomb (one step before the collisions,
+  on-field enemies, in control only, flash and shake as separate switches), no touch bomb button
+  yet, the shield ring and rules, the HUD icons by shape, and a batch of small pickup rules;
+  then the technical batch as a whole (ADR-0019: run seed, damage in tenths, weapons as data,
+  pierce memory, pooled pickups and formations, events, `collect(): number`,
+  `DifficultyProfile` subset, step slot 3, Carrier data, palette and HUD layout).
+- A design review (3 Must, 12 Should) fixed the build order (`dominantColour` and an interim
+  level-1 weapon table in E-1), closed the release motion (linear rise, no sway), recorded the
+  E-1 to E-4 interim states, and tightened the ADR-0019 status. The owner then validated as a
+  batch the drafting choices left open: ADR-0019 partially supersedes ADR-0003 decision 2 and
+  ADR-0002 decision 6 (a spawn on a full pickup pool is dropped, the level simulation test
+  guarding it) and refines ADR-0014 decision 7; the bomb flash under 3 per second and off under
+  reduced motion; `HitRules.pickupCollected`; `BOMB_USED` first; the Laser bolt from the nose;
+  landscape pips at x 380; P capsules marked by shape.
+- GDD v0.8 (§4.2, §4.3, §4.4, §4.5, §4.6, §5.2, §5.2.1, §7.2.1, §7.3, §8, §9.2, §9.3, §9.4, §10,
+  §13, Decision record), ADR-0019 and the ADR index, the class diagram (also fixing its stale
+  `LevelDirector.tick` signature and Carrier note), the kill and hit sequences, a new bomb
+  sequence, the player state machine, the frame sequence, the component table, UC1 5a, the scene
+  machine's player-kit section and build order (E-0 to E-4), the traceability matrix, the README
+  status and the changelog.
+
+### PR #23 merged (`69bcbb7`) — C2-G gamepad
+
+- One Codex finding (a moved stick did not make its pad active) fixed in `90ac708` by owner
+  choice A.
+- The push of `4dafbd4` used `--no-verify` (ADR-0013): the SonarQube gate failed on 9 × S7735
+  (negated conditions, fixed in that commit) and `pnpm audit` timed out twice on the npm
+  registry; check and gitleaks passed in the hook, the SonarQube gate passed by hand, no
+  dependency changed. The fix push ran the full `make verify`.
+- Issue #9 closed: the devices brick C2 is complete.
+
 ### Gamepad C2-G (branch `feat/gamepad`) — Closes #9
 
 - `GamepadModule`, polled once per read after the events (ADR-0015 decisions 5 and 7): standard
