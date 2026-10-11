@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DeviceInput } from '../../src/adapters/input/device-input';
 import type { InputEnvironment, KeyEventLike } from '../../src/adapters/input/device-input';
+import type { GamepadList } from '../../src/adapters/input/gamepad';
 import type { PointerEventLike } from '../../src/adapters/input/pointer';
 import { DEFAULT_BINDINGS } from '../../src/domain/input/default-bindings';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
@@ -39,6 +40,11 @@ class FakeEnvironment implements InputEnvironment {
   }
   onPointerCancel(listener: (event: PointerEventLike) => void): void {
     this.pointer.cancel = listener;
+  }
+  /** The pads the next read polls; tests replace it. */
+  pads: GamepadList = [];
+  gamepads(): GamepadList {
+    return this.pads;
   }
 
   /** A pointer event at CSS pixel (x, y); the tests' canvas maps 1 CSS pixel to 1 logical pixel. */
@@ -336,5 +342,64 @@ describe('DeviceInput — touch and mouse through the façade (ADR-0018)', () =>
     env.loseFocus();
     input.read(frame);
     expect(frame).toMatchObject({ moveKind: 'none', held: 0, pressed: Button.Pause });
+  });
+});
+
+describe('DeviceInput — gamepad through the façade (ADR-0015 decisions 5 and 7)', () => {
+  /** A standard pad holding `held` buttons, stick centred. */
+  function pad(held: readonly number[] = [], connected = true): GamepadList[number] {
+    const buttons = [];
+    for (let i = 0; i < 17; i += 1) buttons.push({ pressed: held.includes(i) });
+    return { connected, mapping: 'standard', buttons, axes: [0, 0, 0, 0] };
+  }
+
+  it('applies a gamepad start after the events of the same read', () => {
+    const { env, input, frame } = setup();
+    env.down('ArrowLeft');
+    env.pads = [pad([15])];
+    input.read(frame);
+    expect(frame).toMatchObject({ moveKind: 'direction', moveX: 1, device: 'gamepad' });
+  });
+
+  it('gives the movement back to a key that starts after the poll', () => {
+    const { env, input, frame } = setup();
+    env.pads = [pad([15])];
+    input.read(frame);
+    env.down('ArrowLeft');
+    input.read(frame);
+    expect(frame).toMatchObject({ moveX: -1, device: 'keyboard' });
+  });
+
+  it('reads no pad when the browser refuses them, and keeps the other devices playing', () => {
+    const { env, input, frame } = setup();
+    env.gamepads = () => {
+      throw new Error('SecurityError: gamepad is not allowed');
+    };
+    env.down('ArrowLeft');
+    expect(() => {
+      input.read(frame);
+    }).not.toThrow();
+    expect(frame).toMatchObject({ moveX: -1, device: 'keyboard' });
+  });
+
+  it('pauses once when the active pad disconnects', () => {
+    const { env, input, frame } = setup();
+    env.pads = [pad([0])];
+    input.read(frame);
+    env.pads = [pad([], false)];
+    input.read(frame);
+    expect(frame.pressed).toBe(Button.Pause);
+    input.read(frame);
+    expect(frame.pressed).toBe(0);
+  });
+
+  it('keeps the previous poll over a lost focus: a button still held is no new press', () => {
+    const { env, input, frame } = setup();
+    env.pads = [pad([0])];
+    input.read(frame);
+    env.loseFocus();
+    input.read(frame);
+    expect(frame.pressed).toBe(Button.Pause);
+    expect(frame.held).toBe(Button.Fire);
   });
 });

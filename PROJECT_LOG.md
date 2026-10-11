@@ -8,6 +8,30 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-11
 
+### Gamepad C2-G (branch `feat/gamepad`) — Closes #9
+
+- `GamepadModule`, polled once per read after the events (ADR-0015 decisions 5 and 7): standard
+  mapping only; presses found against the previous poll, kept per pad as a button mask; the active
+  pad is the last one with input, and losing it (missing, disconnected or no longer `standard`)
+  pauses once; a press of a pad that is not active is dropped, never delivered later. The fixed
+  roles sit on the indices — 0 `Confirm`, 1 `Back`, 9 `Confirm` — whatever the bindings
+  (ADR-0018 decision 3). The d-pad wins and is normalized on diagonals; the left stick goes
+  through the 0.2 radial dead zone, a rescale, a clamp to length 1 and a quantization toward zero
+  to 1/256 (decision 5). A lost focus keeps the previous poll, so a held button is no new press.
+- `InputTuning` gains the stick dead zone and steps; the façade gets `gamepads()` from the
+  composition root and treats a throwing `getGamepads` (Permissions-Policy denied in an iframe,
+  insecure context) as no pad, so the loop never dies (issue #9). No gamepad in the smoke test (Playwright cannot emulate one); the module and
+  the façade are unit-tested with fake pads.
+- Floating point: (0.6 − 0.2) / 0.8 is 0.49999…, so quantizing toward zero gives 127/256, one
+  step below 0.5. Accepted: toward zero is what keeps the length at or under 1.
+
+### PR #22 merged (`3304e93`) — C2-P touch and mouse
+
+- One Codex finding (P2: a cancelled finger still delivered its pending tap) fixed in `e681c2c`
+  by owner choice A. The first push used `--no-verify` (ADR-0013): `pnpm audit` timed out on the
+  npm registry in the hook; check and gitleaks had passed in the hook, the audit passed on retry
+  and the SonarQube gate passed by hand. The fix push ran the full `make verify`.
+
 ### Touch and mouse C2-P (branch `feat/input`) — Refs #9
 
 - `PointerModule` (Pointer Events on the page, pen as touch): the first finger on the field steers
