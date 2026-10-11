@@ -20,6 +20,8 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 - GDD v0.7 (§4.2, §4.4, §9.1, §9.2, Decision record), ADR-0018 (partially supersedes ADR-0015
   decisions 3, 4, 5, 7, 8), the scene machine's devices-brick section and build order, the
   component table, the traceability matrix.
+- Pushed with `--no-verify` (ADR-0013): the npm registry timed out in `pnpm audit`; typecheck,
+  lint, format, tests, gitleaks and the SonarQube gate passed.
 
 ## 2026-10-10
 
