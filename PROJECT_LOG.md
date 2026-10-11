@@ -23,6 +23,11 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 - Visual check: headless captures with a temporary, uncommitted start at level 5 showed the
   Spread's five-stream fan and the Laser's pulsed 8 px bolts.
 
+### PR #26 merged (`57eb194`) — E-1 randomness, pickups and sources
+
+- Codex reviewed with no finding; CI green. Merged after the pre-push review fixes and the
+  SonarQube exception `e3` (owner choice D).
+
 ### Randomness, pickups and sources E-1 (branch `feat/pickups`) — Refs #25
 
 - `Run({ script, seed, createRandom })` owns its gameplay `Random`, built for level 1 from
