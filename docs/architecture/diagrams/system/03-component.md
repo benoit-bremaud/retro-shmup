@@ -61,7 +61,7 @@ Source: [`03-component.puml`](03-component.puml) — regenerate the SVG with
 - **`Random` is a port with a domain implementation**: the seed is injected, so the headless
   simulation tests (ADR-0003) and future replays control it. The seed itself comes from Bootstrap,
   the only module allowed `Math.random` (ADR-0014 decision 7, ADR-0019); tests pass a fixed seed or a
-  scripted `Random`. The PlantUML source is unchanged: `Run ..> Random` already holds.
+  scripted `Random` through the optional `RunConfig.createRandom` factory. The PlantUML source is unchanged: `Run ..> Random` already holds.
 - **Browser-gesture work stays in the adapter** (ADR-0009): audio unlock and fullscreen requests
   happen inside the input handlers, where browsers allow them; the domain only holds the
   "fullscreen wanted" preference.

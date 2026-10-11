@@ -84,7 +84,7 @@ sequenceDiagram
         Bus->>SK: tally.formationsCleared += 1 (from the level brick)
       end
     end
-    loop each pickup spawned above
+    loop each spawnPickup above that returned true — a full pool of 8 drops the spawn and publishes nothing
       Run->>Bus: publish PICKUP_SPAWNED (detail = kind)
       Bus->>P: first-time label if this kind is new in the run
     end

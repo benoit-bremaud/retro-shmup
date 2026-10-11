@@ -249,7 +249,7 @@ boss and the end-of-level tally wait for the level brick (F).
 
 - **Run creation**: the composition root gives the scene machine a run factory that draws the
   run seed with `Math.random`; the scene machine calls it on entering `InRun`, as today. Tests
-  pass a factory with a fixed seed or a scripted `Random`. Nothing else changes in the scenes:
+  pass a factory with a fixed seed, or a scripted `Random` through `RunConfig.createRandom`. Nothing else changes in the scenes:
   pickups, bombs and the shield live inside `Run`, so `Paused`, `Count-in` and the frozen-scene
   rules freeze them with everything else, and `Game over` lets the pickups fall past the missing
   ship.

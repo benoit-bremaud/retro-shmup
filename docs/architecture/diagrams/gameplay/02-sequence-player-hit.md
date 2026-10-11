@@ -55,7 +55,10 @@ sequenceDiagram
     opt [powerDropped, the last life included]
       Run->>W: spawnPickup(P of the current weapon kind, death x, death y, RELEASE)
       Note over W: rises linearly over 0.8 s to y = max(death y − 48, 24), then falls at 20 px/s — x fixed at the death x, no sway
-      Run->>Bus: publish PICKUP_SPAWNED (detail = kind)
+      W-->>Run: spawned — false when the pickup pool is full
+      opt [spawned]
+        Run->>Bus: publish PICKUP_SPAWNED (detail = kind)
+      end
     end
     Run->>Bus: publish PLAYER_DIED
     activate Bus

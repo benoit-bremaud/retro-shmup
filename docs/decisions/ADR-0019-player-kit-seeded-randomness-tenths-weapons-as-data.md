@@ -34,7 +34,9 @@ part of those ADRs stands. Values are GDD v0.8 values (§4.3 to §4.6,
    `mix(runSeed, 0)`; each later level reseeds with `mix(runSeed, levelIndex)`, a 32-bit integer mix whose exact form is fixed in code
    review (ADR-0002 decision 5). The seed comes from the composition root (`main.ts`, the only
    module allowed `Math.random`, ADR-0014 decision 7) through the run factory it gives the scene
-   machine (`createRun`). Tests inject a scripted `Random` to force drops. The determinism test
+   machine (`createRun`). `RunConfig` has an optional `createRandom(levelSeed): Random`, called
+   once per level, default `new SeededRandom(levelSeed)`: tests pass a factory returning a
+   scripted `Random` to force drops, and the per-level reseed keeps working. The determinism test
    compares the event logs of two runs with the same (seed, script, inputs); the log gains
    `PICKUP_SPAWNED` and `PICKUP_COLLECTED`. Presentation keeps its own unseeded generator
    (ADR-0010 decision 1).
@@ -70,7 +72,8 @@ part of those ADRs stands. Values are GDD v0.8 values (§4.3 to §4.6,
    counted by a pre-pass of `World.sweep` — an entered member fully outside the field marks its
    formation — so the `ActiveList` predicates stay pure functions of one item. `LevelDirector`
    starts a new `Formation` for each pass of a looping row.
-7. **Events.** `PICKUP_SPAWNED` (`detail` = kind), `PICKUP_COLLECTED` (`detail` = kind, `value` =
+7. **Events.** `PICKUP_SPAWNED` (`detail` = kind, published only when `World.spawnPickup`
+   returns true — false on a full pool, so the log never holds a pickup that does not exist), `PICKUP_COLLECTED` (`detail` = kind, `value` =
    0 or 1 000), `PLAYER_HIT` (shield absorbed), `BOMB_USED`, `FORMATION_CLEARED`. `ScoreKeeper`
    adds `PICKUP_COLLECTED.value` as it is, never multiplied, and the chain does not move.
    Spawning stays a direct call in the step, never a handler (ADR-0010 decision 4): the death

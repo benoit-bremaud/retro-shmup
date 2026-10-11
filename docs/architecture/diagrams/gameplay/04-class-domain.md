@@ -71,6 +71,7 @@ classDiagram
     <<data>>
     +script: LevelScript
     +seed: number
+    +createRandom(levelSeed: number) Random
   }
   class Random {
     <<interface>>
@@ -100,7 +101,7 @@ classDiagram
     -pickups: Pool~Pickup~
     -enemies: Pool~Enemy~
     -formations: Pool~Formation~
-    +spawnPickup(kind: PickupKind, x, y, motion: PickupMotion) void
+    +spawnPickup(kind: PickupKind, x, y, motion: PickupMotion) boolean
     +cancelEnemyBullets() void
     +spendPlayerBullets() void
     +sweep() void
@@ -483,7 +484,7 @@ classDiagram
 | Game over time (v0.6 §4.4) | `SceneTuning` in the scene machine, not `Run` (meta/05-state-scenes) |
 | Spread and Laser levels (v0.5, v0.8 §4.3) | `WEAPONS.SPREAD[0]` is one `ShotSpec` from the nose (size, speed, rate: GDD §4.3); every level's velocities are computed once at load from the GDD angles; `Weapon.cooldown` in whole steps (6, then 4 at Spread level 5); bullets released once fully outside the field (any side) |
 | HP and damage in tenths (v0.8 §5.2.1, ADR-0019) | `EnemyStats.hp`, `ShotSpec.damage` and the bomb's damage are integers in tenths of a level-1 shot (Popcorn 10, Gunner 80, Carrier 40, bomb 300); `applyDamage` is unchanged |
-| Seeded drops and spawn order (v0.8 §4.6, §7.1, ADR-0019) | `Run(config: RunConfig)` owns the `Random`, seeded with mix(seed, 0) for level 1 and mix(seed, levelIndex) by `startNextLevel` (`levelIndex` 0-based); one draw per killed enemy with a rate above 0 and no cargo picks both the drop and its kind; `DropTable.rate` × `DifficultyProfile.dropRateScale` |
+| Seeded drops and spawn order (v0.8 §4.6, §7.1, ADR-0019) | `Run(config: RunConfig)` owns the `Random`, built by the optional `RunConfig.createRandom(levelSeed)` (default `new SeededRandom(levelSeed)`, the test seam for a scripted `Random`) with mix(seed, 0) for level 1 and mix(seed, levelIndex) by `startNextLevel` (`levelIndex` 0-based); `World.spawnPickup` returns false when the pool of 8 is full, and `PICKUP_SPAWNED` is published only for a pickup actually spawned; one draw per killed enemy with a rate above 0 and no cargo picks both the drop and its kind; `DropTable.rate` × `DifficultyProfile.dropRateScale` |
 | Pickup motion and lifetime (v0.8 §4.4, §4.6) | `Pickup.position` is a closed form of `age` and `motion` from `origin` (fall: 40 px/s with the 8 px, 2 s sway around x0 clamped to 16–224; release: up to max(y − 48, 24), then 20 px/s — the rise is linear over 0.8 s whatever its height (clamped at y 24 it simply rises less); x stays at the death x, with no sway, during the rise and the fall); `World.sweep` releases a spent pickup or one whose top edge reached y 320; a spawn on the full pool of 8 is dropped |
 | Shield (v0.8 §4.4) | `Player.shield`; `hit()` in `Vulnerable` with a charge clears it, sets 0.5 s of `Invulnerable` with the blink count restarted and returns `ABSORBED`; the resolver spends the bullet (a body survives) and calls `HitRules.shieldBroken()`, which publishes `PLAYER_HIT` |
 | Carrier (v0.8 §5.2.1) | `CARRIER` = `CrossMovement` (a closed form of the age: 60 px/s, y constant; spawn x < 120 → moves right, otherwise left; the load check rejects a Carrier whose spawn box overlaps the field with a `RangeError`) + `NoAttack` + `DropTable` none + script cargo |
@@ -590,6 +591,8 @@ classDiagram
   the `WEAPONS` table.
 - **Run seed** (ADR-0019): the composition root draws each run's seed and builds the run through
   the factory it gives the scene machine; `Run` builds its `SeededRandom` from it, so the domain
-  never calls `Math.random` and a test passes a fixed seed or a scripted `Random`.
+  never calls `Math.random`; a test passes a fixed seed, or a scripted `Random` through the
+  optional `RunConfig.createRandom` factory (one call per level, so the per-level reseed keeps
+  working).
 - **Damage in tenths** (ADR-0019): HP and damage are integers in tenths of a level-1 shot, so a
   1.4 or 2.5 damage leaves no floating-point residue; the GDD keeps level-1 shots.
