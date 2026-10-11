@@ -2,17 +2,24 @@ import { ActiveList } from './active-list';
 import type { EnemyShotSpawner } from './attacks';
 import { Bullet } from './bullet';
 import { Enemy } from './enemy';
+import { Formation } from './formation';
 import { FIELD_HEIGHT, FIELD_WIDTH } from './geometry';
 import type { Box } from './geometry';
 import type { EnemySpawner } from './level-director';
 import type { ScriptEvent } from './level-script';
 import type { WorldView } from './movements';
+import { Pickup } from './pickup';
+import type { PickupKind } from './pickup';
 import { Player } from './player';
 import {
   ENEMY_BULLET_POOL_SIZE,
   ENEMY_POOL_SIZE,
   EnemyBulletTuning,
+  FORMATION_POOL_SIZE,
+  PICKUP_POOL_SIZE,
+  PickupTuning,
   PLAYER_BULLET_POOL_SIZE,
+  STEP_SECONDS,
 } from './tuning';
 import type { PlayerShotSpawner, ShotSpec } from './weapon';
 
@@ -26,7 +33,9 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, EnemySpawner,
   readonly playerBullets = new ActiveList(PLAYER_BULLET_POOL_SIZE, () => new Bullet());
   readonly enemyBullets = new ActiveList(ENEMY_BULLET_POOL_SIZE, () => new Bullet());
   readonly enemies = new ActiveList(ENEMY_POOL_SIZE, () => new Enemy());
-  /** Run-scoped, only increases, never reused: a recycled enemy is never its predecessor. */
+  readonly pickups = new ActiveList(PICKUP_POOL_SIZE, () => new Pickup());
+  readonly formations = new ActiveList(FORMATION_POOL_SIZE, () => new Formation());
+  /** Run-scoped, only increases, never reused: a recycled body is never its predecessor. */
   private nextSerial = 1;
 
   playerPosition(): Readonly<{ x: number; y: number }> {
@@ -58,14 +67,52 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, EnemySpawner,
    * Step 1, from the level director. An enemy refused by a full pool never exists and takes no
    * serial (GDD v0.6 §5.2.1). Its movement places it at age 0, so it never smears.
    */
-  spawnEnemy(event: Readonly<ScriptEvent>): void {
+  spawnEnemy(event: Readonly<ScriptEvent>, formation: Formation | undefined): boolean {
     const enemy = this.enemies.add();
-    if (enemy === undefined) return;
-    enemy.spawn(event.archetype, event, this.nextSerial);
+    if (enemy === undefined) return false;
+    enemy.spawn(event.archetype, event, this.nextSerial, formation);
     this.nextSerial += 1;
     event.archetype.movement.tick(enemy, this, 0);
     enemy.previousPosition.x = enemy.position.x;
     enemy.previousPosition.y = enemy.position.y;
+    return true;
+  }
+
+  /**
+   * A formation pass of `total` members; `undefined` on a full pool, and the director then drops
+   * the whole group, so no visible group ever lacks its reward (class diagram).
+   */
+  startFormation(total: number): Formation | undefined {
+    const formation = this.formations.add();
+    formation?.start(total);
+    return formation;
+  }
+
+  /**
+   * A pickup at (x, y), falling from there; false when the pool is full and the spawn is dropped
+   * (ADR-0019), so the caller publishes `PICKUP_SPAWNED` only for a pickup that exists.
+   */
+  spawnPickup(kind: PickupKind, x: number, y: number): boolean {
+    const pickup = this.pickups.add();
+    if (pickup === undefined) return false;
+    pickup.spawn(kind, x, y, this.nextSerial);
+    this.nextSerial += 1;
+    return true;
+  }
+
+  /** Step 4: pickups fall and sway, as a closed form of their age (GDD v0.8 §4.6). */
+  movePickups(): void {
+    for (let i = 0; i < this.pickups.count; i += 1) {
+      const pickup = this.pickups.at(i);
+      if (pickup.spent) continue;
+      pickup.previousPosition.x = pickup.position.x;
+      pickup.previousPosition.y = pickup.position.y;
+      pickup.age += 1;
+      const seconds = pickup.age * STEP_SECONDS;
+      pickup.position.x =
+        pickup.origin.x + PickupTuning.swayAmplitude * Math.sin(SWAY_RADIANS_PER_SECOND * seconds);
+      pickup.position.y = pickup.origin.y + PickupTuning.fallSpeed * seconds;
+    }
   }
 
   /** Step 4: enemies age, move and attack; a spawned enemy bullet moves with the others. */
@@ -96,13 +143,26 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, EnemySpawner,
     for (let i = 0; i < this.playerBullets.count; i += 1) this.playerBullets.at(i).spent = true;
   }
 
-  /** Step 6, the single release point: each list releases its spent or departed items. */
+  /**
+   * Step 6, the single release point: each list releases its spent or departed items. A pre-pass
+   * settles the formation of each member leaving alive, so the predicates stay pure (ADR-0019).
+   */
   sweep(): void {
+    for (let i = 0; i < this.enemies.count; i += 1) {
+      const enemy = this.enemies.at(i);
+      if (!enemy.spent && isEnemyDone(enemy) && enemy.formation !== undefined) {
+        enemy.formation.escaped += 1;
+      }
+    }
     this.playerBullets.sweep(isBulletDone);
     this.enemyBullets.sweep(isBulletDone);
     this.enemies.sweep(isEnemyDone);
+    this.pickups.sweep(isPickupDone);
+    this.formations.sweep(isFormationDone);
   }
 }
+
+const SWAY_RADIANS_PER_SECOND = (2 * Math.PI) / PickupTuning.swayPeriodSeconds;
 
 function placeBullet(bullet: Bullet, x: number, y: number, vx: number, vy: number): void {
   bullet.position.x = x;
@@ -142,6 +202,15 @@ function overlapsField(box: Box): boolean {
 
 function isBulletDone(bullet: Bullet): boolean {
   return bullet.spent || isOutsideField(bullet);
+}
+
+// A pickup is lost once its top edge is below the field (GDD §4.6).
+function isPickupDone(pickup: Pickup): boolean {
+  return pickup.spent || pickup.position.y - pickup.height / 2 >= FIELD_HEIGHT;
+}
+
+function isFormationDone(formation: Formation): boolean {
+  return formation.isResolved();
 }
 
 // An enemy spawns outside the field: it leaves only once it has been inside (GDD v0.6 §5.2.1).

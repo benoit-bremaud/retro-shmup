@@ -8,6 +8,7 @@ import type { InputEnvironment } from '../adapters/input/device-input';
 import { PerformanceClock } from '../adapters/performance-clock';
 import { computeViewport } from '../adapters/viewport';
 import { DEFAULT_BINDINGS } from '../domain/input/default-bindings';
+import { Run } from '../domain/game/run';
 import { Starfield } from '../domain/presentation/starfield';
 import { SceneMachine } from '../domain/scenes/scene-machine';
 import { FrameLoop } from './frame-loop';
@@ -106,11 +107,14 @@ function watchPixelRatio(): void {
 watchPixelRatio();
 
 // Presentation randomness is unseeded on purpose: it never touches the outcome (ADR-0010).
-const scenes: FrameTarget = new SceneMachine(renderer, new Starfield(Math.random), {
-  blink: true,
-  hitFlash: true,
-  explosions: true,
-});
+// Each run draws its seed here, the only module allowed Math.random (ADR-0014, ADR-0019): the
+// domain replays a run from (seed, script, inputs).
+const scenes: FrameTarget = new SceneMachine(
+  renderer,
+  new Starfield(Math.random),
+  { blink: true, hitFlash: true, explosions: true },
+  () => new Run({ seed: Math.floor(Math.random() * 2 ** 32) }),
+);
 const loop = new FrameLoop(new PerformanceClock(), input, scenes, (callback) => {
   requestAnimationFrame(callback);
 });

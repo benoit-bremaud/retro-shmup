@@ -31,6 +31,14 @@ export const Palette = {
   pauseIcon: '#ffffff',
   // The touch pause button over the HUD band (GDD v0.7 §4.2).
   pauseButton: '#a3b1d6',
+  // Player kit (GDD v0.8 §4.6, §9.2): P capsules, their marks, the HUD weapon badge and pips.
+  pickupRed: '#e53e3e',
+  pickupBlue: '#4299e1',
+  pickupMark: '#fffaf0',
+  spreadBadge: '#fc8a8a',
+  laserBadge: '#90cdf4',
+  pipOn: '#f6e05f',
+  pipOff: '#718096',
 } as const;
 
 export type PaletteColour = (typeof Palette)[keyof typeof Palette];

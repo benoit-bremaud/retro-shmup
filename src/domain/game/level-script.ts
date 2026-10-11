@@ -1,5 +1,6 @@
 import { DIVER, GUNNER, POPCORN } from './enemy';
 import type { EnemyArchetype, SpawnSpec } from './enemy';
+import { PickupKind } from './pickup';
 
 /**
  * One timed row of a level script (GDD §7.1, v0.6 §7.2.1). A group (`count` > 1) spawns one
@@ -21,6 +22,8 @@ export interface LevelScript {
   readonly events: readonly ScriptEvent[];
   /** Interim (enemies brick): seconds after which the script time wraps to 0. */
   readonly loopAt?: number;
+  /** The colour of a full formation's P (GDD v0.8 §4.6): red in level 1. */
+  readonly dominantColour: PickupKind;
 }
 
 const POPCORN_INTERVAL = 1 / 3;
@@ -28,6 +31,7 @@ const POPCORN_INTERVAL = 1 / 3;
 /** The first enemy rows of level 1 (GDD v0.6 §7.2.1), looping at 45 s, the Heavy's slot. */
 export const LEVEL_1: LevelScript = {
   loopAt: 45,
+  dominantColour: PickupKind.PRed,
   events: [
     { at: 0, archetype: POPCORN, count: 6, interval: POPCORN_INTERVAL, spawn: { x: 80, y: -8 } },
     {

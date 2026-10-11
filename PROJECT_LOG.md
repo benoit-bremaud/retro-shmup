@@ -6,6 +6,48 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ---
 
+## 2026-10-12
+
+### Randomness, pickups and sources E-1 (branch `feat/pickups`) — Refs #25
+
+- `Run({ script, seed, createRandom })` owns its gameplay `Random`, built for level 1 from
+  `mixSeed(seed, 0)`; `main.ts` draws each run's seed; tests pass a scripted `Random` through
+  `createRandom` (ADR-0019).
+- Pooled `Pickup` (8): falls at 40 px/s with a ±8 px, 2 s sway as a closed form of its age, axis
+  clamped to 16..224, lost below the field; `World.spawnPickup` returns false on a full pool, so
+  `PICKUP_SPAWNED` is published only for a pickup that exists. Collision pass 4 catches pickups
+  with the ship's 32 × 32 box after the hazards, never while `Dead`.
+- `Weapon.kind` and `level` with `powerUp`: a P selects its weapon and adds a level; at level 5
+  it pays a flat 1 000 (`PICKUP_COLLECTED.value`, added by `ScoreKeeper` outside the chain).
+  Interim until E-2: every kind and level still fires the level-1 Spread.
+- Pooled `Formation` (16), one per pass of a Popcorn row (`LevelDirector`); a member destroyed,
+  escaping (a `World.sweep` pre-pass) or refused settles it; the last member destroyed drops a P
+  of `LevelScript.dominantColour` (red) and publishes `FORMATION_CLEARED`. The Gunner drops a P
+  at 30 % × `dropRateScale`, red or blue from the same draw. `DifficultyProfile` NORMAL replaces
+  `PlayerTuning.lives`.
+- HUD: the weapon badge (three dots or a bar) and five power pips (filled or outlined) in the
+  right band and on the second portrait row; P capsules marked by shape on the field.
+- A headless capture showed the first full formation's P caught by a ship holding fire at rest:
+  two pips lit.
+- Local pre-push review: 1 Must fixed — a member refused by a full enemy pool counted against
+  the formation; `Formation` now counts destroyed, escaped and refused, and `Run` (the director's
+  spawner) runs the completion check on every destroy and refusal, as the class diagram says.
+  Also fixed: a full formation pool drops the whole group, `Weapon.powerUp` returns a boolean
+  (`Player.collect` pays the cap bonus), tests for two pickups in one step, no collection after
+  Game over, the formation peak over three passes, and a pinned `mixSeed`.
+- The SonarQube gate failed on the first push attempt: one S7735 (negated condition, fixed) and an
+  unreviewed security hotspot S2245 on the run seed's `Math.random()` in `main.ts`. Verified by
+  experiment (the gate passes without the call, and with a scoped exception, and fails without
+  it), then, by owner choice D, accepted as a versioned exception `e3` in
+  `sonar-project.properties`, scoped to S2245 in `src/app/main.ts` with its justification, like
+  e1 and e2 — rather than a "Safe" review stored only in the local SonarQube database.
+
+### PR #24 merged (`0737abf`) — E-0 player-kit design
+
+- Two Codex findings fixed in `5d9e11c` by owner choice A: `World.spawnPickup` returns a boolean
+  so `PICKUP_SPAWNED` is never published for a refused spawn, and `RunConfig.createRandom` is the
+  test seam for a scripted `Random`. Issue #25 tracks the brick with 15 acceptance criteria.
+
 ## 2026-10-11
 
 ### Design of the player-kit brick E (branch `docs/e-design`) — GDD v0.8, ADR-0019

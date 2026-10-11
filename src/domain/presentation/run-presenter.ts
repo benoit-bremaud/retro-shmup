@@ -1,6 +1,8 @@
 import type { ReadonlyActiveList } from '../game/active-list';
 import type { Bullet } from '../game/bullet';
 import type { Enemy } from '../game/enemy';
+import { PickupKind } from '../game/pickup';
+import type { Pickup } from '../game/pickup';
 import { GameEventKind } from '../game/events';
 import type { GameEvent, RunEvents } from '../game/events';
 import { PlayerState } from '../game/player';
@@ -80,6 +82,7 @@ export class RunPresenter {
       this.drawBox(enemy, alpha, flashing ? Palette.hitFlash : enemyColour(enemy));
     }
     this.explosions.draw(this.render);
+    this.drawPickups(snapshot.pickups, alpha);
     this.drawBullets(snapshot.playerBullets, alpha, Palette.playerShot);
     const player = snapshot.player;
     if (isShipVisible(player, this.effects)) {
@@ -103,6 +106,29 @@ export class RunPresenter {
       this.explosions.record(event.position.x, event.position.y, event.detail);
     }
   };
+
+  /**
+   * Placeholder P capsules (meta/05-state-scenes, player-kit additions): a 16 × 16 capsule in the
+   * pickup's colour carrying the weapon badge's mark — three dots for P-red, a bar for P-blue — so
+   * the two never differ by colour only (GDD §9.7).
+   */
+  private drawPickups(pickups: ReadonlyActiveList<Pickup>, alpha: number): void {
+    const r = this.render;
+    for (let i = 0; i < pickups.count; i += 1) {
+      const pickup = pickups.at(i);
+      const x = lerp(pickup.previousPosition.x, pickup.position.x, alpha);
+      const y = lerp(pickup.previousPosition.y, pickup.position.y, alpha);
+      const red = pickup.kind === PickupKind.PRed;
+      r.drawRect(x - 8, y - 8, 16, 16, red ? Palette.pickupRed : Palette.pickupBlue);
+      if (red) {
+        for (let dot = -1; dot <= 1; dot += 1) {
+          r.drawRect(x + dot * 4 - 1, y - 1, 2, 2, Palette.pickupMark);
+        }
+      } else {
+        r.drawRect(x - 1, y - 4, 2, 8, Palette.pickupMark);
+      }
+    }
+  }
 
   private drawBullets(bullets: ReadonlyActiveList<Bullet>, alpha: number, colour: string): void {
     for (let i = 0; i < bullets.count; i += 1) this.drawBox(bullets.at(i), alpha, colour);

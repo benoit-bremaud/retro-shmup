@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { WorldSnapshot } from '../../src/domain/game/run';
+import { WeaponKind } from '../../src/domain/game/weapon';
 import { HUD_FONT_CELL } from '../../src/domain/ports/render-port';
 import { drawHud, drawHudFrame, drawPauseButton } from '../../src/domain/presentation/hud';
 import {
@@ -18,6 +19,7 @@ import {
 import type { ScreenLayout } from '../../src/domain/presentation/screen';
 
 import { RecordingRender } from '../support/recording-render';
+import type { RecordedRect } from '../support/recording-render';
 
 const HUD_LAYOUT = HUD_LAYOUTS.landscape;
 
@@ -40,6 +42,9 @@ function hudOf(values: Partial<WorldSnapshot>, screen: ScreenLayout = LANDSCAPE)
     playerBullets: empty,
     enemyBullets: empty,
     enemies: empty,
+    pickups: empty,
+    weaponKind: WeaponKind.Spread,
+    power: 1,
     lives: 3,
     score: 0,
     multiplier: 1,
@@ -87,10 +92,10 @@ describe('drawHud — left band (GDD §9.2, meta/05-state-scenes)', () => {
     expect(render.rectsOf(Palette.chainBar).reduce((sum, rect) => sum + rect.w, 0)).toBe(width);
   });
 
-  it('keeps every element inside the left band, with 8 px margins', () => {
+  it('keeps every left-band element inside the left band, with 8 px margins', () => {
     const render = hudOf({ score: 99_999_999, multiplier: 8, chainRatio: 1, lives: 3 });
     const right = (x: number, w: number): number => x + w;
-    for (const rect of render.rects) {
+    for (const rect of render.rects.filter((r) => r.x < HUD_BAND_WIDTH)) {
       expect(rect.x).toBeGreaterThanOrEqual(8);
       expect(right(rect.x, rect.w)).toBeLessThanOrEqual(HUD_BAND_WIDTH - 8);
     }
@@ -202,5 +207,55 @@ describe('Pause button — the touch pause button (GDD v0.7 §4.2, ADR-0018 deci
 
   it('ends the portrait edge line at the button', () => {
     expect(PORTRAIT_STRIP_EDGE.width).toBe(PAUSE_BUTTONS.portrait.x);
+  });
+});
+
+describe('drawHud — weapon badge and power pips (GDD v0.8 §9.2)', () => {
+  const badgeOf = (render: RecordingRender, colour: string): RecordedRect[] =>
+    render.rectsOf(colour);
+
+  it('draws the Spread badge as three dots and the Laser badge as one bar', () => {
+    const spread = hudOf({ weaponKind: WeaponKind.Spread });
+    expect(badgeOf(spread, Palette.spreadBadge).map((r) => [r.x, r.y, r.w, r.h])).toEqual([
+      [368, 87, 2, 2],
+      [371, 87, 2, 2],
+      [374, 87, 2, 2],
+    ]);
+    const laser = hudOf({ weaponKind: WeaponKind.Laser });
+    expect(badgeOf(laser, Palette.laserBadge).map((r) => [r.x, r.y, r.w, r.h])).toEqual([
+      [371, 84, 2, 8],
+    ]);
+    expect(laser.drew(Palette.spreadBadge)).toBe(false);
+  });
+
+  it('fills the pips up to the power level and outlines the rest, every 6 px', () => {
+    const render = hudOf({ power: 3 });
+    expect(render.rectsOf(Palette.pipOn).map((r) => [r.x, r.y, r.w, r.h])).toEqual([
+      [380, 84, 3, 8],
+      [386, 84, 3, 8],
+      [392, 84, 3, 8],
+    ]);
+    const hollowLefts = render.rectsOf(Palette.pipOff).filter((r) => r.h === 8);
+    expect(hollowLefts.map((r) => r.x)).toEqual([398, 400, 404, 406]);
+  });
+
+  it('keeps the right-band items inside the band, below the pause button', () => {
+    const render = hudOf({ power: 5, weaponKind: WeaponKind.Laser });
+    const right = render.rects.filter((r) => r.x >= LANDSCAPE.fieldX + 240);
+    expect(right.length).toBeGreaterThan(0);
+    for (const rect of right) {
+      expect(rect.x).toBeGreaterThanOrEqual(368);
+      expect(rect.x + rect.w).toBeLessThanOrEqual(480 - 8);
+      expect(rect.y).toBeGreaterThanOrEqual(PAUSE_BUTTONS.landscape.height);
+    }
+  });
+
+  it('puts the badge and pips on the second portrait row, ending at x 179', () => {
+    const render = hudOf({ power: 5 }, PORTRAIT);
+    expect(render.rectsOf(Palette.spreadBadge)[0]).toMatchObject({ x: 140, y: 22 });
+    const pips = render.rectsOf(Palette.pipOn);
+    expect(pips.map((r) => r.x)).toEqual([152, 158, 164, 170, 176]);
+    expect(Math.max(...pips.map((r) => r.x + r.w))).toBe(179);
+    expect(pips.every((r) => r.y === 19)).toBe(true);
   });
 });

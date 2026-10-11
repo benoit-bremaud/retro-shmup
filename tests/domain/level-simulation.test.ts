@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { GameEventKind } from '../../src/domain/game/events';
 import type { GameEvent } from '../../src/domain/game/events';
 import { Run, RunOutcome } from '../../src/domain/game/run';
-import { ENEMY_BULLET_POOL_SIZE, ENEMY_POOL_SIZE } from '../../src/domain/game/tuning';
+import {
+  ENEMY_BULLET_POOL_SIZE,
+  ENEMY_POOL_SIZE,
+  PICKUP_POOL_SIZE,
+} from '../../src/domain/game/tuning';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import { RunPresenter } from '../../src/domain/presentation/run-presenter';
 import { RecordingRender } from '../support/recording-render';
@@ -31,9 +35,9 @@ function idle(): IntentFrame {
   return frame;
 }
 
-/** Plays a run and returns its event log and final state as JSON. */
-function replay(steps: number): string {
-  const run = new Run();
+/** Plays a run from `seed` and returns its event log and final state as JSON (ADR-0019). */
+function replay(steps: number, seed = 1): string {
+  const run = new Run({ seed });
   const log: string[] = [];
   const record = (event: Readonly<GameEvent>): void => {
     log.push(`${String(event.kind)}:${String(event.subject)}:${event.position.x.toFixed(3)}`);
@@ -42,6 +46,12 @@ function replay(steps: number): string {
   events.subscribe(GameEventKind.EnemyHit, record);
   events.subscribe(GameEventKind.EnemyDestroyed, record);
   events.subscribe(GameEventKind.PlayerDied, record);
+  const recordPickup = (event: Readonly<GameEvent>): void => {
+    log.push(`${String(event.kind)}:${String(event.detail)}:${String(event.value)}`);
+  };
+  events.subscribe(GameEventKind.PickupSpawned, recordPickup);
+  events.subscribe(GameEventKind.PickupCollected, recordPickup);
+  events.subscribe(GameEventKind.FormationCleared, record);
   for (let i = 0; i < steps; i += 1) run.step(DT, scripted(i));
   const snapshot = run.snapshot();
   return JSON.stringify({
@@ -53,10 +63,29 @@ function replay(steps: number): string {
 }
 
 describe('Level simulation — the enemies brick, headless', () => {
-  it('replays identically from the same scripted inputs over three loops', () => {
+  it('replays identically from the same seed and scripted inputs over three loops', () => {
     const first = replay(3 * ONE_PASS);
     expect(first).toBe(replay(3 * ONE_PASS));
     expect(first).toContain(`"${String(GameEventKind.EnemyDestroyed)}:`);
+    expect(first).toContain(`"${String(GameEventKind.PickupSpawned)}:`);
+  });
+
+  it('lets the seed change the drops (ADR-0019)', () => {
+    const logs = new Set<string>();
+    for (let seed = 1; seed <= 6; seed += 1) logs.add(replay(3 * ONE_PASS, seed));
+    expect(logs.size).toBeGreaterThan(1);
+  });
+
+  it("never fills the pickup pool with the script's own drops (GDD v0.8 §4.6)", () => {
+    for (let seed = 1; seed <= 8; seed += 1) {
+      const run = new Run({ seed });
+      let most = 0;
+      for (let i = 0; i < 3 * ONE_PASS; i += 1) {
+        run.step(DT, scripted(i));
+        most = Math.max(most, run.snapshot().pickups.count);
+      }
+      expect(most).toBeLessThan(PICKUP_POOL_SIZE);
+    }
   });
 
   it('kills an idle ship three times, then ends the run with Game over', () => {

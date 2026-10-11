@@ -25,7 +25,7 @@ class RecordingShots implements EnemyShotSpawner {
 
 function spawned(archetype: EnemyArchetype, spec: SpawnSpec): Enemy {
   const enemy = new Enemy();
-  enemy.spawn(archetype, spec, 1);
+  enemy.spawn(archetype, spec, 1, undefined);
   return enemy;
 }
 
@@ -57,7 +57,7 @@ describe('Enemy.spawn — resets every field (class diagram notes)', () => {
       if (typeof value === 'boolean') Object.assign(recycled, { [key]: !value });
       if (typeof value === 'object' && 'x' in value) Object.assign(value, { x: 5, y: 5 });
     }
-    recycled.spawn(GUNNER, spec, 1);
+    recycled.spawn(GUNNER, spec, 1, undefined);
     expect(recycled).toEqual(fresh);
   });
 

@@ -20,6 +20,13 @@ export interface HudLayout {
     readonly size: number;
     readonly spacing: number;
   };
+  /** The 8 × 8 weapon badge at (x, y), then the five 3 × 8 power pips from `pipX` (GDD v0.8). */
+  readonly weapon: {
+    readonly x: number;
+    readonly y: number;
+    readonly pipX: number;
+    readonly pipSpacing: number;
+  };
 }
 
 /**
@@ -34,12 +41,15 @@ export const HUD_LAYOUTS: Readonly<Record<ScreenLayout['kind'], HudLayout>> = {
     multiplier: { x: 8, y: 24 },
     chainBar: { x: 8, y: 38, width: 64, height: 4 },
     lives: { x: 8, y: 52, size: 8, spacing: 12 },
+    // The right band, below the pause button and the level name's slot (y 56–76).
+    weapon: { x: 368, y: 84, pipX: 380, pipSpacing: 6 },
   },
   portrait: {
     score: { x: 4, y: 4, digits: 8 },
     multiplier: { x: 4, y: 18 },
     chainBar: { x: 24, y: 21, width: 42, height: 4 },
     lives: { x: 76, y: 5, size: 8, spacing: 12 },
+    weapon: { x: 140, y: 19, pipX: 152, pipSpacing: 6 },
   },
 };
 

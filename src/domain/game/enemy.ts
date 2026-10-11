@@ -1,9 +1,11 @@
 import type { AttackPattern } from './attacks';
 import { AimedAttack, NoAttack } from './attacks';
 import type { Body } from './body';
+import type { Formation } from './formation';
 import type { Vec2 } from './geometry';
 import type { MovementPattern } from './movements';
 import { DiveMovement, EnterHoldLeave, PathMovement } from './movements';
+import { PickupKind } from './pickup';
 
 /** Size tier of a role (GDD §5.2): it scales the explosion. */
 export const SizeTier = {
@@ -21,14 +23,26 @@ export interface EnemyStats {
   readonly tier: SizeTier;
 }
 
+/**
+ * What a role drops when destroyed (GDD §5.2, ADR-0019): one draw `r` decides, a drop when
+ * `r < rate × dropRateScale`, and the same draw picks the kind among `kinds`.
+ */
+export interface DropTable {
+  readonly rate: number;
+  readonly kinds: readonly PickupKind[];
+}
+
+const NO_DROP: DropTable = { rate: 0, kinds: [] };
+
 /** A role as a data line (GDD §5.3, ADR-0003): stats plus one movement and one attack. */
 export interface EnemyArchetype {
   readonly id: 'popcorn' | 'diver' | 'gunner';
   readonly stats: EnemyStats;
   readonly movement: MovementPattern;
   readonly attack: AttackPattern;
-  /** Its groups form formations (Popcorn only, GDD §5.2); used from the pickups brick. */
+  /** Its groups form formations (Popcorn only, GDD §5.2). */
   readonly formation: boolean;
+  readonly drops: DropTable;
 }
 
 export const POPCORN: EnemyArchetype = {
@@ -37,6 +51,7 @@ export const POPCORN: EnemyArchetype = {
   movement: PathMovement,
   attack: NoAttack,
   formation: true,
+  drops: NO_DROP,
 };
 
 export const DIVER: EnemyArchetype = {
@@ -45,6 +60,7 @@ export const DIVER: EnemyArchetype = {
   movement: DiveMovement,
   attack: NoAttack,
   formation: false,
+  drops: NO_DROP,
 };
 
 export const GUNNER: EnemyArchetype = {
@@ -53,6 +69,8 @@ export const GUNNER: EnemyArchetype = {
   movement: EnterHoldLeave,
   attack: AimedAttack,
   formation: false,
+  // GDD v0.8 §5.2: a P at 30 %, red or blue 50 / 50.
+  drops: { rate: 0.3, kinds: [PickupKind.PRed, PickupKind.PBlue] },
 };
 
 /** What a spawn reads of a script row. */
@@ -81,10 +99,18 @@ export class Enemy implements Body {
   armed = false;
   spent = false;
   archetype: EnemyArchetype = POPCORN;
+  /** The Popcorn formation of this pass, if any. */
+  formation: Formation | undefined;
 
   /** Resets every field in one place, so a recycled enemy never inherits its predecessor's. */
-  spawn(archetype: EnemyArchetype, spec: Readonly<SpawnSpec>, serial: number): void {
+  spawn(
+    archetype: EnemyArchetype,
+    spec: Readonly<SpawnSpec>,
+    serial: number,
+    formation: Formation | undefined,
+  ): void {
     this.archetype = archetype;
+    this.formation = formation;
     this.serial = serial;
     this.origin.x = spec.spawn.x;
     this.origin.y = spec.spawn.y;

@@ -2,6 +2,7 @@ import { applyDamage } from './body';
 import type { Bullet } from './bullet';
 import type { Enemy } from './enemy';
 import type { Box } from './geometry';
+import type { Pickup } from './pickup';
 import { HitOutcome } from './player';
 import type { Player } from './player';
 import { PlayerTuning } from './tuning';
@@ -16,6 +17,8 @@ export interface HitRules {
   enemyHit(enemy: Enemy): void;
   destroyEnemy(enemy: Enemy): void;
   playerDied(): void;
+  /** The ship caught the pickup, already marked spent: `Run` applies it and publishes it. */
+  pickupCollected(pickup: Pickup): void;
 }
 
 function overlaps(a: Box, b: Box): boolean {
@@ -77,6 +80,28 @@ function bodiesAgainstPlayer(world: World, rules: HitRules): void {
   }
 }
 
+// The ship's full sprite box catches pickups, generously (GDD §4.6).
+const COLLECT = PlayerTuning.collectSize;
+
+function overlapsSprite(player: Player, box: Box): boolean {
+  return (
+    Math.abs(player.position.x - box.position.x) < (COLLECT + box.width) / 2 &&
+    Math.abs(player.position.y - box.position.y) < (COLLECT + box.height) / 2
+  );
+}
+
+// Pass 4: pickups against the ship, after the hazards: a ship dying this step catches nothing.
+// Several pickups in one step apply in the order of the active list (GDD v0.8 §4.6).
+function pickupsAgainstPlayer(world: World, rules: HitRules): void {
+  if (!world.player.canCollect) return;
+  for (let i = 0; i < world.pickups.count; i += 1) {
+    const pickup = world.pickups.at(i);
+    if (pickup.spent || !overlapsSprite(world.player, pickup)) continue;
+    pickup.spent = true;
+    rules.pickupCollected(pickup);
+  }
+}
+
 /**
  * Step 5 of `Run.step` (class diagram, `CollisionResolver`): marks only — spent bullets and
  * destroyed enemies are released at step 6, so no pool sees a double release.
@@ -86,5 +111,6 @@ export const CollisionResolver = {
     shotsAgainstEnemies(world, rules);
     bulletsAgainstPlayer(world, rules);
     bodiesAgainstPlayer(world, rules);
+    pickupsAgainstPlayer(world, rules);
   },
 } as const;
