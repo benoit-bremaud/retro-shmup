@@ -29,6 +29,8 @@ export const Palette = {
   titleText: '#fc8181',
   veil: '#05060fb3',
   pauseIcon: '#ffffff',
+  // The touch pause button over the HUD band (GDD v0.7 §4.2).
+  pauseButton: '#a3b1d6',
 } as const;
 
 export type PaletteColour = (typeof Palette)[keyof typeof Palette];

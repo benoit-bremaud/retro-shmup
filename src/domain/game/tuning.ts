@@ -54,6 +54,8 @@ export const SpreadLevel1 = {
 export const SceneTuning = {
   countInSeconds: 1,
   gameOverSeconds: 3,
+  /** Confirm and taps are ignored this long on Game over and on the title after it (GDD v0.7 §4.4). */
+  gameOverLockSeconds: 1,
 } as const;
 
 /** Enemy bullets (GDD v0.6 §5.2.1): never faster than the ship. */

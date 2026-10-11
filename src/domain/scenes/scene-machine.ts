@@ -6,7 +6,8 @@ import type { IntentFrame } from '../ports/input-port';
 import type { RenderPort } from '../ports/render-port';
 import { message } from '../i18n/messages';
 import type { Language } from '../i18n/messages';
-import { drawHudFrame } from '../presentation/hud';
+import { drawHudFrame, drawPauseButton } from '../presentation/hud';
+import { isPauseTap } from '../presentation/hud-layout';
 import { drawBanner, drawCountIn, drawPauseIcon, drawVeil } from '../presentation/overlays';
 import { RunPresenter } from '../presentation/run-presenter';
 import type { EffectSettings } from '../presentation/run-presenter';
@@ -30,20 +31,27 @@ interface SceneTraits {
   /** The background clock advances. */
   readonly scrolls: boolean;
   readonly drawsRun: boolean;
+  /** The touch pause button is drawn and hit-tested (GDD v0.7 §4.2). */
+  readonly pauseButton: boolean;
 }
 
 const SCENE_TRAITS: Readonly<Record<Scene, SceneTraits>> = {
-  [Scene.Boot]: { frozen: false, scrolls: false, drawsRun: false },
-  [Scene.Title]: { frozen: false, scrolls: true, drawsRun: false },
-  [Scene.Playing]: { frozen: false, scrolls: true, drawsRun: true },
-  [Scene.Paused]: { frozen: true, scrolls: false, drawsRun: true },
-  [Scene.CountIn]: { frozen: true, scrolls: false, drawsRun: true },
+  [Scene.Boot]: { frozen: false, scrolls: false, drawsRun: false, pauseButton: false },
+  [Scene.Title]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
+  [Scene.Playing]: { frozen: false, scrolls: true, drawsRun: true, pauseButton: true },
+  [Scene.Paused]: { frozen: true, scrolls: false, drawsRun: true, pauseButton: true },
+  [Scene.CountIn]: { frozen: true, scrolls: false, drawsRun: true, pauseButton: true },
   // Arcade style: the run plays on without the ship behind GAME OVER (GDD v0.6 §4.4).
-  [Scene.GameOver]: { frozen: false, scrolls: true, drawsRun: true },
+  [Scene.GameOver]: { frozen: false, scrolls: true, drawsRun: true, pauseButton: false },
 };
 
 const COUNT_IN_STEPS = toSteps(SceneTuning.countInSeconds);
 const GAME_OVER_STEPS = toSteps(SceneTuning.gameOverSeconds);
+const LOCK_STEPS = toSteps(SceneTuning.gameOverLockSeconds);
+
+function isConfirmOrTap(frame: Readonly<IntentFrame>): boolean {
+  return (frame.pressed & Button.Confirm) !== 0 || frame.tapRegion !== 'none';
+}
 
 /** What the scene machine holds of a run: it steps it and reads it, nothing more. */
 type InRun = Simulation & RunView;
@@ -61,6 +69,11 @@ export class SceneMachine {
   private backgroundSteps = 0;
   private countInLeft = 0;
   private gameOverLeft = 0;
+  /**
+   * Steps left during which Confirm and taps are ignored: set on entering Game over and on the
+   * title reached from it, so hammering never skips GAME OVER nor starts a new run (GDD v0.7 §4.4).
+   */
+  private lockLeft = 0;
   /** English until the options screen chooses (GDD §9.6). */
   private readonly language: Language = 'en';
   private readonly createRun: () => InRun;
@@ -121,10 +134,11 @@ export class SceneMachine {
     }
   }
 
-  // Pause is ignored on the title, as in every scene but play (pause rules).
+  // Pause is ignored on the title, as in every scene but play (pause rules); any tap starts.
   private stepTitle(frame: Readonly<IntentFrame>): void {
     this.backgroundSteps += 1;
-    if ((frame.pressed & Button.Confirm) !== 0 || frame.tapRegion !== 'none') {
+    if (this.locked()) return;
+    if (isConfirmOrTap(frame)) {
       const run = this.createRun(); // InRun entry creates the run and its presenter.
       this.run = run;
       this.presenter = new RunPresenter(this.renderer, this.effects, run.events());
@@ -132,9 +146,9 @@ export class SceneMachine {
     }
   }
 
-  // Only Pause enters the pause, before the run steps; Back is ignored in play.
+  // Pause or the pause button enters the pause, before the run steps; Back is ignored in play.
   private stepPlaying(dt: number, frame: Readonly<IntentFrame>): void {
-    if ((frame.pressed & Button.Pause) !== 0) {
+    if (this.pauses(frame)) {
       this.current = Scene.Paused;
       return;
     }
@@ -144,12 +158,15 @@ export class SceneMachine {
     if (this.run.outcome() === RunOutcome.GameOver) {
       this.current = Scene.GameOver;
       this.gameOverLeft = GAME_OVER_STEPS;
+      this.lockLeft = LOCK_STEPS;
     }
   }
 
-  // Pause does nothing here: an automatic trigger can only enter the pause, never leave it.
+  // Pause does nothing here: an automatic trigger can only enter the pause, never leave it. Any
+  // tap resumes until the pause menu of the screens brick (interim deviation, tap resume).
   private stepPaused(frame: Readonly<IntentFrame>): void {
-    if ((frame.pressed & (Button.Confirm | Button.Back)) === 0) return;
+    if ((frame.pressed & (Button.Confirm | Button.Back)) === 0 && frame.tapRegion === 'none')
+      return;
     this.current = Scene.CountIn;
     this.countInLeft = COUNT_IN_STEPS;
   }
@@ -157,7 +174,7 @@ export class SceneMachine {
   // Pause wins; the last step hands over to Playing and steps the run, so the first resumed
   // frame interpolates forward from the frozen picture.
   private stepCountIn(dt: number, frame: Readonly<IntentFrame>): void {
-    if ((frame.pressed & Button.Pause) !== 0) {
+    if (this.pauses(frame)) {
       this.current = Scene.Paused;
       return;
     }
@@ -167,16 +184,31 @@ export class SceneMachine {
     this.stepPlaying(dt, frame);
   }
 
-  // The run plays on without the ship; Confirm, or the game-over time, returns to the title,
-  // where the run is released.
+  // The run plays on without the ship; Confirm or a tap after the lock, or the game-over time,
+  // returns to the title, where the run is released and the same lock applies.
   private stepGameOver(dt: number, frame: Readonly<IntentFrame>): void {
     this.backgroundSteps += 1;
     this.run?.step(dt, frame);
     this.gameOverLeft -= 1;
-    if ((frame.pressed & Button.Confirm) === 0 && this.gameOverLeft > 0) return;
+    const confirmed = !this.locked() && isConfirmOrTap(frame);
+    if (!confirmed && this.gameOverLeft > 0) return;
     this.run = undefined;
     this.presenter = undefined;
     this.current = Scene.Title;
+    this.lockLeft = LOCK_STEPS;
+  }
+
+  /** Consumes one locked step; true while Confirm and taps are still ignored. */
+  private locked(): boolean {
+    if (this.lockLeft === 0) return false;
+    this.lockLeft -= 1;
+    return true;
+  }
+
+  /** `Pause`, or a tap on the pause button of the current screen (ADR-0018 decision 1). */
+  private pauses(frame: Readonly<IntentFrame>): boolean {
+    if ((frame.pressed & Button.Pause) !== 0) return true;
+    return isPauseTap(frame.tapRegion, frame.tapX, frame.tapY, this.renderer.layout());
   }
 
   render(alpha: number, wallDtMs: number): void {
@@ -197,6 +229,7 @@ export class SceneMachine {
     if (traits.drawsRun && this.run !== undefined && this.presenter !== undefined) {
       this.presenter.draw(this.run.snapshot(), frameAlpha, effectMs);
     }
+    if (traits.pauseButton) drawPauseButton(r);
     this.drawOverlays();
     r.present();
   }

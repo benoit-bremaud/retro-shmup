@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { WorldSnapshot } from '../../src/domain/game/run';
 import { HUD_FONT_CELL } from '../../src/domain/ports/render-port';
-import { drawHud, drawHudFrame } from '../../src/domain/presentation/hud';
-import { HUD_LAYOUTS, PORTRAIT_STRIP_EDGE } from '../../src/domain/presentation/hud-layout';
+import { drawHud, drawHudFrame, drawPauseButton } from '../../src/domain/presentation/hud';
+import {
+  HUD_LAYOUTS,
+  isPauseTap,
+  PAUSE_BUTTONS,
+  PORTRAIT_STRIP_EDGE,
+} from '../../src/domain/presentation/hud-layout';
 import { Palette } from '../../src/domain/presentation/palette';
 import {
   HUD_BAND_WIDTH,
@@ -152,5 +157,50 @@ describe('drawHudFrame — the HUD background of each screen', () => {
     expect(render.rectsOf(Palette.hudEdge)).toEqual([
       { region: 'hud', x: 0, y: 31, w: 192, h: 1, colour: Palette.hudEdge },
     ]);
+  });
+});
+
+describe('Pause button — the touch pause button (GDD v0.7 §4.2, ADR-0018 decision 1)', () => {
+  it('sits flush with the top-right corner of each screen', () => {
+    expect(PAUSE_BUTTONS.landscape).toEqual({ x: 432, y: 0, width: 48, height: 48 });
+    expect(PAUSE_BUTTONS.portrait).toEqual({ x: 192, y: 0, width: 48, height: 32 });
+    expect(PAUSE_BUTTONS.landscape.x + PAUSE_BUTTONS.landscape.width).toBe(LANDSCAPE.width);
+    expect(PAUSE_BUTTONS.portrait.x + PAUSE_BUTTONS.portrait.width).toBe(PORTRAIT.width);
+  });
+
+  it.each([
+    ['landscape', LANDSCAPE, [450, 16, 458, 16]],
+    ['portrait', PORTRAIT, [210, 8, 218, 8]],
+  ] as const)(
+    'draws two 4 × 16 bars centred in the %s button',
+    (_label, screen, [lx, ly, rx, ry]) => {
+      const render = new RecordingRender();
+      render.screen = screen;
+      drawPauseButton(render);
+      expect(render.rectsOf(Palette.pauseButton)).toEqual([
+        { region: 'hud', x: lx, y: ly, w: 4, h: 16, colour: Palette.pauseButton },
+        { region: 'hud', x: rx, y: ry, w: 4, h: 16, colour: Palette.pauseButton },
+      ]);
+    },
+  );
+
+  it.each([
+    ['its top-left pixel', 'hud', 192, 0, true],
+    ['its bottom-right pixel', 'hud', 239, 31, true],
+    ['the pixel left of it (half-open)', 'hud', 191, 0, false],
+    ['the pixel below it (half-open)', 'hud', 192, 32, false],
+    ['a field tap at the same coordinates', 'field', 200, 10, false],
+    ['no tap', 'none', 200, 10, false],
+  ] as const)('hit-tests %s on the portrait screen', (_label, region, x, y, hit) => {
+    expect(isPauseTap(region, x, y, PORTRAIT)).toBe(hit);
+  });
+
+  it('hit-tests the landscape button, not the portrait one', () => {
+    expect(isPauseTap('hud', 432, 47, LANDSCAPE)).toBe(true);
+    expect(isPauseTap('hud', 200, 10, LANDSCAPE)).toBe(false);
+  });
+
+  it('ends the portrait edge line at the button', () => {
+    expect(PORTRAIT_STRIP_EDGE.width).toBe(PAUSE_BUTTONS.portrait.x);
   });
 });

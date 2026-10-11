@@ -302,12 +302,39 @@ describe('SceneMachine — Game over (GDD §4.4, meta/05-state-scenes)', () => {
     expect(machine.scene).toBe(Scene.Title);
   });
 
-  it('returns to the title at once on Confirm, which does not start a new run', () => {
+  it.each([
+    ['Confirm', pressed(Button.Confirm)],
+    ['a tap', tapped()],
+  ])('ignores %s for 1 s, then returns to the title on it', (_label, frame) => {
     const { machine } = gameOverFixture();
+    for (let i = 0; i < 60; i += 1) machine.step(DT, frame);
+    expect(machine.scene).toBe(Scene.GameOver);
+    machine.step(DT, frame);
+    expect(machine.scene).toBe(Scene.Title);
+  });
+
+  it('locks the title reached from Game over for 1 s, so hammering never starts a run', () => {
+    const { machine } = gameOverFixture();
+    for (let i = 0; i < 61; i += 1) machine.step(DT, pressed(Button.Confirm));
+    expect(machine.scene).toBe(Scene.Title);
+    for (let i = 0; i < 60; i += 1) machine.step(DT, tapped());
+    expect(machine.scene).toBe(Scene.Title);
+    machine.step(DT, tapped());
+    expect(machine.scene).toBe(Scene.Playing);
+  });
+
+  it('locks the title reached by the game-over time as well', () => {
+    const { machine } = gameOverFixture();
+    for (let i = 0; i < 180; i += 1) machine.step(DT, createIntentFrame());
+    expect(machine.scene).toBe(Scene.Title);
     machine.step(DT, pressed(Button.Confirm));
     expect(machine.scene).toBe(Scene.Title);
-    machine.step(DT, createIntentFrame());
-    expect(machine.scene).toBe(Scene.Title);
+  });
+
+  it('draws no pause button', () => {
+    const { machine, render } = gameOverFixture();
+    machine.render(0, 16);
+    expect(render.drew(Palette.pauseButton)).toBe(false);
   });
 
   it('ignores Pause', () => {
@@ -409,8 +436,9 @@ describe('SceneMachine — effects per run (ADR-0010, 02-sequence-fixed-step-tic
       machine.step(DT, createIntentFrame());
     }
     expect(machine.scene).toBe(Scene.GameOver);
-    machine.step(DT, pressed(Button.Confirm)); // to the title
-    machine.step(DT, pressed(Button.Confirm)); // a new run
+    for (let i = 0; i < 61; i += 1) machine.step(DT, pressed(Button.Confirm)); // to the title
+    for (let i = 0; i < 61; i += 1) machine.step(DT, pressed(Button.Confirm)); // a new run
+    expect(machine.scene).toBe(Scene.Playing);
     machine.render(1, 0);
     expect(render.drew(Palette.explosionHot)).toBe(false);
   });
@@ -426,5 +454,90 @@ describe('SceneMachine — portrait screen (devices brick additions)', () => {
       { region: 'hud', x: 0, y: 0, w: 240, h: 32, colour: Palette.hudBand },
     ]);
     expect(fixture.render.rectsOf(Palette.veil)[0]).toMatchObject({ region: 'field', x: 0, y: 0 });
+  });
+});
+
+/** A tap in the HUD region at logical-screen coordinates. */
+function hudTap(x: number, y: number): IntentFrame {
+  const tap = createIntentFrame();
+  tap.tapRegion = 'hud';
+  tap.tapX = x;
+  tap.tapY = y;
+  return tap;
+}
+
+// Inside the landscape pause button (432..479, 0..47) and the portrait one (192..239, 0..31).
+const PAUSE_TAP = hudTap(440, 10);
+const OTHER_HUD_TAP = hudTap(20, 200);
+
+describe('SceneMachine — taps and the pause button (devices brick additions)', () => {
+  it('never locks the first title: a tap starts a run at once', () => {
+    const { machine } = onTitle();
+    machine.step(DT, OTHER_HUD_TAP);
+    expect(machine.scene).toBe(Scene.Playing);
+  });
+
+  it('enters Paused on a pause-button tap in play, before the run steps', () => {
+    const fixture = playing();
+    const before = hull(fixture, 1);
+    const tap = hudTap(440, 10);
+    tap.moveKind = 'direction';
+    tap.moveY = 1;
+    fixture.machine.step(DT, tap);
+    expect(fixture.machine.scene).toBe(Scene.Paused);
+    expect(hull(fixture, 1)).toEqual(before);
+  });
+
+  it('hit-tests the button of the current screen', () => {
+    const fixture = playing();
+    fixture.render.screen = PORTRAIT;
+    fixture.machine.step(DT, PAUSE_TAP); // x 440 is off the portrait screen
+    expect(fixture.machine.scene).toBe(Scene.Playing);
+    fixture.machine.step(DT, hudTap(200, 10));
+    expect(fixture.machine.scene).toBe(Scene.Paused);
+  });
+
+  it('ignores other HUD taps and field taps in play', () => {
+    const fixture = playing();
+    fixture.machine.step(DT, OTHER_HUD_TAP);
+    fixture.machine.step(DT, tapped());
+    expect(fixture.machine.scene).toBe(Scene.Playing);
+  });
+
+  it.each([
+    ['the pause button', PAUSE_TAP],
+    ['another HUD tap', OTHER_HUD_TAP],
+    ['a field tap', tapped()],
+  ])('starts the count-in on a tap on %s in Paused (interim tap resume)', (_label, tap) => {
+    const fixture = playing();
+    fixture.machine.step(DT, frame(Button.Pause));
+    fixture.machine.step(DT, tap);
+    expect(fixture.machine.scene).toBe(Scene.CountIn);
+  });
+
+  it('returns to Paused on a pause-button tap during the count-in, and ignores other taps', () => {
+    const fixture = playing();
+    fixture.machine.step(DT, frame(Button.Pause));
+    fixture.machine.step(DT, frame(Button.Confirm));
+    fixture.machine.step(DT, OTHER_HUD_TAP);
+    fixture.machine.step(DT, tapped());
+    expect(fixture.machine.scene).toBe(Scene.CountIn);
+    fixture.machine.step(DT, PAUSE_TAP);
+    expect(fixture.machine.scene).toBe(Scene.Paused);
+  });
+
+  it('draws the pause button in play, in the pause and in the count-in, not on the title', () => {
+    const { machine, render } = onTitle();
+    machine.render(0, 16);
+    expect(render.drew(Palette.pauseButton)).toBe(false);
+    machine.step(DT, pressed(Button.Confirm));
+    machine.render(0, 16);
+    expect(render.drew(Palette.pauseButton)).toBe(true);
+    machine.step(DT, pressed(Button.Pause));
+    machine.render(0, 16);
+    expect(render.drew(Palette.pauseButton)).toBe(true);
+    machine.step(DT, pressed(Button.Confirm));
+    machine.render(0, 16);
+    expect(render.drew(Palette.pauseButton)).toBe(true);
   });
 });
