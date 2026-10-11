@@ -178,6 +178,10 @@ test('a phone starts, pauses and resumes by touch; a rotation pauses without res
   // field x 42 and the Divers dive from 9 s, so nothing covers the hull at rest during the checks.
   await tapScreen(page, 20, 10);
   await expect.poll(() => hullAtRest(page), { timeout: 5000 }).toBe(true);
+  // Past the 2 s fly-in and invulnerability blink, the ship is always drawn: the single checks
+  // below never catch an "off" blink frame.
+  await page.waitForTimeout(2100);
+  await expect.poll(() => hullAtRest(page), { timeout: 2000 }).toBe(true);
 
   // The pause button (portrait: x 192 to 239, y 0 to 31) pauses.
   await tapScreen(page, 215, 16);

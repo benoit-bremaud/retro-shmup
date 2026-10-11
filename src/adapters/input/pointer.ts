@@ -80,10 +80,15 @@ export class PointerModule {
     return changed;
   }
 
-  /** Lost focus or rotation: no finger steers any more and the pending tap is dropped. */
+  /**
+   * Lost focus or rotation: no finger steers any more, the pending tap is dropped, and the mouse
+   * is unseen until its next event, so a cursor point from the old screen never becomes a target.
+   */
   release(): void {
     this.steering = undefined;
     this.tapRegion = 'none';
+    this.mouseSeen = false;
+    this.mouseButtons = 0;
   }
 
   down(event: PointerEventLike, seq: number): void {

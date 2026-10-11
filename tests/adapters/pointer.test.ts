@@ -195,6 +195,15 @@ describe('PointerModule — resize (ADR-0018 decisions 6 and 7)', () => {
     expect(tapOf(module).tapRegion).toBe('field');
   });
 
+  it('forgets the mouse point when the layout kind changes, until the mouse moves again', () => {
+    const module = pointer();
+    module.move(event('mouse', 300, 100), 1);
+    module.resize(PORTRAIT, { left: 0, top: 0, width: 240, height: 352 });
+    expect(mouseSample(module).moving).toBe(false);
+    module.move(event('mouse', 100, 100), 2);
+    expect(mouseSample(module)).toMatchObject({ moving: true, moveX: 100, moveY: 68, startSeq: 2 });
+  });
+
   it('drops the tap and the steering finger when the layout kind changes', () => {
     const module = pointer();
     module.down(event('touch', 200, 250), 1);

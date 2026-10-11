@@ -329,4 +329,12 @@ describe('DeviceInput — touch and mouse through the façade (ADR-0018)', () =>
     input.read(frame);
     expect(frame).toMatchObject({ moveKind: 'none', tapRegion: 'none', pressed: Button.Pause });
   });
+
+  it('clears the mouse owner on lost focus: no movement, autofire masked', () => {
+    const { env, input, frame } = pointerSetup();
+    env.point('move', 'mouse', 200, 250);
+    env.loseFocus();
+    input.read(frame);
+    expect(frame).toMatchObject({ moveKind: 'none', held: 0, pressed: Button.Pause });
+  });
 });
