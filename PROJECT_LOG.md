@@ -16,7 +16,7 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   scored options (portrait strip in two rows; pause button top-right in both orientations; any
   tap resumes; `Start` also confirms; Game over leaves on tap or confirm after a 1 s lock;
   crosshair cursor; the mouse takes the ship only on a real move; rotation pauses; one smoke test
-  running a phone then a rotation; five PRs), then a technical batch of twelve as a whole.
+  running a phone then a rotation; five PRs), then a technical batch of ten as a whole. A four-pass review (2 + 2 Must, 14 Should) added seven owner choices — exact portrait strip positions, the mouse takes the ship only by a move on the field, left click for taps and right click for bombs on the field, `RenderPort.layout()` without a new interface, `hud.ts` draws the whole HUD, the tap resume as an interim deviation, the fixed gamepad roles kept after a remap with a title lock after Game over — and a mechanical batch.
 - GDD v0.7 (§4.2, §4.4, §9.1, §9.2, Decision record), ADR-0018 (partially supersedes ADR-0015
   decisions 3, 4, 5, 7, 8), the scene machine's devices-brick section and build order, the
   component table, the traceability matrix.

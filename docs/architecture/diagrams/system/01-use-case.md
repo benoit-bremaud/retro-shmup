@@ -82,8 +82,8 @@ step depends on them.
   - 8a. The boss timer expires: the boss flees, no boss bonus, continue at step 9 (GDD §6).
   - 11a. The final score enters the top 10: UC3 runs at *run end*, then step 12.
   - *a. At any moment of play (steps 4–8), Player pauses: UC2.
-  - *b. At any moment of play, the tab is hidden, the window loses focus, or the gamepad in use
-    disconnects: the game enters the paused state of UC2 (step 2) and shows the pause menu; it
+  - *b. At any moment of play, the tab is hidden, the window loses focus, the gamepad in use
+    disconnects, or the screen layout changes (GDD v0.7): the game enters the paused state of UC2 (step 2) and shows the pause menu; it
     never resumes on its own — Player continues at UC2 step 3 (GDD §9.1). During a card or the
     level results the pause is remembered and opens at the first step of play; during the
     count-in it returns to the pause menu (GDD v0.4 §9.1).

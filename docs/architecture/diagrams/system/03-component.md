@@ -1,11 +1,12 @@
 # Component diagram — system — components, ports and the dependency rule (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.5 §3.1,
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.7 §3.1,
 > §4.2, §9, §13
 > **Related ADRs**: ADR-0001 (RenderPort), ADR-0002 (Clock, Random, loop), ADR-0003 (layout,
 > ports, dependency rule), ADR-0006 (StoragePort), ADR-0009 (input and audio contracts),
 > ADR-0010 (presentation outside the outcome), ADR-0014 (logical screen, regions, step units),
-> ADR-0015 (portrait screen, devices together, injected browser objects)
+> ADR-0015 (portrait screen, devices together, injected browser objects), ADR-0018 (pause
+> button, taps, mouse takeover, page-level pointer listeners)
 > **Realizes**: the structure behind every use case of [01-use-case](01-use-case.md)
 
 ## Context
@@ -40,7 +41,7 @@ Source: [`03-component.puml`](03-component.puml) — regenerate the SVG with
 | SeededRandom | `src/domain` | The deterministic PRNG behind `Random`, used by gameplay only | — |
 | Canvas2DRenderer | `src/adapters` | Implements `RenderPort`: landscape or portrait off-screen surface (GDD §3.1), field region plus HUD bands or strip, integer scaling, the current `layout()` (ADR-0001, ADR-0010, ADR-0014, ADR-0015) | Canvas 2D |
 | WebAudioPlayer | `src/adapters` | Implements `AudioPort`: SFX, music, volumes, pause mix; suspends while the tab is hidden (ADR-0009) | Web Audio |
-| DeviceInput | `src/adapters` | Implements `InputPort` as a façade over `keyboard`, `pointer` (touch and mouse) and `gamepad` modules → one reusable `IntentFrame`; a pure arbitration function combines the devices; latches presses; synthesizes `Pause` on focus, tab or gamepad loss; inside its gesture handlers unlocks audio and requests fullscreen (ADR-0009, ADR-0015). Receives its browser objects from Bootstrap as one environment record of narrow interfaces — in the devices brick: the key and focus target, the page pointer target, the canvas rectangle (passed with the layout on each resize, ADR-0018) and the gamepad source | DOM events, Pointer Events, Gamepad API, Page Visibility, Fullscreen API |
+| DeviceInput | `src/adapters` | Implements `InputPort` as a façade over `keyboard`, `pointer` (touch and mouse) and `gamepad` modules → one reusable `IntentFrame`; a browser-free arbitration function combines the devices; latches presses; synthesizes `Pause` on focus, tab or gamepad loss and on a layout change; inside its gesture handlers unlocks audio and requests fullscreen (ADR-0009, ADR-0015). Receives its browser objects from Bootstrap as one environment record of narrow interfaces — in the devices brick: the key and focus target, the page pointer target, the canvas rectangle (passed with the layout on each resize, ADR-0018) and the gamepad source | DOM events, Pointer Events, Gamepad API, Page Visibility, Fullscreen API |
 | LocalStorageStore | `src/adapters` | Implements `StoragePort` on `localStorage`, reports unavailability (ADR-0006) | Web Storage |
 | PerformanceClock | `src/adapters` | Implements `Clock` with `performance.now()` | High Resolution Time |
 

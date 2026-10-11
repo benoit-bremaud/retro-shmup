@@ -163,7 +163,8 @@ layout change (QWERTY, AZERTY) never breaks them; labels shown to the player use
 layout. Each remappable intent (`move` ×4, `fire`, `bomb`, `pause`) has a **primary and a
 secondary slot** per device. Remapping edits one slot; a key already used elsewhere **swaps**
 with it, so no intent is ever left unbound. `confirm` and `back` are fixed (`Enter` / `Esc` on
-keyboard, `A` / `B` in menus on gamepad) to prevent lock-out; `Esc` is never bindable (browsers
+keyboard; `A` / `B` on gamepad, in every scene, and `Start` also confirms *(v0.7)*) to prevent
+lock-out; `Esc` is never bindable (browsers
 also reserve it to leave fullscreen). `Z` and `X` are physical positions too: they never collide
 with the `W A S D` block, on any layout. A "restore defaults" action exists per device. While
 waiting for a new key, `Esc` cancels on keyboard; on gamepad the wait cancels itself after 5 s
@@ -212,7 +213,8 @@ is held or not, so tapping never fires faster than holding. One level-1 shot dea
   Lives at 0 → **Game over** after the 1.5 s death sequence *(v0.4: the last explosion plays out)*
   (no continues in 1.0). The Game over screen lasts **3 s** *(initial, v0.6)*, or less when the
   player confirms — by `confirm`, a tap or a click, accepted only after a **1 s** lock *(initial,
-  v0.7)* so a player still hammering fire never skips it. It shows **GAME OVER** in large letters over the run, which keeps playing
+  v0.7)* so a player still hammering fire never skips it; the title it returns to applies the same
+  lock, so that hammering never starts a new run either. It shows **GAME OVER** in large letters over the run, which keeps playing
   without the ship, as on an arcade cabinet: waves keep coming, enemies fly and fire, the score
   stays as it was *(v0.6, owner playtest)*.
 
@@ -425,9 +427,8 @@ count-in it returns to the pause at once; during a card or the results it is rem
 pause opens at the first step of play. Only the `pause` intent opens the pause; `back` is ignored
 in play, so the gamepad `B` (bomb in play) never pauses. The keyboard `Esc` sends both `pause`
 and `back`: it pauses in play and resumes from the pause menu. *(v0.7)* A change of screen layout
-(a phone turned between portrait and landscape) is an automatic trigger too. Until the pause menu
-of the screens brick, any tap or click resumes from the pause (the 3-2-1 count-in guards against
-an accidental touch), and so does the gamepad `Start` (§4.2).
+(a phone turned between portrait and landscape) is an automatic trigger too, and the gamepad
+`Start` resumes from the pause (§4.2).
 
 **Name entry** *(v0.2)*: three characters from A–Z, 0–9, space and `.`, starting at `AAA`; no
 timer. On touch, an on-screen letter grid.
@@ -440,7 +441,7 @@ per reserve life (the ship in play not counted), and the chain timer as a shrink
 during a boss fight. On narrow screens the HUD collapses into the top strip of the portrait
 screen (§3.1) *(v0.5)*: two rows with 4 px margins — score then the reserve lives on the first,
 the multiplier then the chain bar (aligned under the score) on the second — and the pause button
-in its top-right corner (§4.2) *(v0.7)*.
+in its top-right corner (§4.2) *(v0.7)*. Positions and the 4 px margins are *(initial)*.
 
 ### 9.3 Options
 
@@ -640,7 +641,7 @@ fully playable at release quality, used to validate the design before producing 
 | Lives icons *(v0.6)* | Reserve lives only, as in the arcade | Every life, the ship in play included |
 | Portrait HUD strip *(v0.7)* | Two rows, 4 px margins, pause button in the top-right corner | One row (8 lives overflow, no room for the button); the HUD font at 1× (unreadable); drawing over the field |
 | Touch pause button *(v0.7)* | Top-right corner in both orientations, drawn in play, pause and count-in | Top-left (competes with the score); the whole strip (accidental pauses); portrait only |
-| Resuming without a keyboard *(v0.7)* | Any tap or click, and the gamepad `Start` | Only the pause button (hard to discover); `Start` keeps doing nothing in the pause |
-| Leaving Game over *(v0.7)* | `confirm`, a tap or a click after a 1 s lock | No lock (hammering fire skips it); timer only |
+| Resuming without a keyboard *(v0.7)* | The gamepad `Start`; any tap or click until the pause menu (an interim deviation, recorded in the scene machine) | Only the pause button (hard to discover); `Start` keeps doing nothing in the pause |
+| Leaving Game over *(v0.7)* | `confirm`, a tap or a click after a 1 s lock; the same lock on the title reached from Game over | No lock (hammering fire skips it and restarts a run); timer only |
 | Mouse cursor and takeover *(v0.7)* | Crosshair; takes the ship only on a real move or a press on the field | Default arrow (hides the ship); hidden cursor; any move or click takes the ship |
 | Rotation during play *(v0.7)* | Automatic pause | Play on while the screen rearranges |
