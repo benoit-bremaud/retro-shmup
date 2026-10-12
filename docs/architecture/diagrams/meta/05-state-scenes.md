@@ -166,9 +166,9 @@ The enemies brick adds `Paused`, `Count-in` and `Game over`, and removes the pau
 - **Interim deviation, level script**: since F-1 the level script holds the 120 s rows of GDD
   v0.10 §7.2.1 and §7.2.2 and its time wraps to 0 at 120 s, the slot of the absent WARNING
   (`LevelScript.loopAt`; 45 s before F-1, the slot of the then-absent Heavy); enemies of the
-  previous pass stay alive. It loops until the level brick adds the rest of level 1, the warning and the
-  boss: no `LEVEL_CLEARED`, no `BossDefinition` and no `warningAt` before then. **Lifted by the
-  level brick**: F-1 replaces the rows with the 120 s script (still wrapping at 120 s), F-2 removes
+  previous pass stay alive. It loops until the level brick adds the rest of level 1, the
+  warning and the boss: no `LEVEL_CLEARED`, no `BossDefinition` and no `warningAt` before then.
+  **Lifted by the level brick**: F-1 replaces the rows with the 120 s script (still wrapping at 120 s), F-2 removes
   `loopAt` (level brick additions below).
 - ~~**Interim deviation, drops and formations**: no `DropTable` roll, no full-formation P, no
   `Formation` count, no death release of the weapon and no bombs until the pickups and rules
