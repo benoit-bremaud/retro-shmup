@@ -29,6 +29,7 @@ function setup(): { machine: SceneMachine; render: RecordingRender } {
       explosions: true,
       shake: true,
       bombFlash: true,
+      slowMotion: true,
     },
     () => new Run(),
   );
@@ -287,7 +288,14 @@ function gameOverFixture(): ReturnType<typeof setup> {
   const machine = new SceneMachine(
     render,
     new Starfield(() => 0.5),
-    { blink: true, hitFlash: true, explosions: true, shake: true, bombFlash: true },
+    {
+      blink: true,
+      hitFlash: true,
+      explosions: true,
+      shake: true,
+      bombFlash: true,
+      slowMotion: true,
+    },
     () => new Run({ script: KILLER }),
   );
   machine.step(DT, createIntentFrame());
@@ -387,7 +395,14 @@ describe('SceneMachine — effects per run (ADR-0010, 02-sequence-fixed-step-tic
     const machine = new SceneMachine(
       render,
       new Starfield(() => 0.5),
-      { blink: true, hitFlash: true, explosions: true, shake: true, bombFlash: true },
+      {
+        blink: true,
+        hitFlash: true,
+        explosions: true,
+        shake: true,
+        bombFlash: true,
+        slowMotion: true,
+      },
       () => new Run({ script: TARGET }),
     );
     machine.step(DT, createIntentFrame());
@@ -430,7 +445,14 @@ describe('SceneMachine — effects per run (ADR-0010, 02-sequence-fixed-step-tic
     const machine = new SceneMachine(
       render,
       new Starfield(() => 0.5),
-      { blink: true, hitFlash: true, explosions: true, shake: true, bombFlash: true },
+      {
+        blink: true,
+        hitFlash: true,
+        explosions: true,
+        shake: true,
+        bombFlash: true,
+        slowMotion: true,
+      },
       () => new Run({ script: script }),
     );
     machine.step(DT, createIntentFrame());
@@ -591,7 +613,14 @@ describe('SceneMachine — Results, interim banner (meta/05-state-scenes, F-2a)'
     const machine = new SceneMachine(
       render,
       new Starfield(() => 0.5),
-      { blink: true, hitFlash: true, explosions: true, shake: true, bombFlash: true },
+      {
+        blink: true,
+        hitFlash: true,
+        explosions: true,
+        shake: true,
+        bombFlash: true,
+        slowMotion: true,
+      },
       () => new Run({ script: testScript([], { warningAt: 5, boss: GLASS }) }),
     );
     machine.step(DT, createIntentFrame());
@@ -664,7 +693,7 @@ describe('SceneMachine — the boss HUD (meta/05-state-scenes, F-2b)', () => {
     const machine = new SceneMachine(
       render,
       new Starfield(() => 0.5),
-      { blink, hitFlash: true, explosions: true, shake: true, bombFlash: true },
+      { blink, hitFlash: true, explosions: true, shake: true, bombFlash: true, slowMotion: true },
       () => new Run({ script: testScript([], { warningAt: 5, boss: STUB_BOSS }) }),
     );
     machine.step(DT, createIntentFrame());
@@ -724,7 +753,14 @@ describe('SceneMachine — the boss HUD (meta/05-state-scenes, F-2b)', () => {
     const machine = new SceneMachine(
       render,
       new Starfield(() => 0.5),
-      { blink: true, hitFlash: true, explosions: true, shake: true, bombFlash: true },
+      {
+        blink: true,
+        hitFlash: true,
+        explosions: true,
+        shake: true,
+        bombFlash: true,
+        slowMotion: true,
+      },
       () => ending,
     );
     machine.step(DT, createIntentFrame());

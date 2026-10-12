@@ -27,6 +27,11 @@ export interface FrameTarget {
 /** `requestAnimationFrame` in the browser; a manual trigger in tests. */
 export type ScheduleFrame = (callback: () => void) => void;
 
+/** A time scale in [0, 1]: 0 for a hit-stop, and any invalid value (NaN, negative) counts as 0. */
+function clampScale(scale: number): number {
+  return scale > 0 ? Math.min(scale, 1) : 0;
+}
+
 /**
  * Fixed-timestep frame loop (ADR-0002, Fiedler's "Fix Your Timestep!"): wall time, clamped and
  * scaled, fills an accumulator that is drained in whole steps of 1/60 s; the remainder gives the
@@ -95,8 +100,8 @@ export class FrameLoop {
     const elapsed = this.lastMs === undefined ? 0 : nowMs - this.lastMs;
     const wallDtMs = Math.min(Math.max(elapsed, 0), MAX_FRAME_MS);
     this.lastMs = nowMs;
-    const scale = this.target.timeScale();
-    this.accumulatorMs += wallDtMs * (scale > 0 ? Math.min(scale, 1) : 0);
+    let scale = clampScale(this.target.timeScale());
+    this.accumulatorMs += wallDtMs * scale;
     const generation = this.generation;
     while (this.accumulatorMs + EPSILON_MS >= STEP_MS) {
       this.input.read(this.frame);
@@ -105,6 +110,13 @@ export class FrameLoop {
       // step, drain the restarted accumulator, or render.
       if (this.generation !== generation) return;
       this.accumulatorMs -= STEP_MS;
+      // A step can change the scale (the boss's death starts the slow motion): the wall time left
+      // in this frame is re-counted at the new scale, so a long frame does not run it at full speed.
+      const next = clampScale(this.target.timeScale());
+      if (next !== scale) {
+        this.accumulatorMs = scale > 0 ? (this.accumulatorMs / scale) * next : 0;
+        scale = next;
+      }
     }
     this.accumulatorMs = Math.max(this.accumulatorMs, 0);
     this.target.render(this.accumulatorMs / STEP_MS, wallDtMs);

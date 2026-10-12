@@ -13,7 +13,15 @@ import { FIELD_HEIGHT, FIELD_WIDTH } from '../game/geometry';
 import { PlayerTuning, STEPS_PER_SECOND } from '../game/tuning';
 import { WeaponKind } from '../game/weapon';
 import type { RenderPort } from '../ports/render-port';
-import { BombFlash, Explosions, HitFlashes, Shake } from './effects';
+import {
+  BombFlash,
+  BossChain,
+  ExplosionTier,
+  Explosions,
+  HitFlashes,
+  Shake,
+  SlowMotion,
+} from './effects';
 import { drawBossBar } from './boss-hud';
 import { drawHud } from './hud';
 import { drawHollowSquare, drawPlusIcon, drawShipIcon } from './icons';
@@ -22,7 +30,7 @@ import type { PaletteColour } from './palette';
 
 /**
  * Game-feel switches the presenter honours (GDD §9.3, §9.4); the options screen sets them later.
- * The composition root turns the hit flash, the bomb flash and the shake off under
+ * The composition root turns the hit flash, the bomb flash, the shake and slow motion off under
  * `prefers-reduced-motion`.
  */
 export interface EffectSettings {
@@ -33,12 +41,17 @@ export interface EffectSettings {
   shake: boolean;
   /** The bomb's tint of the field. */
   bombFlash: boolean;
+  /** Half speed for 0.5 s after the boss's death (GDD v0.10 §9.3, §9.4): its own switch. */
+  slowMotion: boolean;
 }
 
 // Drawn sizes, not hitboxes (GDD v0.9 §3.2): enemy bullets read first, player shots stay back.
 const ENEMY_SHOT_DRAWN = 6;
 const ENEMY_SHOT_CORE = 2;
 const SPREAD_DRAWN_HEIGHT = 6;
+
+/** The phase index whose start breaks the Cruiser's turret off (phase 2). */
+const TURRET_BREAKS_AT_PHASE = 1;
 
 const BLINK_HALF_PERIOD_STEPS = STEPS_PER_SECOND / (PlayerTuning.blinksPerSecond * 2);
 
@@ -83,6 +96,10 @@ export class RunPresenter {
   private readonly explosions = new Explosions();
   private readonly bombFlash = new BombFlash();
   private readonly shake = new Shake();
+  private readonly bossChain = new BossChain();
+  private readonly slowMotion = new SlowMotion();
+  /** The boss died during this frame's steps: its slow motion and chain start on the next frame. */
+  private bossDiedThisFrame = false;
 
   constructor(render: RenderPort, effects: Readonly<EffectSettings>, events: RunEvents) {
     this.render = render;
@@ -90,6 +107,9 @@ export class RunPresenter {
     events.subscribe(GameEventKind.EnemyHit, this.onEnemyHit);
     events.subscribe(GameEventKind.EnemyDestroyed, this.onEnemyDestroyed);
     events.subscribe(GameEventKind.BombUsed, this.onBombUsed);
+    events.subscribe(GameEventKind.PlayerDied, this.onPlayerDied);
+    events.subscribe(GameEventKind.BossPhaseChanged, this.onBossPhaseChanged);
+    events.subscribe(GameEventKind.BossDestroyed, this.onBossDestroyed);
   }
 
   /**
@@ -100,9 +120,9 @@ export class RunPresenter {
     this.shake.apply(this.render);
   }
 
-  /** Hit-stop and slow motion arrive with the later game-feel effects; until then full speed. */
+  /** 0.5 during the slow motion after the boss's death, else 1 (always 1 with the switch off). */
   timeScale(): number {
-    return 1;
+    return this.effects.slowMotion ? this.slowMotion.scale() : 1;
   }
 
   /**
@@ -135,6 +155,12 @@ export class RunPresenter {
     drawHud(this.render, snapshot);
     this.flashes.advance(wallDtMs);
     this.explosions.advance(wallDtMs);
+    // After the explosions age, so a chained burst is first drawn at age 0. The frame that ran the
+    // killing step counts for neither: a long frame would otherwise eat the slow motion.
+    const sinceDeathMs = this.bossDiedThisFrame ? 0 : wallDtMs;
+    this.bossDiedThisFrame = false;
+    this.bossChain.advance(sinceDeathMs, this.explosions);
+    this.slowMotion.advance(sinceDeathMs);
     this.bombFlash.advance(wallDtMs);
     this.shake.advance(wallDtMs);
   }
@@ -175,6 +201,30 @@ export class RunPresenter {
   private readonly onBombUsed = (): void => {
     if (this.effects.bombFlash) this.bombFlash.trigger();
     if (this.effects.shake) this.shake.trigger();
+  };
+
+  private readonly onPlayerDied = (event: Readonly<GameEvent>): void => {
+    if (this.effects.explosions) {
+      this.explosions.record(event.position.x, event.position.y, ExplosionTier.Medium);
+    }
+  };
+
+  // Debris where the broken part was (GDD v0.10 §9.4). The presenter only knows the Cruiser's
+  // turret, the one broken part of the vertical slice; it breaks off when phase 2 (index 1) starts.
+  // A later boss with more phases and parts hands its broken part to the snapshot.
+  private readonly onBossPhaseChanged = (event: Readonly<GameEvent>): void => {
+    if (!this.effects.explosions || event.detail !== TURRET_BREAKS_AT_PHASE) return;
+    const x = event.position.x + CRUISER_TURRET.offsetX;
+    const y = event.position.y + CRUISER_TURRET.offsetY;
+    this.explosions.record(x, y, ExplosionTier.Debris);
+  };
+
+  private readonly onBossDestroyed = (event: Readonly<GameEvent>): void => {
+    this.bossDiedThisFrame = true;
+    if (this.effects.explosions) {
+      this.bossChain.trigger(event.position.x, event.position.y, this.explosions);
+    }
+    if (this.effects.slowMotion) this.slowMotion.trigger();
   };
 
   private readonly onEnemyDestroyed = (event: Readonly<GameEvent>): void => {

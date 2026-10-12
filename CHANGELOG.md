@@ -48,6 +48,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The boss's HUD: a WARNING banner (ATTENTION in French) that blinks twice in the 3 s of warning
   and stays steady when the blink effect is off, then an HP bar at the top of the field with a
   tick at 66 % and the seconds left, from the start of the entry to the end of the sequence.
+- Animated explosions: a shrinking core and fragments flying out, sized by tier (small, medium,
+  large) and never white (photosensitivity); the ship now explodes when it dies; the Cruiser's
+  turret bursts into debris when it breaks off, and its destruction chains a big burst and five
+  smaller ones on the hull, one every 1/3 s, with 0.5 s of slow motion (its own switch, off by
+  default under reduced motion).
 
 ### Changed
 

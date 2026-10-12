@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { EffectTuning, Explosions, HitFlashes } from '../../src/domain/presentation/effects';
+import {
+  EffectTuning,
+  ExplosionTier,
+  Explosions,
+  HitFlashes,
+} from '../../src/domain/presentation/effects';
 import { Palette } from '../../src/domain/presentation/palette';
 import { RecordingRender } from '../support/recording-render';
 
@@ -23,46 +28,102 @@ describe('HitFlashes — white flash on a hit (GDD §9.4, ADR-0010)', () => {
   });
 });
 
-describe('Explosions — small bursts at destroyed enemies (GDD §9.4)', () => {
-  it('lasts 300 ms of wall time, sized by tier', () => {
+describe('Explosions — animated bursts, style A without white (GDD v0.10 §9.4, F-2c)', () => {
+  const fragmentsOf = (render: RecordingRender): number =>
+    render.rects.filter((rect) => rect.w <= 2 && rect.h <= 2).length;
+
+  it('lasts 300 ms of wall time', () => {
     const explosions = new Explosions();
-    explosions.record(100, 100, 1);
-    const render = new RecordingRender();
-    explosions.draw(render);
-    expect(render.rectsOf(Palette.explosionHot)[0]).toMatchObject({ w: 16, h: 16 });
+    explosions.record(100, 100, ExplosionTier.Medium);
     explosions.advance(EffectTuning.explosionMs - 1);
     expect(explosions.active).toBe(1);
     explosions.advance(1);
     expect(explosions.active).toBe(0);
+    const render = new RecordingRender();
+    explosions.draw(render);
+    expect(render.rects).toHaveLength(0);
   });
 
   it.each([
-    [0, 8],
-    [1, 16],
-    [2, 28],
-  ])(
-    'starts tier %i at half its largest size (%i px): Small 16, Medium 32, Large 56',
-    (tier, px) => {
-      const explosions = new Explosions();
-      explosions.record(100, 100, tier);
+    [ExplosionTier.Small, 16, 8],
+    [ExplosionTier.Medium, 32, 12],
+    [ExplosionTier.Large, 56, 16],
+    [ExplosionTier.Boss, 112, 24],
+  ])('tier %i: %i px, %i fragments', (tier, size, fragments) => {
+    const explosions = new Explosions();
+    explosions.record(100, 100, tier);
+    explosions.advance(150); // p = 0.5: the core is gone, fragments still 2 x 2
+    const render = new RecordingRender();
+    explosions.draw(render);
+    expect(render.rects).toHaveLength(fragments);
+    expect(fragmentsOf(render)).toBe(fragments);
+    // Fragment 0 (k = 1, angle 0) sits at radius (size/2 + 6) * (1 - 0.5^2).
+    const r = (size / 2 + 6) * 0.75;
+    expect(render.rects[0]).toMatchObject({ x: 100 + r - 1, y: 99, w: 2, h: 2 });
+    expect(render.rects[0]?.colour).toBe(Palette.explosionCool);
+  });
+
+  it('starts with a hot core of 0.55 x size, and fragments at the centre', () => {
+    const explosions = new Explosions();
+    explosions.record(100, 100, ExplosionTier.Large);
+    const render = new RecordingRender();
+    explosions.draw(render);
+    const core = 56 * 0.55;
+    expect(render.rects[0]).toMatchObject({
+      x: 100 - core / 2,
+      w: core,
+      colour: Palette.explosionHot,
+    });
+    expect(render.rects).toHaveLength(17);
+    expect(render.rects[1]).toMatchObject({ x: 99, y: 99, colour: Palette.explosionHot });
+  });
+
+  it('shrinks the boss core to 0.3 x size so the boss stays visible', () => {
+    const explosions = new Explosions();
+    explosions.record(100, 100, ExplosionTier.Boss);
+    const render = new RecordingRender();
+    explosions.draw(render);
+    expect(render.rects[0]?.w).toBeCloseTo(112 * 0.3);
+  });
+
+  it('places the third-of-a-turn fragments at 0.75 of the radius, 1 x 1 after p = 0.6', () => {
+    const explosions = new Explosions();
+    explosions.record(0, 0, ExplosionTier.Small);
+    explosions.advance(240); // p = 0.8
+    const render = new RecordingRender();
+    explosions.draw(render);
+    const r = (8 + 6) * (1 - 0.2 * 0.2);
+    const a = (1 / 8) * Math.PI * 2 + 0.2;
+    expect(render.rects[1]?.x).toBeCloseTo(Math.cos(a) * r * 0.75 - 0.5);
+    expect(render.rects[1]?.y).toBeCloseTo(Math.sin(a) * r * 0.75 - 0.5);
+    expect(render.rects[1]?.w).toBe(1);
+  });
+
+  it('never draws white: only the two explosion colours, at every age and tier', () => {
+    const explosions = new Explosions();
+    for (let tier = 0; tier <= ExplosionTier.Debris; tier += 1) explosions.record(50, 50, tier);
+    const colours = new Set<string>();
+    for (let t = 0; t < EffectTuning.explosionMs; t += 10) {
       const render = new RecordingRender();
       explosions.draw(render);
-      expect(render.rectsOf(Palette.explosionHot)[0]).toMatchObject({ w: px, h: px });
-    },
-  );
+      for (const rect of render.rects) colours.add(rect.colour);
+      explosions.advance(10);
+    }
+    expect([...colours].sort()).toEqual([Palette.explosionCool, Palette.explosionHot].sort());
+  });
 
   it('holds at most 16 at once, recycling the oldest first', () => {
     const explosions = new Explosions();
     for (let i = 0; i < 16; i += 1) {
-      explosions.record(i, 0, 0);
+      explosions.record(i * 1000, 0, 0);
       explosions.advance(10);
     }
-    explosions.record(99, 0, 0);
+    explosions.record(99_000, 0, 0);
     expect(explosions.active).toBe(16);
     const render = new RecordingRender();
     explosions.draw(render);
-    const centres = render.rects.map((rect) => rect.x + rect.w / 2);
-    expect(centres).toContain(99);
-    expect(centres).not.toContain(0); // the oldest, born first, was replaced
+    const xs = render.rects.map((rect) => rect.x);
+    expect(xs.some((x) => Math.abs(x - 99_000) < 20)).toBe(true);
+    expect(xs.some((x) => Math.abs(x) < 20)).toBe(false); // the oldest, born first, was replaced
   });
 });

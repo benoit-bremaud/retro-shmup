@@ -16,6 +16,8 @@ import {
 } from '../../src/domain/game/enemy';
 import { Palette } from '../../src/domain/presentation/palette';
 import { RunPresenter } from '../../src/domain/presentation/run-presenter';
+import type { EffectSettings } from '../../src/domain/presentation/run-presenter';
+import { CRUISER_TURRET } from '../../src/domain/game/cruiser';
 import { BossState } from '../../src/domain/game/boss';
 import { createGameEvent, EventBus, GameEventKind } from '../../src/domain/game/events';
 import type { ReadonlyActiveList } from '../../src/domain/game/active-list';
@@ -51,10 +53,23 @@ function bullet(
 }
 
 /** A presenter over a fresh bus; the effect switches on, the blink as given. */
-function presenter(render: RecordingRender, blink: boolean, bus = new EventBus()): RunPresenter {
+function presenter(
+  render: RecordingRender,
+  blink: boolean,
+  bus = new EventBus(),
+  switches: Partial<EffectSettings> = {},
+): RunPresenter {
   return new RunPresenter(
     render,
-    { blink, hitFlash: true, explosions: true, shake: true, bombFlash: true },
+    {
+      blink,
+      hitFlash: true,
+      explosions: true,
+      shake: true,
+      bombFlash: true,
+      slowMotion: true,
+      ...switches,
+    },
     bus,
   );
 }
@@ -410,5 +425,151 @@ describe('RunPresenter — the boss as grey boxes (F-2a)', () => {
     view.draw(snapshot(ship(), [], { boss: FIGHTING }), 1, 16);
     expect(render.drew(Palette.boss)).toBe(false);
     expect(render.rectsOf(Palette.hitFlash)).toHaveLength(1);
+  });
+});
+
+describe('RunPresenter — the boss fight game feel (GDD v0.10 §9.4, F-2c)', () => {
+  const FRAME_MS = 16.7;
+  const MEDIUM_CORE = 32 * 0.55;
+  const BOSS_CORE = 112 * 0.3;
+
+  function publish(bus: EventBus, kind: GameEventKind, x: number, y: number, detail = 0): void {
+    const event = createGameEvent(kind);
+    event.position.x = x;
+    event.position.y = y;
+    event.detail = detail;
+    bus.publish(event);
+  }
+
+  /** Cores born this frame: a burst is drawn at age 0 on the frame after it is recorded. */
+  function newCores(render: RecordingRender, side: number): RecordedRect[] {
+    return render.rectsOf(Palette.explosionHot).filter((rect) => Math.abs(rect.w - side) < 1e-6);
+  }
+
+  it('explodes the ship on PLAYER_DIED (medium tier, at the event position)', () => {
+    const bus = new EventBus();
+    const render = new RecordingRender();
+    const view = presenter(render, false, bus);
+    publish(bus, GameEventKind.PlayerDied, 80, 200);
+    view.draw(snapshot(ship({ state: PlayerState.Dead })), 1, FRAME_MS);
+    expect(newCores(render, MEDIUM_CORE)).toEqual([
+      expect.objectContaining({ x: 80 - MEDIUM_CORE / 2, y: 200 - MEDIUM_CORE / 2 }),
+    ]);
+  });
+
+  it('draws no explosion of any kind with the explosions switch off', () => {
+    const bus = new EventBus();
+    const render = new RecordingRender();
+    const view = presenter(render, false, bus, { explosions: false });
+    publish(bus, GameEventKind.PlayerDied, 80, 200);
+    publish(bus, GameEventKind.BossPhaseChanged, 120, 60, 1);
+    publish(bus, GameEventKind.BossDestroyed, 120, 60);
+    for (let i = 0; i < 180; i += 1) view.draw(snapshot(ship()), 1, FRAME_MS);
+    expect(render.drew(Palette.explosionHot)).toBe(false);
+    expect(render.drew(Palette.explosionCool)).toBe(false);
+  });
+
+  it('chains 1 boss burst then 5 medium ones on the hull, at least 1/3 s apart', () => {
+    const bus = new EventBus();
+    const render = new RecordingRender();
+    const view = presenter(render, false, bus);
+    publish(bus, GameEventKind.BossDestroyed, 120, 60);
+    const starts: number[] = [];
+    let bossBursts = 0;
+    for (let frame = 0; frame < 300; frame += 1) {
+      render.clear();
+      view.draw(snapshot(ship()), 1, FRAME_MS);
+      bossBursts += newCores(render, BOSS_CORE).length;
+      const cores = newCores(render, MEDIUM_CORE);
+      for (const core of cores) {
+        expect(Math.abs(core.x + core.w / 2 - 120)).toBeLessThanOrEqual(56);
+        expect(Math.abs(core.y + core.h / 2 - 60)).toBeLessThanOrEqual(24);
+        starts.push(frame * FRAME_MS);
+      }
+    }
+    expect(bossBursts).toBe(1);
+    expect(starts).toHaveLength(5);
+    expect(starts[0]).toBeGreaterThanOrEqual(1000 / 3);
+    for (let i = 1; i < starts.length; i += 1) {
+      expect((starts[i] ?? 0) - (starts[i - 1] ?? 0)).toBeGreaterThanOrEqual(1000 / 3);
+    }
+    // All five inside the destroyed sequence: 2 s of simulation, stretched by the 0.5 s of slow
+    // motion at half speed to 2.25 s of wall time.
+    expect(starts[4]).toBeLessThanOrEqual(2250);
+  });
+
+  it('throws no turret debris on a later phase change: the turret breaks once, into phase 2', () => {
+    const bus = new EventBus();
+    const render = new RecordingRender();
+    const view = presenter(render, false, bus);
+    publish(bus, GameEventKind.BossPhaseChanged, 120, 60, 2);
+    view.draw(snapshot(ship()), 1, FRAME_MS);
+    expect(render.drew(Palette.explosionHot)).toBe(false);
+  });
+
+  it('bursts debris where the turret was on the phase change', () => {
+    const bus = new EventBus();
+    const render = new RecordingRender();
+    const view = presenter(render, false, bus);
+    publish(bus, GameEventKind.BossPhaseChanged, 120, 60, 1);
+    view.draw(snapshot(ship()), 1, FRAME_MS);
+    const fragments = render.rectsOf(Palette.explosionHot);
+    expect(fragments).toHaveLength(10);
+    for (const fragment of fragments) {
+      expect(fragment.x + 1).toBe(120 + CRUISER_TURRET.offsetX);
+      expect(fragment.y + 1).toBe(60 + CRUISER_TURRET.offsetY);
+    }
+  });
+
+  it('runs at half speed for 0.5 s of wall time after BOSS_DESTROYED, then full speed', () => {
+    const bus = new EventBus();
+    const view = presenter(new RecordingRender(), false, bus);
+    expect(view.timeScale()).toBe(1);
+    publish(bus, GameEventKind.BossDestroyed, 120, 60);
+    expect(view.timeScale()).toBe(0.5);
+    for (let i = 0; i < 100; i += 1) view.draw(snapshot(ship()), 1, 0); // frozen frames
+    expect(view.timeScale()).toBe(0.5);
+    view.draw(snapshot(ship()), 1, 499);
+    expect(view.timeScale()).toBe(0.5);
+    view.draw(snapshot(ship()), 1, 1);
+    expect(view.timeScale()).toBe(1);
+  });
+
+  it('completes the chain inside the sequence even at 10 frames per second', () => {
+    // Codex review of #43: each burst waits for the frame after its 1/3 s, so slow frames stretch
+    // the chain; five bursts still end inside the 2.25 s of wall time of the destroyed sequence.
+    const bus = new EventBus();
+    const render = new RecordingRender();
+    const view = presenter(render, false, bus);
+    publish(bus, GameEventKind.BossDestroyed, 120, 60);
+    let inSequence = 0;
+    let total = 0;
+    for (let frame = 1; frame <= 40; frame += 1) {
+      render.clear();
+      view.draw(snapshot(ship()), 1, 100);
+      const bursts = newCores(render, MEDIUM_CORE).length;
+      total += bursts;
+      if (frame * 100 <= 2250) inSequence += bursts;
+    }
+    expect(inSequence).toBe(total); // none left for after the sequence
+    expect(total).toBe(5);
+  });
+
+  it('keeps the whole 0.5 s of slow motion when the frame of the death is a long one', () => {
+    const bus = new EventBus();
+    const view = presenter(new RecordingRender(), false, bus);
+    publish(bus, GameEventKind.BossDestroyed, 120, 60);
+    view.draw(snapshot(ship()), 1, 250); // the frame that ran the killing step
+    view.draw(snapshot(ship()), 1, 499);
+    expect(view.timeScale()).toBe(0.5);
+    view.draw(snapshot(ship()), 1, 1);
+    expect(view.timeScale()).toBe(1);
+  });
+
+  it('keeps full speed with the slow-motion switch off', () => {
+    const bus = new EventBus();
+    const view = presenter(new RecordingRender(), false, bus, { slowMotion: false });
+    publish(bus, GameEventKind.BossDestroyed, 120, 60);
+    expect(view.timeScale()).toBe(1);
   });
 });

@@ -16,12 +16,37 @@ export const EffectTuning = {
   shakeMs: 300,
   /** The shake changes side every this many ms. */
   shakeFlipMs: 33,
+  /** The boss's death chain (GDD v0.10 §9.4): a burst on the hull every 1/3 s, never closer. */
+  bossChainSpacingMs: 1000 / 3,
+  /** Slow motion on the boss's death: this much wall time at this simulation speed. */
+  slowMotionMs: 500,
+  slowMotionScale: 0.5,
 } as const;
 
 const FLASH_SLOTS = 16;
-// Explosion square size per size tier (small, medium, large), at its largest: the tier's sprite
-// width (GDD v0.10 §5.2.1: the Heavy is 56 px wide).
-const TIER_SIZE = [16, 32, 56] as const;
+
+/**
+ * The explosion kinds (GDD v0.10 §9.4): the three enemy size tiers keep `SizeTier`'s values, so an
+ * `ENEMY_DESTROYED` detail is a tier as is; the boss has its own, and debris is the burst of
+ * fragments where a broken part was.
+ */
+export const ExplosionTier = { Small: 0, Medium: 1, Large: 2, Boss: 3, Debris: 4 } as const;
+export type ExplosionTier = (typeof ExplosionTier)[keyof typeof ExplosionTier];
+
+// Per tier: the burst's size (the sprite width; debris the turret's), its fragment count, and its
+// core as a fraction of the size. The boss's core is small so the hull stays readable; debris has
+// none (owner decision of 2026-10-12, style A without white).
+const TIER_SIZE = [16, 32, 56, 112, 24] as const;
+const TIER_FRAGMENTS = [8, 12, 16, 24, 10] as const;
+const TIER_CORE = [0.55, 0.55, 0.55, 0.3, 0] as const;
+// Phases of the 300 ms burst, as fractions of it: the core shrinks to nothing by 0.4, fragments
+// are hot until 0.35 and 2 x 2 until 0.6.
+const CORE_END = 0.4;
+const HOT_END = 0.35;
+const BIG_FRAGMENT_END = 0.6;
+const FRAGMENT_REACH = 6;
+const FRAGMENT_TWIST = 0.2;
+const INNER_FRAGMENT = 0.75;
 
 /**
  * White flashes of hit enemies, keyed by serial (never by pool slot), in a fixed ring: recording
@@ -51,8 +76,12 @@ export class HitFlashes {
 }
 
 /**
- * Small explosions at destroyed enemies (GDD §9.4), sized by tier, in a ring of 16: every one lasts
- * the same time, so the next slot is always the oldest. Positions are copied out of the event.
+ * Animated explosions (GDD v0.10 §9.4, style A without white): a hot core that shrinks while
+ * fragments fly out on an ease-out radius and cool down. Never white — a white flash per kill gave
+ * 12 flashes a second in one Popcorn formation, against the 3 a second of §9.7. Fragments are
+ * computed from the age, so a burst is deterministic, needs no random draw and stores only its
+ * centre, tier and age in a ring of 16: every burst lasts the same time, so the next slot is
+ * always the oldest.
  */
 export class Explosions {
   private readonly x = new Float32Array(EffectTuning.maxExplosions);
@@ -79,21 +108,40 @@ export class Explosions {
     return count;
   }
 
-  /** A square growing to its tier size: hot for the first third, then cool. */
   draw(render: RenderPort): void {
     for (let i = 0; i < EffectTuning.maxExplosions; i += 1) {
       const age = this.ageMs[i] ?? EffectTuning.explosionMs;
       if (age >= EffectTuning.explosionMs) continue;
-      const progress = age / EffectTuning.explosionMs;
-      const size = (TIER_SIZE[this.tier[i] ?? 0] ?? TIER_SIZE[0]) * (0.5 + 0.5 * progress);
-      const colour = progress < 1 / 3 ? Palette.explosionHot : Palette.explosionCool;
-      render.drawRect((this.x[i] ?? 0) - size / 2, (this.y[i] ?? 0) - size / 2, size, size, colour);
+      this.drawBurst(render, i, age / EffectTuning.explosionMs);
     }
   }
 
   advance(ms: number): void {
     for (let i = 0; i < EffectTuning.maxExplosions; i += 1) {
       this.ageMs[i] = (this.ageMs[i] ?? 0) + ms;
+    }
+  }
+
+  // One burst at progress p in [0, 1): the core while p < 0.4, then the n fragments.
+  private drawBurst(render: RenderPort, slot: number, p: number): void {
+    const tier = this.tier[slot] ?? 0;
+    const size = TIER_SIZE[tier] ?? TIER_SIZE[0];
+    const n = TIER_FRAGMENTS[tier] ?? TIER_FRAGMENTS[0];
+    const cx = this.x[slot] ?? 0;
+    const cy = this.y[slot] ?? 0;
+    const core = size * (TIER_CORE[tier] ?? 0) * (1 - p / CORE_END);
+    if (p < CORE_END && core > 0) {
+      render.drawRect(cx - core / 2, cy - core / 2, core, core, Palette.explosionHot);
+    }
+    const radius = (size / 2 + FRAGMENT_REACH) * (1 - (1 - p) * (1 - p));
+    const side = p < BIG_FRAGMENT_END ? 2 : 1;
+    const colour = p < HOT_END ? Palette.explosionHot : Palette.explosionCool;
+    for (let i = 0; i < n; i += 1) {
+      const angle = (i / n) * Math.PI * 2 + (i % 2) * FRAGMENT_TWIST;
+      const reach = radius * (i % 3 === 0 ? 1 : INNER_FRAGMENT);
+      const fx = cx + Math.cos(angle) * reach - side / 2;
+      const fy = cy + Math.sin(angle) * reach - side / 2;
+      render.drawRect(fx, fy, side, side, colour);
     }
   }
 }
@@ -150,5 +198,65 @@ export class Shake {
 
   advance(ms: number): void {
     this.elapsedMs += ms;
+  }
+}
+
+// Where the six medium bursts of the boss's death go, from its centre, inside its 112 x 48 hull;
+// spread left, right, up and down in turn so two in a row never overlap.
+// Five bursts: each waits for the first frame past its 1/3 s, so slow frames stretch the chain;
+// five still end inside the destroyed sequence down to 10 frames per second (Codex review, #43).
+const HULL_OFFSET_X = [-36, 28, -8, 40, -44] as const;
+const HULL_OFFSET_Y = [-10, 8, 14, -12, 10] as const;
+const HULL_BURSTS: number = HULL_OFFSET_X.length;
+
+/**
+ * The boss's death (GDD v0.10 §9.4): one boss burst, then six medium ones on the hull from a fixed
+ * table, one per 1/3 s of wall time at most — 3 bursts a second is the §9.7 limit, so one long
+ * frame never fires two. Records into the presenter's explosions; allocates nothing.
+ */
+export class BossChain {
+  private x = 0;
+  private y = 0;
+  private fired = HULL_BURSTS;
+  private sinceLastMs = 0;
+
+  trigger(x: number, y: number, explosions: Explosions): void {
+    this.x = x;
+    this.y = y;
+    this.fired = 0;
+    this.sinceLastMs = 0;
+    explosions.record(x, y, ExplosionTier.Boss);
+  }
+
+  advance(ms: number, explosions: Explosions): void {
+    if (this.fired >= HULL_BURSTS) return;
+    this.sinceLastMs += ms;
+    if (this.sinceLastMs < EffectTuning.bossChainSpacingMs) return;
+    const dx = HULL_OFFSET_X[this.fired] ?? 0;
+    const dy = HULL_OFFSET_Y[this.fired] ?? 0;
+    explosions.record(this.x + dx, this.y + dy, ExplosionTier.Medium);
+    this.fired += 1;
+    this.sinceLastMs = 0;
+  }
+}
+
+/**
+ * Slow motion on the boss's death (GDD v0.10 §9.4, ADR-0010): half speed for 0.5 s of wall time,
+ * counted with the frame's wall time so a frozen frame never uses it up. Only the time scale the
+ * loop reads changes: the simulation still takes the same steps per simulated second.
+ */
+export class SlowMotion {
+  private msLeft = 0;
+
+  trigger(): void {
+    this.msLeft = EffectTuning.slowMotionMs;
+  }
+
+  scale(): number {
+    return this.msLeft > 0 ? EffectTuning.slowMotionScale : 1;
+  }
+
+  advance(ms: number): void {
+    this.msLeft = Math.max(this.msLeft - ms, 0);
   }
 }
