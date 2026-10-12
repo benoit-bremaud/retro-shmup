@@ -168,6 +168,8 @@ export class SceneMachine {
       this.gameOverLeft = GAME_OVER_STEPS;
       this.lockLeft = LOCK_STEPS;
     } else if (this.run.outcome() === RunOutcome.RunCleared) {
+      // `LevelCleared` (a list of several levels) is not handled: the slice has one level, and the
+      // next-level flow belongs to the screens brick (ADR-0022 decision 9).
       this.current = Scene.Results;
       this.resultsLeft = LEVEL_CLEAR_STEPS;
     }

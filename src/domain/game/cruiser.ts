@@ -40,8 +40,9 @@ const PHASE_2_TRIPLE = fanAttack({
 });
 
 /**
- * The forward turret that breaks off at phase 2: a placeholder box until the sprite lands. The
- * definition holds it for the debris effect (F-2c); the presenter draws it until it breaks.
+ * The forward turret that breaks off at phase 2: a placeholder box until the sprite lands. Its
+ * geometry is invented (GDD v0.10 §6.1 gives none). The definition holds it for the debris effect
+ * (F-2c); the presenter draws it until it breaks.
  */
 export const CRUISER_TURRET: BrokenPart = { offsetX: 0, offsetY: 16, width: 24, height: 16 };
 

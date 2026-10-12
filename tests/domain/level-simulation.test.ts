@@ -84,11 +84,15 @@ function replay(steps: number, seed = 1): string {
   for (const kind of BOSS_KINDS) events.subscribe(kind, recordBoss);
   for (let i = 0; i < steps; i += 1) run.step(DT, scripted(i));
   const snapshot = run.snapshot();
+  const boss = snapshot.boss;
   return JSON.stringify({
     log,
+    score: snapshot.score,
     lives: snapshot.lives,
     outcome: run.outcome(),
     ship: snapshot.player,
+    // The boss's body between its events: a drift of its motion, HP or phase must show here.
+    boss: [boss.state, boss.position.x, boss.position.y, boss.hpRatio, boss.phase, boss.stateSteps],
   });
 }
 

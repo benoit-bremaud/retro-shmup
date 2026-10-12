@@ -1,7 +1,7 @@
 import type { AttackPattern, EnemyShotSpawner } from './attacks';
 import type { Body } from './body';
 import type { EnemyStats } from './enemy';
-import { overlapsField } from './geometry';
+import { FIELD_WIDTH, overlapsField } from './geometry';
 import type { Vec2 } from './geometry';
 import type { MovementPattern, WorldView } from './movements';
 import { STEPS_PER_SECOND, toSteps } from './tuning';
@@ -52,11 +52,11 @@ export interface BossDefinition {
   readonly phases: readonly BossPhaseSpec[];
   /** The fight's timer; when it runs out the boss flees. */
   readonly timeLimit: number;
-  /** Waves stopped, boss off the field. */
+  /** Seconds of WARNING: waves stopped, boss off the field. */
   readonly warningS: number;
   readonly entryFrom: Readonly<Vec2>;
   readonly entryTo: Readonly<Vec2>;
-  /** The straight slide from `entryFrom` to `entryTo`. */
+  /** Seconds of the straight slide from `entryFrom` to `entryTo`. */
   readonly entryS: number;
   /** Straight up, in px/s. */
   readonly fleeSpeed: number;
@@ -74,13 +74,13 @@ export const BossAdvance = {
 } as const;
 export type BossAdvance = (typeof BossAdvance)[keyof typeof BossAdvance];
 
-const AXIS_X = 120;
+const AXIS_X = FIELD_WIDTH / 2;
 
 /**
  * The one boss of a level (class diagram, ADR-0022): a preallocated `Body` owned by `World`,
  * outside the enemy pool, idle until `start`. It owns its state, its phase, its timers (in steps)
  * and the movement and attack of the current phase; it publishes nothing — `Run` does, from what
- * `damage`, `advancePhase` and `advance` report.
+ * `applyDamage`, `advancePhase` and `advance` report.
  *
  * A phase change has two moments (ADR-0023 decision 3): at the HP threshold the attack switches
  * at once and its timer and volleys restart; the movement keeps its path until `x − 120` changes
@@ -168,7 +168,7 @@ export class Boss implements Body {
     return Math.ceil(this.timeLeft / STEPS_PER_SECOND);
   }
 
-  /** The HP bar, 0 to 1. */
+  /** The HP bar, 0 to 1, clamped at 0 once the boss is dead. */
   hpRatio(): number {
     if (this.definition === undefined) return 0;
     return Math.max(0, this.hp) / this.definition.stats.hp;

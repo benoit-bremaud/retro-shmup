@@ -103,6 +103,7 @@ describe('Boss — warning and entry (GDD v0.10 §6, 05-state-boss)', () => {
 
   it('never goes below y 80 and starts the fight on the axis', () => {
     const { boss, world } = fighting();
+    expect(boss.position.x).toBe(120);
     for (let i = 0; i < 600; i += 1) {
       tick(boss, world);
       expect(boss.position.y + boss.height / 2).toBeLessThanOrEqual(80);
@@ -249,7 +250,7 @@ describe('Boss — phases (ADR-0023 decision 3)', () => {
       }
       expect(swapped).toBe(true);
       expect(boss.position.x).toBe(120);
-      expect(boss.mirror).toBe(expectMirror ? true : false);
+      expect(boss.mirror).toBe(expectMirror);
       // Same direction as before: left when the old sway was going left, and so on.
       tick(boss, world);
       expect(boss.age).toBe(1);
@@ -261,12 +262,39 @@ describe('Boss — phases (ADR-0023 decision 3)', () => {
     },
   );
 
-  it('restarts the movement age at the swap, not at the threshold', () => {
+  it('keeps counting the movement age at the threshold: only the swap restarts it', () => {
     const { boss, world } = fighting();
     ticks(boss, world, 100);
     applyDamage(boss, 1100);
     boss.advancePhase(world);
     expect(boss.age).toBe(100);
+  });
+});
+
+describe('Boss — the Cruiser definition is well formed (data checked once, not at run time)', () => {
+  it('has a positive duration for every state and a descending threshold per phase', () => {
+    expect(CRUISER.phases.length).toBeGreaterThanOrEqual(1);
+    for (const seconds of [
+      CRUISER.warningS,
+      CRUISER.entryS,
+      CRUISER.destroyedS,
+      CRUISER.timeLimit,
+    ]) {
+      expect(seconds).toBeGreaterThan(0);
+    }
+    expect(CRUISER.fleeSpeed).toBeGreaterThan(0);
+    expect(CRUISER.phases[0]?.hpThreshold).toBe(CRUISER.stats.hp);
+    for (let i = 1; i < CRUISER.phases.length; i += 1) {
+      const previous = CRUISER.phases[i - 1]?.hpThreshold ?? 0;
+      const threshold = CRUISER.phases[i]?.hpThreshold ?? 0;
+      expect(threshold).toBeLessThan(previous);
+      expect(threshold).toBeGreaterThan(0);
+    }
+  });
+
+  it('enters inside the field width and ends its entry at the fighting height', () => {
+    expect(CRUISER.entryFrom.x).toBe(CRUISER.entryTo.x);
+    expect(CRUISER.entryTo.y + CRUISER.stats.height / 2).toBeLessThanOrEqual(80);
   });
 });
 

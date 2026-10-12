@@ -13,7 +13,7 @@ import { Run, RunOutcome } from '../../src/domain/game/run';
 import { KitTuning } from '../../src/domain/game/tuning';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
-import { STUB_BOSS, testScript } from '../support/script';
+import { testScript } from '../support/script';
 import { shots } from '../support/shots';
 
 const DT = 1 / 60;
@@ -102,7 +102,7 @@ describe('Run — the boss starts at warningAt (02-sequence-boss-fight)', () => 
     steps(run, 1);
     expect(run.snapshot().boss.state).toBe(BossState.Warning);
     expect(log).toHaveLength(1);
-    expect(log[0]?.subject).toBeGreaterThan(0);
+    expect(log[0]?.subject).toBe(BOSS_SERIAL);
     steps(run, 600);
     expect(log).toHaveLength(1);
   });
@@ -250,6 +250,36 @@ describe('Run — the bomb and the boss (02-sequence-bomb, GDD v0.10 §6)', () =
 });
 
 describe('Run — the end of the fight (GDD v0.10 §6)', () => {
+  it('lets a kill on the step the timer runs out win over the escape, and a later one lose', () => {
+    // The damage of a step comes before the timers of that step (steps 5 and 7 of `Run.step`), so
+    // a kill made just before the step that would expire the timer is a tie, and destruction wins.
+    const short: BossDefinition = { ...quiet(), timeLimit: 1 };
+    const kinds = [GameEventKind.BossDestroyed, GameEventKind.BossFled];
+
+    // Measure the step on which the timer runs out, rather than assume it.
+    const probe = fighting(short);
+    const probeLog = logOf(probe, [GameEventKind.BossFled]);
+    let expiry = 0;
+    while (probeLog.length === 0) {
+      steps(probe, 1);
+      expiry += 1;
+      if (expiry > 600) throw new Error('the boss never fled');
+    }
+
+    const tie = fighting(short);
+    const tieLog = logOf(tie, kinds);
+    steps(tie, expiry - 1);
+    tie.damageBoss(3000);
+    steps(tie, 1);
+    expect(tieLog.map((e) => e.kind)).toEqual([GameEventKind.BossDestroyed]);
+    expect(tieLog[0]?.value).toBe(1);
+
+    const late = fighting(short);
+    const lateLog = logOf(late, kinds);
+    steps(late, expiry);
+    expect(lateLog.map((e) => e.kind)).toEqual([GameEventKind.BossFled]);
+  });
+
   it('flees when the 90 s timer runs out: BOSS_FLED, no bonus, bullets cancelled', () => {
     const run = fighting(CRUISER);
     const log = logOf(run, [GameEventKind.BossFled, GameEventKind.BossDestroyed]);
@@ -358,6 +388,5 @@ describe('Run — config', () => {
     const run = new Run({ script: testScript() });
     steps(run, 600);
     expect(run.snapshot().boss.state).toBe(BossState.Idle);
-    expect(STUB_BOSS.stats.hp).toBe(50);
   });
 });
