@@ -645,7 +645,8 @@ until then they are an interim deviation recorded in the scene machine.
   | BOMBS | BOMBES | the count, then the product: `2 × 1 000  2 000` |
   | TOTAL | TOTAL | the sum of the lines above, the bonus added to the score |
 
-  Labels in the title font (A–Z and space only), numbers in the HUD font; each label on its row
+  Labels in the title font (A–Z and space only), numbers in the HUD font, which gains a space
+  glyph (an empty cell) for these values; each label on its row
   at the left margin and its value right-aligned on the row below, so the longest line fits the
   240 px field in portrait (`10 × 500  5 000` is 15 HUD cells of 8 px, 120 px). A missed bonus is shown with 0, never hidden. The player leaves by
   `confirm`, a tap or a click accepted after a **1 s** lock (as Game over, §4.4), or after
@@ -708,7 +709,7 @@ during a boss fight *(v0.10, initial)*: a 1 px outline over x 8–232, y 4–8 o
 proportion to the HP left, with a tick at 66 % (the phase-2 threshold); the seconds left in HUD
 digits right-aligned under its right end (x 218–232, y 12–22); both drawn from the start of the
 boss's entry until its destroyed or fleeing sequence ends, the timer showing 90 until the fight
-starts. On narrow screens the HUD collapses into the top strip of the portrait
+starts. *(v0.10)* The HUD font draws digits, `×` and a space (§8). On narrow screens the HUD collapses into the top strip of the portrait
 screen (§3.1) *(v0.5)*: two rows with 4 px margins — score then the reserve lives on the first,
 the multiplier then the chain bar (aligned under the score) on the second — and the pause button
 in its top-right corner (§4.2) *(v0.7)*. Positions and the 4 px margins are *(initial)*.

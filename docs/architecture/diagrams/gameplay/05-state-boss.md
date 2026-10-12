@@ -50,8 +50,8 @@ stateDiagram-v2
 | Box, HP | 112 × 48; 3 000 tenths (300 level-1 shots); its box never goes below y 80 |
 | Warning | 3 s, the boss off the field |
 | Entering | from (120, −24) to (120, 56) in 3 s, linear |
-| Phase 1 (100 % → 66 %) | `swayMovement({ amplitude: 56, periodS: 8 })` around x 120; `sequenceAttack([fan, ring], 1)` — one volley every 1 s, the patterns taking turns, their own `periodS` ignored: a fan of 5, 15° apart, aimed, 75 px/s, then a ring of 12 at 60 px/s, one volley a second, the first (a fan) 1 s into the fight |
-| Phase 2 (from 66 %, 1 980 tenths) | the forward turret breaks off (`brokenPart`, debris); `swayMovement({ amplitude: 72, periodS: 6 })`; `parallelAttack([ringAttack({ count: 16, periodS: 1.5, speed: 60, rotateDeg: 11.25 }), fanAttack({ count: 3, spreadDeg: 15, periodS: 3, speed: 75 })])` — the first ring 1.5 s and the first triple 3 s after the change, each pattern with its own volley count from 0 |
+| Phase 1 (100 % → 66 %) | `swayMovement({ amplitude: 56, periodS: 8 })` around x 120; `sequenceAttack([fan, ring], 1)` — one volley every 1 s, the patterns taking turns (`Body.volleys[0]`), their own `periodS` ignored: a fan of 5, 15° apart, aimed, 75 px/s, then a ring of 12 at 60 px/s, one volley a second, the first (a fan) 1 s into the fight |
+| Phase 2 (from 66 %, 1 980 tenths) | the forward turret breaks off (`brokenPart`, debris); `swayMovement({ amplitude: 72, periodS: 6 })`; `parallelAttack([ringAttack({ count: 16, periodS: 1.5, speed: 60, rotateDeg: 11.25 }), fanAttack({ count: 3, spreadDeg: 15, periodS: 3, speed: 75 })])` — the first ring 1.5 s and the first triple 3 s after the change, each pattern with its own counter in `Body.volleys` (ring index 0, triple index 1), both reset to 0 at the phase change |
 | Timer, bonus | 90 s; 10 000 + 100 × seconds left, flat |
 | Fleeing | straight up at 60 px/s |
 | Destroyed | 2 s, then `LEVEL_CLEARED` |

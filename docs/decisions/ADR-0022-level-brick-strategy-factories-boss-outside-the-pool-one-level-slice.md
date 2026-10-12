@@ -43,14 +43,13 @@ tuning as data, the pattern table. Values are GDD v0.10 values (§5.2.1, §6, §
    configurations, and the Gunner's refactor changes no behaviour (its tests stay green). The
    strategy interfaces of ADR-0003 do not change; this is ADR-0003's "tuning as data" applied to
    the strategies' own parameters — no inheritance, no ECS, no role branch.
-2. **`Body.volley`.** `Body` gains `volley`, the count of volleys the body has fired, reset on
-   spawn; a ring turns by `rotateDeg` × the volley count (every other volley for the Heavy's
-   15°, every volley for the Cruiser's 11.25°) and `sequenceAttack` picks its pattern from it.
-   `Body.volley` counts the volleys of the current attack and is reset on spawn and on a phase
-   change; `sequenceAttack` gives pattern i its own index ⌊volley / n⌋; `parallelAttack` keeps
-   one counter per pattern on `Body` (a fixed array of 2).
-   Every pattern is a pure function of the body, the ship's position and that count: no random
-   draw, so a replay is identical.
+2. **`Body.volleys`.** `Body` gains `volleys: number[2]`, one volley counter per pattern of a
+   `parallelAttack`; `sequenceAttack` and a single pattern use index 0. Both are reset on spawn
+   and on a phase change. A ring turns by `rotateDeg` × its count (every other volley for the
+   Heavy's 15°, every volley for the Cruiser's 11.25°); `sequenceAttack` picks its pattern from
+   `volleys[0]` and gives pattern i its own index ⌊`volleys[0]` / n⌋. A fixed array of two, so
+   nothing is allocated per spawn. Every pattern is a pure function of the body, the ship's
+   position and its count: no random draw, so a replay is identical.
 3. **The boss is one preallocated body outside the enemy pool.** `World` owns one `Boss` that
    realizes `Body`, with a state — `IDLE`, `WARNING`, `ENTERING`, `FIGHTING`, `DESTROYED`,
    `FLEEING` — its phase index and its timer in steps. `Boss.start()` takes a fresh serial from
@@ -79,7 +78,10 @@ tuning as data, the pattern table. Values are GDD v0.10 values (§5.2.1, §6, §
    records the bombs left and `ScoreKeeper` adds the total flat. The boss bonus is added on
    `BOSS_DESTROYED`, flat. `RunView.tally()` exposes it read-only; the values live in
    `TallyTuning`.
-8. **Presentation reads the snapshot.** `WorldSnapshot` gains a boss view (state, position, HP
+8. **Presentation reads the snapshot.** The `hud` font gains a space glyph (an empty cell),
+   so the Results values (`3 × 500  1 500`, `5 000`) draw through the `RenderPort` glyph-set
+   contract, which otherwise throws on a space; F-3 adds it to `src/domain/ports/render-port.ts`
+   and the `hud` glyph table. `WorldSnapshot` gains a boss view (state, position, HP
    ratio, seconds left, phase); the presenter draws the boss, the HP bar and the seconds, the
    WARNING banner from the boss state (not from an event, so a pause cannot lose it), the debris
    on `BOSS_PHASE_CHANGED`, the Large and boss explosion tiers, and the slow motion as a time
@@ -122,7 +124,7 @@ tuning as data, the pattern table. Values are GDD v0.10 values (§5.2.1, §6, §
   one movement; the boss is a small separate object with its own state diagram
   (`gameplay/05-state-boss`); the tally needs no new call in the step; the slice ends cleanly and
   level 2 is a list entry.
-- Negative: `Body` grows by one field; the run, the collision passes and the bomb gain a boss
+- Negative: `Body` grows by two counters; the run, the collision passes and the bomb gain a boss
   branch each; strategies are now built objects, so the class diagram names factories rather than
   singletons.
 - Code review checks: no factory call inside the loop; no role test inside a strategy; the boss
@@ -134,7 +136,7 @@ tuning as data, the pattern table. Values are GDD v0.10 values (§5.2.1, §6, §
   volley and its triple (`parallelAttack`, each on its own period); the phase change on a threshold, including two thresholds crossed by one
   bomb; no damage before `FIGHTING`; the bomb ignored in `WARNING` and `ENTERING`; contact in
   `ENTERING` and `FIGHTING` only; timer expiry → `FLEEING`, destruction winning a tie; the bonus
-  10 000 + 100 × seconds left, flat; the tally lines (a bomb-completed formation counted, a shield
+  10 000 + 100 × seconds left, flat; the `hud` font drawing a space and still throwing on other characters; the tally lines (a bomb-completed formation counted, a shield
   absorb keeping the no-miss); the load check at `warningAt` − 4 s; the level simulation at
   ≤ 16 enemies and ≤ 40 enemy bullets — the boss fight included, with phase 2 held for its whole
   timer — and its determinism with every effect on and off; the

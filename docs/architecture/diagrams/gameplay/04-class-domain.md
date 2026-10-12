@@ -333,7 +333,7 @@ classDiagram
     +mirror: boolean
     +entered: boolean
     +armed: boolean
-    +volley: number
+    +volleys: number[2]
     +spent: boolean
   }
   class Enemy {
@@ -543,8 +543,8 @@ classDiagram
 | Chain: 2 s window, step every 5 kills, ×8 cap, reset on death (§8) | `ScoreKeeper.chainKills`, `chainTimer`, `multiplier()` |
 | Tally: full formations, no bomb, no miss, bombs left (§8, v0.10) | `LevelTally`, owned by `ScoreKeeper` and reset at each level, subscribes to `FORMATION_CLEARED` (+1, bomb kills included), `BOMB_USED` (`bombUsed`), `PLAYER_DIED` (`lifeLost`; a shield absorb publishes `PLAYER_HIT` and leaves it) and `LEVEL_CLEARED` (`bombsLeft` = its `value`); then `ScoreKeeper` adds `total()` flat; values in `TallyTuning` (500, 5 000, 10 000, 1 000); `RunView.tally()` feeds the Results scene |
 | Bomb used (§4.5, §8) | `BOMB_USED` → `LevelTally.bombUsed` (no-bomb bonus lost) |
-| Heavy (v0.10 §5.2.1) | two archetypes, `HEAVY_RING` and `HEAVY_FAN`: 56 × 48, `SizeTier.LARGE`, 400 tenths, 1 000 points, `enterHoldLeave({ travelS: 2, holdS: 10, leaveSpeed: 40 })`, `ringAttack({ count: 12, periodS: 2, speed: 60, rotateDeg: 15 })` turning on every other volley (`Body.volley`) or `fanAttack({ count: 5, spreadDeg: 15, periodS: 2, speed: 75 })`, `DropTable` {Bomb, Shield, 60 %} |
-| Strategies built from data (ADR-0022) | `StrategyFactories` run once at module load and return frozen strategy objects closed over their configuration in steps; the Gunner is `enterHoldLeave({ travelS: 1, holdS: 3.5, leaveSpeed: 60 })` + `aimedAttack({ periodS: 1.5, speed: 75 })`, unchanged in behaviour; `Body.volley` counts the volleys of the current attack, reset on spawn and on a phase change |
+| Heavy (v0.10 §5.2.1) | two archetypes, `HEAVY_RING` and `HEAVY_FAN`: 56 × 48, `SizeTier.LARGE`, 400 tenths, 1 000 points, `enterHoldLeave({ travelS: 2, holdS: 10, leaveSpeed: 40 })`, `ringAttack({ count: 12, periodS: 2, speed: 60, rotateDeg: 15 })` turning on every other volley (`Body.volleys[0]`) or `fanAttack({ count: 5, spreadDeg: 15, periodS: 2, speed: 75 })`, `DropTable` {Bomb, Shield, 60 %} |
+| Strategies built from data (ADR-0022) | `StrategyFactories` run once at module load and return frozen strategy objects closed over their configuration in steps; the Gunner is `enterHoldLeave({ travelS: 1, holdS: 3.5, leaveSpeed: 60 })` + `aimedAttack({ periodS: 1.5, speed: 75 })`, unchanged in behaviour; `Body.volleys[2]` counts the volleys per pattern of the current attack (index 0 for a single pattern or a sequence), reset on spawn and on a phase change |
 | Chain expiry, inclusive window (v0.6 §8) | `chainTimer` counts the steps left in the window: 120 on a kill, −1 when there is no chain (start, death). `ScoreKeeper.tick` (step 7, after the collisions) decrements it, and the chain breaks when it falls below 0, so a kill 120 steps after the previous one still extends it and one 121 steps after does not; `chainRatio` = (`chainTimer` + 1) / 120, full right after a kill and empty exactly when the chain breaks |
 | Difficulty knobs (§10) | `DifficultyProfile`; the caps (9 lives, 5 bombs, level 5, the 1 000 bonus) are constants, not knobs |
 | Clamp to the field, fly-in (v0.5 §4.1) | `Player.update`: clamp applied once `Entering` ends; fly-in path in 05-state-player |
@@ -572,8 +572,9 @@ classDiagram
   `SequenceAttack` (fan, ring) in phase 1, `SwayMovement` + `ParallelAttack` (ring of 16, aimed
   triple, each on its own period) in phase 2. `sequenceAttack(patterns, periodS)` fires one
   volley every `periodS`, the patterns taking turns (the inner patterns' own `periodS` is
-  ignored), pattern i counting ⌊volley / n⌋; `parallelAttack` keeps one volley counter per
-  pattern on `Body` (a fixed array of 2); `Body.volley` is reset on spawn and on a phase change.
+  ignored), pattern i counting ⌊`volleys[0]` / n⌋; `parallelAttack` keeps one counter per
+  pattern in `Body.volleys` (a fixed array of 2; sequences and single patterns use index 0), reset
+  on spawn and on a phase change.
 - **Strategies are stateless**: they hold no per-enemy state, only immutable configuration
   (speeds, hold steps, fire period); per-enemy scratch state (path progress, fire timer, dive
   target, `armed`) lives on `Body`, so archetypes are shared data and nothing is allocated per
@@ -666,7 +667,7 @@ classDiagram
   knobs it reads only (`lives`, `bombsPerLife`, `dropRateScale`), the `NORMAL` profile
   replacing `PlayerTuning.lives`; `powerLossOnDeath` stays a later knob (the rule is one level).
   The level brick (F, ADR-0022) adds `StrategyFactories`, `SwayMovement`, `RingAttack`,
-  `FanAttack`, `SequenceAttack`, `Body.volley`, `SizeTier.LARGE`, the Heavy archetypes, `Boss`,
+  `FanAttack`, `SequenceAttack`, `ParallelAttack`, `Body.volleys`, `SizeTier.LARGE`, the Heavy archetypes, `Boss`,
   `BossState`, `BossDefinition`, `BossPhaseSpec`, `EnemySpawner.startBoss`, `HitRules.damageBoss`,
   `LevelScript.warningAt` and `boss` (required) with `loopAt` removed, the boss and level events,
   `RunOutcome.LEVEL_CLEARED` and `RUN_CLEARED`, `RunConfig.levels`, `LevelTally`, `TallyTuning`

@@ -52,6 +52,8 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   pattern and per phase), 6 Should (pass wording, `sequenceAttack` period, the boss serial, the
   level end after a respawn, the fleeing tally line and the formation value layout, the
   ≤ 40 check over phase 2 and the pool rule) and 4 Nice fixed.
+- Codex review on #34 (owner choice A on all three): a space glyph for the hud font, two volley
+  counters on Body, the Results timed exits.
 - PR split: F-1 factories (Gunner refactor first) + Heavy + rings and fans + the 120 s script
   (still wrapping at 120 s); F-2 the boss (interim "LEVEL CLEAR" banner, then the title); F-3
   the tally, Results and the documentation pass. Each merge playable.

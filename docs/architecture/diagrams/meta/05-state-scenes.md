@@ -61,11 +61,12 @@ stateDiagram-v2
     Paused --> ConfirmQuit : quit
     ConfirmQuit --> Paused : no
     Playing --> Results : run outcome is LEVEL_CLEARED or RUN_CLEARED
-    Results --> LevelCard : confirm [LEVEL_CLEARED] / run.startNextLevel()
+    Results --> LevelCard : confirm after the lock, or after(8 s) [LEVEL_CLEARED] / run.startNextLevel()
   }
 
   InRun --> Title : yes in Confirm quit / discard the run
-  InRun --> Ending : confirm in Results [RUN_CLEARED]
+  InRun --> Ending : confirm after the lock or after(8 s) in Results [RUN_CLEARED]
+  InRun --> Title : confirm after the lock or after(8 s) in Results [RUN_CLEARED, slice interim]
   InRun --> GameOver : run outcome is GAME_OVER
 
   Ending --> NameEntry : confirm or after(ending time) [score enters the top 10]
@@ -200,7 +201,8 @@ The enemies brick adds `Paused`, `Count-in` and `Game over`, and removes the pau
   margins of at least 8 px; their positions are one record in `presentation/hud-layout.ts`
   (landscape only until C2) drawn by a `drawHud` function that `RunPresenter` calls. Digits are
   drawn by the renderer until the bitmap fonts of the screens brick: a font draws only its glyph
-  set and throws on any other character, `hud` being `0-9` and `×` (the `RenderPort` contract).
+  set and throws on any other character, `hud` being `0-9` and `×` (the `RenderPort` contract) — *(level brick, F-3)* plus a space,
+  an empty cell, for the Results values.
   Numbers are drawn digit by digit (`% 10`, one `drawText` per digit from a constant table of
   one-character strings), with no cache and no formatting, so drawing the HUD never allocates.
 - **Smoke test** (the single browser test, ADR-0003; extended by the devices brick, below):
@@ -337,11 +339,14 @@ unchanged.
   `toSteps(ResultsTuning.lineSeconds)` = 30 steps, read from `RunView.tally()`: label in the
   `title` font from the message catalogue (FORMATIONS, NO BOMB, NO MISS, BOMBS, TOTAL; FR
   FORMATIONS, SANS BOMBE, SANS PERTE, BOMBES, TOTAL — A–Z and space only), value right-aligned on
-  the row below in the `hud` font (digits and ×), a missed bonus shown with 0. `Confirm` and taps
+  the row below in the `hud` font (digits, × and the space glyph F-3 adds), a missed bonus shown with 0. `Confirm` and taps
   are ignored for `toSteps(ResultsTuning.lockSeconds)` = 60 steps and accepted from the 61st; the
   scene leaves on its own after `toSteps(ResultsTuning.autoSeconds)` = 480 steps (the entering step
   is step 0 for all three, as for Game over). The values live in `ResultsTuning`, beside
   `SceneTuning`.
+- **Exits**: `Confirm` or a tap after the 60-step lock, or the 480-step (8 s) timer, whichever
+  comes first: `LEVEL_CLEARED` → the next level's card (`run.startNextLevel()`), `RUN_CLEARED` →
+  `Ending` in 1.0, `Title` in the one-level slice (interim, below).
 - **Interim deviation, slice end**: `Results --> Title` for `RUN_CLEARED`, releasing the run,
   instead of `Ending` and `Name entry` (screens brick G); the `Title` reached from `Results`
   applies the 60-step lock, as from Game over. `LEVEL_CLEARED → LevelCard` waits for level 2.
@@ -379,5 +384,5 @@ unchanged.
 | C2 — the other devices | five PRs (ADR-0018): C2-0 this design; C2-A the browser-free arbitration (no behaviour change); C2-L the portrait screen (`RenderPort.layout()`, `HUD_LAYOUTS`, `hud.ts` draws bands or strip, page CSS); C2-P touch and mouse (`pointer` module, pause button, tap resume, Game over and title locks, crosshair, layout-change pause, the new smoke test); C2-G the gamepad (`gamepad` module, fixed `A`/`B`/`Start` roles) |
 | E — the player kit | five PRs (ADR-0019), each merge playable: E-0 this design; E-1 randomness, pickups and their sources (run seed, pickup pool, fall and sway, collision pass 4, P-red and P-blue, `Weapon.kind` and `level` with `powerUp`, the cap bonus, `Formation` with the formation P and `FORMATION_CLEARED`, `LevelScript.dominantColour`, the Gunner `DropTable` at 30 %, the `DifficultyProfile` subset, the HUD weapon badge and pips, the determinism test with a seed; until E-2, `WEAPONS` holds the level-1 Spread record for every level and both kinds: the level, the kind and the pips change, the shot does not); E-2 the weapons on levels 1 to 5 (the data tables, damage in tenths, Laser bolts, pierce memory, the player bullet pool at 80); E-3 the Carrier (`CrossMovement`, the archetype, cargo with its load checks, the §7.2.1 rows, the Shield, Bomb and 1-UP pickups collectable, the HUD shield and bomb icons as needed); E-4 the bomb, the shield and the death rule (step slot 3, `useBomb`, `BOMB_USED`, flash and shake, `ABSORBED`, `shieldBroken`, `PLAYER_HIT`, the ring, `powerDown` with the release hop and the bombs reset). The Carrier comes before the bomb, so Shield and Bomb are catchable as soon as they exist |
 | Pointer fire and shot proportions | ADR-0020 decisions 1 to 3 and 6 (mouse left-button fire latch, touch fire while steering, samples with `autofire = false`) and the GDD v0.9 §3.2 drawn sizes in `RunPresenter`; done by #32 (`91691e4`) before F (design revision v0.9 above) |
-| F — the level | four PRs (ADR-0022), each merge playable: F-0 this design (GDD v0.10, ADR-0022); F-1 the strategy factories (the Gunner refactor first, no behaviour change), `Body.volley`, `SizeTier.LARGE`, the Heavy (ring and fan archetypes, its drop), the ring and fan attacks, the 120 s script of GDD v0.10 §7.2.2 with the 1-UP Carrier and without the Bomb Carrier (interim: it still wraps at 120 s), the level simulation at ≤ 16 enemies and ≤ 40 enemy bullets; F-2 the boss (`warningAt`, `startBoss`, `Boss` and `BossState`, the Cruiser's `BossDefinition`, `damageBoss` in pass 1 and the bomb, the boss body in pass 3, the boss events, `RunOutcome.LEVEL_CLEARED` and `RUN_CLEARED` over the level list, the snapshot's boss view, the HP bar, the seconds and the WARNING banner, the debris, the slow motion and its switch, `loopAt` removed; interim `Results` with the "LEVEL CLEAR" banner for 3 s, then the title); F-3 `LevelTally`, `TallyTuning`, `RunView.tally()`, the `Results` lines, lock and 8 s exit, `RUN_CLEARED` → `Results` → `Title`, the documentation pass |
+| F — the level | four PRs (ADR-0022), each merge playable: F-0 this design (GDD v0.10, ADR-0022); F-1 the strategy factories (the Gunner refactor first, no behaviour change), `Body.volleys`, `SizeTier.LARGE`, the Heavy (ring and fan archetypes, its drop), the ring and fan attacks, the 120 s script of GDD v0.10 §7.2.2 with the 1-UP Carrier and without the Bomb Carrier (interim: it still wraps at 120 s), the level simulation at ≤ 16 enemies and ≤ 40 enemy bullets; F-2 the boss (`warningAt`, `startBoss`, `Boss` and `BossState`, the Cruiser's `BossDefinition`, `damageBoss` in pass 1 and the bomb, the boss body in pass 3, the boss events, `RunOutcome.LEVEL_CLEARED` and `RUN_CLEARED` over the level list, the snapshot's boss view, the HP bar, the seconds and the WARNING banner, the debris, the slow motion and its switch, `loopAt` removed; interim `Results` with the "LEVEL CLEAR" banner for 3 s, then the title); F-3 `LevelTally`, `TallyTuning`, `RunView.tally()`, the `Results` lines, lock and 8 s exit, `RUN_CLEARED` → `Results` → `Title`, the documentation pass |
 | Later bricks | screens brick (G): the Ending card and the name entry after a cleared run (lifting the slice-end deviation), the bitmap fonts with the first-time pickup labels, the options with the effect switches, a touch bomb button if the screens revisit it (GDD v0.8 §4.2), the autofire option (ADR-0020 decision 4), the name entry with the letter picker and the optional country, and the save-document schema for the named top 10 (GDD v0.9 §9.1, §9.8) |
