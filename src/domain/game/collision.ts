@@ -52,14 +52,36 @@ function hitEnemy(bullet: Bullet, enemy: Enemy, rules: HitRules): void {
   if (destroyed) rules.destroyEnemy(enemy);
 }
 
+/**
+ * The next enemy the bullet meets along its path: of the live enemies it overlaps and has not
+ * hit, the one nearest along its velocity (smallest position · velocity), so a bolt crossing a
+ * stack hits the closest first, whatever the active list's order. `undefined` when none is left.
+ */
+function nearestTarget(world: World, bullet: Bullet): Enemy | undefined {
+  let nearest: Enemy | undefined;
+  let nearestTravel = Number.POSITIVE_INFINITY;
+  for (let j = 0; j < world.enemies.count; j += 1) {
+    const enemy = world.enemies.at(j);
+    if (enemy.spent || !overlaps(bullet, enemy) || !bullet.canHit(enemy.serial)) continue;
+    const travel = enemy.position.x * bullet.velocity.x + enemy.position.y * bullet.velocity.y;
+    if (travel < nearestTravel) {
+      nearest = enemy;
+      nearestTravel = travel;
+    }
+  }
+  return nearest;
+}
+
 // Pass 1: player bullets against enemies. A Spread bullet hits one enemy and is spent; a Laser bolt
-// passes through up to three, each body hit once, every one taking the full damage (GDD v0.8 §4.3).
+// passes through up to three, nearest first along its path, each body hit once, every one taking
+// the full damage (GDD v0.8 §4.3). Each hit spends the bullet, destroys the enemy or records it,
+// so the loop ends.
 function shotsAgainstEnemies(world: World, rules: HitRules): void {
   for (let i = 0; i < world.playerBullets.count; i += 1) {
     const bullet = world.playerBullets.at(i);
-    for (let j = 0; j < world.enemies.count && !bullet.spent; j += 1) {
-      const enemy = world.enemies.at(j);
-      if (enemy.spent || !overlaps(bullet, enemy) || !bullet.canHit(enemy.serial)) continue;
+    while (!bullet.spent) {
+      const enemy = nearestTarget(world, bullet);
+      if (enemy === undefined) break;
       hitEnemy(bullet, enemy, rules);
     }
   }

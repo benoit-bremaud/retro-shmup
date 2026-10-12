@@ -28,6 +28,9 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   one-hit Popcorn check over every shot of both tables, the hit steps in the kill sequence's
   order, one `PlayerTuning.noseOffset`, the unused enemy-bullet damage removed, and the class
   diagram and scene doc brought up to date.
+- Codex review on #27 (owner choice A): a bolt overlapping more enemies than it can hit took
+  them in active-list order, which is not spatial; it now hits them nearest first along its path
+  (smallest position · velocity), with no allocation, and a test inserts a stack far to near.
 
 ### PR #26 merged (`57eb194`) — E-1 randomness, pickups and sources
 

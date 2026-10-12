@@ -177,7 +177,7 @@ describe('CollisionResolver — Laser pass-throughs (GDD v0.8 §4.3)', () => {
     weapon: WeaponKind.Laser,
   };
 
-  it('passes through two enemies, full damage to each, and is spent on the third', () => {
+  it('passes through the two nearest enemies, full damage to each, and is spent on the third', () => {
     const world = new World();
     const a = enemyAt(world, GUNNER, 100, 60);
     const b = enemyAt(world, GUNNER, 100, 80);
@@ -186,7 +186,8 @@ describe('CollisionResolver — Laser pass-throughs (GDD v0.8 §4.3)', () => {
     world.spawnPlayerBullet(100, 85, BOLT);
     const rules = new Rules();
     CollisionResolver.resolve(world, rules);
-    expect([a.hp, b.hp, c.hp, d.hp]).toEqual([shots(5), shots(5), shots(5), shots(8)]);
+    // Travel order: d, c and b, the nearest to the ship; a, the farthest, is never reached.
+    expect([a.hp, b.hp, c.hp, d.hp]).toEqual([shots(8), shots(5), shots(5), shots(5)]);
     expect(world.playerBullets.at(0).spent).toBe(true);
     expect(rules.hits).toBe(3);
   });
@@ -244,4 +245,21 @@ describe('CollisionResolver — bullet memory and every level (GDD v0.8 §4.3)',
       }
     },
   );
+});
+
+describe('CollisionResolver — Laser hits in travel order (GDD v0.8 §4.3)', () => {
+  it('hits the stacked enemies nearest the ship first, whatever the list order', () => {
+    const world = new World();
+    // Inserted far to near: the list order is the opposite of the travel order.
+    const far = enemyAt(world, GUNNER, 100, 64);
+    const middle = enemyAt(world, GUNNER, 100, 84);
+    const near = enemyAt(world, GUNNER, 100, 104);
+    const bolt: ShotSpec = { ...SHOT, height: 48, pierce: 1, weapon: WeaponKind.Laser };
+    world.spawnPlayerBullet(100, 84, bolt);
+    world.playerBullets.at(0).velocity.y = -600;
+    const rules = new Rules();
+    CollisionResolver.resolve(world, rules);
+    expect([near.hp, middle.hp, far.hp]).toEqual([shots(7), shots(7), shots(8)]);
+    expect(world.playerBullets.at(0).spent).toBe(true);
+  });
 });
