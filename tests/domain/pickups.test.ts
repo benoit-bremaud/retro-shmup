@@ -250,7 +250,7 @@ describe('World — formations settle (class diagram, ADR-0019)', () => {
   it('settles a formation whose member leaves the field alive', () => {
     const world = new World();
     const formation = world.startFormation(1);
-    expect(formation).toBeDefined();
+    expect(world.formations.count).toBe(1);
     world.spawnEnemy({ at: 0, archetype: POPCORN, count: 1, spawn: { x: 120, y: 100 } }, formation);
     const enemy = world.enemies.at(0);
     enemy.entered = true;
