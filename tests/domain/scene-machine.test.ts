@@ -5,12 +5,15 @@ import { Palette } from '../../src/domain/presentation/palette';
 import { Starfield } from '../../src/domain/presentation/starfield';
 import { DIVER, POPCORN } from '../../src/domain/game/enemy';
 import type { LevelScript } from '../../src/domain/game/level-script';
+import { NoAttack } from '../../src/domain/game/attacks';
+import type { BossDefinition } from '../../src/domain/game/boss';
+import { swayMovement } from '../../src/domain/game/movements';
 import { Run } from '../../src/domain/game/run';
 import { Scene, SceneMachine } from '../../src/domain/scenes/scene-machine';
 import { PORTRAIT } from '../../src/domain/presentation/screen';
 import { RecordingRender } from '../support/recording-render';
 import type { RecordedRect } from '../support/recording-render';
-import { testScript } from '../support/script';
+import { STUB_BOSS, testScript } from '../support/script';
 
 const DT = 1 / 60;
 
@@ -563,5 +566,82 @@ describe('SceneMachine — the bomb shake (ADR-0014, GDD v0.8 §9.4)', () => {
     render.setCameraOffset(3, 3);
     machine.render(0, 16);
     expect(render.camera).toEqual({ x: 0, y: 0 });
+  });
+});
+
+describe('SceneMachine — Results, interim banner (meta/05-state-scenes, F-2a)', () => {
+  /** A boss that one shot kills, standing on the ship's line: the run is cleared in a few steps. */
+  const GLASS: BossDefinition = {
+    ...STUB_BOSS,
+    stats: { ...STUB_BOSS.stats, hp: 10 },
+    phases: [
+      {
+        hpThreshold: 10,
+        movement: swayMovement({ amplitude: 0, periodS: 8 }),
+        attack: NoAttack,
+      },
+    ],
+    warningS: 1,
+    entryS: 1,
+  };
+
+  function clearedFixture(): ReturnType<typeof setup> {
+    const render = new RecordingRender();
+    const machine = new SceneMachine(
+      render,
+      new Starfield(() => 0.5),
+      { blink: true, hitFlash: true, explosions: true, shake: true, bombFlash: true },
+      () => new Run({ script: testScript([], { warningAt: 5, boss: GLASS }) }),
+    );
+    machine.step(DT, createIntentFrame());
+    machine.step(DT, pressed(Button.Confirm));
+    const fire = createIntentFrame();
+    fire.held = Button.Fire;
+    for (let i = 0; i < 3000 && machine.scene === Scene.Playing; i += 1) machine.step(DT, fire);
+    return { machine, render };
+  }
+
+  it('enters Results when the run is cleared, with no pause button', () => {
+    const { machine, render } = clearedFixture();
+    expect(machine.scene).toBe(Scene.Results);
+    machine.render(0, 16);
+    expect(render.drew(Palette.pauseButton)).toBe(false);
+  });
+
+  it('shows LEVEL CLEAR from the catalogue, centred in the title font, over a veil', () => {
+    const { machine, render } = clearedFixture();
+    machine.render(0, 16);
+    expect(render.drew(Palette.veil)).toBe(true);
+    expect(render.texts.filter((text) => text.font === 'title')).toEqual([
+      { region: 'field', x: 34, y: 150, text: 'LEVEL CLEAR', font: 'title' },
+    ]);
+  });
+
+  it('keeps the starfield moving over the frozen run', () => {
+    const { machine, render } = clearedFixture();
+    machine.render(0, 16);
+    const stars = render.rectsOf(Palette.starNear).map((rect) => rect.y);
+    for (let i = 0; i < 30; i += 1) machine.step(DT, createIntentFrame());
+    machine.render(0, 16);
+    expect(render.rectsOf(Palette.starNear).map((rect) => rect.y)).not.toEqual(stars);
+  });
+
+  it('returns to the title after 3 s (180 steps), whatever is pressed', () => {
+    const { machine } = clearedFixture();
+    for (let i = 0; i < 179; i += 1) {
+      machine.step(DT, pressed(Button.Confirm | Button.Pause | Button.Back));
+    }
+    expect(machine.scene).toBe(Scene.Results);
+    machine.step(DT, createIntentFrame());
+    expect(machine.scene).toBe(Scene.Title);
+  });
+
+  it('locks the title reached from Results for 1 s, so a held Confirm never starts a run', () => {
+    const { machine } = clearedFixture();
+    for (let i = 0; i < 180; i += 1) machine.step(DT, createIntentFrame());
+    for (let i = 0; i < 60; i += 1) machine.step(DT, pressed(Button.Confirm));
+    expect(machine.scene).toBe(Scene.Title);
+    machine.step(DT, pressed(Button.Confirm));
+    expect(machine.scene).toBe(Scene.Playing);
   });
 });

@@ -7,6 +7,8 @@ export type Language = 'en' | 'fr';
  */
 export const MESSAGES = {
   gameOver: { en: 'GAME OVER', fr: 'GAME OVER' },
+  /** The interim results banner (F-2a): the tally replaces it with the real results (F-3). */
+  levelClear: { en: 'LEVEL CLEAR', fr: 'FIN DU NIVEAU' },
 } as const;
 
 export type MessageKey = keyof typeof MESSAGES;

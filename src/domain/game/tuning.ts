@@ -71,6 +71,14 @@ export const SceneTuning = {
   gameOverLockSeconds: 1,
 } as const;
 
+/**
+ * Times of the `Results` scene. Interim (F-2a, before the tally of F-3): only the length of the
+ * "LEVEL CLEAR" banner, after which the title comes back (meta/05-state-scenes, level brick).
+ */
+export const ResultsTuning = {
+  levelClearSeconds: 3,
+} as const;
+
 /** Enemy bullets (GDD v0.6 §5.2.1): never faster than the ship. */
 export const EnemyBulletTuning = {
   size: 4,
