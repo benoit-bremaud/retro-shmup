@@ -14,7 +14,13 @@ const DIGITS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'] as const;
 const TIMES = '×';
 
 /** Draws `value` right-aligned over `digits` cells, zero-padded, capped at all nines. */
-function drawNumber(render: RenderPort, value: number, x: number, y: number, digits: number): void {
+export function drawNumber(
+  render: RenderPort,
+  value: number,
+  x: number,
+  y: number,
+  digits: number,
+): void {
   let rest = Math.min(Math.max(Math.floor(value), 0), 10 ** digits - 1);
   for (let cell = digits - 1; cell >= 0; cell -= 1) {
     render.drawText(DIGITS[rest % 10] ?? '0', x + cell * HUD_FONT_CELL.width, y, 'hud');

@@ -14,6 +14,7 @@ import { PlayerTuning, STEPS_PER_SECOND } from '../game/tuning';
 import { WeaponKind } from '../game/weapon';
 import type { RenderPort } from '../ports/render-port';
 import { BombFlash, Explosions, HitFlashes, Shake } from './effects';
+import { drawBossBar } from './boss-hud';
 import { drawHud } from './hud';
 import { drawHollowSquare, drawPlusIcon, drawShipIcon } from './icons';
 import { Palette } from './palette';
@@ -106,7 +107,8 @@ export class RunPresenter {
 
   /**
    * The boss, enemies, explosions, pickups, player bullets, the ship and its shield ring, then enemy
-   * bullets on top, then the bomb flash over the field; then the HUD contents; then the effects
+   * bullets on top, then the bomb flash over the field, then the boss's HP bar and seconds; then the
+   * HUD contents; then the effects
    * age by `wallDtMs` (0 in a frozen frame).
    */
   draw(snapshot: WorldSnapshot, alpha: number, wallDtMs: number): void {
@@ -129,6 +131,7 @@ export class RunPresenter {
     }
     this.drawEnemyBullets(snapshot.enemyBullets, alpha);
     this.bombFlash.draw(this.render, FIELD_WIDTH, FIELD_HEIGHT);
+    drawBossBar(this.render, snapshot.boss);
     drawHud(this.render, snapshot);
     this.flashes.advance(wallDtMs);
     this.explosions.advance(wallDtMs);

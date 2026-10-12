@@ -92,8 +92,10 @@ stateDiagram-v2
   vertical slice (ADR-0022). A level end is deferred while the player is `Dead`
   (04-class-domain, step 8).
 - **Presentation** reads the boss view of the snapshot (ADR-0022 decision 8): the WARNING banner
-  ("WARNING", FR "ATTENTION") for the 3 s of `Warning`, two blinks under 3 Hz; the HP bar and the
-  seconds; the debris on `BOSS_PHASE_CHANGED`; the boss explosion and the **slow motion** on
+  ("WARNING", FR "ATTENTION") for the 3 s of `Warning`, two blinks under 3 Hz, steady when the
+  blink effect is off, shown in `Playing` only (never under GAME OVER, the pause icon or the
+  count-in digit, which share its centre; F-2b); the HP bar and the seconds, from `Entering` to
+  the end of the sequence (the boss is `Idle` again at `Results`); the debris on `BOSS_PHASE_CHANGED`; the boss explosion and the **slow motion** on
   `BOSS_DESTROYED` — half speed for 0.5 s of wall time, a time scale in the loop behind
   `EffectSettings.slowMotion`; it never changes the 2 s of the dying sequence in steps.
 - **Silence** (GDD §6): the 3 s of silence and the boss track wait for audio; until then the

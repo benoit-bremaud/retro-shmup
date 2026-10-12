@@ -56,6 +56,12 @@ export const Palette = {
   // the sprites land.
   boss: '#8a919e',
   bossTurret: '#5b616d',
+  // The boss's HP bar (GDD v0.10 §9.2): a cream frame, a grey fill close to the boss's, an amber tick; the seconds and the
+  // tick double the colour, so nothing rests on it alone.
+  bossBarFrame: '#e8e1cc',
+  bossBarTrack: '#10142a',
+  bossBarFill: '#9aa3b5',
+  bossBarTick: '#f9c74f',
   // The shield ring around the ship and the bomb's tint of the field (GDD v0.8 §4.4, §9.4).
   shieldRing: '#9f7aea9a',
   bombFlash: '#fffbea59',
