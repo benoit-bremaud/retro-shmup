@@ -8,6 +8,18 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-12
 
+### Pointer fire and shot readability (branch `feat/pointer-fire`)
+
+- ADR-0020: the mouse fires while the left button pressed on the field stays down, wherever it
+  goes, and stops when it is released; a left press outside the field never fires; touch fires
+  while a finger steers and stops when it lifts, a second finger bombing without touching it; a
+  lost focus or a rotation stops both. The samples report `autofire = false` until the options
+  screen brings the autofire option; the arbitration is unchanged.
+- GDD v0.9 §3.2: enemy bullets drawn 6 × 6 with a 2 × 2 white core, Spread bullets drawn 2 × 6,
+  player shots and Laser bolts at 60 % opacity; hitboxes unchanged. README device lines and the
+  CHANGELOG (Changed) updated.
+- Visual check: the brainstorm's scene (Spread level 3 at 22.7 s, a temporary uncommitted level)
+  matches the chosen V2 capture.
 ### Design revision after the brick-E playtest (branch `docs/brainstorm-design`) — GDD v0.9, ADR-0020, ADR-0021
 
 - Owner playtest after brick E: every device works (keyboard, touch, mouse, gamepad); two

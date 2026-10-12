@@ -11,12 +11,15 @@ export const Palette = {
   shipHull: '#4fd1c5',
   shipWing: '#2c7a7b',
   shipCockpit: '#f6e05e',
-  playerShot: '#ffd166',
+  // Player shots translucent and enemy bullets with a white core, so danger reads first
+  // (GDD v0.9 §3.2).
+  playerShot: '#ffd16699',
   // Placeholder enemies until the sprites land: each role its own colour, none the hull's.
   popcorn: '#f56565',
   diver: '#ed8936',
   gunner: '#9f7aea',
   enemyShot: '#ff6bcb',
+  enemyShotCore: '#fffffe',
   lifeIcon: '#38b2ac',
   chainTrack: '#2d3561',
   chainBar: '#f6ad55',
@@ -39,7 +42,7 @@ export const Palette = {
   laserBadge: '#90cdf4',
   pipOn: '#f6e05f',
   pipOff: '#718096',
-  laserShot: '#63b3ed',
+  laserShot: '#63b3ed99',
   // The Carrier and the other pickups (GDD v0.8 §4.6, §5.2.1), and their HUD icons.
   carrier: '#48bb78',
   shieldPickup: '#b794f4',

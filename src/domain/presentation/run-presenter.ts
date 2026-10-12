@@ -32,6 +32,11 @@ export interface EffectSettings {
   bombFlash: boolean;
 }
 
+// Drawn sizes, not hitboxes (GDD v0.9 §3.2): enemy bullets read first, player shots stay back.
+const ENEMY_SHOT_DRAWN = 6;
+const ENEMY_SHOT_CORE = 2;
+const SPREAD_DRAWN_HEIGHT = 6;
+
 const BLINK_HALF_PERIOD_STEPS = STEPS_PER_SECOND / (PlayerTuning.blinksPerSecond * 2);
 
 function lerp(from: number, to: number, alpha: number): number {
@@ -116,7 +121,7 @@ export class RunPresenter {
       this.drawShip(x, y);
       if (snapshot.shield) this.drawShieldRing(x, y);
     }
-    this.drawBullets(snapshot.enemyBullets, alpha, Palette.enemyShot);
+    this.drawEnemyBullets(snapshot.enemyBullets, alpha);
     this.bombFlash.draw(this.render, FIELD_WIDTH, FIELD_HEIGHT);
     drawHud(this.render, snapshot);
     this.flashes.advance(wallDtMs);
@@ -193,13 +198,51 @@ export class RunPresenter {
   private drawPlayerShots(bullets: ReadonlyActiveList<Bullet>, alpha: number): void {
     for (let i = 0; i < bullets.count; i += 1) {
       const bullet = bullets.at(i);
-      const colour = bullet.weapon === WeaponKind.Laser ? Palette.laserShot : Palette.playerShot;
-      this.drawBox(bullet, alpha, colour);
+      const x = lerp(bullet.previousPosition.x, bullet.position.x, alpha);
+      const y = lerp(bullet.previousPosition.y, bullet.position.y, alpha);
+      if (bullet.weapon === WeaponKind.Laser) {
+        this.render.drawRect(
+          x - bullet.width / 2,
+          y - bullet.height / 2,
+          bullet.width,
+          bullet.height,
+          Palette.laserShot,
+        );
+      } else {
+        // Drawn shorter than its 2 × 8 hitbox (GDD v0.9 §3.2).
+        this.render.drawRect(
+          x - bullet.width / 2,
+          y - SPREAD_DRAWN_HEIGHT / 2,
+          bullet.width,
+          SPREAD_DRAWN_HEIGHT,
+          Palette.playerShot,
+        );
+      }
     }
   }
 
-  private drawBullets(bullets: ReadonlyActiveList<Bullet>, alpha: number, colour: string): void {
-    for (let i = 0; i < bullets.count; i += 1) this.drawBox(bullets.at(i), alpha, colour);
+  // Enemy bullets drawn larger than their 4 × 4 hitbox, with a white core (GDD v0.9 §3.2).
+  private drawEnemyBullets(bullets: ReadonlyActiveList<Bullet>, alpha: number): void {
+    const r = this.render;
+    for (let i = 0; i < bullets.count; i += 1) {
+      const bullet = bullets.at(i);
+      const x = lerp(bullet.previousPosition.x, bullet.position.x, alpha);
+      const y = lerp(bullet.previousPosition.y, bullet.position.y, alpha);
+      r.drawRect(
+        x - ENEMY_SHOT_DRAWN / 2,
+        y - ENEMY_SHOT_DRAWN / 2,
+        ENEMY_SHOT_DRAWN,
+        ENEMY_SHOT_DRAWN,
+        Palette.enemyShot,
+      );
+      r.drawRect(
+        x - ENEMY_SHOT_CORE / 2,
+        y - ENEMY_SHOT_CORE / 2,
+        ENEMY_SHOT_CORE,
+        ENEMY_SHOT_CORE,
+        Palette.enemyShotCore,
+      );
+    }
   }
 
   // A box centred on its interpolated position.

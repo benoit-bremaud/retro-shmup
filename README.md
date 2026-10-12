@@ -38,10 +38,10 @@ What the current build plays:
 - **Devices**:
   - keyboard: arrows or `W A S D` move, `Space` / `Z` fire, `X` / `Left Shift` bomb, `P` / `Esc`
     pause, `Enter` confirm;
-  - touch: the ship follows the finger 32 px above it with autofire, a second finger on the
-    field bombs, a pause button in the HUD, any tap resumes;
-  - mouse: the ship follows the crosshair with autofire, a right click on the field bombs, a left
-    click taps;
+  - touch: the ship follows the finger 32 px above it and fires while the finger steers, a second
+    finger on the field bombs, a pause button in the HUD, any tap resumes;
+  - mouse: the ship follows the crosshair and fires while the left button pressed on the field is
+    held, a right click on the field bombs, a left click outside the field taps;
   - gamepad: stick or d-pad, `A` fire, `B` bomb, `Start` pause and confirm.
 
 Play it at <https://retro-shmup.pages.dev>, or locally with `pnpm install` then `pnpm dev` (see

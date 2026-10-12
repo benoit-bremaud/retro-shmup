@@ -19,7 +19,8 @@ export interface DeviceSample {
   /** Sequence number of the last input of any kind. */
   inputSeq: number;
   /**
-   * Its `Fire` is the always-on autofire of touch and mouse (ADR-0009); that `Fire` lives in
+   * Its `Fire` is the always-on autofire option of touch and mouse (ADR-0020; off until the
+   * options screen); that `Fire` lives in
    * `held` only, never in `pressed`, so the arbitration can mask it.
    */
   autofire: boolean;

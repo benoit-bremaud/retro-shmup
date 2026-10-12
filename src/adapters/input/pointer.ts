@@ -65,6 +65,8 @@ export class PointerModule {
   private mouseX = 0;
   private mouseY = 0;
   private mouseButtons = 0;
+  /** The left button went down on the field and is still held: the mouse fires (ADR-0020). */
+  private mouseFiring = false;
   private mousePressed = 0;
   private mouseStart = 0;
   private mouseInput = 0;
@@ -91,6 +93,7 @@ export class PointerModule {
     this.tapRegion = 'none';
     this.mouseSeen = false;
     this.mouseButtons = 0;
+    this.mouseFiring = false;
   }
 
   down(event: PointerEventLike, seq: number): void {
@@ -142,35 +145,42 @@ export class PointerModule {
   cancel(event: PointerEventLike): void {
     if (event.pointerType === 'mouse') {
       this.mouseButtons = event.buttons;
+      if ((event.buttons & LEFT_BUTTON) === 0) this.mouseFiring = false;
       return;
     }
     if (this.tapRegion !== 'none' && this.tapPointer === event.pointerId) this.tapRegion = 'none';
     this.lift(event);
   }
 
-  /** Fills the touch sample: a target while a finger steers, and the always-on autofire. */
+  /**
+   * Fills the touch sample: a target while a finger steers, and `Fire` held while it steers —
+   * lifting it stops firing (ADR-0020). The autofire option arrives with the options screen.
+   */
   sampleTouch(into: DeviceSample): void {
     into.moving = this.steering !== undefined;
     into.moveKind = 'target';
     into.moveX = this.touchX;
     into.moveY = this.touchY;
-    into.held = Button.Fire;
-    into.autofire = true;
+    into.held = this.steering === undefined ? 0 : Button.Fire;
+    into.autofire = false;
     into.pressed = this.touchPressed;
     into.startSeq = this.touchStart;
     into.inputSeq = this.touchInput;
     this.touchPressed = 0;
   }
 
-  /** Fills the mouse sample: the cursor as target once seen, and the always-on autofire. */
+  /**
+   * Fills the mouse sample: the cursor as target once seen, and `Fire` held while the left button
+   * pressed on the field stays down, wherever the cursor goes (ADR-0020).
+   */
   sampleMouse(into: DeviceSample): void {
     const field = this.fieldOrigin();
     into.moving = this.mouseSeen;
     into.moveKind = 'target';
     into.moveX = this.mouseX - field.fieldX;
     into.moveY = this.mouseY - field.fieldY;
-    into.held = Button.Fire;
-    into.autofire = true;
+    into.held = this.mouseFiring ? Button.Fire : 0;
+    into.autofire = false;
     into.pressed = this.mousePressed;
     into.startSeq = this.mouseStart;
     into.inputSeq = this.mouseInput;
@@ -200,6 +210,8 @@ export class PointerModule {
     this.mouseY = this.y;
     const pressedNow = event.buttons & ~this.mouseButtons;
     this.mouseButtons = event.buttons;
+    // Releasing the left button anywhere stops the fire; only a press on the field starts it.
+    if ((event.buttons & LEFT_BUTTON) === 0) this.mouseFiring = false;
     const field = this.inField();
     if (isMove && newPoint && field) {
       this.mouseStart = seq;
@@ -208,7 +220,10 @@ export class PointerModule {
     if ((pressedNow & LEFT_BUTTON) !== 0 && inside) {
       this.tap(field ? 'field' : 'hud', event.pointerId);
       this.mouseInput = seq;
-      if (field) this.mouseStart = seq;
+      if (field) {
+        this.mouseStart = seq;
+        this.mouseFiring = true;
+      }
     }
     if ((pressedNow & RIGHT_BUTTON) !== 0 && field) {
       this.mousePressed |= Button.Bomb;
