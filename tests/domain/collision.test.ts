@@ -1,15 +1,29 @@
 import { describe, expect, it } from 'vitest';
 import { CollisionResolver } from '../../src/domain/game/collision';
 import type { HitRules } from '../../src/domain/game/collision';
-import { DIVER, GUNNER } from '../../src/domain/game/enemy';
+import { DIVER, GUNNER, POPCORN } from '../../src/domain/game/enemy';
 import type { Enemy, EnemyArchetype } from '../../src/domain/game/enemy';
 import type { Pickup } from '../../src/domain/game/pickup';
 import { PlayerState } from '../../src/domain/game/player';
+import { WEAPONS, WeaponKind } from '../../src/domain/game/weapon';
+import type { ShotSpec } from '../../src/domain/game/weapon';
+import { PLAYER_BULLET_POOL_SIZE } from '../../src/domain/game/tuning';
 import { World } from '../../src/domain/game/world';
 import { createIntentFrame } from '../../src/domain/ports/input-port';
+import { shots } from '../support/shots';
 
 const DT = 1 / 60;
-const SHOT = { vxPerSecond: 0, vyPerSecond: -360, width: 2, height: 8, damage: 1, pierce: 0 };
+const SHOT: ShotSpec = {
+  offsetX: 0,
+  offsetY: 0,
+  vxPerSecond: 0,
+  vyPerSecond: -360,
+  width: 2,
+  height: 8,
+  damage: shots(1),
+  pierce: 0,
+  weapon: WeaponKind.Spread,
+};
 
 /** The run's side of the collisions, recorded; marks a destroyed enemy like `Run` does. */
 class Rules implements HitRules {
@@ -58,7 +72,7 @@ describe('CollisionResolver — shots against enemies (GDD §5.2, class diagram)
     world.spawnPlayerBullet(100, 100, SHOT);
     const rules = new Rules();
     CollisionResolver.resolve(world, rules);
-    expect(gunner.hp).toBe(7);
+    expect(gunner.hp).toBe(shots(7));
     expect(world.playerBullets.at(0).spent).toBe(true);
     expect(rules.hits).toBe(1);
   });
@@ -149,6 +163,103 @@ describe('CollisionResolver — hazards against the 4 × 4 hitbox (GDD §4.1, §
     const gunner = enemyAt(world, GUNNER, 120, 272);
     CollisionResolver.resolve(world, new Rules());
     expect(world.player.state).toBe(PlayerState.Dead);
-    expect(gunner.hp).toBe(8);
+    expect(gunner.hp).toBe(shots(8));
+  });
+});
+
+describe('CollisionResolver — Laser pass-throughs (GDD v0.8 §4.3)', () => {
+  const BOLT: ShotSpec = {
+    ...SHOT,
+    width: 8,
+    height: 48,
+    damage: shots(3),
+    pierce: 2,
+    weapon: WeaponKind.Laser,
+  };
+
+  it('passes through the two nearest enemies, full damage to each, and is spent on the third', () => {
+    const world = new World();
+    const a = enemyAt(world, GUNNER, 100, 60);
+    const b = enemyAt(world, GUNNER, 100, 80);
+    const c = enemyAt(world, GUNNER, 100, 100);
+    const d = enemyAt(world, GUNNER, 100, 110);
+    world.spawnPlayerBullet(100, 85, BOLT);
+    const rules = new Rules();
+    CollisionResolver.resolve(world, rules);
+    // Travel order: d, c and b, the nearest to the ship; a, the farthest, is never reached.
+    expect([a.hp, b.hp, c.hp, d.hp]).toEqual([shots(8), shots(5), shots(5), shots(5)]);
+    expect(world.playerBullets.at(0).spent).toBe(true);
+    expect(rules.hits).toBe(3);
+  });
+
+  it('hits a body it overlaps for several steps only once', () => {
+    const world = new World();
+    const gunner = enemyAt(world, GUNNER, 100, 100);
+    world.spawnPlayerBullet(100, 100, BOLT);
+    const rules = new Rules();
+    for (let i = 0; i < 3; i += 1) CollisionResolver.resolve(world, rules);
+    expect(gunner.hp).toBe(50);
+    expect(world.playerBullets.at(0).spent).toBe(false);
+  });
+
+  it('kills a Popcorn with one level-1 Spread bullet', () => {
+    const world = new World();
+    const popcorn = enemyAt(world, POPCORN, 100, 100);
+    world.spawnPlayerBullet(100, 100, SHOT);
+    const rules = new Rules();
+    CollisionResolver.resolve(world, rules);
+    expect(rules.destroyed).toEqual([popcorn.serial]);
+  });
+});
+
+describe('CollisionResolver — bullet memory and every level (GDD v0.8 §4.3)', () => {
+  it('forgets the bodies of a released bolt: a reused slot hits that Gunner again', () => {
+    const world = new World();
+    const gunner = enemyAt(world, GUNNER, 100, 100);
+    // Harmless bolts, so the Gunner survives them all.
+    const bolt: ShotSpec = { ...SHOT, height: 48, damage: 0, pierce: 1, weapon: WeaponKind.Laser };
+    for (let i = 0; i < PLAYER_BULLET_POOL_SIZE; i += 1) world.spawnPlayerBullet(100, 100, bolt);
+    // Every slot now remembers the Gunner: whichever slot the next shot reuses, it remembers it.
+    const rules = new Rules();
+    CollisionResolver.resolve(world, rules);
+    for (let i = 0; i < world.playerBullets.count; i += 1) world.playerBullets.at(i).spent = true;
+    world.sweep();
+    expect(gunner.hp).toBe(shots(8));
+    world.spawnPlayerBullet(100, 100, SHOT);
+    CollisionResolver.resolve(world, rules);
+    expect(gunner.hp).toBe(shots(7));
+  });
+
+  it.each([WeaponKind.Spread, WeaponKind.Laser])(
+    'kills a Popcorn in one hit with every %s shot of every level',
+    (kind) => {
+      for (const level of WEAPONS[kind]) {
+        for (const shot of level.shots) {
+          const world = new World();
+          const popcorn = enemyAt(world, POPCORN, 100, 100);
+          world.spawnPlayerBullet(100, 100, shot);
+          const rules = new Rules();
+          CollisionResolver.resolve(world, rules);
+          expect(rules.destroyed).toEqual([popcorn.serial]);
+        }
+      }
+    },
+  );
+});
+
+describe('CollisionResolver — Laser hits in travel order (GDD v0.8 §4.3)', () => {
+  it('hits the stacked enemies nearest the ship first, whatever the list order', () => {
+    const world = new World();
+    // Inserted far to near: the list order is the opposite of the travel order.
+    const far = enemyAt(world, GUNNER, 100, 64);
+    const middle = enemyAt(world, GUNNER, 100, 84);
+    const near = enemyAt(world, GUNNER, 100, 104);
+    const bolt: ShotSpec = { ...SHOT, height: 48, pierce: 1, weapon: WeaponKind.Laser };
+    world.spawnPlayerBullet(100, 84, bolt);
+    world.playerBullets.at(0).velocity.y = -600;
+    const rules = new Rules();
+    CollisionResolver.resolve(world, rules);
+    expect([near.hp, middle.hp, far.hp]).toEqual([shots(7), shots(7), shots(8)]);
+    expect(world.playerBullets.at(0).spent).toBe(true);
   });
 });

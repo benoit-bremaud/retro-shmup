@@ -39,6 +39,7 @@ export const Palette = {
   laserBadge: '#90cdf4',
   pipOn: '#f6e05f',
   pipOff: '#718096',
+  laserShot: '#63b3ed',
 } as const;
 
 export type PaletteColour = (typeof Palette)[keyof typeof Palette];

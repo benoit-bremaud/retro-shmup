@@ -8,6 +8,35 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-12
 
+### Weapons L1 to L5 E-2 (branch `feat/weapons`) — Refs #25
+
+- `WEAPONS[kind][level − 1]` tables built once at load (GDD v0.8 §4.3, ADR-0019): the Spread's
+  1/3/3/5/5 streams at their angles from the nose, 6-step cooldown and 4 at level 5 (15/s), centre
+  damage 10/14/19/24/20 tenths and side streams 10; the Laser's 48 px bolts at 600 px/s, their
+  lower end at the nose, 2 to 8 px wide, damage 10 to 30, passing through 1/1/2/2/3. One generic
+  volley replaces `SpreadPattern`, which is removed; the E-1 interim deviation is lifted.
+- HP and damage in tenths of a level-1 shot: Popcorn 10, Diver 10, Gunner 80.
+- `Bullet` remembers up to three serials (`canHit`, `recordHit`, reset at spawn): a bolt hits each
+  body once while overlapping it, every body crossed takes the full damage, and the hit after its
+  last pass-through spends it. `ShotSpec.weapon` and `Bullet.weapon` let the presenter draw Laser
+  bolts in their own colour (class diagram updated). Player bullet pool 16 → 80.
+- Visual check: headless captures with a temporary, uncommitted start at level 5 showed the
+  Spread's five-stream fan and the Laser's pulsed 8 px bolts.
+- Local pre-push review: 1 Must fixed — tests wrote raw tenths, which ADR-0019 forbids; a
+  `shots(n)` test helper now expresses HP and damage in level-1 shots. Also: a test helper that
+  built the wrong level, a mutation-checked test that a reused bullet slot forgets its hits, a
+  one-hit Popcorn check over every shot of both tables, the hit steps in the kill sequence's
+  order, one `PlayerTuning.noseOffset`, the unused enemy-bullet damage removed, and the class
+  diagram and scene doc brought up to date.
+- Codex review on #27 (owner choice A): a bolt overlapping more enemies than it can hit took
+  them in active-list order, which is not spatial; it now hits them nearest first along its path
+  (smallest position · velocity), with no allocation, and a test inserts a stack far to near.
+
+### PR #26 merged (`57eb194`) — E-1 randomness, pickups and sources
+
+- Codex reviewed with no finding; CI green. Merged after the pre-push review fixes and the
+  SonarQube exception `e3` (owner choice D).
+
 ### Randomness, pickups and sources E-1 (branch `feat/pickups`) — Refs #25
 
 - `Run({ script, seed, createRandom })` owns its gameplay `Random`, built for level 1 from

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PlayerTuning, SpreadLevel1, toSteps } from '../../src/domain/game/tuning';
+import { PlayerTuning, SpreadTuning, toSteps } from '../../src/domain/game/tuning';
 
 describe('toSteps — GDD seconds to whole simulation steps', () => {
   it.each([
@@ -25,7 +25,8 @@ describe('tuning records — GDD v0.5 initial values', () => {
     expect(PlayerTuning.spawnY - PlayerTuning.halfSize).toBeGreaterThanOrEqual(320);
   });
 
-  it('fires Spread level 1 at 10 shots per second, one every 6 steps', () => {
-    expect(toSteps(1 / SpreadLevel1.shotsPerSecond)).toBe(6);
+  it('fires the Spread at 10 shots per second, one every 6 steps, and 15/s (4 steps) at level 5', () => {
+    expect(toSteps(1 / SpreadTuning.shotsPerSecond)).toBe(6);
+    expect(toSteps(1 / SpreadTuning.level5ShotsPerSecond)).toBe(4);
   });
 });

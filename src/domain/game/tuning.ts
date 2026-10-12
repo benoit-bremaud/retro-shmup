@@ -22,6 +22,8 @@ export const PlayerTuning = {
   maxSpeed: 150,
   /** Half the 32 px sprite box: also the margin of the clamp to the field. */
   halfSize: 16,
+  /** Shots leave from the nose, this many pixels above the ship's centre (GDD §4.3). */
+  noseOffset: 16,
   spawnX: 120,
   /** Fully hidden below the 320 px field. */
   spawnY: 336,
@@ -38,16 +40,27 @@ export const PlayerTuning = {
   respawnSeconds: 1.5,
 } as const;
 
-/** Spread at power level 1, GDD §4.3. */
-export const SpreadLevel1 = {
+/** One level-1 shot in tenths (ADR-0019): HP and damage are whole tenths of it. */
+export const L1_SHOT = 10;
+
+/** The Spread (GDD v0.8 §4.3): bullets from the nose; the per-level angles are in `WEAPONS`. */
+export const SpreadTuning = {
   shotsPerSecond: 10,
-  /** Pixels per second, straight up. */
+  /** A 4-step cooldown: +50 % (whole steps; GDD v0.8). */
+  level5ShotsPerSecond: 15,
+  /** Pixels per second, along the stream's angle. */
   speed: 360,
   width: 2,
   height: 8,
-  /** The nose is this many pixels above the ship's centre. */
-  noseOffset: 16,
-  damage: 1,
+  /** Side streams deal one level-1 shot, in tenths. */
+  sideDamage: L1_SHOT,
+} as const;
+
+/** The Laser (GDD v0.8 §4.3): long bolts, their lower end at the nose. */
+export const LaserTuning = {
+  boltsPerSecond: 10,
+  speed: 600,
+  boltLength: 48,
 } as const;
 
 /** Times of the frozen scenes (GDD §4.4, §9.1); the scene machine converts them with toSteps. */
@@ -63,7 +76,6 @@ export const EnemyBulletTuning = {
   size: 4,
   /** Pixels per second. */
   speed: 75,
-  damage: 1,
 } as const;
 
 /** Popcorn S curve (GDD v0.6 §5.2.1): x = x0 ± amplitude · sin(2π · y / wavelength). */
@@ -100,8 +112,11 @@ export const ChainTuning = {
 export const ENEMY_POOL_SIZE = 16;
 export const ENEMY_BULLET_POOL_SIZE = 48;
 
-/** Player bullets alive at once at level 1: about 9, so 16 leaves headroom (class diagram). */
-export const PLAYER_BULLET_POOL_SIZE = 16;
+/**
+ * Player bullets alive at once (GDD v0.8 §5.2.1): at Spread level 5, 5 streams × 15/s × about
+ * 0.85 s ≈ 64, so 80 leaves headroom.
+ */
+export const PLAYER_BULLET_POOL_SIZE = 80;
 
 /** Pickups (GDD v0.8 §4.6): fall with a sway that is a closed form of their age, no draw. */
 export const PickupTuning = {

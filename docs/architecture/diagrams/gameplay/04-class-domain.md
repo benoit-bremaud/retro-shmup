@@ -177,6 +177,7 @@ classDiagram
     +height: number
     +damage: number
     +pierce: number
+    +weapon: WeaponKind
   }
   class Bullet {
     <<pooled>>
@@ -186,11 +187,13 @@ classDiagram
     -hitbox: Rect
     -damage: number
     -pierceLeft: number
+    -weapon: WeaponKind
     -alreadyHit: number[3]
     -alreadyHitCount: number
     -spent: boolean
     +canHit(serial: number) boolean
     +recordHit(serial: number) void
+    +forgetHits() void
   }
   class Pickup {
     <<pooled>>
@@ -456,7 +459,7 @@ classDiagram
 | Rule (GDD v0.4–v0.8) | Where it lives |
 |---|---|
 | Two weapons × 5 levels, Spread first, switch keeps the level (§4.3) | `Weapon.powerUp(kind): boolean` sets `kind` and raises `level` (true when it rose); `WEAPONS[kind][level − 1]` is a `WeaponLevel` record and one generic `fire()` spawns its `ShotSpec`s (ADR-0019 — no `WeaponPattern`); `cooldown` counts `cooldownSteps` and is kept across a switch |
-| Laser width and piercing (§4.3, v0.8) | 48 px bolts from the player bullet pool with `pierceLeft` (the pass-throughs, 1 to 3) and `alreadyHit` — the **serials** of the bodies already hit, enemies and boss alike, 3 at most — so one body is hit once per bolt, even when a pooled enemy is reused or the bolt overlaps a large boss for several steps; every body crossed takes the full damage; a hit with `pierceLeft` = 0 spends the bolt |
+| Laser width and piercing (§4.3, v0.8) | 48 px bolts from the player bullet pool with `pierceLeft` (the pass-throughs, 1 to 3) and `alreadyHit` — the **serials** of the bodies already hit, enemies and boss alike, 3 at most — so one body is hit once per bolt, even when a pooled enemy is reused or the bolt overlaps a large boss for several steps; when a bolt overlaps more bodies than it can hit, it hits them in the order it meets them along its path (nearest first: smallest position · velocity), never in the active list's order; every body crossed takes the full damage; a hit with `pierceLeft` = 0 spends the bolt |
 | One hit = one life, shield charge, invulnerability (§4.4) | `Player.hit(): HitOutcome` — `IGNORED` while entering, invulnerable or dead (the bullet passes through), `ABSORBED` by the shield, `DIED` otherwise; Game over is decided when the death sequence ends (`05-state-player`) |
 | Next level, run cleared (§2, §7) | `Run.startNextLevel()` resets the outcome, the tally and the level script, reseeds `Random` from the run seed and the level index; the outcome is `LEVEL_CLEARED` after levels 1–2, `RUN_CLEARED` after level 3 |
 | Death: −1 level and release, none at level 1 (§4.4, v0.8) | `Weapon.powerDown(): boolean`; `Run.playerDied()` resets the bombs to `DifficultyProfile.bombsPerLife`, calls `powerDown()` and, when it returns `true`, spawns a P of the current kind with `PickupMotion.RELEASE` (the hop, then the slow fall) before publishing `PLAYER_DIED`; on the last life too |

@@ -16,10 +16,11 @@ import {
   ENEMY_POOL_SIZE,
   FORMATION_POOL_SIZE,
   PICKUP_POOL_SIZE,
+  PLAYER_BULLET_POOL_SIZE,
 } from '../../src/domain/game/tuning';
 import { Weapon, WeaponKind } from '../../src/domain/game/weapon';
 import { World } from '../../src/domain/game/world';
-import { createIntentFrame } from '../../src/domain/ports/input-port';
+import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { Random } from '../../src/domain/ports/random';
 import { mixSeed } from '../../src/domain/random/seeded-random';
 
@@ -456,5 +457,24 @@ describe('mixSeed — the per-level seed (ADR-0019)', () => {
   it('is pinned, so a change of the mix never goes unnoticed', () => {
     expect(mixSeed(1, 0)).toBe(1364076727);
     expect(mixSeed(1, 1)).toBe(920564995);
+  });
+});
+
+describe('Run — the player bullet pool at Spread level 5 (GDD v0.8 §5.2.1)', () => {
+  it('never fills the 80-bullet pool with fire held at level 5', () => {
+    const run = new Run({ script: { dominantColour: PickupKind.PRed, events: [] } });
+    const red = new Pickup();
+    red.spawn(PickupKind.PRed, 0, 0, 1);
+    for (let i = 0; i < 4; i += 1) run.pickupCollected(red);
+    expect(run.snapshot().power).toBe(5);
+    const fire = createIntentFrame();
+    fire.held = Button.Fire;
+    let most = 0;
+    for (let i = 0; i < 600; i += 1) {
+      run.step(DT, fire);
+      most = Math.max(most, run.snapshot().playerBullets.count);
+    }
+    expect(most).toBeGreaterThan(50);
+    expect(most).toBeLessThan(PLAYER_BULLET_POOL_SIZE);
   });
 });

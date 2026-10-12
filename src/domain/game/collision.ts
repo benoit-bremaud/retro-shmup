@@ -38,25 +38,52 @@ function overlapsHitbox(player: Player, box: Box): boolean {
   );
 }
 
-function firstEnemyHitBy(world: World, bullet: Bullet): Enemy | undefined {
-  for (let i = 0; i < world.enemies.count; i += 1) {
-    const enemy = world.enemies.at(i);
-    if (!enemy.spent && overlaps(bullet, enemy)) return enemy;
+// One hit, in the order of the kill sequence: the damage, then a bullet with no pass-through
+// left is spent while a bolt passing through remembers the body, then the reports.
+function hitEnemy(bullet: Bullet, enemy: Enemy, rules: HitRules): void {
+  const destroyed = applyDamage(enemy, bullet.damage);
+  if (bullet.pierceLeft === 0) {
+    bullet.spent = true;
+  } else {
+    bullet.recordHit(enemy.serial);
+    bullet.pierceLeft -= 1;
   }
-  return undefined;
+  rules.enemyHit(enemy);
+  if (destroyed) rules.destroyEnemy(enemy);
 }
 
-// Pass 1: player bullets against enemies; a bullet hits one enemy and is consumed.
+/**
+ * The next enemy the bullet meets along its path: of the live enemies it overlaps and has not
+ * hit, the one nearest along its velocity (smallest position · velocity), so a bolt crossing a
+ * stack hits the closest first, whatever the active list's order. `undefined` when none is left.
+ */
+function nearestTarget(world: World, bullet: Bullet): Enemy | undefined {
+  let nearest: Enemy | undefined;
+  let nearestTravel = Number.POSITIVE_INFINITY;
+  for (let j = 0; j < world.enemies.count; j += 1) {
+    const enemy = world.enemies.at(j);
+    if (enemy.spent || !overlaps(bullet, enemy) || !bullet.canHit(enemy.serial)) continue;
+    const travel = enemy.position.x * bullet.velocity.x + enemy.position.y * bullet.velocity.y;
+    if (travel < nearestTravel) {
+      nearest = enemy;
+      nearestTravel = travel;
+    }
+  }
+  return nearest;
+}
+
+// Pass 1: player bullets against enemies. A Spread bullet hits one enemy and is spent; a Laser bolt
+// passes through up to three, nearest first along its path, each body hit once, every one taking
+// the full damage (GDD v0.8 §4.3). Each hit spends the bullet, destroys the enemy or records it,
+// so the loop ends.
 function shotsAgainstEnemies(world: World, rules: HitRules): void {
   for (let i = 0; i < world.playerBullets.count; i += 1) {
     const bullet = world.playerBullets.at(i);
-    if (bullet.spent) continue;
-    const enemy = firstEnemyHitBy(world, bullet);
-    if (enemy === undefined) continue;
-    bullet.spent = true;
-    const destroyed = applyDamage(enemy, bullet.damage);
-    rules.enemyHit(enemy);
-    if (destroyed) rules.destroyEnemy(enemy);
+    while (!bullet.spent) {
+      const enemy = nearestTarget(world, bullet);
+      if (enemy === undefined) break;
+      hitEnemy(bullet, enemy, rules);
+    }
   }
 }
 
