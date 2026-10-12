@@ -72,11 +72,14 @@ export const SceneTuning = {
 } as const;
 
 /**
- * Times of the `Results` scene. Interim (F-2a, before the tally of F-3): only the length of the
- * "LEVEL CLEAR" banner, after which the title comes back (meta/05-state-scenes, level brick).
+ * Times of the `Results` scene (GDD v0.10 §8, ADR-0022 decision 9): `Confirm` and taps are ignored
+ * for the lock, as on Game over (§4.4); the scene leaves on its own after `autoSeconds`; one tally
+ * line appears every `lineSeconds`, the first on entry.
  */
 export const ResultsTuning = {
-  levelClearSeconds: 3,
+  lockSeconds: 1,
+  autoSeconds: 8,
+  lineSeconds: 0.5,
 } as const;
 
 /** Enemy bullets (GDD v0.6 §5.2.1): never faster than the ship. */
@@ -134,6 +137,21 @@ export const ChainTuning = {
   windowSeconds: 2,
   killsPerStep: 5,
   maxMultiplier: 8,
+} as const;
+
+/**
+ * The end-of-level tally (GDD v0.10 §8, ADR-0022 decision 7): its lines are added to the score
+ * flat when the level ends, outside the chain.
+ */
+export const TallyTuning = {
+  /** Per whole formation destroyed, a bomb-completed one included. */
+  perFormation: 500,
+  /** No bomb used in the level. */
+  noBomb: 5000,
+  /** No life lost in the level (a shield absorb is not a loss). */
+  noMiss: 10000,
+  /** Per bomb left when the level ends. */
+  perBombLeft: 1000,
 } as const;
 
 /** Pools of the enemies brick (GDD v0.6 §5.2.1). */

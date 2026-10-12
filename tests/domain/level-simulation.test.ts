@@ -90,6 +90,14 @@ function replay(steps: number, seed = 1): string {
     score: snapshot.score,
     lives: snapshot.lives,
     outcome: run.outcome(),
+    // The end-of-level tally (GDD v0.10 §8): its lines replay too.
+    tally: [
+      run.tally().formationsCleared,
+      run.tally().bombUsed,
+      run.tally().lifeLost,
+      run.tally().bombsLeft,
+      run.tally().total(),
+    ],
     ship: snapshot.player,
     // The boss's body between its events: a drift of its motion, HP or phase must show here.
     boss: [boss.state, boss.position.x, boss.position.y, boss.hpRatio, boss.phase, boss.stateSteps],

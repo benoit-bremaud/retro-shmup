@@ -707,6 +707,14 @@ classDiagram
   `BossFled` and `LevelCleared` in code, like the existing kinds; `ResultsTuning` holds the interim
   banner time; `RunConfig.levels` is the level list, `script` a list of one. `Run` ends the level
   at step 8 through `clearLevel`, once; `startNextLevel` waits for level 2.
+- **Built in F-3** (the tally, ADR-0022 decisions 7 to 9): the model above stands; what the code
+  adds or names differently — `LevelTally` keeps its four lines as getters over private fields and
+  `RunView.tally()` returns them as the read-only `TallyView` (the same object every call, no
+  allocation), so only `ScoreKeeper` can `reset()` it; `ScoreKeeper` builds it before subscribing
+  its own `LEVEL_CLEARED` handler, so the bombs left are recorded before the total is added flat;
+  `reset()` has no caller in the one-level slice (the next-level flow of brick G calls it);
+  `ResultsTuning` is `lockSeconds`, `autoSeconds`, `lineSeconds`; the Results drawing is
+  `presentation/results.ts` (`formatTallyValues` once on entry, `drawResults` per frame).
 - **Not modelled**: geometric helpers (`Vec2`, `Rect`), ids (`SpriteId`, `PathId`,
   `ArchetypeId` = popcorn, diver, gunner, carrier, heavy-ring, heavy-fan), the factories'
   configuration records, `KillCause` (shot or bomb),

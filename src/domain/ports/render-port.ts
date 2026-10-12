@@ -5,7 +5,8 @@ export type SpriteId = string;
 
 /**
  * Bitmap fonts; no system text is ever drawn (ADR-0001). A font draws only its glyph set and
- * throws on any other character: `hud` is `0`–`9` and `×` (U+00D7), `title` is `A`–`Z` and the
+ * throws on any other character: `hud` is `0`–`9`, `×` (U+00D7) and the
+ * space (an empty cell, ADR-0022 decision 8), `title` is `A`–`Z` and the
  * space, until the bitmap fonts of the screens brick.
  */
 export type FontId = 'hud' | 'title';

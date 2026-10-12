@@ -174,7 +174,15 @@ describe('Canvas2DRenderer — hud font (RenderPort contract, HUD_FONT_CELL)', (
     expect(textBlocks(offscreen)).toEqual(['0,2', '4,2', '2,4', '0,6', '4,6']);
   });
 
-  it.each(['A', ' ', '-', 'x'])('throws on %j, outside the glyph set (fail closed)', (text) => {
+  it('draws the space as an empty cell that still advances (ADR-0022 decision 8)', () => {
+    const { renderer, offscreen } = setup();
+    renderer.drawText(' ', 0, 0, 'hud');
+    expect(textBlocks(offscreen)).toEqual([]);
+    renderer.drawText('1 1', 0, 0, 'hud');
+    expect(textBlocks(offscreen)).toContain(`${String(2 + 2 * HUD_FONT_CELL.width)},0`);
+  });
+
+  it.each(['A', '-', 'x', '\t'])('throws on %j, outside the glyph set (fail closed)', (text) => {
     const { renderer } = setup();
     expect(() => {
       renderer.drawText(text, 0, 0, 'hud');

@@ -649,7 +649,9 @@ until then they are an interim deviation recorded in the scene machine.
   Labels in the title font (A–Z and space only), numbers in the HUD font, which gains a space
   glyph (an empty cell) for these values; each label on its row
   at the left margin and its value right-aligned on the row below, so the longest line fits the
-  240 px field in portrait (`10 × 500  5 000` is 15 HUD cells of 8 px, 120 px). A missed bonus is shown with 0, never hidden. The player leaves by
+  240 px field in portrait (`10 × 500  5 000` is 15 HUD cells of 8 px, 120 px). A missed bonus is shown with 0, never hidden.
+  *(v0.10, owner decision 2026-10-12)* A header LEVEL CLEAR / FIN DU NIVEAU, in the title font,
+  stands above the lines. The player leaves by
   `confirm`, a tap or a click accepted after a **1 s** lock (as Game over, §4.4), or after
   **8 s**.
 - **Local top 10** *(v0.9)* with a name of up to 8 characters and an optional country (arcade name

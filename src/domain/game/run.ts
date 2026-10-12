@@ -11,6 +11,7 @@ import { EventBus } from './events';
 import type { RunEvents } from './events';
 import type { Vec2 } from './geometry';
 import { LevelDirector } from './level-director';
+import type { TallyView } from './level-tally';
 import { LEVEL_1 } from './level-script';
 import type { LevelScript } from './level-script';
 import type { Pickup } from './pickup';
@@ -115,6 +116,8 @@ export interface Simulation {
 export interface RunView {
   outcome(): RunOutcome;
   snapshot(): WorldSnapshot;
+  /** The current level's tally, read-only, without allocating: what the Results scene draws. */
+  tally(): TallyView;
   /** Subscribe-only: listeners can never publish (ADR-0010). */
   events(): RunEvents;
 }
@@ -191,6 +194,10 @@ export class Run implements Simulation, RunView {
 
   snapshot(): WorldSnapshot {
     return this.snapshotView;
+  }
+
+  tally(): TallyView {
+    return this.scoreKeeper.tally;
   }
 
   events(): RunEvents {
