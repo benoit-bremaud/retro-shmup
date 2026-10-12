@@ -5,7 +5,6 @@ import { Enemy } from './enemy';
 import { Formation } from './formation';
 import { FIELD_HEIGHT, overlapsField } from './geometry';
 import type { Box } from './geometry';
-import type { EnemySpawner } from './level-director';
 import type { ScriptEvent } from './level-script';
 import type { WorldView } from './movements';
 import { Pickup, PickupMotion } from './pickup';
@@ -28,7 +27,7 @@ import type { PlayerShotSpawner, ShotSpec } from './weapon';
  * each over its own pool (class diagram notes, active lists). It is the spawner of every list and
  * the strategies' view of the world.
  */
-export class World implements PlayerShotSpawner, EnemyShotSpawner, EnemySpawner, WorldView {
+export class World implements PlayerShotSpawner, EnemyShotSpawner, WorldView {
   readonly player = new Player();
   readonly playerBullets = new ActiveList(PLAYER_BULLET_POOL_SIZE, () => new Bullet());
   readonly enemyBullets = new ActiveList(ENEMY_BULLET_POOL_SIZE, () => new Bullet());

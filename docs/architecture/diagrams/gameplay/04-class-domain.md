@@ -288,7 +288,7 @@ classDiagram
   WorldView <|.. World
   PlayerShotSpawner <|.. World
   EnemyShotSpawner <|.. World
-  EnemySpawner <|.. World
+  EnemySpawner <|.. Run
   LevelDirector ..> EnemySpawner : spawns through (parameter)
   World *-- "1" Player
   World *-- "1" Boss : preallocated, outside the enemy pool
