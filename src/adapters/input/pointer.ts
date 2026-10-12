@@ -67,6 +67,11 @@ export class PointerModule {
   private mouseButtons = 0;
   /** The left button went down on the field and is still held: the mouse fires (ADR-0020). */
   private mouseFiring = false;
+  /**
+   * After a lost focus or a rotation the button state is unknown: the next mouse event only
+   * records it, so a button still held is never read as a new press.
+   */
+  private mouseResync = false;
   private mousePressed = 0;
   private mouseStart = 0;
   private mouseInput = 0;
@@ -94,6 +99,7 @@ export class PointerModule {
     this.mouseSeen = false;
     this.mouseButtons = 0;
     this.mouseFiring = false;
+    this.mouseResync = true;
   }
 
   down(event: PointerEventLike, seq: number): void {
@@ -208,7 +214,8 @@ export class PointerModule {
     this.mouseSeen = true;
     this.mouseX = this.x;
     this.mouseY = this.y;
-    const pressedNow = event.buttons & ~this.mouseButtons;
+    const pressedNow = this.mouseResync ? 0 : event.buttons & ~this.mouseButtons;
+    this.mouseResync = false;
     this.mouseButtons = event.buttons;
     // Releasing the left button anywhere stops the fire; only a press on the field starts it.
     if ((event.buttons & LEFT_BUTTON) === 0) this.mouseFiring = false;
@@ -217,9 +224,8 @@ export class PointerModule {
       this.mouseStart = seq;
       this.mouseInput = seq;
     }
-    // A left press counts on a down only: after a lost focus clears the buttons, a button still
-    // held arriving with a move is no new press (no tap, no fire) until it is pressed again.
-    if (!isMove && (pressedNow & LEFT_BUTTON) !== 0 && inside) {
+    // A press arrives as a down, or as a move while another button is held (ADR-0018 decision 8).
+    if ((pressedNow & LEFT_BUTTON) !== 0 && inside) {
       this.tap(field ? 'field' : 'hud', event.pointerId);
       this.mouseInput = seq;
       if (field) {

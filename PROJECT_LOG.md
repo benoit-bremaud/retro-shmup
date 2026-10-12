@@ -31,6 +31,9 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   keyboard owning the movement, the fresh press after a lost focus and a cancelled mouse pointer;
   an explicit 60 % opacity test (Codex review on #31); the arbitration JSDoc; the Laser drawn
   through `drawBox`.
+- Codex review on #32 (owner choice A): the down-only rule lost a left press reported as a move
+  while the right button is held. Now a lost focus or a rotation sets a resync flag: the next
+  mouse event only records the buttons, and every later press counts, by a down or a move.
 
 ### Design revision after the brick-E playtest (branch `docs/brainstorm-design`) — GDD v0.9, ADR-0020, ADR-0021
 
