@@ -14,3 +14,16 @@ export interface Box {
   readonly width: number;
   readonly height: number;
 }
+
+/**
+ * Whether a box centred on (x, y) overlaps the play field; touching an edge is outside. One rule
+ * for the release of departed bodies and the script's load checks.
+ */
+export function overlapsField(x: number, y: number, width: number, height: number): boolean {
+  return (
+    x + width / 2 > 0 &&
+    x - width / 2 < FIELD_WIDTH &&
+    y + height / 2 > 0 &&
+    y - height / 2 < FIELD_HEIGHT
+  );
+}

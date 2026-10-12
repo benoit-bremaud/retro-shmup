@@ -150,6 +150,11 @@ export class RunPresenter {
       case PickupKind.OneUp:
         drawShipIcon(r, left, top, 16, Palette.oneUpPickup);
         return;
+      default: {
+        // A new pickup kind fails to compile here until it is drawn.
+        const unknown: never = kind;
+        return unknown;
+      }
     }
   }
 

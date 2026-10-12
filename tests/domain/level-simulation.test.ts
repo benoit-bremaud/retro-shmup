@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { GameEventKind } from '../../src/domain/game/events';
 import type { GameEvent } from '../../src/domain/game/events';
+import { PickupKind } from '../../src/domain/game/pickup';
 import { Run, RunOutcome } from '../../src/domain/game/run';
 import {
   ENEMY_BULLET_POOL_SIZE,
@@ -68,6 +69,11 @@ describe('Level simulation — the enemies brick, headless', () => {
     expect(first).toBe(replay(3 * ONE_PASS));
     expect(first).toContain(`"${String(GameEventKind.EnemyDestroyed)}:`);
     expect(first).toContain(`"${String(GameEventKind.PickupSpawned)}:`);
+    // The Carriers' cargo is in the log, so the pickup-peak test below covers it.
+    expect(first).toContain(
+      `"${String(GameEventKind.PickupSpawned)}:${String(PickupKind.Shield)}:`,
+    );
+    expect(first).toContain(`"${String(GameEventKind.PickupSpawned)}:${String(PickupKind.Bomb)}:`);
   });
 
   it('lets the seed change the drops (ADR-0019)', () => {

@@ -30,6 +30,12 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   the GDD v0.8 positions in both screens.
 - Visual check: a headless run holding fire showed the Carrier entering at 29 s, then the shield
   icon in the right band at 36 s, with the ship-shaped life and the two bomb plus icons.
+- Local pre-push review: no Must. Fixed: the load check also rejects a Carrier whose height
+  never crosses the field (it would never enter, so never be released — noted in the class
+  diagram); one `overlapsField` predicate in `geometry.ts` for the release and the load checks;
+  tests for both crossing directions escaping with no drop, a recycled enemy forgetting its cargo,
+  the 1 px rejection edges, and the cargo in the full simulation log; an exhaustiveness guard on
+  the pickup drawing; the level-1 rows in time order; `Enemy.cargo` public in the diagram.
 
 ### Weapons L1 to L5 E-2 (branch `feat/weapons`) — Refs #25
 

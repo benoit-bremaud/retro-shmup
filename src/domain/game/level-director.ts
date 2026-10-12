@@ -1,5 +1,5 @@
 import type { Formation } from './formation';
-import { FIELD_HEIGHT, FIELD_WIDTH } from './geometry';
+import { FIELD_WIDTH, overlapsField } from './geometry';
 import type { LevelScript, ScriptEvent } from './level-script';
 import { toSteps } from './tuning';
 
@@ -63,7 +63,8 @@ function checkEvent(event: Readonly<ScriptEvent>, loopSteps: number): void {
 
 /**
  * A Carrier row needs a cargo, no other row may carry one, and a Carrier spawns fully outside the
- * field so its whole crossing is seen (GDD v0.8 §5.2.1).
+ * field, at a height where its crossing passes through it, so the whole crossing is seen (GDD
+ * v0.8 §5.2.1).
  */
 function checkCargo(event: Readonly<ScriptEvent>, label: string): void {
   const carrier = event.archetype.carriesCargo;
@@ -73,21 +74,17 @@ function checkCargo(event: Readonly<ScriptEvent>, label: string): void {
   if (!carrier && event.cargo !== undefined) {
     throw new RangeError(`Level script: ${label} cannot carry a cargo`);
   }
-  if (carrier && overlapsField(event)) {
+  if (!carrier) return;
+  const { width, height } = event.archetype.stats;
+  const { x, y } = event.spawn;
+  if (overlapsField(x, y, width, height)) {
     throw new RangeError(`Level script: ${label} must spawn outside the field`);
   }
-}
-
-function overlapsField(event: Readonly<ScriptEvent>): boolean {
-  const halfWidth = event.archetype.stats.width / 2;
-  const halfHeight = event.archetype.stats.height / 2;
-  const { x, y } = event.spawn;
-  return (
-    x + halfWidth > 0 &&
-    x - halfWidth < FIELD_WIDTH &&
-    y + halfHeight > 0 &&
-    y - halfHeight < FIELD_HEIGHT
-  );
+  // Its crossing is horizontal at a constant y: a row off the field's height never enters it, and
+  // an enemy that never entered is never released.
+  if (!overlapsField(FIELD_WIDTH / 2, y, width, height)) {
+    throw new RangeError(`Level script: ${label} must cross the field`);
+  }
 }
 
 /**

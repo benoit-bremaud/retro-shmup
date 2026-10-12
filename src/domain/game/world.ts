@@ -3,7 +3,7 @@ import type { EnemyShotSpawner } from './attacks';
 import { Bullet } from './bullet';
 import { Enemy } from './enemy';
 import { Formation } from './formation';
-import { FIELD_HEIGHT, FIELD_WIDTH } from './geometry';
+import { FIELD_HEIGHT, overlapsField } from './geometry';
 import type { Box } from './geometry';
 import type { EnemySpawner } from './level-director';
 import type { ScriptEvent } from './level-script';
@@ -128,7 +128,7 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, EnemySpawner,
       enemy.previousPosition.y = enemy.position.y;
       enemy.age += 1;
       enemy.archetype.movement.tick(enemy, this, dt);
-      if (!enemy.entered && overlapsField(enemy)) enemy.entered = true;
+      if (!enemy.entered && boxOverlapsField(enemy)) enemy.entered = true;
       enemy.archetype.attack.tick(enemy, this, this, dt);
     }
   }
@@ -189,19 +189,12 @@ function moveAll(bullets: ActiveList<Bullet>, dt: number): void {
   }
 }
 
-function isOutsideField(box: Box): boolean {
-  const halfWidth = box.width / 2;
-  const halfHeight = box.height / 2;
-  return (
-    box.position.y + halfHeight <= 0 ||
-    box.position.y - halfHeight >= FIELD_HEIGHT ||
-    box.position.x + halfWidth <= 0 ||
-    box.position.x - halfWidth >= FIELD_WIDTH
-  );
+function boxOverlapsField(box: Box): boolean {
+  return overlapsField(box.position.x, box.position.y, box.width, box.height);
 }
 
-function overlapsField(box: Box): boolean {
-  return !isOutsideField(box);
+function isOutsideField(box: Box): boolean {
+  return !boxOverlapsField(box);
 }
 
 function isBulletDone(bullet: Bullet): boolean {

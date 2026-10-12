@@ -10,6 +10,7 @@ import type { WorldView } from '../../src/domain/game/movements';
 import { Pickup, PickupKind } from '../../src/domain/game/pickup';
 import { Player } from '../../src/domain/game/player';
 import { Run } from '../../src/domain/game/run';
+import { createIntentFrame } from '../../src/domain/ports/input-port';
 import type { Random } from '../../src/domain/ports/random';
 import { HUD_LAYOUTS } from '../../src/domain/presentation/hud-layout';
 import { drawHollowSquare, drawPlusIcon, drawShipIcon } from '../../src/domain/presentation/icons';
@@ -68,6 +69,10 @@ describe('Level script — cargo checks at load (GDD v0.8 §5.2.1)', () => {
     ['a cargo on a Gunner', row({ archetype: GUNNER, hover: { x: 60, y: 80 } })],
     ['a cargo on a Popcorn', row({ archetype: POPCORN })],
     ['a Carrier spawning on the field', row({ spawn: { x: 0, y: 64 } })],
+    ['a Carrier touching the left edge by 1 px', row({ spawn: { x: -15, y: 64 } })],
+    ['a Carrier touching the right edge by 1 px', row({ spawn: { x: 255, y: 64 } })],
+    ['a Carrier above the field, which would never cross it', row({ spawn: { x: -16, y: -16 } })],
+    ['a Carrier below the field', row({ spawn: { x: -16, y: 336 } })],
   ])('rejects %s (RangeError)', (_label, event) => {
     expect(() => new LevelDirector({ dominantColour: PickupKind.PRed, events: [event] })).toThrow(
       RangeError,
@@ -187,5 +192,36 @@ describe('Icons — the player-kit shapes (GDD v0.8 §9.2)', () => {
     expect(HUD_LAYOUTS.landscape.shield).toEqual({ x: 368, y: 100 });
     expect(HUD_LAYOUTS.portrait.bombs).toEqual({ x: 76, y: 19, spacing: 12 });
     expect(HUD_LAYOUTS.portrait.shield).toEqual({ x: 172, y: 5 });
+  });
+});
+
+describe('Carrier — crossing and escaping in a run (GDD v0.8 §5.2)', () => {
+  it.each([
+    ['left to right', { x: -16, y: 64 }],
+    ['right to left', { x: 256, y: 64 }],
+  ])('crosses %s and leaves, dropping nothing when it escapes', (_label, spawn) => {
+    const run = new Run({
+      script: {
+        dominantColour: PickupKind.PRed,
+        events: [{ at: 0, archetype: CARRIER, count: 1, spawn, cargo: PickupKind.Shield }],
+      },
+    });
+    const log: number[] = [];
+    run.events().subscribe(GameEventKind.PickupSpawned, (e) => log.push(e.kind));
+    run.events().subscribe(GameEventKind.EnemyDestroyed, (e) => log.push(e.kind));
+    const idle = createIntentFrame();
+    run.step(1 / 60, idle);
+    expect(run.snapshot().enemies.count).toBe(1);
+    // 240 + 32 px at 60 px/s: about 4.5 s; nothing is fired.
+    for (let i = 0; i < 300; i += 1) run.step(1 / 60, idle);
+    expect(run.snapshot().enemies.count).toBe(0);
+    expect(log).toEqual([]);
+  });
+
+  it('forgets its cargo when its pool slot spawns another role', () => {
+    const enemy = carrierFrom(-16, 64);
+    expect(enemy.cargo).toBe(PickupKind.Shield);
+    enemy.spawn(GUNNER, { spawn: { x: -16, y: 80 }, hover: { x: 60, y: 80 } }, 4, undefined);
+    expect(enemy.cargo).toBeUndefined();
   });
 });
