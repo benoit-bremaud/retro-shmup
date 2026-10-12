@@ -748,6 +748,7 @@ describe('SceneMachine — the boss HUD (meta/05-state-scenes, F-2b)', () => {
       outcome: (): RunOutcome => RunOutcome.GameOver,
       snapshot: () => real.snapshot(),
       events: () => real.events(),
+      tally: () => real.tally(),
     };
     const render = new RecordingRender();
     const machine = new SceneMachine(
