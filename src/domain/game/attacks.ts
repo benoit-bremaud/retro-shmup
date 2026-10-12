@@ -43,6 +43,7 @@ export function aimedAttack(config: Readonly<AimedAttackConfig>): AttackPattern 
   return Object.freeze({
     tick(self: Body, world: WorldView, spawn: EnemyShotSpawner): void {
       if (!volleyDue(self, period)) return;
+      self.volleys[0] += 1;
       aimVelocity(aim, self.position, world.playerPosition(), speed);
       spawn.spawnEnemyBullet(self.position.x, self.position.y, aim.x, aim.y);
     },
@@ -139,7 +140,7 @@ export function fanAttack(config: Readonly<FanAttackConfig>): AttackPattern {
   return Object.freeze({
     tick(self: Body, world: WorldView, spawn: EnemyShotSpawner): void {
       if (!volleyDue(self, period)) return;
-      // Counted like every pattern's volleys (ADR-0022), though a fan never turns.
+      // Every pattern counts its volleys (ADR-0022), though a fan never turns.
       self.volleys[0] += 1;
       aimVelocity(aim, self.position, world.playerPosition(), 1);
       for (let i = 0; i < count; i += 1) {

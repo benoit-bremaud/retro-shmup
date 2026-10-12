@@ -8,7 +8,21 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-12
 
-### The Heavy and the 120 s level-1 script — F-1 (branch `feat/heavy`) — Refs #33
+### PR #35 merged (`69f6c84`) — audit pass and light engine refactor
+
+- A whole-repo audit (design, tests, documentation, project rules) found no Must; lint, typecheck
+  and 541 tests were green. Applied the cheap design Should items: `World` no longer implements
+  `EnemySpawner` (only `Run` is injected), `SceneMachine` takes a required `createRun`,
+  `Run.publishAt` takes a `subject` (no more duplicated event filling), `Starfield` sums with an
+  index loop. The class diagram now shows `Run` as the `EnemySpawner`.
+- Decision: the audit also proposed removing the single-implementation `Pool<T>`; it is a
+  contract of ADR-0002, so it was kept and its retirement needs a small ADR of its own (not in
+  ADR-0022). `review-local` caught this and the stale UML before the push.
+- Follow-ups: extract `RunRules` from `Run` before F-2 (boss); docs and tests pass (EN/FR key
+  parity test, weak `toBeDefined()` assertions, TSDoc on `arbitration.ts` and the enemy
+  archetypes, README ADR-0022 entry, traceability scope 0016/0017).
+
+### The Heavy and the 120 s level-1 script — F-1 (branch `feat/level-heavy`) — Refs #33
 
 - Commit 1, refactor with no behaviour change: `enterHoldLeave({ travelS, holdS, leaveSpeed })`
   and `aimedAttack({ periodS, speed })` build frozen strategies once at module load (ADR-0022);

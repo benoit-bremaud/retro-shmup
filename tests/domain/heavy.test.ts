@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { fanAttack, ringAttack } from '../../src/domain/game/attacks';
 import type { EnemyShotSpawner } from '../../src/domain/game/attacks';
-import { Enemy, HEAVY_FAN, HEAVY_RING, SizeTier } from '../../src/domain/game/enemy';
+import { Enemy, GUNNER, HEAVY_FAN, HEAVY_RING, SizeTier } from '../../src/domain/game/enemy';
 import type { EnemyArchetype, SpawnSpec } from '../../src/domain/game/enemy';
 import type { Vec2 } from '../../src/domain/game/geometry';
 import { enterHoldLeave } from '../../src/domain/game/movements';
@@ -206,5 +206,15 @@ describe('fanAttack — 5 bullets 15° apart, centred on the aim, at 75 px/s', (
     const sink = new RecordingShots();
     for (let i = 0; i < 600; i += 1) fan.tick(body, shipAt(0, 0), sink, DT);
     expect(sink.shots).toEqual([]);
+  });
+});
+
+describe('volley counting (ADR-0022)', () => {
+  it('counts the volleys of an aimed attack, so a sequence can pick its pattern from them', () => {
+    const gunner = spawned(GUNNER);
+    const sink = new RecordingShots();
+    run(gunner, shipAt(10, 300), 900, sink);
+    expect(sink.shots.length).toBeGreaterThan(0);
+    expect(gunner.volleys[0]).toBe(sink.shots.length);
   });
 });

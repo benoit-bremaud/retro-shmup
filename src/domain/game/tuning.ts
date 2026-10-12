@@ -109,7 +109,6 @@ export const HeavyTuning = {
   volleyPeriodSeconds: 2,
   ringCount: 12,
   ringSpeed: 60,
-  /** The ring turns by this per volley: with 12 bullets 30° apart, every other volley. */
   /** Turned per volley; with 30° spacing every other volley is offset by 15° (GDD §5.2.1). */
   ringRotateDegrees: 15,
   fanCount: 5,
