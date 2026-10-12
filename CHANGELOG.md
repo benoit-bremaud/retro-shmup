@@ -35,6 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   cancelled, every enemy on the field hit, 1 s of invulnerability; the shield absorbs one hit; a
   death costs a power level, released as a P, and resets the bombs to 2; bomb flash and field
   shake, off by default under reduced motion (#29).
+- The Heavy, a large enemy hovering 10 s that fires a turning ring of 12 bullets or a fan of 5
+  aimed at the ship, and drops a Bomb or a Shield at 60 %; level 1 becomes a 120 s script that
+  ramps up to a pair of Heavies at 102 s, with one 1-UP Carrier at 78 s (it still loops at 120 s
+  until the boss arrives).
 
 ### Changed
 

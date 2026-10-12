@@ -61,6 +61,9 @@ function enemyColour(enemy: Readonly<Enemy>): PaletteColour {
       return Palette.gunner;
     case 'carrier':
       return Palette.carrier;
+    case 'heavy-ring':
+    case 'heavy-fan':
+      return Palette.heavy;
   }
 }
 

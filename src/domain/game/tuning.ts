@@ -101,6 +101,21 @@ export const GunnerTuning = {
   firePeriodSeconds: 1.5,
 } as const;
 
+/** Heavy (GDD v0.10 §5.2.1): the Gunner's movement with its own values, a ring or a fan. */
+export const HeavyTuning = {
+  travelSeconds: 2,
+  holdSeconds: 10,
+  leaveSpeed: 40,
+  volleyPeriodSeconds: 2,
+  ringCount: 12,
+  ringSpeed: 60,
+  /** Turned per volley; with 30° spacing every other volley is offset by 15° (GDD §5.2.1). */
+  ringRotateDegrees: 15,
+  fanCount: 5,
+  fanSpreadDegrees: 15,
+  fanSpeed: 75,
+} as const;
+
 /** Carrier (GDD v0.8 §5.2.1): a straight horizontal crossing that never stops. */
 export const CarrierTuning = {
   speed: 60,

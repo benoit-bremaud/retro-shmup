@@ -36,6 +36,78 @@ function play(script: LevelScript, ticks: number): Recorder {
   return recorder;
 }
 
+/** The rows of GDD v0.10 §7.2.1 (Bomb Carrier removed) and §7.2.2, as the GDD writes them. */
+const GDD_ROWS: readonly (readonly [number, string, number, number, number, string])[] = [
+  [0, 'popcorn', 6, 80, -8, 'S'],
+  [8, 'popcorn', 6, 160, -8, 'S mirrored'],
+  [8, 'diver', 1, 80, -8, ''],
+  [8, 'diver', 1, 160, -8, ''],
+  [18, 'gunner', 1, -16, 80, '60,80'],
+  [18, 'gunner', 1, 256, 80, '180,80'],
+  [28, 'carrier', 1, -16, 64, 'cargo 2'],
+  [32, 'popcorn', 8, 120, -8, 'S'],
+  [32, 'gunner', 1, 120, -16, '120,80'],
+  [40, 'diver', 1, 80, -8, ''],
+  [40, 'diver', 1, 160, -8, ''],
+  [45, 'heavy-ring', 1, 120, -24, '120,72'],
+  [50, 'popcorn', 6, 60, -8, 'S'],
+  [52, 'popcorn', 6, 180, -8, 'S mirrored'],
+  [58, 'diver', 1, 60, -8, ''],
+  [58, 'diver', 1, 180, -8, ''],
+  [59, 'diver', 1, 100, -8, ''],
+  [59, 'diver', 1, 140, -8, ''],
+  [64, 'gunner', 1, 60, -16, '60,64'],
+  [64, 'gunner', 1, 180, -16, '180,64'],
+  [70, 'popcorn', 8, 120, -8, 'S'],
+  [70, 'diver', 1, 40, -8, ''],
+  [70, 'diver', 1, 200, -8, ''],
+  [78, 'carrier', 1, -16, 48, 'cargo 4'],
+  [82, 'gunner', 1, -16, 72, '48,72'],
+  [82, 'gunner', 1, 256, 72, '192,72'],
+  [82, 'gunner', 1, 120, -16, '120,56'],
+  [90, 'heavy-fan', 1, 120, -24, '120,72'],
+  [92, 'popcorn', 6, 60, -8, 'S'],
+  [102, 'heavy-ring', 1, 60, -24, '60,80'],
+  [102, 'heavy-fan', 1, 180, -24, '180,80'],
+  [110, 'popcorn', 8, 120, -8, 'S'],
+];
+
+describe('LEVEL_1 — the 120 s script of GDD v0.10 §7.2.1 and §7.2.2', () => {
+  it('holds exactly the GDD rows, in order', () => {
+    const rows = LEVEL_1.events.map((e) => {
+      let path = '';
+      if (e.archetype.formation) path = e.mirror === true ? 'S mirrored' : 'S';
+      else if (e.cargo !== undefined) path = `cargo ${String(e.cargo)}`;
+      else if (e.hover !== undefined) path = `${String(e.hover.x)},${String(e.hover.y)}`;
+      return [e.at, e.archetype.id, e.count, e.spawn.x, e.spawn.y, path];
+    });
+    expect(rows).toEqual(GDD_ROWS);
+  });
+
+  it('spaces every group member 1/3 s apart', () => {
+    const groups = LEVEL_1.events.filter((e) => e.count > 1);
+    expect(groups.every((e) => e.interval === 1 / 3)).toBe(true);
+  });
+
+  it('carries one 1-UP Carrier and no Bomb Carrier; its Heavies are the Bomb source', () => {
+    const cargo = LEVEL_1.events.filter((e) => e.cargo !== undefined).map((e) => e.cargo);
+    expect(cargo).toEqual([PickupKind.Shield, PickupKind.OneUp]);
+  });
+
+  it('puts every Heavy straight above its hover point, fully above the field', () => {
+    const heavies = LEVEL_1.events.filter((e) => e.archetype.id.startsWith('heavy'));
+    expect(heavies).toHaveLength(4);
+    for (const heavy of heavies) {
+      expect(heavy.spawn.x).toBe(heavy.hover?.x);
+      expect(heavy.spawn.y + heavy.archetype.stats.height / 2).toBeLessThanOrEqual(0);
+    }
+  });
+
+  it('wraps at 120 s, interim until the WARNING (F-2)', () => {
+    expect(LEVEL_1.loopAt).toBe(120);
+  });
+});
+
 describe('LevelDirector — script walking (GDD v0.6 §7.2.1, class diagram)', () => {
   it('spawns the 0 s row on the first step, one Popcorn every 1/3 s (20 steps)', () => {
     const ticks = play(LEVEL_1, 120)
@@ -53,17 +125,24 @@ describe('LevelDirector — script walking (GDD v0.6 §7.2.1, class diagram)', (
     ]);
   });
 
-  it('wraps its time at 45 s: the first Popcorn spawns again on step 2701', () => {
-    const recorder = play(LEVEL_1, 2701);
+  it('wraps its time at 120 s (interim until the boss): the first Popcorn again on step 7201', () => {
+    const recorder = play(LEVEL_1, 7201);
     const firsts = recorder.spawns.filter((s) => s.id === 'popcorn' && s.x === 80);
-    expect(firsts.map((s) => s.tick).slice(-1)).toEqual([2701]);
-    expect(recorder.spawns.filter((s) => s.tick > 2700)).toHaveLength(1);
+    expect(firsts.map((s) => s.tick).slice(-1)).toEqual([7201]);
+    expect(recorder.spawns.filter((s) => s.tick > 7200)).toHaveLength(1);
   });
 
-  it('holds the rows of GDD §7.2.1: 6 + 6 + 8 Popcorn, 2 Divers, 3 Gunners per pass', () => {
-    const recorder = play(LEVEL_1, 2700);
+  it('spawns its last member, the 110 s formation eighth member, at 112.3 s, then nothing', () => {
+    const spawns = play(LEVEL_1, 7200).spawns;
+    expect(spawns.map((s) => s.tick).slice(-1)).toEqual([6741]);
+  });
+
+  it('holds the rows of GDD v0.10 §7.2.1 and §7.2.2 per pass', () => {
+    const recorder = play(LEVEL_1, 7200);
     const count = (id: string): number => recorder.spawns.filter((s) => s.id === id).length;
-    expect([count('popcorn'), count('diver'), count('gunner')]).toEqual([20, 2, 3]);
+    expect(['popcorn', 'diver', 'gunner', 'carrier', 'heavy-ring', 'heavy-fan'].map(count)).toEqual(
+      [54, 10, 8, 2, 2, 2],
+    );
   });
 
   it.each([

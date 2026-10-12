@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CollisionResolver } from '../../src/domain/game/collision';
 import type { HitRules } from '../../src/domain/game/collision';
-import { Enemy, GUNNER, POPCORN } from '../../src/domain/game/enemy';
+import { Enemy, GUNNER, HEAVY_RING, POPCORN, SizeTier } from '../../src/domain/game/enemy';
 import { GameEventKind } from '../../src/domain/game/events';
 import type { GameEvent } from '../../src/domain/game/events';
 import { Formation } from '../../src/domain/game/formation';
@@ -286,6 +286,31 @@ describe('Run — drops, formation P and collection (GDD v0.8 §4.6, §5.2; ADR-
     expect(run.snapshot().pickups.at(0).kind).toBe(kind);
   });
 
+  it.each([
+    [0.1, PickupKind.Bomb],
+    [0.4, PickupKind.Shield],
+  ])('drops a Heavy %d below 60 % as a Bomb or a Shield picked by the same draw', (r, kind) => {
+    const run = new Run({ createRandom: () => scripted([r]) });
+    const log = logOf(run, [SPAWNED]);
+    run.destroyEnemy(enemyAt(HEAVY_RING, 60, 80));
+    expect(log).toEqual([`${String(SPAWNED)}:${String(kind)}:0@60,80`]);
+  });
+
+  it('drops nothing from a Heavy on a draw of 60 % or more', () => {
+    const run = new Run({ createRandom: () => scripted([0.6]) });
+    run.destroyEnemy(enemyAt(HEAVY_RING, 60, 80));
+    expect(run.snapshot().pickups.count).toBe(0);
+  });
+
+  it('scores a destroyed Heavy 1 000 points and announces its Large tier', () => {
+    const run = new Run({ createRandom: () => scripted([]) });
+    const log = logOf(run, [GameEventKind.EnemyDestroyed]);
+    run.destroyEnemy(enemyAt(HEAVY_RING, 60, 80));
+    expect(log).toEqual([
+      `${String(GameEventKind.EnemyDestroyed)}:${String(SizeTier.Large)}:1000@60,80`,
+    ]);
+  });
+
   it('drops nothing on a draw of 30 % or more, and draws nothing for a Popcorn', () => {
     const draws: number[] = [];
     const random: Random = {
@@ -410,7 +435,7 @@ describe('Formations — refused members never count against the player (GDD v0.
     const world = new World();
     const director = new LevelDirector(LEVEL_1);
     let most = 0;
-    for (let i = 0; i < 3 * 2700; i += 1) {
+    for (let i = 0; i < 3 * 7200; i += 1) {
       director.tick(world);
       world.moveEnemies(DT);
       world.moveBullets(DT);

@@ -1,4 +1,4 @@
-import { CARRIER, DIVER, GUNNER, POPCORN } from './enemy';
+import { CARRIER, DIVER, GUNNER, HEAVY_FAN, HEAVY_RING, POPCORN } from './enemy';
 import type { EnemyArchetype, SpawnSpec } from './enemy';
 import { PickupKind } from './pickup';
 
@@ -30,13 +30,15 @@ export interface LevelScript {
 const POPCORN_INTERVAL = 1 / 3;
 
 /**
- * The first enemy rows of level 1 (GDD v0.8 §7.2.1), looping at 45 s, the Heavy's slot. Interim
- * (meta/05-state-scenes): the Bomb Carrier at 40 s until the level brick brings the Heavy.
+ * Level 1 (GDD v0.10 §7.2.1, §7.2.2): the opening, then the ramp to the 102 s Heavy pair, the
+ * last spawn at 112.3 s and the field draining until 120 s. Interim (meta/05-state-scenes, F-1):
+ * the script time still wraps at 120 s, the WARNING's slot, until the boss arrives (F-2).
  */
 export const LEVEL_1: LevelScript = {
-  loopAt: 45,
+  loopAt: 120,
   dominantColour: PickupKind.PRed,
   events: [
+    // The opening (§7.2.1).
     { at: 0, archetype: POPCORN, count: 6, interval: POPCORN_INTERVAL, spawn: { x: 80, y: -8 } },
     {
       at: 8,
@@ -53,6 +55,48 @@ export const LEVEL_1: LevelScript = {
     { at: 28, archetype: CARRIER, count: 1, spawn: { x: -16, y: 64 }, cargo: PickupKind.Shield },
     { at: 32, archetype: POPCORN, count: 8, interval: POPCORN_INTERVAL, spawn: { x: 120, y: -8 } },
     { at: 32, archetype: GUNNER, count: 1, spawn: { x: 120, y: -16 }, hover: { x: 120, y: 80 } },
-    { at: 40, archetype: CARRIER, count: 1, spawn: { x: 256, y: 64 }, cargo: PickupKind.Bomb },
+    // The ramp (§7.2.2).
+    { at: 40, archetype: DIVER, count: 1, spawn: { x: 80, y: -8 } },
+    { at: 40, archetype: DIVER, count: 1, spawn: { x: 160, y: -8 } },
+    {
+      at: 45,
+      archetype: HEAVY_RING,
+      count: 1,
+      spawn: { x: 120, y: -24 },
+      hover: { x: 120, y: 72 },
+    },
+    { at: 50, archetype: POPCORN, count: 6, interval: POPCORN_INTERVAL, spawn: { x: 60, y: -8 } },
+    {
+      at: 52,
+      archetype: POPCORN,
+      count: 6,
+      interval: POPCORN_INTERVAL,
+      spawn: { x: 180, y: -8 },
+      mirror: true,
+    },
+    { at: 58, archetype: DIVER, count: 1, spawn: { x: 60, y: -8 } },
+    { at: 58, archetype: DIVER, count: 1, spawn: { x: 180, y: -8 } },
+    { at: 59, archetype: DIVER, count: 1, spawn: { x: 100, y: -8 } },
+    { at: 59, archetype: DIVER, count: 1, spawn: { x: 140, y: -8 } },
+    { at: 64, archetype: GUNNER, count: 1, spawn: { x: 60, y: -16 }, hover: { x: 60, y: 64 } },
+    { at: 64, archetype: GUNNER, count: 1, spawn: { x: 180, y: -16 }, hover: { x: 180, y: 64 } },
+    { at: 70, archetype: POPCORN, count: 8, interval: POPCORN_INTERVAL, spawn: { x: 120, y: -8 } },
+    { at: 70, archetype: DIVER, count: 1, spawn: { x: 40, y: -8 } },
+    { at: 70, archetype: DIVER, count: 1, spawn: { x: 200, y: -8 } },
+    { at: 78, archetype: CARRIER, count: 1, spawn: { x: -16, y: 48 }, cargo: PickupKind.OneUp },
+    { at: 82, archetype: GUNNER, count: 1, spawn: { x: -16, y: 72 }, hover: { x: 48, y: 72 } },
+    { at: 82, archetype: GUNNER, count: 1, spawn: { x: 256, y: 72 }, hover: { x: 192, y: 72 } },
+    { at: 82, archetype: GUNNER, count: 1, spawn: { x: 120, y: -16 }, hover: { x: 120, y: 56 } },
+    { at: 90, archetype: HEAVY_FAN, count: 1, spawn: { x: 120, y: -24 }, hover: { x: 120, y: 72 } },
+    { at: 92, archetype: POPCORN, count: 6, interval: POPCORN_INTERVAL, spawn: { x: 60, y: -8 } },
+    { at: 102, archetype: HEAVY_RING, count: 1, spawn: { x: 60, y: -24 }, hover: { x: 60, y: 80 } },
+    {
+      at: 102,
+      archetype: HEAVY_FAN,
+      count: 1,
+      spawn: { x: 180, y: -24 },
+      hover: { x: 180, y: 80 },
+    },
+    { at: 110, archetype: POPCORN, count: 8, interval: POPCORN_INTERVAL, spawn: { x: 120, y: -8 } },
   ],
 };

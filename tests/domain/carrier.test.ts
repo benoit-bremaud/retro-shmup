@@ -84,11 +84,11 @@ describe('Level script — cargo checks at load (GDD v0.8 §5.2.1)', () => {
     expect(() => new LevelDirector({ dominantColour: PickupKind.PRed, events })).not.toThrow();
   });
 
-  it('puts level 1 Carriers at 28 s with a Shield and, interim, at 40 s with a Bomb', () => {
+  it('puts level 1 Carriers at 28 s with a Shield and at 78 s, high, with the 1-UP', () => {
     const carriers = LEVEL_1.events.filter((e) => e.archetype === CARRIER);
     expect(carriers.map((e) => [e.at, e.spawn.x, e.spawn.y, e.cargo])).toEqual([
       [28, -16, 64, PickupKind.Shield],
-      [40, 256, 64, PickupKind.Bomb],
+      [78, -16, 48, PickupKind.OneUp],
     ]);
   });
 });

@@ -8,6 +8,43 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-12
 
+### PR #35 merged (`69f6c84`) — audit pass and light engine refactor
+
+- A whole-repo audit (design, tests, documentation, project rules) found no Must; lint, typecheck
+  and 541 tests were green. Applied the cheap design Should items: `World` no longer implements
+  `EnemySpawner` (only `Run` is injected), `SceneMachine` takes a required `createRun`,
+  `Run.publishAt` takes a `subject` (no more duplicated event filling), `Starfield` sums with an
+  index loop. The class diagram now shows `Run` as the `EnemySpawner`.
+- Decision: the audit also proposed removing the single-implementation `Pool<T>`; it is a
+  contract of ADR-0002, so it was kept and its retirement needs a small ADR of its own (not in
+  ADR-0022). `review-local` caught this and the stale UML before the push.
+- Follow-ups: extract `RunRules` from `Run` before F-2 (boss); docs and tests pass (EN/FR key
+  parity test, weak `toBeDefined()` assertions, TSDoc on `arbitration.ts` and the enemy
+  archetypes, README ADR-0022 entry, traceability scope 0016/0017).
+
+### The Heavy and the 120 s level-1 script — F-1 (branch `feat/level-heavy`) — Refs #33
+
+- Commit 1, refactor with no behaviour change: `enterHoldLeave({ travelS, holdS, leaveSpeed })`
+  and `aimedAttack({ periodS, speed })` build frozen strategies once at module load (ADR-0022);
+  the Gunner uses them with its unchanged tuning, every existing test green.
+- Commit 2: `Body.volleys` (a fixed pair, reset on spawn), `SizeTier.Large`, `ringAttack` and
+  `fanAttack` (unit vectors computed at load, a volley allocates nothing, firing only while
+  armed), `HEAVY_RING` and `HEAVY_FAN` (56 × 48, 40 shots, 1 000 points, 2 s in, 10 s hold, out
+  at 40 px/s, Bomb or Shield at 60 %), `HeavyTuning`; `LEVEL_1` rewritten to GDD v0.10 §7.2.1 +
+  §7.2.2 (Bomb Carrier gone, Divers at 40 s, 1-UP Carrier at 78 s, Heavy pair at 102 s, last
+  spawn at 112.3 s), interim wrap at 120 s until F-2; the Heavy's own palette colour and a Large
+  explosion size (56 px).
+- Level simulation over one 120 s pass, seeds 1–6: a player who never fires peaks at 13 enemies
+  and 30 enemy bullets (at 112 s, the 102 s pair); the firing scripted player at 5 enemies and
+  1 to 17 bullets. Within the GDD limits (≤ 16, ≤ 40); no design value changed.
+- Ambiguities flagged for the owner: the ring turns 15° per volley fired (ADR-0022 "rotateDeg ×
+  its count"), which with 30° spacing alternates the two orientations — the GDD's "every other
+  volley is the ring turned by 15°"; the Large explosion size (56 px) is not in the GDD.
+
+### PR #34 merged (`412ab9e`) — F-0 design
+
+- Three Codex findings fixed by owner choice A.
+
 ### Design of the level brick F (branch `docs/f-design`) — GDD v0.10, ADR-0022
 
 - F-0, design only: the conception study of brick F, each GDD rule chosen by the owner from

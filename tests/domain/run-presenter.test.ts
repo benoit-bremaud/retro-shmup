@@ -4,7 +4,15 @@ import { WeaponKind } from '../../src/domain/game/weapon';
 import { PlayerState } from '../../src/domain/game/player';
 import type { PlayerSnapshot, WorldSnapshot } from '../../src/domain/game/run';
 import { Bullet } from '../../src/domain/game/bullet';
-import { CARRIER, DIVER, Enemy, GUNNER, POPCORN } from '../../src/domain/game/enemy';
+import {
+  CARRIER,
+  DIVER,
+  Enemy,
+  GUNNER,
+  HEAVY_FAN,
+  HEAVY_RING,
+  POPCORN,
+} from '../../src/domain/game/enemy';
 import { Palette } from '../../src/domain/presentation/palette';
 import { RunPresenter } from '../../src/domain/presentation/run-presenter';
 import { EventBus } from '../../src/domain/game/events';
@@ -258,6 +266,17 @@ describe('RunPresenter — shot colours per weapon (meta/05-state-scenes, player
     expect(render.rectsOf(Palette.playerShot)).toHaveLength(1);
     expect(render.rectsOf(Palette.laserShot)).toEqual([
       { region: 'field', x: 138, y: 76, w: 4, h: 48, colour: Palette.laserShot },
+    ]);
+  });
+});
+
+describe('RunPresenter — the Heavy (level brick, F-1)', () => {
+  it.each([HEAVY_RING, HEAVY_FAN])('draws the $id in the Heavy colour, 56 × 48', (heavy) => {
+    const render = new RecordingRender();
+    const enemy = enemyAt(heavy, 120, 72);
+    presenter(render, false).draw(snapshot(ship(), [], { enemies: listOf([enemy]) }), 1, 16);
+    expect(render.rectsOf(Palette.heavy)).toEqual([
+      { region: 'field', x: 92, y: 48, w: 56, h: 48, colour: Palette.heavy },
     ]);
   });
 });

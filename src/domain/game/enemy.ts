@@ -1,16 +1,18 @@
 import type { AttackPattern } from './attacks';
-import { AimedAttack, NoAttack } from './attacks';
+import { aimedAttack, fanAttack, NoAttack, ringAttack } from './attacks';
 import type { Body } from './body';
 import type { Formation } from './formation';
 import type { Vec2 } from './geometry';
 import type { MovementPattern } from './movements';
-import { CrossMovement, DiveMovement, EnterHoldLeave, PathMovement } from './movements';
+import { CrossMovement, DiveMovement, enterHoldLeave, PathMovement } from './movements';
 import { PickupKind } from './pickup';
+import { EnemyBulletTuning, GunnerTuning, HeavyTuning } from './tuning';
 
 /** Size tier of a role (GDD §5.2): it scales the explosion. */
 export const SizeTier = {
   Small: 0,
   Medium: 1,
+  Large: 2,
 } as const;
 export type SizeTier = (typeof SizeTier)[keyof typeof SizeTier];
 
@@ -37,7 +39,7 @@ const NO_DROP: DropTable = { rate: 0, kinds: [] };
 
 /** A role as a data line (GDD §5.3, ADR-0003): stats plus one movement and one attack. */
 export interface EnemyArchetype {
-  readonly id: 'popcorn' | 'diver' | 'gunner' | 'carrier';
+  readonly id: 'popcorn' | 'diver' | 'gunner' | 'carrier' | 'heavy-ring' | 'heavy-fan';
   readonly stats: EnemyStats;
   readonly movement: MovementPattern;
   readonly attack: AttackPattern;
@@ -71,8 +73,12 @@ export const DIVER: EnemyArchetype = {
 export const GUNNER: EnemyArchetype = {
   id: 'gunner',
   stats: { hp: 80, width: 32, height: 32, score: 300, tier: SizeTier.Medium },
-  movement: EnterHoldLeave,
-  attack: AimedAttack,
+  movement: enterHoldLeave({
+    travelS: GunnerTuning.travelSeconds,
+    holdS: GunnerTuning.holdSeconds,
+    leaveSpeed: GunnerTuning.leaveSpeed,
+  }),
+  attack: aimedAttack({ periodS: GunnerTuning.firePeriodSeconds, speed: EnemyBulletTuning.speed }),
   formation: false,
   // GDD v0.8 §5.2: a P at 30 %, red or blue 50 / 50.
   drops: { rate: 0.3, kinds: [PickupKind.PRed, PickupKind.PBlue] },
@@ -88,6 +94,56 @@ export const CARRIER: EnemyArchetype = {
   // GDD v0.8 §5.2: no roll, its script cargo at 100 %.
   drops: NO_DROP,
   carriesCargo: true,
+};
+
+const HEAVY_STATS: EnemyStats = {
+  // 40 level-1 shots, in tenths (ADR-0019).
+  hp: 400,
+  width: 56,
+  height: 48,
+  score: 1000,
+  tier: SizeTier.Large,
+};
+
+const HEAVY_MOVEMENT = enterHoldLeave({
+  travelS: HeavyTuning.travelSeconds,
+  holdS: HeavyTuning.holdSeconds,
+  leaveSpeed: HeavyTuning.leaveSpeed,
+});
+
+// GDD v0.10 §5.2.1: a Bomb or a Shield at 60 %, 50 / 50, from its one drop draw.
+const HEAVY_DROPS: DropTable = { rate: 0.6, kinds: [PickupKind.Bomb, PickupKind.Shield] };
+
+/** The Heavy with the ring (GDD v0.10 §5.2.1): the script row picks ring or fan, never a draw. */
+export const HEAVY_RING: EnemyArchetype = {
+  id: 'heavy-ring',
+  stats: HEAVY_STATS,
+  movement: HEAVY_MOVEMENT,
+  attack: ringAttack({
+    count: HeavyTuning.ringCount,
+    periodS: HeavyTuning.volleyPeriodSeconds,
+    speed: HeavyTuning.ringSpeed,
+    rotateDeg: HeavyTuning.ringRotateDegrees,
+  }),
+  formation: false,
+  drops: HEAVY_DROPS,
+  carriesCargo: false,
+};
+
+/** The Heavy with the fan (GDD v0.10 §5.2.1). */
+export const HEAVY_FAN: EnemyArchetype = {
+  id: 'heavy-fan',
+  stats: HEAVY_STATS,
+  movement: HEAVY_MOVEMENT,
+  attack: fanAttack({
+    count: HeavyTuning.fanCount,
+    spreadDeg: HeavyTuning.fanSpreadDegrees,
+    periodS: HeavyTuning.volleyPeriodSeconds,
+    speed: HeavyTuning.fanSpeed,
+  }),
+  formation: false,
+  drops: HEAVY_DROPS,
+  carriesCargo: false,
 };
 
 /** What a spawn reads of a script row. */
@@ -113,6 +169,7 @@ export class Enemy implements Body {
   hp = 0;
   age = 0;
   fireTimer = 0;
+  readonly volleys: [number, number] = [0, 0];
   mirror = false;
   entered = false;
   armed = false;
@@ -152,6 +209,8 @@ export class Enemy implements Body {
     this.hp = archetype.stats.hp;
     this.age = 0;
     this.fireTimer = 0;
+    this.volleys[0] = 0;
+    this.volleys[1] = 0;
     this.entered = false;
     this.armed = false;
     this.spent = false;
