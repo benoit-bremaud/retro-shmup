@@ -1,4 +1,5 @@
 import { applyDamage } from './body';
+import { Boss } from './boss';
 import type { Bullet } from './bullet';
 import type { Enemy } from './enemy';
 import type { Box } from './geometry';
@@ -10,8 +11,7 @@ import type { World } from './world';
 
 /**
  * What the collision pass asks of the run (class diagram, `HitRules`): declared here and realized
- * by `Run`, so the resolver never imports the run and never sees the bus. `damageBoss` joins with
- * the level brick.
+ * by `Run`, so the resolver never imports the run and never sees the bus.
  */
 export interface HitRules {
   enemyHit(enemy: Enemy): void;
@@ -21,6 +21,8 @@ export interface HitRules {
   pickupCollected(pickup: Pickup): void;
   /** The shield charge absorbed a hit (GDD v0.8 §4.4). */
   shieldBroken(): void;
+  /** A shot or the bomb hit the boss, which is fighting: `Run` applies, publishes and phases. */
+  damageBoss(amount: number): void;
 }
 
 function overlaps(a: Box, b: Box): boolean {
@@ -54,13 +56,25 @@ function hitEnemy(bullet: Bullet, enemy: Enemy, rules: HitRules): void {
   if (destroyed) rules.destroyEnemy(enemy);
 }
 
+// One hit on the boss: the same bullet bookkeeping, then `Run` takes over (ADR-0022 decision 5).
+function hitBoss(bullet: Bullet, boss: Boss, rules: HitRules): void {
+  if (bullet.pierceLeft === 0) {
+    bullet.spent = true;
+  } else {
+    bullet.recordHit(boss.serial);
+    bullet.pierceLeft -= 1;
+  }
+  rules.damageBoss(bullet.damage);
+}
+
 /**
- * The next enemy the bullet meets along its path: of the live enemies it overlaps and has not
- * hit, the one nearest along its velocity (smallest position · velocity), so a bolt crossing a
- * stack hits the closest first, whatever the active list's order. `undefined` when none is left.
+ * The next body the bullet meets along its path: of the live enemies, and the boss while it is
+ * targetable, that it overlaps and has not hit, the one nearest along its velocity (smallest
+ * position · velocity), so a bolt crossing a stack hits the closest first, whatever the active
+ * list's order. `undefined` when none is left.
  */
-function nearestTarget(world: World, bullet: Bullet): Enemy | undefined {
-  let nearest: Enemy | undefined;
+function nearestTarget(world: World, bullet: Bullet): Enemy | Boss | undefined {
+  let nearest: Enemy | Boss | undefined;
   let nearestTravel = Number.POSITIVE_INFINITY;
   for (let j = 0; j < world.enemies.count; j += 1) {
     const enemy = world.enemies.at(j);
@@ -71,10 +85,15 @@ function nearestTarget(world: World, bullet: Bullet): Enemy | undefined {
       nearestTravel = travel;
     }
   }
+  const boss = world.boss;
+  if (boss.isTargetable() && overlaps(bullet, boss) && bullet.canHit(boss.serial)) {
+    const travel = boss.position.x * bullet.velocity.x + boss.position.y * bullet.velocity.y;
+    if (travel < nearestTravel) nearest = boss;
+  }
   return nearest;
 }
 
-// Pass 1: player bullets against enemies. A Spread bullet hits one enemy and is spent; a Laser bolt
+// Pass 1: player bullets against enemies and the fighting boss. A Spread bullet hits one enemy and is spent; a Laser bolt
 // passes through up to three, nearest first along its path, each body hit once, every one taking
 // the full damage (GDD v0.8 §4.3). Each hit spends the bullet, destroys the enemy or records it,
 // so the loop ends.
@@ -82,9 +101,10 @@ function shotsAgainstEnemies(world: World, rules: HitRules): void {
   for (let i = 0; i < world.playerBullets.count; i += 1) {
     const bullet = world.playerBullets.at(i);
     while (!bullet.spent) {
-      const enemy = nearestTarget(world, bullet);
-      if (enemy === undefined) break;
-      hitEnemy(bullet, enemy, rules);
+      const target = nearestTarget(world, bullet);
+      if (target === undefined) break;
+      if (target instanceof Boss) hitBoss(bullet, target, rules);
+      else hitEnemy(bullet, target, rules);
     }
   }
 }
@@ -108,12 +128,15 @@ function bulletsAgainstPlayer(world: World, rules: HitRules): void {
   }
 }
 
-// Pass 3: enemy bodies against the hitbox; contact hurts the player, never the enemy (GDD §5.2),
-// and a body the shield absorbed survives.
+// Pass 3: enemy bodies, and the boss while it enters or fights, against the hitbox; contact hurts
+// the player, never the enemy (GDD §5.2), and a body the shield absorbed survives.
 function bodiesAgainstPlayer(world: World, rules: HitRules): void {
   for (let i = 0; i < world.enemies.count; i += 1) {
     const enemy = world.enemies.at(i);
     if (enemy.spent || !overlapsHitbox(world.player, enemy)) continue;
+    report(world.player.hit(), rules);
+  }
+  if (world.boss.isHarmful() && overlapsHitbox(world.player, world.boss)) {
     report(world.player.hit(), rules);
   }
 }

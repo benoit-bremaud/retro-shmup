@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Pickup, PickupKind } from '../../src/domain/game/pickup';
 import { WeaponKind } from '../../src/domain/game/weapon';
 import { PlayerState } from '../../src/domain/game/player';
-import type { PlayerSnapshot, WorldSnapshot } from '../../src/domain/game/run';
+import type { BossSnapshot, PlayerSnapshot, WorldSnapshot } from '../../src/domain/game/run';
 import { Bullet } from '../../src/domain/game/bullet';
 import {
   CARRIER,
@@ -15,10 +15,12 @@ import {
 } from '../../src/domain/game/enemy';
 import { Palette } from '../../src/domain/presentation/palette';
 import { RunPresenter } from '../../src/domain/presentation/run-presenter';
-import { EventBus } from '../../src/domain/game/events';
+import { BossState } from '../../src/domain/game/boss';
+import { createGameEvent, EventBus, GameEventKind } from '../../src/domain/game/events';
 import type { ReadonlyActiveList } from '../../src/domain/game/active-list';
 import { RecordingRender } from '../support/recording-render';
 import type { RecordedRect } from '../support/recording-render';
+import { IDLE_BOSS } from '../support/boss-snapshot';
 
 function ship(overrides: Partial<PlayerSnapshot> = {}): PlayerSnapshot {
   return {
@@ -79,6 +81,7 @@ function snapshot(
     enemyBullets: listOf<Bullet>([]),
     enemies: listOf<Enemy>([]),
     pickups: listOf<Pickup>([]),
+    boss: IDLE_BOSS,
     weaponKind: WeaponKind.Spread,
     power: 1,
     bombs: 0,
@@ -311,5 +314,58 @@ describe('RunPresenter — shot opacity (GDD v0.9 §3.2)', () => {
     expect(Palette.playerShot).toMatch(/^#[0-9a-f]{6}99$/);
     expect(Palette.laserShot).toMatch(/^#[0-9a-f]{6}99$/);
     expect(Palette.enemyShot).toMatch(/^#[0-9a-f]{6}$/);
+  });
+});
+
+describe('RunPresenter — the boss as grey boxes (F-2a)', () => {
+  const FIGHTING = { ...IDLE_BOSS, state: BossState.Fighting, serial: 5 };
+
+  function drawn(boss: BossSnapshot, alpha = 1, bus = new EventBus()): RecordingRender {
+    const render = new RecordingRender();
+    presenter(render, false, bus).draw(snapshot(ship(), [], { boss }), alpha, 16);
+    return render;
+  }
+
+  it.each([BossState.Idle, BossState.Warning])('draws nothing of the boss in %s', (state) => {
+    expect(drawn({ ...FIGHTING, state }).drew(Palette.boss)).toBe(false);
+  });
+
+  it.each([BossState.Entering, BossState.Fighting, BossState.Destroyed, BossState.Fleeing])(
+    'draws the 112 × 48 body in %s, in the field region',
+    (state) => {
+      const body = drawn({ ...FIGHTING, state, position: { x: 100, y: 56 } }).rectsOf(Palette.boss);
+      expect(body).toEqual([
+        { region: 'field', x: 44, y: 32, w: 112, h: 48, colour: Palette.boss },
+      ]);
+    },
+  );
+
+  it('interpolates the body between its previous and current positions', () => {
+    const body = drawn(
+      {
+        ...FIGHTING,
+        previousPosition: { x: 100, y: 56 },
+        position: { x: 110, y: 58 },
+      },
+      0.5,
+    ).rectsOf(Palette.boss)[0];
+    expect([(body?.x ?? 0) + 56, (body?.y ?? 0) + 24]).toEqual([105, 57]);
+  });
+
+  it('draws the turret in phase 1 and no longer from phase 2', () => {
+    expect(drawn(FIGHTING).rectsOf(Palette.bossTurret)).toHaveLength(1);
+    expect(drawn({ ...FIGHTING, phase: 1 }).rectsOf(Palette.bossTurret)).toHaveLength(0);
+  });
+
+  it('flashes white when its serial is hit', () => {
+    const bus = new EventBus();
+    const render = new RecordingRender();
+    const view = presenter(render, false, bus);
+    const hit = createGameEvent(GameEventKind.EnemyHit);
+    hit.subject = 5;
+    bus.publish(hit);
+    view.draw(snapshot(ship(), [], { boss: FIGHTING }), 1, 16);
+    expect(render.drew(Palette.boss)).toBe(false);
+    expect(render.rectsOf(Palette.hitFlash)).toHaveLength(1);
   });
 });

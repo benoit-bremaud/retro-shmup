@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { BossState } from '../../src/domain/game/boss';
+import type { BossDefinition } from '../../src/domain/game/boss';
+import { CRUISER } from '../../src/domain/game/cruiser';
 import { GameEventKind } from '../../src/domain/game/events';
 import type { GameEvent } from '../../src/domain/game/events';
+import { LEVEL_1 } from '../../src/domain/game/level-script';
 import { PickupKind } from '../../src/domain/game/pickup';
 import { Run, RunOutcome } from '../../src/domain/game/run';
 import {
@@ -15,7 +19,7 @@ import type { IntentFrame } from '../../src/domain/ports/input-port';
 
 // Headless level simulation (ADR-0002, ADR-0003): the real run, scripted inputs, no browser.
 const DT = 1 / 60;
-const ONE_PASS = 7200; // level 1 lasts 120 s; interim (F-1), it wraps then until the boss
+const ONE_PASS = 7200; // the waves of level 1 last 120 s, then the WARNING starts the Cruiser
 const frame = createIntentFrame();
 
 /** A weaving player who fires most of the time: same index, same frame. */
@@ -45,6 +49,15 @@ function idle(): IntentFrame {
   return frame;
 }
 
+/** The boss and level events of the replay log (ADR-0022 decision 6). */
+const BOSS_KINDS = [
+  GameEventKind.BossWarning,
+  GameEventKind.BossPhaseChanged,
+  GameEventKind.BossDestroyed,
+  GameEventKind.BossFled,
+  GameEventKind.LevelCleared,
+] as const;
+
 /** Plays a run from `seed` and returns its event log and final state as JSON (ADR-0019). */
 function replay(steps: number, seed = 1): string {
   const run = new Run({ seed });
@@ -63,13 +76,23 @@ function replay(steps: number, seed = 1): string {
   events.subscribe(GameEventKind.PickupCollected, recordPickup);
   events.subscribe(GameEventKind.FormationCleared, record);
   events.subscribe(GameEventKind.BombUsed, record);
+  const recordBoss = (event: Readonly<GameEvent>): void => {
+    log.push(
+      `${String(event.kind)}:${String(event.subject)}:${String(event.value)}:${String(event.detail)}`,
+    );
+  };
+  for (const kind of BOSS_KINDS) events.subscribe(kind, recordBoss);
   for (let i = 0; i < steps; i += 1) run.step(DT, scripted(i));
   const snapshot = run.snapshot();
+  const boss = snapshot.boss;
   return JSON.stringify({
     log,
+    score: snapshot.score,
     lives: snapshot.lives,
     outcome: run.outcome(),
     ship: snapshot.player,
+    // The boss's body between its events: a drift of its motion, HP or phase must show here.
+    boss: [boss.state, boss.position.x, boss.position.y, boss.hpRatio, boss.phase, boss.stateSteps],
   });
 }
 
@@ -85,6 +108,18 @@ describe('Level simulation — level 1, headless', () => {
     // The Carriers' cargo is in the log, so the pickup-peak test below covers it.
     expect(has(`${String(GameEventKind.PickupSpawned)}:${String(PickupKind.Shield)}:`)).toBe(true);
     expect(has(`${String(GameEventKind.PickupSpawned)}:${String(PickupKind.Bomb)}:`)).toBe(true);
+  });
+
+  it('replays identically through the whole boss fight: warning, phase, destruction, level end', () => {
+    const { log } = JSON.parse(replay(ONE_PASS + 3000)) as { log: string[] };
+    const kinds = log.map((entry) => entry.split(':')[0]);
+    // The scripted ship destroys the boss: every boss event but its escape is in the log.
+    for (const kind of BOSS_KINDS) {
+      if (kind === GameEventKind.BossFled) continue;
+      expect(kinds, String(kind)).toContain(String(kind));
+    }
+    expect(kinds).not.toContain(String(GameEventKind.BossFled));
+    expect(replay(ONE_PASS + 3000)).toBe(replay(ONE_PASS + 3000));
   });
 
   it('lets the seed change the drops (ADR-0019)', () => {
@@ -186,17 +221,105 @@ describe('Level simulation — level 1, headless', () => {
     for (let i = 0; i < ONE_PASS; i += 1) run.step(DT, idle());
     expect(destroyed).toBe(0);
   });
+});
 
-  it('wraps the script at 120 s (interim): enemies keep spawning in the second pass', () => {
-    const run = new Run();
-    const serials = new Set<number>();
-    for (let i = 0; i < 2 * ONE_PASS; i += 1) {
-      run.step(DT, scripted(i));
-      if (i < ONE_PASS) continue;
-      const enemies = run.snapshot().enemies;
-      for (let e = 0; e < enemies.count; e += 1) serials.add(enemies.at(e).serial);
+describe('Level simulation — the Cruiser, headless (GDD v0.10 §6, §6.1)', () => {
+  it.each([
+    ['a firing player', scripted],
+    ['a player who never fires', pacifist],
+    ['an idle ship', idle],
+  ])('leaves the field empty of wave enemies when the WARNING starts, for %s', (_label, inputs) => {
+    // GDD §6: the ship cannot die during the end of the fight, so no wave enemy may still be alive.
+    for (let seed = 1; seed <= 4; seed += 1) {
+      const run = new Run({ seed });
+      let aliveAtWarning = -1;
+      for (let i = 0; i < ONE_PASS + 600 && aliveAtWarning < 0; i += 1) {
+        run.step(DT, inputs(i));
+        const snapshot = run.snapshot();
+        if (snapshot.boss.state === BossState.Warning) aliveAtWarning = snapshot.enemies.count;
+      }
+      expect(aliveAtWarning, `seed ${String(seed)}`).toBe(0);
     }
-    expect(serials.size).toBeGreaterThan(10);
+  });
+
+  it('reaches BOSS_WARNING at step 7200, once, and not a step before', () => {
+    const run = new Run({ seed: 1 });
+    const warnedAt: number[] = [];
+    let now = 0;
+    run.events().subscribe(GameEventKind.BossWarning, () => warnedAt.push(now));
+    for (let i = 0; i < 2 * ONE_PASS; i += 1) {
+      now = i;
+      run.step(DT, scripted(i));
+    }
+    expect(warnedAt).toEqual([7200]);
+  });
+
+  it('is cleared by the scripted ship: the boss destroyed, its bonus paid, RUN_CLEARED', () => {
+    const run = new Run({ seed: 1 });
+    let bonusSeconds = -1;
+    let cleared = 0;
+    run.events().subscribe(GameEventKind.BossDestroyed, (e) => {
+      bonusSeconds = e.value;
+    });
+    run.events().subscribe(GameEventKind.LevelCleared, () => {
+      cleared += 1;
+    });
+    for (let i = 0; i < ONE_PASS + 6000 && run.outcome() === RunOutcome.Playing; i += 1) {
+      run.step(DT, scripted(i));
+    }
+    expect(run.outcome()).toBe(RunOutcome.RunCleared);
+    expect(cleared).toBe(1);
+    expect(bonusSeconds).toBeGreaterThan(0);
+    expect(run.snapshot().score).toBeGreaterThanOrEqual(10000 + 100 * bonusSeconds);
+  });
+
+  /** The Cruiser with HP no player kills and phase 2 one tenth below full: held for its timer. */
+  const [phase1, phase2] = CRUISER.phases;
+  if (phase1 === undefined || phase2 === undefined) throw new Error('the Cruiser has two phases');
+  const HELD_IN_PHASE_2: BossDefinition = {
+    ...CRUISER,
+    stats: { ...CRUISER.stats, hp: 1e7 },
+    phases: [
+      { ...phase1, hpThreshold: 1e7 },
+      { ...phase2, hpThreshold: 1e7 - 1 },
+    ],
+  };
+
+  it.each([
+    ['a firing player', scripted],
+    ['a player who never fires', pacifist],
+    ['an idle ship', idle],
+  ])(
+    'keeps phase 2, held for its whole 90 s, at 40 enemy bullets or fewer, never filling the pool, for %s',
+    (_label, inputs) => {
+      const run = new Run({ seed: 1, script: { ...LEVEL_1, boss: HELD_IN_PHASE_2 } });
+      let i = 0;
+      while (run.snapshot().boss.state !== BossState.Fighting) run.step(DT, inputs(i++));
+      run.damageBoss(1);
+      expect(run.snapshot().boss.phase).toBe(1);
+      let peak = 0;
+      while (run.snapshot().boss.state === BossState.Fighting) {
+        run.step(DT, inputs(i++));
+        peak = Math.max(peak, run.snapshot().enemyBullets.count);
+      }
+      expect(run.snapshot().boss.state).toBe(BossState.Fleeing);
+      expect(peak).toBeGreaterThan(24);
+      // GDD v0.10 §6.1: at most 40. The pool of 48 then keeps 8 slots at least; the peak is 39
+      // (9 slots), short of the 12 the Heavy test keeps (reported with F-2a, not tuned here).
+      expect(peak).toBeLessThanOrEqual(40);
+      expect(peak).toBeLessThan(ENEMY_BULLET_POOL_SIZE);
+    },
+  );
+
+  it('lets a ship that never fires (power 1) watch the Cruiser flee, with no bonus', () => {
+    const run = new Run({ seed: 1 });
+    const kinds: GameEventKind[] = [];
+    for (const kind of BOSS_KINDS) run.events().subscribe(kind, (e) => kinds.push(e.kind));
+    for (let i = 0; i < ONE_PASS + 361 + 5400 + 400; i += 1) run.step(DT, pacifist(i));
+    expect(kinds).toContain(GameEventKind.BossFled);
+    expect(kinds).not.toContain(GameEventKind.BossDestroyed);
+    expect(run.snapshot().score).toBe(0);
+    expect(run.snapshot().boss.state).toBe(BossState.Idle);
   });
 });
 

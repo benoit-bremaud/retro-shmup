@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import type { BossDefinition } from '../../src/domain/game/boss';
+import { CRUISER } from '../../src/domain/game/cruiser';
 import { DIVER, GUNNER, POPCORN } from '../../src/domain/game/enemy';
 import { Formation } from '../../src/domain/game/formation';
 import { LevelDirector } from '../../src/domain/game/level-director';
@@ -6,11 +8,13 @@ import type { EnemySpawner } from '../../src/domain/game/level-director';
 import { LEVEL_1 } from '../../src/domain/game/level-script';
 import { PickupKind } from '../../src/domain/game/pickup';
 import type { LevelScript, ScriptEvent } from '../../src/domain/game/level-script';
+import { testScript } from '../support/script';
 
 /** Records which archetype spawned on which tick (1 = the run's first step). */
 class Recorder implements EnemySpawner {
   tick = 0;
   readonly spawns: { tick: number; id: string; x: number }[] = [];
+  readonly bosses: { tick: number; definition: BossDefinition }[] = [];
   readonly formations: Formation[] = [];
   readonly members: (Formation | undefined)[] = [];
   startFormation(size: number): Formation {
@@ -18,6 +22,9 @@ class Recorder implements EnemySpawner {
     formation.start(size);
     this.formations.push(formation);
     return formation;
+  }
+  startBoss(definition: BossDefinition): void {
+    this.bosses.push({ tick: this.tick, definition });
   }
   spawnEnemy(event: Readonly<ScriptEvent>, formation: Formation | undefined): boolean {
     this.spawns.push({ tick: this.tick, id: event.archetype.id, x: event.spawn.x });
@@ -103,8 +110,10 @@ describe('LEVEL_1 — the 120 s script of GDD v0.10 §7.2.1 and §7.2.2', () => 
     }
   });
 
-  it('wraps at 120 s, interim until the WARNING (F-2)', () => {
-    expect(LEVEL_1.loopAt).toBe(120);
+  it('ends in the Cruiser at 120 s, and no longer loops', () => {
+    expect(LEVEL_1.warningAt).toBe(120);
+    expect(LEVEL_1.boss).toBe(CRUISER);
+    expect('loopAt' in LEVEL_1).toBe(false);
   });
 });
 
@@ -125,11 +134,14 @@ describe('LevelDirector — script walking (GDD v0.6 §7.2.1, class diagram)', (
     ]);
   });
 
-  it('wraps its time at 120 s (interim until the boss): the first Popcorn again on step 7201', () => {
-    const recorder = play(LEVEL_1, 7201);
-    const firsts = recorder.spawns.filter((s) => s.id === 'popcorn' && s.x === 80);
-    expect(firsts.map((s) => s.tick).slice(-1)).toEqual([7201]);
-    expect(recorder.spawns.filter((s) => s.tick > 7200)).toHaveLength(1);
+  it('starts the boss once, on the step that reaches 120 s, and spawns nothing after it', () => {
+    const early = play(LEVEL_1, 7200);
+    expect(early.bosses).toEqual([]);
+    const recorder = play(LEVEL_1, 3 * 7200);
+    expect(recorder.bosses).toHaveLength(1);
+    expect(recorder.bosses[0]?.tick).toBe(7201);
+    expect(recorder.bosses[0]?.definition).toBe(CRUISER);
+    expect(recorder.spawns.filter((s) => s.tick > 7200)).toEqual([]);
   });
 
   it('spawns its last member, the 110 s formation eighth member, at 112.3 s, then nothing', () => {
@@ -168,23 +180,41 @@ describe('LevelDirector — script walking (GDD v0.6 §7.2.1, class diagram)', (
       'an interval that rounds to 0 steps',
       { at: 0, archetype: POPCORN, count: 6, interval: 0.001, spawn: { x: 0, y: 0 } },
     ],
-    [
-      'a group past the loop point',
-      { at: 44, archetype: POPCORN, count: 6, interval: 1, spawn: { x: 0, y: 0 } },
-    ],
   ])('rejects %s at load (RangeError)', (_label, event) => {
-    expect(
-      () => new LevelDirector({ loopAt: 45, dominantColour: PickupKind.PRed, events: [event] }),
-    ).toThrow(RangeError);
+    expect(() => new LevelDirector(testScript([event]))).toThrow(RangeError);
+  });
+
+  it('accepts a spawn just before warningAt − 4 s and rejects one at it (RangeError)', () => {
+    const row = (at: number): ScriptEvent => ({
+      at,
+      archetype: DIVER,
+      count: 1,
+      spawn: { x: 0, y: 0 },
+    });
+    expect(() => new LevelDirector(testScript([row(115.98)], { warningAt: 120 }))).not.toThrow();
+    expect(() => new LevelDirector(testScript([row(116)], { warningAt: 120 }))).toThrow(RangeError);
+    // The last member of a group counts, not its first.
+    const group: ScriptEvent = {
+      at: 110,
+      archetype: POPCORN,
+      count: 8,
+      interval: 1,
+      spawn: { x: 0, y: 0 },
+    };
+    expect(() => new LevelDirector(testScript([group], { warningAt: 120 }))).toThrow(RangeError);
+  });
+
+  it('rejects a warningAt that is not a time after the 4 s drain (RangeError)', () => {
+    expect(() => new LevelDirector(testScript([], { warningAt: 4 }))).toThrow(RangeError);
+    expect(() => new LevelDirector(testScript([], { warningAt: Number.NaN }))).toThrow(RangeError);
   });
 
   it('accepts a lone Popcorn, which never forms a formation', () => {
     expect(
       () =>
-        new LevelDirector({
-          dominantColour: PickupKind.PRed,
-          events: [{ at: 0, archetype: POPCORN, count: 1, spawn: { x: 0, y: 0 } }],
-        }),
+        new LevelDirector(
+          testScript([{ at: 0, archetype: POPCORN, count: 1, spawn: { x: 0, y: 0 } }]),
+        ),
     ).not.toThrow();
   });
 });

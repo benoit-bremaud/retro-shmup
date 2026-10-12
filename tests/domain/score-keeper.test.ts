@@ -80,3 +80,41 @@ describe('ScoreKeeper — points and chain (GDD §8)', () => {
     expect(keeper.chainRatio).toBe(0);
   });
 });
+
+describe('ScoreKeeper — the boss bonus (GDD v0.10 §6, ADR-0023)', () => {
+  function destroyBoss(bus: EventBus, secondsLeft: number): void {
+    const destroyed = createGameEvent(GameEventKind.BossDestroyed);
+    destroyed.value = secondsLeft;
+    bus.publish(destroyed);
+  }
+
+  it.each([
+    [90, 19000],
+    [37, 13700],
+    [1, 10100],
+    [0, 10000],
+  ])('pays 10 000 + 100 × the seconds left: %s s gives %s', (seconds, points) => {
+    const { bus, keeper } = setup();
+    destroyBoss(bus, seconds);
+    expect(keeper.score).toBe(points);
+  });
+
+  it('pays flat: never multiplied, and the chain neither extends nor breaks', () => {
+    const { bus, keeper, kill } = setup();
+    for (let i = 0; i < 10; i += 1) killStep(keeper, kill);
+    expect(keeper.multiplier).toBe(3);
+    const before = keeper.score;
+    wait(keeper, 60);
+    destroyBoss(bus, 50);
+    expect(keeper.score).toBe(before + 15000);
+    expect(keeper.multiplier).toBe(3);
+    // 61 steps into the 120-step window, untouched by the bonus: the chain still ends on time.
+    expect(keeper.chainRatio).toBeCloseTo(60 / 120, 9);
+  });
+
+  it('scores nothing when the boss flees', () => {
+    const { bus, keeper } = setup();
+    bus.publish(createGameEvent(GameEventKind.BossFled));
+    expect(keeper.score).toBe(0);
+  });
+});

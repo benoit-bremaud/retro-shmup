@@ -16,6 +16,7 @@ import { HUD_LAYOUTS } from '../../src/domain/presentation/hud-layout';
 import { drawHollowSquare, drawPlusIcon, drawShipIcon } from '../../src/domain/presentation/icons';
 import { RecordingRender } from '../support/recording-render';
 import { shots } from '../support/shots';
+import { testScript } from '../support/script';
 
 const VIEW: WorldView = { playerPosition: () => ({ x: 120, y: 272 }) };
 
@@ -74,14 +75,12 @@ describe('Level script — cargo checks at load (GDD v0.8 §5.2.1)', () => {
     ['a Carrier above the field, which would never cross it', row({ spawn: { x: -16, y: -16 } })],
     ['a Carrier below the field', row({ spawn: { x: -16, y: 336 } })],
   ])('rejects %s (RangeError)', (_label, event) => {
-    expect(() => new LevelDirector({ dominantColour: PickupKind.PRed, events: [event] })).toThrow(
-      RangeError,
-    );
+    expect(() => new LevelDirector(testScript([event]))).toThrow(RangeError);
   });
 
   it('accepts a Carrier fully outside the field, on either side', () => {
     const events = [row({}), row({ spawn: { x: 256, y: 64 }, cargo: PickupKind.Bomb })];
-    expect(() => new LevelDirector({ dominantColour: PickupKind.PRed, events })).not.toThrow();
+    expect(() => new LevelDirector(testScript(events))).not.toThrow();
   });
 
   it('puts level 1 Carriers at 28 s with a Shield and at 78 s, high, with the 1-UP', () => {
@@ -201,10 +200,9 @@ describe('Carrier — crossing and escaping in a run (GDD v0.8 §5.2)', () => {
     ['right to left', { x: 256, y: 64 }],
   ])('crosses %s and leaves, dropping nothing when it escapes', (_label, spawn) => {
     const run = new Run({
-      script: {
-        dominantColour: PickupKind.PRed,
-        events: [{ at: 0, archetype: CARRIER, count: 1, spawn, cargo: PickupKind.Shield }],
-      },
+      script: testScript([
+        { at: 0, archetype: CARRIER, count: 1, spawn, cargo: PickupKind.Shield },
+      ]),
     });
     const log: number[] = [];
     run.events().subscribe(GameEventKind.PickupSpawned, (e) => log.push(e.kind));

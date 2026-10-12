@@ -1,6 +1,6 @@
 import { RunOutcome } from '../game/run';
 import type { RunView, Simulation } from '../game/run';
-import { SceneTuning, STEP_SECONDS, toSteps } from '../game/tuning';
+import { ResultsTuning, SceneTuning, STEP_SECONDS, toSteps } from '../game/tuning';
 import { Button } from '../ports/input-port';
 import type { IntentFrame } from '../ports/input-port';
 import type { RenderPort } from '../ports/render-port';
@@ -21,6 +21,7 @@ export const Scene = {
   Paused: 'PAUSED',
   CountIn: 'COUNT_IN',
   GameOver: 'GAME_OVER',
+  Results: 'RESULTS',
 } as const;
 export type Scene = (typeof Scene)[keyof typeof Scene];
 
@@ -43,11 +44,14 @@ const SCENE_TRAITS: Readonly<Record<Scene, SceneTraits>> = {
   [Scene.CountIn]: { frozen: true, scrolls: false, drawsRun: true, pauseButton: true },
   // Arcade style: the run plays on without the ship behind GAME OVER (GDD v0.6 §4.4).
   [Scene.GameOver]: { frozen: false, scrolls: true, drawsRun: true, pauseButton: false },
+  // The run stands still behind the banner while the starfield keeps moving (05-state-scenes).
+  [Scene.Results]: { frozen: true, scrolls: true, drawsRun: true, pauseButton: false },
 };
 
 const COUNT_IN_STEPS = toSteps(SceneTuning.countInSeconds);
 const GAME_OVER_STEPS = toSteps(SceneTuning.gameOverSeconds);
 const LOCK_STEPS = toSteps(SceneTuning.gameOverLockSeconds);
+const LEVEL_CLEAR_STEPS = toSteps(ResultsTuning.levelClearSeconds);
 
 function isConfirmOrTap(frame: Readonly<IntentFrame>): boolean {
   return (frame.pressed & Button.Confirm) !== 0 || frame.tapRegion !== 'none';
@@ -58,8 +62,8 @@ type InRun = Simulation & RunView;
 
 /**
  * The screens and their transitions (meta/05-state-scenes): Boot → Title → InRun { Playing ⇄
- * Paused ⇄ Count-in } → Game over → Title. Game over keeps stepping the run without the ship; the
- * run is released at the title. It satisfies the frame loop's `FrameTarget` structurally, so the
+ * Paused ⇄ Count-in } → Game over → Title, or → Results → Title when the run is cleared. Game over
+ * keeps stepping the run without the ship; Results holds it still; the run is released at the title. It satisfies the frame loop's `FrameTarget` structurally, so the
  * domain never imports the loop. It owns the background clock, so the starfield scrolls on the
  * title and in play without a jump at the start, and freezes with the run.
  */
@@ -69,6 +73,7 @@ export class SceneMachine {
   private backgroundSteps = 0;
   private countInLeft = 0;
   private gameOverLeft = 0;
+  private resultsLeft = 0;
   /**
    * Steps left during which Confirm and taps are ignored: set on entering Game over and on the
    * title reached from it, so hammering never skips GAME OVER nor starts a new run (GDD v0.7 §4.4).
@@ -131,6 +136,9 @@ export class SceneMachine {
       case Scene.GameOver:
         this.stepGameOver(dt, frame);
         return;
+      case Scene.Results:
+        this.stepResults();
+        return;
     }
   }
 
@@ -159,6 +167,11 @@ export class SceneMachine {
       this.current = Scene.GameOver;
       this.gameOverLeft = GAME_OVER_STEPS;
       this.lockLeft = LOCK_STEPS;
+    } else if (this.run.outcome() === RunOutcome.RunCleared) {
+      // `LevelCleared` (a list of several levels) is not handled: the slice has one level, and the
+      // next-level flow belongs to the screens brick (ADR-0022 decision 9).
+      this.current = Scene.Results;
+      this.resultsLeft = LEVEL_CLEAR_STEPS;
     }
   }
 
@@ -192,6 +205,18 @@ export class SceneMachine {
     this.gameOverLeft -= 1;
     const confirmed = !this.locked() && isConfirmOrTap(frame);
     if (!confirmed && this.gameOverLeft > 0) return;
+    this.run = undefined;
+    this.presenter = undefined;
+    this.current = Scene.Title;
+    this.lockLeft = LOCK_STEPS;
+  }
+
+  // Interim (F-2a, before the tally of F-3): the banner stands for 3 s, input ignored, then the
+  // title, where the same lock as after Game over applies.
+  private stepResults(): void {
+    this.backgroundSteps += 1;
+    this.resultsLeft -= 1;
+    if (this.resultsLeft > 0) return;
     this.run = undefined;
     this.presenter = undefined;
     this.current = Scene.Title;
@@ -244,6 +269,9 @@ export class SceneMachine {
     if (this.current === Scene.GameOver) {
       drawVeil(this.renderer);
       drawBanner(this.renderer, message('gameOver', this.language));
+    } else if (this.current === Scene.Results) {
+      drawVeil(this.renderer);
+      drawBanner(this.renderer, message('levelClear', this.language));
     } else if (this.current === Scene.Paused) {
       drawVeil(this.renderer);
       drawPauseIcon(this.renderer);

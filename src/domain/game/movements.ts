@@ -130,3 +130,26 @@ export const CrossMovement: MovementPattern = {
     self.position.y = self.origin.y;
   },
 };
+
+/** The configuration of a sway (ADR-0022): a sine around the field's axis, in pixels and seconds. */
+export interface SwayMovementConfig {
+  readonly amplitude: number;
+  readonly periodS: number;
+}
+
+/**
+ * The Cruiser's sway (GDD v0.10 §6.1): x = 120 ± amplitude · sin(2π · age / period), a closed form
+ * of `Body.age` (steps since this movement began, ADR-0023), so it never drifts. It starts on the
+ * axis; the direction is rightwards, or leftwards when `Body.mirror` is set. It sets x only: the
+ * body keeps the y it has. Built once at load.
+ */
+export function swayMovement(config: Readonly<SwayMovementConfig>): MovementPattern {
+  const radiansPerStep = TAU / (config.periodS * STEPS_PER_SECOND);
+  const amplitude = config.amplitude;
+  return Object.freeze({
+    tick(self: Body): void {
+      const offset = amplitude * Math.sin(radiansPerStep * self.age);
+      self.position.x = FIELD_WIDTH / 2 + (self.mirror ? -offset : offset);
+    },
+  });
+}

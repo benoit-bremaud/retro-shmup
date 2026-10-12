@@ -11,17 +11,44 @@ export interface EnemyShotSpawner {
   spawnEnemyBullet(x: number, y: number, vxPerSecond: number, vyPerSecond: number): void;
 }
 
-/** Fires for a body one step (ADR-0003: stateless strategy). */
+/**
+ * Fires for a body (ADR-0003: stateless strategy, ADR-0023: `fire` and `tick`). `fire` is one
+ * volley for the given volley `count`, with no timing and no read of `Body.volleys`, so a
+ * `sequenceAttack` can call it on its own timer. `tick` is the timed wrapper: it waits for
+ * `fireTimer`, calls `fire` with `volleys[0]` and counts the volley.
+ */
 export interface AttackPattern {
+  fire(self: Body, world: WorldView, spawn: EnemyShotSpawner, count: number): void;
   tick(self: Body, world: WorldView, spawn: EnemyShotSpawner, dt: number): void;
 }
 
 /** Popcorn and Diver: contact only (a Null Object, no branch at the call site). */
 export const NoAttack: AttackPattern = {
+  fire(): void {
+    // Never fires.
+  },
   tick(): void {
     // Never fires.
   },
 };
+
+type VolleyFire = AttackPattern['fire'];
+
+/**
+ * Wraps a `fire` in the timed `tick` of a single-period attack: the volley count handed to `fire`
+ * is the body's `volleys[0]`, counted from 0. Built at load.
+ */
+function timedAttack(period: number, fire: VolleyFire): AttackPattern {
+  return Object.freeze({
+    fire,
+    tick(self: Body, world: WorldView, spawn: EnemyShotSpawner): void {
+      if (!volleyDue(self, period)) return;
+      const count = self.volleys[0];
+      self.volleys[0] += 1;
+      fire(self, world, spawn, count);
+    },
+  });
+}
 
 // Scratch velocity of the shot being fired: written then read at once, never kept.
 const aim = { x: 0, y: 0 };
@@ -40,13 +67,9 @@ export interface AimedAttackConfig {
 export function aimedAttack(config: Readonly<AimedAttackConfig>): AttackPattern {
   const period = toSteps(config.periodS);
   const speed = config.speed;
-  return Object.freeze({
-    tick(self: Body, world: WorldView, spawn: EnemyShotSpawner): void {
-      if (!volleyDue(self, period)) return;
-      self.volleys[0] += 1;
-      aimVelocity(aim, self.position, world.playerPosition(), speed);
-      spawn.spawnEnemyBullet(self.position.x, self.position.y, aim.x, aim.y);
-    },
+  return timedAttack(period, (self, world, spawn) => {
+    aimVelocity(aim, self.position, world.playerPosition(), speed);
+    spawn.spawnEnemyBullet(self.position.x, self.position.y, aim.x, aim.y);
   });
 }
 
@@ -94,22 +117,18 @@ export function ringAttack(config: Readonly<RingAttackConfig>): AttackPattern {
     ux[i] = Math.sin(angle);
     uy[i] = Math.cos(angle);
   }
-  return Object.freeze({
-    tick(self: Body, _world: WorldView, spawn: EnemyShotSpawner): void {
-      if (!volleyDue(self, period)) return;
-      const turn = rotate * self.volleys[0];
-      self.volleys[0] += 1;
-      const cos = Math.cos(turn);
-      const sin = Math.sin(turn);
-      for (let i = 0; i < count; i += 1) {
-        const x = ux[i] ?? 0;
-        const y = uy[i] ?? 0;
-        // Angles grow from straight down towards +x: (sin θ, cos θ) turned by `turn`.
-        const vx = x * cos + y * sin;
-        const vy = y * cos - x * sin;
-        spawn.spawnEnemyBullet(self.position.x, self.position.y, vx * speed, vy * speed);
-      }
-    },
+  return timedAttack(period, (self, _world, spawn, volley) => {
+    const turn = rotate * volley;
+    const cos = Math.cos(turn);
+    const sin = Math.sin(turn);
+    for (let i = 0; i < count; i += 1) {
+      const x = ux[i] ?? 0;
+      const y = uy[i] ?? 0;
+      // Angles grow from straight down towards +x: (sin θ, cos θ) turned by `turn`.
+      const vx = x * cos + y * sin;
+      const vy = y * cos - x * sin;
+      spawn.spawnEnemyBullet(self.position.x, self.position.y, vx * speed, vy * speed);
+    }
   });
 }
 
@@ -137,19 +156,34 @@ export function fanAttack(config: Readonly<FanAttackConfig>): AttackPattern {
     cosines[i] = Math.cos(offset);
     sines[i] = Math.sin(offset);
   }
-  return Object.freeze({
-    tick(self: Body, world: WorldView, spawn: EnemyShotSpawner): void {
-      if (!volleyDue(self, period)) return;
-      // Every pattern counts its volleys (ADR-0022), though a fan never turns.
-      self.volleys[0] += 1;
-      aimVelocity(aim, self.position, world.playerPosition(), 1);
-      for (let i = 0; i < count; i += 1) {
-        const cos = cosines[i] ?? 1;
-        const sin = sines[i] ?? 0;
-        const vx = aim.x * cos + aim.y * sin;
-        const vy = aim.y * cos - aim.x * sin;
-        spawn.spawnEnemyBullet(self.position.x, self.position.y, vx * speed, vy * speed);
-      }
-    },
+  return timedAttack(period, (self, world, spawn) => {
+    aimVelocity(aim, self.position, world.playerPosition(), 1);
+    for (let i = 0; i < count; i += 1) {
+      const cos = cosines[i] ?? 1;
+      const sin = sines[i] ?? 0;
+      const vx = aim.x * cos + aim.y * sin;
+      const vy = aim.y * cos - aim.x * sin;
+      spawn.spawnEnemyBullet(self.position.x, self.position.y, vx * speed, vy * speed);
+    }
+  });
+}
+
+/**
+ * Alternates attack groups on one timer (ADR-0023): one volley every `periodS` while armed, the
+ * first `periodS` into the hold. Volley *i* fires every pattern of group *i* mod *n* through its
+ * `fire`, all with the count *i* (`Body.volleys[0]`, from 0); the inner patterns' own `periodS`
+ * is ignored. The Cruiser's phase 1 is `[[fan], [ring]]` and its phase 2 `[[ring], [ring, triple]]`.
+ * Built once at load; a pattern that needs a period of its own would need `parallelAttack`.
+ */
+export function sequenceAttack(
+  groups: readonly (readonly AttackPattern[])[],
+  periodS: number,
+): AttackPattern {
+  if (groups.length === 0) throw new RangeError('sequenceAttack: needs at least one group');
+  const frozen: (readonly AttackPattern[])[] = [];
+  for (let i = 0; i < groups.length; i += 1) frozen.push(Object.freeze((groups[i] ?? []).slice()));
+  return timedAttack(toSteps(periodS), (self, world, spawn, count) => {
+    const group = frozen[count % frozen.length] ?? [];
+    for (let i = 0; i < group.length; i += 1) group[i]?.fire(self, world, spawn, count);
   });
 }

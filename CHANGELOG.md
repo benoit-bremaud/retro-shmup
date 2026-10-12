@@ -39,6 +39,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   aimed at the ship, and drops a Bomb or a Shield at 60 %; level 1 becomes a 120 s script that
   ramps up to a pair of Heavies at 102 s, with one 1-UP Carrier at 78 s (it still loops at 120 s
   until the boss arrives).
+- The Cruiser, level 1's boss: the waves stop at 120 s, a 3 s warning, a slide-in, then a 90 s
+  fight in two phases (a fan and a ring in turn, then a turning ring of 16 and an aimed triple
+  from 66 % HP), destroyed in a 2 s sequence or fleeing when the timer runs out; the bonus is
+  10 000 + 100 per second left. Shots and the bomb hurt it only while it fights. The level ends
+  on its destruction or escape and a "LEVEL CLEAR" banner (EN / FR) shows for 3 s before the
+  title; the boss is drawn as grey boxes until the HUD and effects of the next PRs. The level no
+  longer loops at 120 s.
 
 ### Changed
 

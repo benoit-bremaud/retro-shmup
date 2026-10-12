@@ -1,13 +1,13 @@
 import { GameEventKind } from './events';
 import type { GameEvent, RunEvents } from './events';
-import { ChainTuning, toSteps } from './tuning';
+import { BossTuning, ChainTuning, toSteps } from './tuning';
 
 const WINDOW_STEPS = toSteps(ChainTuning.windowSeconds);
 const NO_CHAIN = -1;
 
 /**
- * Points, the chain multiplier and the flat cap bonus of a collected pickup (GDD §8, v0.8 §4.6,
- * class diagram). `Run`'s constructor subscribes it first (ADR-0010 wording note), so the score
+ * Points, the chain multiplier, the flat cap bonus of a collected pickup and the flat boss bonus
+ * (GDD §8, v0.8 §4.6, v0.10 §6, class diagram). `Run`'s constructor subscribes it first (ADR-0010 wording note), so the score
  * is counted with or without a presenter.
  *
  * `chainTimer` counts the steps left in the window: 120 on a kill, −1 with no chain. `tick` runs at
@@ -23,6 +23,7 @@ export class ScoreKeeper {
     events.subscribe(GameEventKind.EnemyDestroyed, this.onEnemyDestroyed);
     events.subscribe(GameEventKind.PlayerDied, this.onPlayerDied);
     events.subscribe(GameEventKind.PickupCollected, this.onPickupCollected);
+    events.subscribe(GameEventKind.BossDestroyed, this.onBossDestroyed);
   }
 
   get score(): number {
@@ -59,6 +60,12 @@ export class ScoreKeeper {
   // The cap bonus is flat: never multiplied, and the chain does not move (GDD v0.8 §4.6).
   private readonly onPickupCollected = (event: Readonly<GameEvent>): void => {
     this.points += event.value;
+  };
+
+  // The boss bonus is flat too, and neither extends nor breaks the chain (GDD v0.10 §6): `value`
+  // is the whole seconds the HUD showed.
+  private readonly onBossDestroyed = (event: Readonly<GameEvent>): void => {
+    this.points += BossTuning.bonus + BossTuning.bonusPerSecond * event.value;
   };
 
   private readonly onPlayerDied = (): void => {

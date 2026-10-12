@@ -8,6 +8,19 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-12
 
+### F-2a, the boss fight domain (branch `feat/boss-domain`, not yet merged)
+
+- Built per ADR-0023: every attack pattern is a `fire` and a `tick`, `sequenceAttack(groups)`,
+  `swayMovement`, `Body.age` as movement time, `Boss` (`BossState`, `BossDefinition`,
+  `BossPhaseSpec`) preallocated in `World`, the Cruiser, `BossTuning`, `World.takeSerial()`,
+  `HitRules.damageBoss` (pass 1, pass 3, the bomb), events 8 to 12, `RunOutcome.LEVEL_CLEARED` /
+  `RUN_CLEARED` over `RunConfig.levels`, the deferred level end, `LevelScript.warningAt` and
+  `boss` required with `loopAt` removed, the boss view of the snapshot, grey rectangles, the
+  interim `Results` banner; tests share `tests/support/script.ts` (674 tests).
+- Findings kept for the review: the Cruiser's phase 2 peaks at 39 enemy bullets (GDD cap 40, the
+  pool of 48 keeps 9 slots, not the 12 the brief asked for); `Run` is 505 lines, over the ~450
+  checkpoint of ADR-0023 decision 7 (`RunRules` extraction for the next PR, not done here).
+
 ### PR #37 merged (`1a6a2c3`) — audit pass, docs and tests
 
 - TSDoc where the audit found gaps, an EN/FR key-parity test, sturdier assertions (580 tests),

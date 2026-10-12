@@ -5,12 +5,15 @@ import { Palette } from '../../src/domain/presentation/palette';
 import { Starfield } from '../../src/domain/presentation/starfield';
 import { DIVER, POPCORN } from '../../src/domain/game/enemy';
 import type { LevelScript } from '../../src/domain/game/level-script';
-import { PickupKind } from '../../src/domain/game/pickup';
+import { NoAttack } from '../../src/domain/game/attacks';
+import type { BossDefinition } from '../../src/domain/game/boss';
+import { swayMovement } from '../../src/domain/game/movements';
 import { Run } from '../../src/domain/game/run';
 import { Scene, SceneMachine } from '../../src/domain/scenes/scene-machine';
 import { PORTRAIT } from '../../src/domain/presentation/screen';
 import { RecordingRender } from '../support/recording-render';
 import type { RecordedRect } from '../support/recording-render';
+import { STUB_BOSS, testScript } from '../support/script';
 
 const DT = 1 / 60;
 
@@ -267,19 +270,16 @@ describe('SceneMachine — Paused and Count-in (meta/05-state-scenes, pause rule
 });
 
 /** Three Divers straight down on an idle ship at rest: three deaths, then Game over. */
-const KILLER: LevelScript = {
-  dominantColour: PickupKind.PRed,
-  events: [
-    ...[2, 6.5, 11].map((at) => ({
-      at,
-      archetype: DIVER,
-      count: 1,
-      spawn: { x: 120, y: -8 },
-    })),
-    // Far from the ship (x 0 to 80): still flying when the run ends, so Game over shows it move.
-    { at: 14, archetype: POPCORN, count: 1, spawn: { x: 40, y: -8 } },
-  ],
-};
+const KILLER: LevelScript = testScript([
+  ...[2, 6.5, 11].map((at) => ({
+    at,
+    archetype: DIVER,
+    count: 1,
+    spawn: { x: 120, y: -8 },
+  })),
+  // Far from the ship (x 0 to 80): still flying when the run ends, so Game over shows it move.
+  { at: 14, archetype: POPCORN, count: 1, spawn: { x: 40, y: -8 } },
+]);
 
 function gameOverFixture(): ReturnType<typeof setup> {
   const render = new RecordingRender();
@@ -377,10 +377,9 @@ describe('SceneMachine — Game over (GDD §4.4, meta/05-state-scenes)', () => {
 
 describe('SceneMachine — effects per run (ADR-0010, 02-sequence-fixed-step-tick)', () => {
   /** A run whose first Diver is shot at once: it explodes on screen. */
-  const TARGET: LevelScript = {
-    dominantColour: PickupKind.PRed,
-    events: [{ at: 0, archetype: DIVER, count: 1, spawn: { x: 120, y: -8 } }],
-  };
+  const TARGET: LevelScript = testScript([
+    { at: 0, archetype: DIVER, count: 1, spawn: { x: 120, y: -8 } },
+  ]);
 
   function exploding(): ReturnType<typeof setup> {
     const render = new RecordingRender();
@@ -418,15 +417,14 @@ describe('SceneMachine — effects per run (ADR-0010, 02-sequence-fixed-step-tic
 
   it('gives a new run a new presenter: no effect carries over from the previous run', () => {
     // A Diver shot at once (an explosion, never aged: no render), then three that kill the ship.
-    const script: LevelScript = {
-      dominantColour: PickupKind.PRed,
-      events: [0, 2, 6.5, 11].map((at) => ({
+    const script: LevelScript = testScript(
+      [0, 2, 6.5, 11].map((at) => ({
         at,
         archetype: DIVER,
         count: 1,
         spawn: { x: 120, y: -8 },
       })),
-    };
+    );
     const render = new RecordingRender();
     const machine = new SceneMachine(
       render,
@@ -568,5 +566,82 @@ describe('SceneMachine — the bomb shake (ADR-0014, GDD v0.8 §9.4)', () => {
     render.setCameraOffset(3, 3);
     machine.render(0, 16);
     expect(render.camera).toEqual({ x: 0, y: 0 });
+  });
+});
+
+describe('SceneMachine — Results, interim banner (meta/05-state-scenes, F-2a)', () => {
+  /** A boss that one shot kills, standing on the ship's line: the run is cleared in a few steps. */
+  const GLASS: BossDefinition = {
+    ...STUB_BOSS,
+    stats: { ...STUB_BOSS.stats, hp: 10 },
+    phases: [
+      {
+        hpThreshold: 10,
+        movement: swayMovement({ amplitude: 0, periodS: 8 }),
+        attack: NoAttack,
+      },
+    ],
+    warningS: 1,
+    entryS: 1,
+  };
+
+  function clearedFixture(): ReturnType<typeof setup> {
+    const render = new RecordingRender();
+    const machine = new SceneMachine(
+      render,
+      new Starfield(() => 0.5),
+      { blink: true, hitFlash: true, explosions: true, shake: true, bombFlash: true },
+      () => new Run({ script: testScript([], { warningAt: 5, boss: GLASS }) }),
+    );
+    machine.step(DT, createIntentFrame());
+    machine.step(DT, pressed(Button.Confirm));
+    const fire = createIntentFrame();
+    fire.held = Button.Fire;
+    for (let i = 0; i < 3000 && machine.scene === Scene.Playing; i += 1) machine.step(DT, fire);
+    return { machine, render };
+  }
+
+  it('enters Results when the run is cleared, with no pause button', () => {
+    const { machine, render } = clearedFixture();
+    expect(machine.scene).toBe(Scene.Results);
+    machine.render(0, 16);
+    expect(render.drew(Palette.pauseButton)).toBe(false);
+  });
+
+  it('shows LEVEL CLEAR from the catalogue, centred in the title font, over a veil', () => {
+    const { machine, render } = clearedFixture();
+    machine.render(0, 16);
+    expect(render.drew(Palette.veil)).toBe(true);
+    expect(render.texts.filter((text) => text.font === 'title')).toEqual([
+      { region: 'field', x: 34, y: 150, text: 'LEVEL CLEAR', font: 'title' },
+    ]);
+  });
+
+  it('keeps the starfield moving over the frozen run', () => {
+    const { machine, render } = clearedFixture();
+    machine.render(0, 16);
+    const stars = render.rectsOf(Palette.starNear).map((rect) => rect.y);
+    for (let i = 0; i < 30; i += 1) machine.step(DT, createIntentFrame());
+    machine.render(0, 16);
+    expect(render.rectsOf(Palette.starNear).map((rect) => rect.y)).not.toEqual(stars);
+  });
+
+  it('returns to the title after 3 s (180 steps), whatever is pressed', () => {
+    const { machine } = clearedFixture();
+    for (let i = 0; i < 179; i += 1) {
+      machine.step(DT, pressed(Button.Confirm | Button.Pause | Button.Back));
+    }
+    expect(machine.scene).toBe(Scene.Results);
+    machine.step(DT, createIntentFrame());
+    expect(machine.scene).toBe(Scene.Title);
+  });
+
+  it('locks the title reached from Results for 1 s, so a held Confirm never starts a run', () => {
+    const { machine } = clearedFixture();
+    for (let i = 0; i < 180; i += 1) machine.step(DT, createIntentFrame());
+    for (let i = 0; i < 60; i += 1) machine.step(DT, pressed(Button.Confirm));
+    expect(machine.scene).toBe(Scene.Title);
+    machine.step(DT, pressed(Button.Confirm));
+    expect(machine.scene).toBe(Scene.Playing);
   });
 });

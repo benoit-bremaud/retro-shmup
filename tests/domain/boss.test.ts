@@ -1,0 +1,319 @@
+import { describe, expect, it } from 'vitest';
+import { NoAttack } from '../../src/domain/game/attacks';
+import { applyDamage } from '../../src/domain/game/body';
+import { Boss, BossAdvance, BossState } from '../../src/domain/game/boss';
+import type { BossDefinition, BossWorld } from '../../src/domain/game/boss';
+import { CRUISER } from '../../src/domain/game/cruiser';
+import { SizeTier } from '../../src/domain/game/enemy';
+import { overlapsField } from '../../src/domain/game/geometry';
+import { swayMovement } from '../../src/domain/game/movements';
+
+const DT = 1 / 60;
+
+/** A world with the ship at the bottom and a log of the enemy bullets fired. */
+class TestWorld implements BossWorld {
+  readonly bullets: { step: number; vx: number; vy: number }[] = [];
+  step = 0;
+  playerPosition(): { x: number; y: number } {
+    return { x: 120, y: 272 };
+  }
+  spawnEnemyBullet(_x: number, _y: number, vx: number, vy: number): void {
+    this.bullets.push({ step: this.step, vx, vy });
+  }
+}
+
+/** One step as `Run` runs it: the boss moves at step 4, its timers advance at step 7. */
+function tick(boss: Boss, world: TestWorld): BossAdvance {
+  world.step += 1;
+  boss.move(world, DT);
+  return boss.advance(world);
+}
+
+function ticks(boss: Boss, world: TestWorld, n: number): void {
+  for (let i = 0; i < n; i += 1) tick(boss, world);
+}
+
+function started(definition: BossDefinition = CRUISER): { boss: Boss; world: TestWorld } {
+  const boss = new Boss();
+  boss.start(definition, 7);
+  return { boss, world: new TestWorld() };
+}
+
+/** Starts a Cruiser and plays its warning and entry: the fight begins on the next step. */
+function fighting(definition: BossDefinition = CRUISER): { boss: Boss; world: TestWorld } {
+  const fight = started(definition);
+  ticks(fight.boss, fight.world, 360);
+  return fight;
+}
+
+const SWAY_ONLY = (hp: number, thresholds: number[]): BossDefinition => ({
+  stats: { hp, width: 112, height: 48, score: 0, tier: SizeTier.Large },
+  phases: [hp, ...thresholds].map((hpThreshold) => ({
+    hpThreshold,
+    movement: swayMovement({ amplitude: 56, periodS: 8 }),
+    attack: NoAttack,
+  })),
+  timeLimit: 90,
+  warningS: 3,
+  entryFrom: { x: 120, y: -24 },
+  entryTo: { x: 120, y: 56 },
+  entryS: 3,
+  fleeSpeed: 60,
+  destroyedS: 2,
+});
+
+describe('Boss — warning and entry (GDD v0.10 §6, 05-state-boss)', () => {
+  it('starts in WARNING, off the field, with its stats and a full timer', () => {
+    const { boss } = started();
+    expect(boss.state).toBe(BossState.Warning);
+    expect(boss.serial).toBe(7);
+    expect(boss.hp).toBe(3000);
+    expect(boss.width).toBe(112);
+    expect(boss.height).toBe(48);
+    expect(overlapsField(boss.position.x, boss.position.y, boss.width, boss.height)).toBe(false);
+    expect(boss.secondsLeft()).toBe(90);
+    expect(boss.isTargetable()).toBe(false);
+    expect(boss.isHarmful()).toBe(false);
+  });
+
+  it('is WARNING for 3 s (180 steps), then ENTERING', () => {
+    const { boss, world } = started();
+    ticks(boss, world, 179);
+    expect(boss.state).toBe(BossState.Warning);
+    tick(boss, world);
+    expect(boss.state).toBe(BossState.Entering);
+  });
+
+  it('slides in a straight line from (120, -24) to (120, 56) in 3 s: harmful, not targetable', () => {
+    const { boss, world } = started();
+    ticks(boss, world, 180);
+    ticks(boss, world, 90);
+    expect(boss.position.x).toBe(120);
+    expect(boss.position.y).toBeCloseTo(16, 9);
+    expect(boss.isHarmful()).toBe(true);
+    expect(boss.isTargetable()).toBe(false);
+    expect(boss.previousPosition.y).toBeCloseTo(16 - 80 / 180, 9);
+    ticks(boss, world, 89);
+    expect(boss.state).toBe(BossState.Entering);
+    tick(boss, world);
+    expect(boss.state).toBe(BossState.Fighting);
+    expect(boss.position.y).toBeCloseTo(56, 9);
+    expect(boss.secondsLeft()).toBe(90);
+  });
+
+  it('never goes below y 80 and starts the fight on the axis', () => {
+    const { boss, world } = fighting();
+    expect(boss.position.x).toBe(120);
+    for (let i = 0; i < 600; i += 1) {
+      tick(boss, world);
+      expect(boss.position.y + boss.height / 2).toBeLessThanOrEqual(80);
+    }
+  });
+});
+
+describe('Boss — the fight timer (GDD v0.10 §6)', () => {
+  it('runs only in FIGHTING and shows the steps left rounded up', () => {
+    const { boss, world } = fighting();
+    expect(boss.timeLeft).toBe(5400);
+    tick(boss, world);
+    expect(boss.timeLeft).toBe(5399);
+    expect(boss.secondsLeft()).toBe(90);
+    ticks(boss, world, 59);
+    expect(boss.timeLeft).toBe(5340);
+    expect(boss.secondsLeft()).toBe(89);
+    ticks(boss, world, 5340 - 61);
+    expect(boss.timeLeft).toBe(61);
+    expect(boss.secondsLeft()).toBe(2);
+    tick(boss, world);
+    expect(boss.timeLeft).toBe(60);
+    expect(boss.secondsLeft()).toBe(1);
+    tick(boss, world);
+    expect(boss.secondsLeft()).toBe(1);
+  });
+
+  it('expires after 90 s of fight: the boss flees, harmless and not targetable', () => {
+    const { boss, world } = fighting();
+    ticks(boss, world, 5399);
+    expect(boss.state).toBe(BossState.Fighting);
+    expect(tick(boss, world)).toBe(BossAdvance.Fled);
+    expect(boss.state).toBe(BossState.Fleeing);
+    expect(boss.isHarmful()).toBe(false);
+    expect(boss.isTargetable()).toBe(false);
+    expect(boss.armed).toBe(false);
+  });
+
+  it('flees straight up at 60 px/s until its box is fully above the field, then ends', () => {
+    const { boss, world } = fighting();
+    ticks(boss, world, 5400);
+    const x = boss.position.x;
+    const y = boss.position.y;
+    tick(boss, world);
+    expect(boss.position.x).toBe(x);
+    expect(boss.position.y).toBeCloseTo(y - 1, 9);
+    let ended: BossAdvance = BossAdvance.None;
+    let guard = 0;
+    while (ended === BossAdvance.None && guard < 1000) {
+      ended = tick(boss, world);
+      guard += 1;
+    }
+    expect(ended).toBe(BossAdvance.Ended);
+    expect(boss.state).toBe(BossState.Idle);
+    expect(boss.position.y + boss.height / 2).toBeLessThanOrEqual(0);
+  });
+
+  it('lets the destruction win when the HP and the timer both end in one step', () => {
+    const { boss, world } = fighting();
+    ticks(boss, world, 5399);
+    // Step 5 of the last step: the kill; step 7 then finds a destroyed boss, not a fighting one.
+    world.step += 1;
+    boss.move(world, DT);
+    expect(applyDamage(boss, 3000)).toBe(true);
+    boss.destroy();
+    expect(boss.advance(world)).toBe(BossAdvance.None);
+    expect(boss.state).toBe(BossState.Destroyed);
+    expect(boss.timeLeft).toBe(1);
+  });
+});
+
+describe('Boss — destroyed (GDD v0.10 §6)', () => {
+  it('is harmless and not targetable, lasts 2 s, then ends', () => {
+    const { boss, world } = fighting();
+    ticks(boss, world, 100);
+    boss.destroy();
+    expect(boss.isHarmful()).toBe(false);
+    expect(boss.isTargetable()).toBe(false);
+    expect(boss.armed).toBe(false);
+    const secondsAtKill = boss.secondsLeft();
+    ticks(boss, world, 119);
+    expect(boss.state).toBe(BossState.Destroyed);
+    expect(tick(boss, world)).toBe(BossAdvance.Ended);
+    expect(boss.state).toBe(BossState.Idle);
+    expect(boss.secondsLeft()).toBe(secondsAtKill);
+  });
+});
+
+describe('Boss — phases (ADR-0023 decision 3)', () => {
+  it('enters phase 2 at 66 % HP: the attack switches at once, the first ring 1.5 s later', () => {
+    const { boss, world } = fighting();
+    ticks(boss, world, 30);
+    const before = world.bullets.length;
+    expect(before).toBe(0);
+    applyDamage(boss, 1020);
+    expect(boss.hpRatio()).toBeCloseTo(0.66, 9);
+    expect(boss.advancePhase(world)).toBe(true);
+    expect(boss.phaseIndex).toBe(1);
+    expect(boss.advancePhase(world)).toBe(false);
+    expect(boss.volleys[0]).toBe(0);
+    const changedAt = world.step;
+    ticks(boss, world, 89);
+    expect(world.bullets).toHaveLength(0);
+    tick(boss, world);
+    expect(world.step - changedAt).toBe(90);
+    expect(world.bullets).toHaveLength(16);
+  });
+
+  it('does not enter phase 2 one tenth above its threshold', () => {
+    const { boss, world } = fighting();
+    applyDamage(boss, 1019);
+    expect(boss.advancePhase(world)).toBe(false);
+    expect(boss.phaseIndex).toBe(0);
+  });
+
+  it('crosses two thresholds with one hit, one phase at a time', () => {
+    const { boss, world } = fighting(SWAY_ONLY(3000, [1980, 990]));
+    applyDamage(boss, 2100);
+    expect(boss.advancePhase(world)).toBe(true);
+    expect(boss.phaseIndex).toBe(1);
+    expect(boss.advancePhase(world)).toBe(true);
+    expect(boss.phaseIndex).toBe(2);
+    expect(boss.advancePhase(world)).toBe(false);
+  });
+
+  it.each([
+    ['right', 100, true],
+    ['left', 300, false],
+  ])(
+    'keeps its sway going %s until x crosses 120, then continues in that direction without a jump',
+    (_label, hitAt, expectMirror) => {
+      const { boss, world } = fighting();
+      ticks(boss, world, hitAt);
+      applyDamage(boss, 1100);
+      expect(boss.advancePhase(world)).toBe(true);
+      let previousX = boss.position.x;
+      let swapped = false;
+      for (let i = 0; i < 600 && !swapped; i += 1) {
+        tick(boss, world);
+        swapped = boss.age === 0;
+        // The body never moves more than a phase-1 step, swap included (about 2.9 px at most).
+        expect(Math.abs(boss.position.x - previousX)).toBeLessThan(3);
+        previousX = boss.position.x;
+      }
+      expect(swapped).toBe(true);
+      expect(boss.position.x).toBe(120);
+      expect(boss.mirror).toBe(expectMirror);
+      // Same direction as before: left when the old sway was going left, and so on.
+      tick(boss, world);
+      expect(boss.age).toBe(1);
+      const movedLeft = boss.position.x < 120;
+      expect(movedLeft).toBe(expectMirror);
+      // From here the phase-2 sway: 72 px over 6 s.
+      ticks(boss, world, 89);
+      expect(Math.abs(boss.position.x - 120)).toBeCloseTo(72, 6);
+    },
+  );
+
+  it('keeps counting the movement age at the threshold: only the swap restarts it', () => {
+    const { boss, world } = fighting();
+    ticks(boss, world, 100);
+    applyDamage(boss, 1100);
+    boss.advancePhase(world);
+    expect(boss.age).toBe(100);
+  });
+});
+
+describe('Boss — the Cruiser definition is well formed (data checked once, not at run time)', () => {
+  it('has a positive duration for every state and a descending threshold per phase', () => {
+    expect(CRUISER.phases.length).toBeGreaterThanOrEqual(1);
+    for (const seconds of [
+      CRUISER.warningS,
+      CRUISER.entryS,
+      CRUISER.destroyedS,
+      CRUISER.timeLimit,
+    ]) {
+      expect(seconds).toBeGreaterThan(0);
+    }
+    expect(CRUISER.fleeSpeed).toBeGreaterThan(0);
+    expect(CRUISER.phases[0]?.hpThreshold).toBe(CRUISER.stats.hp);
+    for (let i = 1; i < CRUISER.phases.length; i += 1) {
+      const previous = CRUISER.phases[i - 1]?.hpThreshold ?? 0;
+      const threshold = CRUISER.phases[i]?.hpThreshold ?? 0;
+      expect(threshold).toBeLessThan(previous);
+      expect(threshold).toBeGreaterThan(0);
+    }
+  });
+
+  it('enters inside the field width and ends its entry at the fighting height', () => {
+    expect(CRUISER.entryFrom.x).toBe(CRUISER.entryTo.x);
+    expect(CRUISER.entryTo.y + CRUISER.stats.height / 2).toBeLessThanOrEqual(80);
+  });
+});
+
+describe('Boss — the Cruiser at 1 s (GDD v0.10 §6.1)', () => {
+  it('fires its first volley, a fan of 5 at the ship, 1 s into the fight', () => {
+    const { boss, world } = fighting();
+    ticks(boss, world, 59);
+    expect(world.bullets).toHaveLength(0);
+    tick(boss, world);
+    expect(world.bullets).toHaveLength(5);
+    ticks(boss, world, 60);
+    expect(world.bullets).toHaveLength(5 + 12);
+    ticks(boss, world, 60);
+    expect(world.bullets).toHaveLength(5 + 12 + 5);
+  });
+
+  it('does not fire while warning or entering', () => {
+    const { boss, world } = started();
+    ticks(boss, world, 360 - 1);
+    expect(world.bullets).toHaveLength(0);
+  });
+});
