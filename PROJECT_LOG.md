@@ -8,6 +8,25 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-12
 
+### PR #41 merged (`b6aada7`) — the cockpit is the hitbox
+
+- Merged first, as planned; the boss HUD branch then took `main` in by a merge (no force push).
+
+### The cockpit is the hitbox (branch `fix/ship-core`)
+
+- Playtest remark: "enemy bullets sometimes cross our ship without destroying it". Investigated:
+  no gap in the collision (a bullet on a vulnerable ship's 4 × 4 hitbox always hits; no tunnelling,
+  the ship moves 2.5 px a step against a contact window of 8 px). The cause is legibility: the
+  cockpit was drawn 8 px above the centre while the hitbox is the centre square, and the hull is
+  8 px wide, so a bullet could visibly cross the hull yet miss. The invulnerability windows (2 s
+  after a death, the 0.5 s fly-in included, 1 s after a bomb, 0.5 s after a shield) are the
+  other source.
+- Decision (scored, 88/100 against 72, 68 and 63): keep the 4 × 4 hitbox (GDD §4.1, the game's
+  fairness rule) and draw the cockpit exactly on it; a larger hitbox (6 × 6, an option, 8 × 8)
+  waits for the friends' feedback. A full-sprite hitbox was rejected: a ring of 12 or 16 bullets
+  would leave no gap.
+- Owner wishes noted for later: more menacing, nicer enemy ships (sprites, brick G); a small
+  explosion animation for the ships (game feel, F-2c or G).
 ### The boss's HUD — F-2b (branch `feat/boss-hud`)
 
 - `drawBossBar` (`boss-hud.ts`, called by `RunPresenter`): a 224 × 4 frame at x 8, y 4 of the

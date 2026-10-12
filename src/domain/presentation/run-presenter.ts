@@ -294,6 +294,8 @@ export class RunPresenter {
     const r = this.render;
     r.drawRect(x - 16, y + 2, 32, 8, Palette.shipWing);
     r.drawRect(x - 4, y - 14, 8, 28, Palette.shipHull);
-    r.drawRect(x - 2, y - 8, 4, 6, Palette.shipCockpit);
+    // The cockpit is the hitbox, exactly: the bright square shows where a bullet counts (GDD §4.1).
+    const core = PlayerTuning.hitboxSize;
+    r.drawRect(x - core / 2, y - core / 2, core, core, Palette.shipCockpit);
   }
 }
