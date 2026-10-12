@@ -1,6 +1,7 @@
 /**
  * Glyphs of the placeholder bitmap fonts (RenderPort contract): 3 × 5 pixels, each row a 3-bit
- * mask, most significant bit on the left. `hud`: digits and `×` (U+00D7); `title`: `A`–`Z` and
+ * mask, most significant bit on the left. `hud`: digits, `×` (U+00D7) and the
+ * space, an empty cell for the grouped Results values (ADR-0022 decision 8); `title`: `A`–`Z` and
  * the space. The screens brick replaces them with the final bitmap fonts.
  */
 const DIGITS: readonly (readonly number[])[] = [
@@ -62,7 +63,8 @@ export const GLYPH_ROWS = 5;
 /** The rows of a `hud` glyph for a code point, or `undefined` outside its set. */
 export function hudGlyph(code: number): readonly number[] | undefined {
   if (code >= ZERO && code <= NINE) return DIGITS[code - ZERO];
-  return code === TIMES ? TIMES_GLYPH : undefined;
+  if (code === TIMES) return TIMES_GLYPH;
+  return code === SPACE ? SPACE_GLYPH : undefined;
 }
 
 /** The rows of a `title` glyph for a code point, or `undefined` outside its set. */

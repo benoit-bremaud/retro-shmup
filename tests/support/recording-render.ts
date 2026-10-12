@@ -29,10 +29,10 @@ const LETTER_A = 0x41;
 const LETTER_Z = 0x5a;
 const SPACE = 0x20;
 
-/** The glyph sets of the RenderPort contract: `hud` digits and ×, `title` A–Z and space. */
+/** The glyph sets of the RenderPort contract: `hud` digits, × and space, `title` A–Z and space. */
 function isGlyph(code: number, font: FontId): boolean {
   if (font === 'title') return (code >= LETTER_A && code <= LETTER_Z) || code === SPACE;
-  return (code >= ZERO && code <= NINE) || code === TIMES;
+  return (code >= ZERO && code <= NINE) || code === TIMES || code === SPACE;
 }
 
 /**
