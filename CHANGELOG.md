@@ -49,6 +49,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The ship's bright cockpit is now exactly its 4 × 4 hitbox, at the centre, so a bullet that
+  visibly crosses the hull or a wing without hitting is no longer confusing: the yellow square
+  shows where a bullet counts (playtest of 2026-10-12; the hitbox itself is unchanged).
 - The rules a run applies (kills, drops, the boss, the bomb) move from `Run` to a `RunRules` class,
   with no change in behaviour (ADR-0023 decision 7).
 - The mouse fires while the left button pressed on the field is held and touch while a finger

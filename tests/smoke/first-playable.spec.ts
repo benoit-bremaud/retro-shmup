@@ -13,6 +13,8 @@ test.use({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch
 const HULL = { r: 0x4f, g: 0xd1, b: 0xc5 };
 /** The ship's resting point in play-field pixels (GDD §4.1). */
 const REST = { x: 120, y: 272 };
+/** A hull pixel 8 px below the centre, which the bright cockpit (the hitbox) occupies. */
+const HULL_PROBE = { x: REST.x, y: REST.y + 8 };
 
 interface Geometry {
   readonly portrait: boolean;
@@ -57,10 +59,15 @@ async function colourAt(
   );
 }
 
-/** True when the hull colour is at the ship's resting point, in whichever screen is in use. */
+/** True when the hull colour is on the ship's hull at rest, in whichever screen is in use. */
 async function hullAtRest(page: Page): Promise<boolean> {
   const g = await geometry(page);
-  return colourAt(page, (g.fieldX + REST.x) * g.scale + 1, (g.fieldY + REST.y) * g.scale + 1, HULL);
+  return colourAt(
+    page,
+    (g.fieldX + HULL_PROBE.x) * g.scale + 1,
+    (g.fieldY + HULL_PROBE.y) * g.scale + 1,
+    HULL,
+  );
 }
 
 /** `Palette.pauseIcon`, drawn only in `Paused`: two bars centred on the field. */
