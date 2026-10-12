@@ -4,7 +4,8 @@
 > **Related ADRs**: ADR-0002 (Simulation, Random, Pool), ADR-0003 (composition, patterns),
 > ADR-0009 (IntentFrame), ADR-0010 (event bus per run, `DropTable` as data,
 > presentation outside the outcome), ADR-0019 (run seed, damage in tenths, weapons as data,
-> pickups, formations), ADR-0022 (strategy factories, the boss outside the enemy pool, level list)
+> pickups, formations), ADR-0022 and ADR-0023 (strategy factories, the boss outside the enemy pool,
+> level list, the boss fight's attack timers and movement age)
 > **Realizes**: UC1 of [01-use-case](../system/01-use-case.md); the structure is placed in
 > [03-component](../system/03-component.md) (`Run` component)
 
@@ -367,8 +368,7 @@ classDiagram
     +aimedAttack(periodS, speed) AttackPattern
     +ringAttack(count, periodS, speed, rotateDeg) AttackPattern
     +fanAttack(count, spreadDeg, periodS, speed) AttackPattern
-    +sequenceAttack(patterns: AttackPattern[], periodS) AttackPattern
-    +parallelAttack(patterns: AttackPattern[]) AttackPattern
+    +sequenceAttack(groups: AttackPattern[][], periodS) AttackPattern
   }
   class DropTable {
     <<data>>
@@ -381,6 +381,7 @@ classDiagram
   }
   class AttackPattern {
     <<interface>>
+    +fire(self: Body, world: WorldView, spawn: EnemyShotSpawner, count: number) void
     +tick(self: Body, world: WorldView, spawn: EnemyShotSpawner, dt) void
   }
   class PathMovement
@@ -393,7 +394,6 @@ classDiagram
   class RingAttack
   class FanAttack
   class SequenceAttack
-  class ParallelAttack
   class Formation {
     <<pooled>>
     -total: number
@@ -410,6 +410,7 @@ classDiagram
     -phaseIndex: number
     -timeLeft: number
     -stateSteps: number
+    -pendingPhase: number
     +start(definition: BossDefinition) void
     +isTargetable() boolean
     +isHarmful() boolean
@@ -433,8 +434,6 @@ classDiagram
     +entryS: number
     +fleeSpeed: number
     +destroyedS: number
-    +bonus: number
-    +bonusPerSecond: number
   }
   class BossPhaseSpec {
     <<data>>
@@ -505,9 +504,7 @@ classDiagram
   AttackPattern <|.. RingAttack
   AttackPattern <|.. FanAttack
   AttackPattern <|.. SequenceAttack
-  SequenceAttack --> "2..*" AttackPattern : takes turns
-  AttackPattern <|.. ParallelAttack
-  ParallelAttack --> "2" AttackPattern : fire together
+  SequenceAttack --> "2..*" AttackPattern : groups take turns
   Boss --> "1" BossDefinition
   BossDefinition *-- "1" EnemyStats
   BossDefinition *-- "2..3" BossPhaseSpec
@@ -544,7 +541,7 @@ classDiagram
 | Tally: full formations, no bomb, no miss, bombs left (§8, v0.10) | `LevelTally`, owned by `ScoreKeeper` and reset at each level, subscribes to `FORMATION_CLEARED` (+1, bomb kills included), `BOMB_USED` (`bombUsed`), `PLAYER_DIED` (`lifeLost`; a shield absorb publishes `PLAYER_HIT` and leaves it) and `LEVEL_CLEARED` (`bombsLeft` = its `value`); then `ScoreKeeper` adds `total()` flat; values in `TallyTuning` (500, 5 000, 10 000, 1 000); `RunView.tally()` feeds the Results scene |
 | Bomb used (§4.5, §8) | `BOMB_USED` → `LevelTally.bombUsed` (no-bomb bonus lost) |
 | Heavy (v0.10 §5.2.1) | two archetypes, `HEAVY_RING` and `HEAVY_FAN`: 56 × 48, `SizeTier.LARGE`, 400 tenths, 1 000 points, `enterHoldLeave({ travelS: 2, holdS: 10, leaveSpeed: 40 })`, `ringAttack({ count: 12, periodS: 2, speed: 60, rotateDeg: 15 })` turning on every other volley (`Body.volleys[0]`) or `fanAttack({ count: 5, spreadDeg: 15, periodS: 2, speed: 75 })`, `DropTable` {Bomb, Shield, 60 %} |
-| Strategies built from data (ADR-0022) | `StrategyFactories` run once at module load and return frozen strategy objects closed over their configuration in steps; the Gunner is `enterHoldLeave({ travelS: 1, holdS: 3.5, leaveSpeed: 60 })` + `aimedAttack({ periodS: 1.5, speed: 75 })`, unchanged in behaviour; `Body.volleys[2]` counts the volleys per pattern of the current attack (index 0 for a single pattern or a sequence), reset on spawn and on a phase change |
+| Strategies built from data (ADR-0022) | `StrategyFactories` run once at module load and return frozen strategy objects closed over their configuration in steps; the Gunner is `enterHoldLeave({ travelS: 1, holdS: 3.5, leaveSpeed: 60 })` + `aimedAttack({ periodS: 1.5, speed: 75 })`, unchanged in behaviour; `Body.volleys[0]` counts the volleys of the current attack and is the count every `fire` of the volley receives (ADR-0023; `[1]` reserved), reset on spawn and, for the boss, at the HP threshold of a phase change; `Body.age` = steps since the current movement began (since spawn for an enemy; for the boss since the start of the fight, then since each movement swap at the x 120 crossing, not at the threshold) |
 | Chain expiry, inclusive window (v0.6 §8) | `chainTimer` counts the steps left in the window: 120 on a kill, −1 when there is no chain (start, death). `ScoreKeeper.tick` (step 7, after the collisions) decrements it, and the chain breaks when it falls below 0, so a kill 120 steps after the previous one still extends it and one 121 steps after does not; `chainRatio` = (`chainTimer` + 1) / 120, full right after a kill and empty exactly when the chain breaks |
 | Difficulty knobs (§10) | `DifficultyProfile`; the caps (9 lives, 5 bombs, level 5, the 1 000 bonus) are constants, not knobs |
 | Clamp to the field, fly-in (v0.5 §4.1) | `Player.update`: clamp applied once `Entering` ends; fly-in path in 05-state-player |
@@ -569,12 +566,14 @@ classDiagram
   `NoAttack`; Gunner = `EnterHoldLeave` + `AimedAttack` + drop {P-red or P-blue, 30 %}; Carrier =
   `CrossMovement` (a straight horizontal crossing) + `NoAttack` + cargo; Heavy = `EnterHoldLeave` (its own configuration, ADR-0022) + `RingAttack`
   or `FanAttack` + drop {Bomb or Shield, 60 %}; the Cruiser's phases = `SwayMovement` +
-  `SequenceAttack` (fan, ring) in phase 1, `SwayMovement` + `ParallelAttack` (ring of 16, aimed
-  triple, each on its own period) in phase 2. `sequenceAttack(patterns, periodS)` fires one
-  volley every `periodS`, the patterns taking turns (the inner patterns' own `periodS` is
-  ignored), pattern i counting ⌊`volleys[0]` / n⌋; `parallelAttack` keeps one counter per
-  pattern in `Body.volleys` (a fixed array of 2; sequences and single patterns use index 0), reset
-  on spawn and on a phase change.
+  `SequenceAttack` (fan, ring) in phase 1, `SwayMovement` + `SequenceAttack` (a ring of 16 on every
+  volley, the aimed triple on every second one) in phase 2. *(ADR-0023)* Every pattern has a
+  `fire(count)` (one volley, no timing) and a `tick` (the timed wrapper); `sequenceAttack(groups,
+  periodS)` fires one volley every `periodS`, volley i firing every pattern of group i mod n through
+  their `fire` with the count `volleys[0]` (the inner patterns' own `periodS` is ignored); a ring
+  turns by `rotateDeg` × that count. There is one `fireTimer`; `Body.volleys[1]` stays unused
+  until a boss needs `parallelAttack` with independent periods. `volleys` is reset on spawn and
+  at the HP threshold of a phase change (the movement and `age` follow at the later x 120 crossing, ADR-0023).
 - **Strategies are stateless**: they hold no per-enemy state, only immutable configuration
   (speeds, hold steps, fire period); per-enemy scratch state (path progress, fire timer, dive
   target, `armed`) lives on `Body`, so archetypes are shared data and nothing is allocated per
@@ -650,8 +649,8 @@ classDiagram
 - **HUD data**: `WorldSnapshot` exposes the HUD values as getters, read by `RunPresenter` each
   frame without allocation: `score`, `multiplier`, `chainRatio` (0 to 1) and `lives` from the
   enemies brick; `weapon`, `power`, `bombs`, `shield` and the `pickups` list from the player-kit
-  brick; *(v0.10)* a boss view with the level brick — state, position, HP ratio, seconds left,
-  phase — from which the presenter draws the boss, the HP bar, the seconds and the WARNING banner.
+  brick; *(v0.10)* a boss view with the level brick — state, `stateSteps`, position and previous
+  position, HP ratio, seconds left, phase (ADR-0023) — from which the presenter draws the boss, the HP bar, the seconds and the WARNING banner.
 - **`HitRules`** is declared in the collision module and realized by `Run`: `CollisionResolver`
   and the bomb path call it, and no other client sees it, since the scene machine holds the run
   as `Simulation & RunView`. The resolver never sees the bus: every hit it finds goes through
@@ -667,7 +666,7 @@ classDiagram
   knobs it reads only (`lives`, `bombsPerLife`, `dropRateScale`), the `NORMAL` profile
   replacing `PlayerTuning.lives`; `powerLossOnDeath` stays a later knob (the rule is one level).
   The level brick (F, ADR-0022) adds `StrategyFactories`, `SwayMovement`, `RingAttack`,
-  `FanAttack`, `SequenceAttack`, `ParallelAttack`, `Body.volleys`, `SizeTier.LARGE`, the Heavy archetypes, `Boss`,
+  `FanAttack`, `SequenceAttack` (groups), `Body.volleys`, `SizeTier.LARGE`, the Heavy archetypes, `Boss`,
   `BossState`, `BossDefinition`, `BossPhaseSpec`, `EnemySpawner.startBoss`, `HitRules.damageBoss`,
   `LevelScript.warningAt` and `boss` (required) with `loopAt` removed, the boss and level events,
   `RunOutcome.LEVEL_CLEARED` and `RUN_CLEARED`, `RunConfig.levels`, `LevelTally`, `TallyTuning`

@@ -110,6 +110,9 @@ Roadmap (GDD section 11):
     fame entry: an 8-character name and an optional country
   - [ADR-0022](docs/decisions/ADR-0022-level-brick-strategy-factories-boss-outside-the-pool-one-level-slice.md)
     — Level brick: strategy factories, the boss outside the enemy pool, a one-level slice
+  - [ADR-0023](docs/decisions/ADR-0023-boss-fight-one-timer-per-attack-movement-age-boss-bonus-tuning-three-prs.md)
+    — Boss fight: `fire` and `tick` patterns with one timer, movement age, the boss bonus in
+    `BossTuning`, F-2 in three PRs
 - [Architecture and UML study](docs/architecture/README.md) — C4 context and containers, then
   the UML diagrams (Mermaid, PlantUML for use cases and components) and the traceability matrix.
 - [PROJECT_LOG.md](PROJECT_LOG.md) — operational logbook (what was done, why, by which PR).
