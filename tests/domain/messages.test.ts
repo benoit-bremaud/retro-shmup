@@ -12,9 +12,24 @@ describe('message catalogue (GDD §9.6)', () => {
   it.each([
     ['en', 'LEVEL CLEAR'],
     ['fr', 'FIN DU NIVEAU'],
-  ] as const)('gives the level-clear banner in %s, in the title glyph set', (language, text) => {
+  ] as const)('gives the Results header in %s, in the title glyph set', (language, text) => {
     expect(message('levelClear', language)).toBe(text);
     expect(text).toMatch(/^[A-Z ]+$/);
+  });
+
+  it.each([
+    ['en', ['FORMATIONS', 'NO BOMB', 'NO MISS', 'BOMBS', 'TOTAL']],
+    ['fr', ['FORMATIONS', 'SANS BOMBE', 'SANS PERTE', 'BOMBES', 'TOTAL']],
+  ] as const)('gives the tally labels in %s, in the title glyph set', (language, texts) => {
+    const keys = [
+      'tallyFormations',
+      'tallyNoBomb',
+      'tallyNoMiss',
+      'tallyBombs',
+      'tallyTotal',
+    ] as const;
+    expect(keys.map((key) => message(key, language))).toEqual(texts);
+    for (const text of texts) expect(text).toMatch(/^[A-Z ]+$/);
   });
 
   it('has a non-empty text in every language for every key', () => {

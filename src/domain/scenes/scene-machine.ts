@@ -15,6 +15,7 @@ import {
   drawVeil,
   drawWarning,
 } from '../presentation/overlays';
+import { drawResults, formatTallyValues } from '../presentation/results';
 import { RunPresenter } from '../presentation/run-presenter';
 import type { EffectSettings } from '../presentation/run-presenter';
 import type { Starfield } from '../presentation/starfield';
@@ -50,14 +51,15 @@ const SCENE_TRAITS: Readonly<Record<Scene, SceneTraits>> = {
   [Scene.CountIn]: { frozen: true, scrolls: false, drawsRun: true, pauseButton: true },
   // Arcade style: the run plays on without the ship behind GAME OVER (GDD v0.6 §4.4).
   [Scene.GameOver]: { frozen: false, scrolls: true, drawsRun: true, pauseButton: false },
-  // The run stands still behind the banner while the starfield keeps moving (05-state-scenes).
+  // The run stands still behind the tally while the starfield keeps moving (05-state-scenes).
   [Scene.Results]: { frozen: true, scrolls: true, drawsRun: true, pauseButton: false },
 };
 
 const COUNT_IN_STEPS = toSteps(SceneTuning.countInSeconds);
 const GAME_OVER_STEPS = toSteps(SceneTuning.gameOverSeconds);
 const LOCK_STEPS = toSteps(SceneTuning.gameOverLockSeconds);
-const LEVEL_CLEAR_STEPS = toSteps(ResultsTuning.levelClearSeconds);
+const RESULTS_LOCK_STEPS = toSteps(ResultsTuning.lockSeconds);
+const RESULTS_STEPS = toSteps(ResultsTuning.autoSeconds);
 
 function isConfirmOrTap(frame: Readonly<IntentFrame>): boolean {
   return (frame.pressed & Button.Confirm) !== 0 || frame.tapRegion !== 'none';
@@ -79,7 +81,10 @@ export class SceneMachine {
   private backgroundSteps = 0;
   private countInLeft = 0;
   private gameOverLeft = 0;
-  private resultsLeft = 0;
+  /** Steps since `Results` was entered (0 on the entering step): the lines shown and the 8 s exit. */
+  private resultsSteps = 0;
+  /** The Results values, formatted once on entry so no string is built per frame. */
+  private resultsValues: readonly string[] = [];
   /**
    * Steps left during which Confirm and taps are ignored: set on entering Game over and on the
    * title reached from it, so hammering never skips GAME OVER nor starts a new run (GDD v0.7 §4.4).
@@ -143,7 +148,7 @@ export class SceneMachine {
         this.stepGameOver(dt, frame);
         return;
       case Scene.Results:
-        this.stepResults();
+        this.stepResults(frame);
         return;
     }
   }
@@ -177,7 +182,9 @@ export class SceneMachine {
       // `LevelCleared` (a list of several levels) is not handled: the slice has one level, and the
       // next-level flow belongs to the screens brick (ADR-0022 decision 9).
       this.current = Scene.Results;
-      this.resultsLeft = LEVEL_CLEAR_STEPS;
+      this.resultsSteps = 0;
+      this.resultsValues = formatTallyValues(this.run.tally());
+      this.lockLeft = RESULTS_LOCK_STEPS;
     }
   }
 
@@ -217,13 +224,16 @@ export class SceneMachine {
     this.lockLeft = LOCK_STEPS;
   }
 
-  // Interim (F-2a, before the tally of F-3): the banner stands for 3 s, input ignored, then the
-  // title, where the same lock as after Game over applies.
-  private stepResults(): void {
+  // Confirm or a tap after the 1 s lock, or the 8 s timer, returns to the title (the slice end,
+  // interim until the Ending), where the same lock as after Game over applies. Pause is ignored:
+  // the slice's Results lead to the title, never back to play (interim deviation, 05-state-scenes).
+  private stepResults(frame: Readonly<IntentFrame>): void {
     this.backgroundSteps += 1;
-    this.resultsLeft -= 1;
-    if (this.resultsLeft > 0) return;
+    this.resultsSteps += 1;
+    const confirmed = !this.locked() && isConfirmOrTap(frame);
+    if (!confirmed && this.resultsSteps < RESULTS_STEPS) return;
     this.run = undefined;
+    this.resultsValues = [];
     this.presenter = undefined;
     this.current = Scene.Title;
     this.lockLeft = LOCK_STEPS;
@@ -282,8 +292,7 @@ export class SceneMachine {
       drawVeil(this.renderer);
       drawBanner(this.renderer, message('gameOver', this.language));
     } else if (this.current === Scene.Results) {
-      drawVeil(this.renderer);
-      drawBanner(this.renderer, message('levelClear', this.language));
+      drawResults(this.renderer, this.resultsValues, this.resultsSteps, this.language);
     } else if (this.current === Scene.Paused) {
       drawVeil(this.renderer);
       drawPauseIcon(this.renderer);

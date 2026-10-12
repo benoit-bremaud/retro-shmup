@@ -592,7 +592,7 @@ describe('SceneMachine — the bomb shake (ADR-0014, GDD v0.8 §9.4)', () => {
   });
 });
 
-describe('SceneMachine — Results, interim banner (meta/05-state-scenes, F-2a)', () => {
+describe('SceneMachine — Results (meta/05-state-scenes, GDD v0.10 §8, F-3)', () => {
   /** A boss that one shot kills, standing on the ship's line: the run is cleared in a few steps. */
   const GLASS: BossDefinition = {
     ...STUB_BOSS,
@@ -644,13 +644,23 @@ describe('SceneMachine — Results, interim banner (meta/05-state-scenes, F-2a)'
     expect(render.drew(Palette.bossBarFrame)).toBe(false);
   });
 
-  it('shows LEVEL CLEAR from the catalogue, centred in the title font, over a veil', () => {
+  it('shows the LEVEL CLEAR header and the first tally line over a veil on entry', () => {
     const { machine, render } = clearedFixture();
     machine.render(0, 16);
     expect(render.drew(Palette.veil)).toBe(true);
-    expect(render.texts.filter((text) => text.font === 'title')).toEqual([
-      { region: 'field', x: 34, y: 150, text: 'LEVEL CLEAR', font: 'title' },
-    ]);
+    const field = render.texts.filter((text) => text.region === 'field');
+    expect(field.map((text) => text.text)).toEqual(['LEVEL CLEAR', 'FORMATIONS', '0 × 500  0']);
+  });
+
+  it('adds one line every 30 steps and ends on the total, read from the run tally', () => {
+    const { machine, render } = clearedFixture();
+    for (let i = 0; i < 120; i += 1) machine.step(DT, createIntentFrame());
+    machine.render(0, 16);
+    const values = render.texts
+      .filter((text) => text.region === 'field' && text.font === 'hud')
+      .map((text) => text.text);
+    // No formation, no bomb, no life lost, the two starting bombs left.
+    expect(values).toEqual(['0 × 500  0', '5 000', '10 000', '2 × 1 000  2 000', '17 000']);
   });
 
   it('keeps the starfield moving over the frozen run', () => {
@@ -662,11 +672,20 @@ describe('SceneMachine — Results, interim banner (meta/05-state-scenes, F-2a)'
     expect(render.rectsOf(Palette.starNear).map((rect) => rect.y)).not.toEqual(stars);
   });
 
-  it('returns to the title after 3 s (180 steps), whatever is pressed', () => {
+  it.each([
+    ['Confirm', pressed(Button.Confirm)],
+    ['a tap', tapped()],
+  ])('ignores %s for 1 s (60 steps), then returns to the title on it', (_label, frame) => {
     const { machine } = clearedFixture();
-    for (let i = 0; i < 179; i += 1) {
-      machine.step(DT, pressed(Button.Confirm | Button.Pause | Button.Back));
-    }
+    for (let i = 0; i < 60; i += 1) machine.step(DT, frame);
+    expect(machine.scene).toBe(Scene.Results);
+    machine.step(DT, frame);
+    expect(machine.scene).toBe(Scene.Title);
+  });
+
+  it('returns to the title on its own after 8 s (480 steps); Pause and Back are ignored', () => {
+    const { machine } = clearedFixture();
+    for (let i = 0; i < 479; i += 1) machine.step(DT, pressed(Button.Pause | Button.Back));
     expect(machine.scene).toBe(Scene.Results);
     machine.step(DT, createIntentFrame());
     expect(machine.scene).toBe(Scene.Title);
@@ -674,7 +693,7 @@ describe('SceneMachine — Results, interim banner (meta/05-state-scenes, F-2a)'
 
   it('locks the title reached from Results for 1 s, so a held Confirm never starts a run', () => {
     const { machine } = clearedFixture();
-    for (let i = 0; i < 180; i += 1) machine.step(DT, createIntentFrame());
+    for (let i = 0; i < 480; i += 1) machine.step(DT, createIntentFrame());
     for (let i = 0; i < 60; i += 1) machine.step(DT, pressed(Button.Confirm));
     expect(machine.scene).toBe(Scene.Title);
     machine.step(DT, pressed(Button.Confirm));

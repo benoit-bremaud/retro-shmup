@@ -47,14 +47,17 @@ export function drawCountIn(render: RenderPort, stepsLeft: number): void {
   );
 }
 
-/** A line of `title` text centred on the field, rounded to whole pixels: the Game over message. */
-export function drawBanner(render: RenderPort, text: string): void {
+/**
+ * A line of `title` text centred on the field, rounded to whole pixels: the Game over message,
+ * vertically centred unless a top `y` is given (the Results header).
+ */
+export function drawBanner(render: RenderPort, text: string, y?: number): void {
   const width = (text.length - 1) * TITLE_FONT_CELL.width + TITLE_FONT_CELL.glyphWidth;
   render.setRegion('field');
   render.drawText(
     text,
     Math.round((FIELD_WIDTH - width) / 2),
-    Math.round((FIELD_HEIGHT - TITLE_FONT_CELL.height) / 2),
+    y ?? Math.round((FIELD_HEIGHT - TITLE_FONT_CELL.height) / 2),
     'title',
   );
 }
