@@ -8,6 +8,33 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-12
 
+### PR #31 merged (`6d99055`) — GDD v0.9, ADR-0020, ADR-0021
+
+- One Codex finding (the Spread opacity missing from the readability table) fixed in `2e1c239` by
+  owner choice A. CI green.
+
+### Pointer fire and shot readability (branch `feat/pointer-fire`)
+
+- ADR-0020: the mouse fires while the left button pressed on the field stays down, wherever it
+  goes, and stops when it is released; a left press outside the field never fires; touch fires
+  while a finger steers and stops when it lifts, a second finger bombing without touching it; a
+  lost focus or a rotation stops both. The samples report `autofire = false` until the options
+  screen brings the autofire option; the arbitration is unchanged.
+- GDD v0.9 §3.2: enemy bullets drawn 6 × 6 with a 2 × 2 white core, Spread bullets drawn 2 × 6,
+  player shots and Laser bolts at 60 % opacity; hitboxes unchanged. README device lines and the
+  CHANGELOG (Changed) updated.
+- Visual check: the brainstorm's scene (Spread level 3 at 22.7 s, a temporary uncommitted level)
+  matches the chosen V2 capture.
+- Local pre-push review: no Must. Fixed: a left press counts on a pointer down only, so after a
+  lost focus a button still held never restarts the fire nor taps until it is pressed again;
+  façade tests renamed to the held-fire meaning, plus tests for a held left button with the
+  keyboard owning the movement, the fresh press after a lost focus and a cancelled mouse pointer;
+  an explicit 60 % opacity test (Codex review on #31); the arbitration JSDoc; the Laser drawn
+  through `drawBox`.
+- Codex review on #32 (owner choice A): the down-only rule lost a left press reported as a move
+  while the right button is held. Now a lost focus or a rotation sets a resync flag: the next
+  mouse event only records the buttons, and every later press counts, by a down or a move.
+
 ### Design revision after the brick-E playtest (branch `docs/brainstorm-design`) — GDD v0.9, ADR-0020, ADR-0021
 
 - Owner playtest after brick E: every device works (keyboard, touch, mouse, gamepad); two

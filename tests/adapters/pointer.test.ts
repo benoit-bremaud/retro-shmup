@@ -136,8 +136,15 @@ describe('PointerModule — touch (GDD §4.2, ADR-0015 decision 8, ADR-0018 deci
     expect(tapOf(module).tapRegion).toBe('none');
   });
 
-  it('reports the always-on autofire, for the arbitration to mask', () => {
-    expect(touchSample(pointer())).toMatchObject({ held: Button.Fire, autofire: true });
+  it('fires while a finger steers and stops when it lifts (ADR-0020)', () => {
+    const module = pointer();
+    expect(touchSample(module)).toMatchObject({ held: 0, autofire: false });
+    module.down(event('touch', 200, 250), 1);
+    expect(touchSample(module).held).toBe(Button.Fire);
+    module.down(event('touch', 300, 100, 0, 2), 2);
+    expect(touchSample(module).held).toBe(Button.Fire); // a second finger bombs, fire goes on
+    module.up(event('touch', 200, 250), 3);
+    expect(touchSample(module).held).toBe(0);
   });
 });
 
@@ -293,7 +300,54 @@ describe('PointerModule — mouse (GDD v0.7 §4.2, ADR-0018 decisions 2, 4 and 8
     expect(tapOf(module).tapRegion).toBe('none');
   });
 
-  it('reports the always-on autofire, for the arbitration to mask', () => {
-    expect(mouseSample(pointer())).toMatchObject({ held: Button.Fire, autofire: true });
+  it('fires while the left button pressed on the field is held, anywhere it goes (ADR-0020)', () => {
+    const module = pointer();
+    module.move(event('mouse', 200, 250), 1);
+    expect(mouseSample(module)).toMatchObject({ held: 0, autofire: false });
+    module.down(event('mouse', 200, 250, LEFT), 2);
+    expect(mouseSample(module).held).toBe(Button.Fire);
+    module.move(event('mouse', 30, 40, LEFT), 3); // dragged over the HUD: still firing
+    expect(mouseSample(module).held).toBe(Button.Fire);
+    module.up(event('mouse', 30, 40), 4);
+    expect(mouseSample(module).held).toBe(0);
+  });
+
+  it('never fires from a left press outside the field, even held', () => {
+    const module = pointer();
+    module.down(event('mouse', 450, 20, LEFT), 1);
+    module.move(event('mouse', 200, 250, LEFT), 2);
+    expect(mouseSample(module).held).toBe(0);
+  });
+
+  it('starts firing on a left press reported as a move while the right button is held', () => {
+    const module = pointer();
+    module.down(event('mouse', 200, 250, RIGHT), 1);
+    module.move(event('mouse', 200, 250, RIGHT | LEFT), 2);
+    expect(mouseSample(module).held).toBe(Button.Fire);
+  });
+
+  it('reads a button still held after a lost focus as no press, then a new press as one', () => {
+    const module = pointer();
+    module.down(event('mouse', 200, 250, LEFT), 1);
+    module.release();
+    module.move(event('mouse', 201, 250, LEFT), 2);
+    expect(mouseSample(module).held).toBe(0);
+    module.up(event('mouse', 201, 250, 0), 3);
+    module.down(event('mouse', 201, 250, LEFT), 4);
+    expect(mouseSample(module).held).toBe(Button.Fire);
+  });
+
+  it('stops firing when the browser cancels the mouse pointer', () => {
+    const module = pointer();
+    module.down(event('mouse', 200, 250, LEFT), 1);
+    module.cancel(event('mouse', 200, 250, 0));
+    expect(mouseSample(module).held).toBe(0);
+  });
+
+  it('stops firing on a lost focus or a rotation', () => {
+    const module = pointer();
+    module.down(event('mouse', 200, 250, LEFT), 1);
+    module.release();
+    expect(mouseSample(module).held).toBe(0);
   });
 });

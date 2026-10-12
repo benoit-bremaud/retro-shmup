@@ -35,3 +35,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   cancelled, every enemy on the field hit, 1 s of invulnerability; the shield absorbs one hit; a
   death costs a power level, released as a P, and resets the bombs to 2; bomb flash and field
   shake, off by default under reduced motion (#29).
+
+### Changed
+
+- The mouse fires while the left button pressed on the field is held and touch while a finger
+  steers, instead of always (ADR-0020); enemy bullets are drawn larger with a white core and
+  player shots shorter and translucent, so the danger reads first (GDD v0.9).

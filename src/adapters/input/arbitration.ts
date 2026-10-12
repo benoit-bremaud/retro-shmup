@@ -19,8 +19,9 @@ export interface DeviceSample {
   /** Sequence number of the last input of any kind. */
   inputSeq: number;
   /**
-   * Its `Fire` is the always-on autofire of touch and mouse (ADR-0009); that `Fire` lives in
-   * `held` only, never in `pressed`, so the arbitration can mask it.
+   * Its `Fire` is the always-on autofire option of touch and mouse (ADR-0020; off until the
+   * options screen); that `Fire` lives in `held` only, never in `pressed`, so the arbitration
+   * can mask it.
    */
   autofire: boolean;
 }
@@ -83,8 +84,8 @@ const inputOf = (sample: DeviceSample): number => sample.inputSeq;
 /**
  * Combines the device samples into one intent frame (ADR-0015 decision 5, ADR-0018 decision 9):
  * the movement belongs to the device that last started moving, until another starts or a lost
- * focus clears it; buttons combine, except the autofire of touch and mouse, which applies only
- * while one of them owns the movement; `device` is the last device with any input. Browser-free
+ * focus clears it; buttons combine, except the autofire option of touch and mouse (ADR-0020
+ * decision 4), which applies only while one of them owns the movement; `device` is the last device with any input. Browser-free
  * and allocation-free; writes only `into`.
  */
 export function arbitrate(

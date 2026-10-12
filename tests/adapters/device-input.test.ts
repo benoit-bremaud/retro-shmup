@@ -288,14 +288,14 @@ describe('DeviceInput — touch and mouse through the façade (ADR-0018)', () =>
     expect(frame.tapRegion).toBe('none');
   });
 
-  it('steers with a finger and autofires while touch owns the movement', () => {
+  it('steers with a finger and fires while it steers (ADR-0020)', () => {
     const { env, input, frame } = pointerSetup();
     env.point('down', 'touch', 200, 250);
     input.read(frame);
     expect(frame).toMatchObject({ moveKind: 'target', moveX: 80, moveY: 218, held: Button.Fire });
   });
 
-  it('masks the touch autofire once a key moves the ship again', () => {
+  it('stops firing when the finger lifts, and a key takes the movement back', () => {
     const { env, input, frame } = pointerSetup();
     env.point('down', 'touch', 200, 250);
     env.point('up', 'touch', 200, 250);
@@ -336,7 +336,7 @@ describe('DeviceInput — touch and mouse through the façade (ADR-0018)', () =>
     expect(frame).toMatchObject({ moveKind: 'none', tapRegion: 'none', pressed: Button.Pause });
   });
 
-  it('clears the mouse owner on lost focus: no movement, autofire masked', () => {
+  it('clears the mouse owner on lost focus: no movement, no fire', () => {
     const { env, input, frame } = pointerSetup();
     env.point('move', 'mouse', 200, 250);
     env.loseFocus();
@@ -401,5 +401,31 @@ describe('DeviceInput — gamepad through the façade (ADR-0015 decisions 5 and 
     input.read(frame);
     expect(frame.pressed).toBe(Button.Pause);
     expect(frame.held).toBe(Button.Fire);
+  });
+});
+
+describe('DeviceInput — held pointer fire (ADR-0020)', () => {
+  function pointerSetup(): ReturnType<typeof setup> {
+    const fixture = setup();
+    fixture.input.resize(LANDSCAPE, { left: 0, top: 0, width: 480, height: 320 });
+    return fixture;
+  }
+
+  it('fires from a held left button while the keyboard owns the movement (ADR-0020)', () => {
+    const { env, input, frame } = pointerSetup();
+    env.point('down', 'mouse', 200, 250, 1);
+    env.down('ArrowLeft');
+    input.read(frame);
+    expect(frame).toMatchObject({ moveKind: 'direction', held: Button.Fire });
+  });
+
+  it('needs a fresh press after a lost focus, even with the left button still held', () => {
+    const { env, input, frame } = pointerSetup();
+    env.point('down', 'mouse', 200, 250, 1);
+    env.loseFocus();
+    env.point('move', 'mouse', 201, 250, 1);
+    input.read(frame);
+    expect(frame.held & Button.Fire).toBe(0);
+    expect(frame.tapRegion).toBe('none');
   });
 });

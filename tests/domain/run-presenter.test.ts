@@ -106,11 +106,34 @@ describe('RunPresenter — ship and bullets (05-state-scenes, first playable)', 
     expect(covers).toBe(true);
   });
 
-  it('draws each active bullet centred on its interpolated position', () => {
+  it('draws each Spread bullet centred on its interpolated position, 2 × 6 (hitbox 2 × 8)', () => {
     const render = new RecordingRender();
     presenter(render, true).draw(snapshot(ship(), [bullet(50, 100, 106)]), 0.5, 16);
     const shot = render.rects.find((rect) => rect.colour === Palette.playerShot);
-    expect(shot).toEqual({ region: 'field', x: 49, y: 99, w: 2, h: 8, colour: Palette.playerShot });
+    expect(shot).toEqual({
+      region: 'field',
+      x: 49,
+      y: 100,
+      w: 2,
+      h: 6,
+      colour: Palette.playerShot,
+    });
+  });
+
+  it('draws enemy bullets 6 × 6 with a 2 × 2 white core (hitbox 4 × 4, GDD v0.9 §3.2)', () => {
+    const render = new RecordingRender();
+    const enemyShot = bullet(60, 90, 90);
+    presenter(render, true).draw(
+      snapshot(ship(), [], { enemyBullets: listOf([enemyShot]) }),
+      1,
+      16,
+    );
+    expect(render.rectsOf(Palette.enemyShot)).toEqual([
+      { region: 'field', x: 57, y: 87, w: 6, h: 6, colour: Palette.enemyShot },
+    ]);
+    expect(render.rectsOf(Palette.enemyShotCore)).toEqual([
+      { region: 'field', x: 59, y: 89, w: 2, h: 2, colour: Palette.enemyShotCore },
+    ]);
   });
 });
 
@@ -260,5 +283,14 @@ describe('RunPresenter — the Carrier and the other pickups (player-kit additio
     expect(rects).toHaveLength(parts);
     expect(Math.min(...rects.map((r) => r.x))).toBe(92);
     expect(Math.max(...rects.map((r) => r.x + r.w))).toBe(108);
+  });
+});
+
+describe('RunPresenter — shot opacity (GDD v0.9 §3.2)', () => {
+  it('draws player shots at 60 % opacity, so the enemy bullets read first', () => {
+    // 0x99 / 0xff = 60 %.
+    expect(Palette.playerShot).toMatch(/^#[0-9a-f]{6}99$/);
+    expect(Palette.laserShot).toMatch(/^#[0-9a-f]{6}99$/);
+    expect(Palette.enemyShot).toMatch(/^#[0-9a-f]{6}$/);
   });
 });
