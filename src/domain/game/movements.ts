@@ -1,14 +1,7 @@
 import type { Body } from './body';
 import type { Vec2 } from './geometry';
 import { FIELD_WIDTH } from './geometry';
-import {
-  CarrierTuning,
-  DiverTuning,
-  GunnerTuning,
-  PopcornTuning,
-  STEPS_PER_SECOND,
-  toSteps,
-} from './tuning';
+import { CarrierTuning, DiverTuning, PopcornTuning, STEPS_PER_SECOND, toSteps } from './tuning';
 
 /** What a strategy may read of the world (class diagram): the ship's position. */
 export interface WorldView {
@@ -81,36 +74,49 @@ export const DiveMovement: MovementPattern = {
   },
 };
 
-const TRAVEL_STEPS = toSteps(GunnerTuning.travelSeconds);
-const LEAVE_AT = TRAVEL_STEPS + toSteps(GunnerTuning.holdSeconds);
+/** The configuration of an enter-hold-leave movement (ADR-0022), in seconds and px/s. */
+export interface EnterHoldLeaveConfig {
+  /** From the spawn point to the hover point, in a straight line. */
+  readonly travelS: number;
+  /** At the hover point, armed. */
+  readonly holdS: number;
+  /** Back the way it came until it leaves the field. */
+  readonly leaveSpeed: number;
+}
 
 /**
- * The Gunner (GDD v0.6 §5.2.1): a straight line from its spawn point to its hover point, a hold
- * during which it is armed, then back the way it came until it leaves the field.
+ * The Gunner's and the Heavy's movement (GDD v0.10 §5.2.1, ADR-0022): a straight line from the
+ * spawn point to the hover point in `travelS`, a hold of `holdS` during which the body is armed,
+ * then back the way it came at `leaveSpeed` until it leaves the field. Built once at load.
  */
-export const EnterHoldLeave: MovementPattern = {
-  tick(self: Body, _world: WorldView, dt: number): void {
-    if (self.age <= TRAVEL_STEPS) {
-      const t = self.age / TRAVEL_STEPS;
-      self.position.x = self.origin.x + (self.hover.x - self.origin.x) * t;
-      self.position.y = self.origin.y + (self.hover.y - self.origin.y) * t;
-      self.armed = false;
-      return;
-    }
-    if (self.age <= LEAVE_AT) {
-      self.position.x = self.hover.x;
-      self.position.y = self.hover.y;
-      self.armed = true;
-      return;
-    }
-    if (self.armed) {
-      self.armed = false;
-      aimVelocity(self.velocity, self.hover, self.origin, GunnerTuning.leaveSpeed);
-    }
-    self.position.x += self.velocity.x * dt;
-    self.position.y += self.velocity.y * dt;
-  },
-};
+export function enterHoldLeave(config: Readonly<EnterHoldLeaveConfig>): MovementPattern {
+  const travelSteps = toSteps(config.travelS);
+  const leaveAt = travelSteps + toSteps(config.holdS);
+  const leaveSpeed = config.leaveSpeed;
+  return Object.freeze({
+    tick(self: Body, _world: WorldView, dt: number): void {
+      if (self.age <= travelSteps) {
+        const t = self.age / travelSteps;
+        self.position.x = self.origin.x + (self.hover.x - self.origin.x) * t;
+        self.position.y = self.origin.y + (self.hover.y - self.origin.y) * t;
+        self.armed = false;
+        return;
+      }
+      if (self.age <= leaveAt) {
+        self.position.x = self.hover.x;
+        self.position.y = self.hover.y;
+        self.armed = true;
+        return;
+      }
+      if (self.armed) {
+        self.armed = false;
+        aimVelocity(self.velocity, self.hover, self.origin, leaveSpeed);
+      }
+      self.position.x += self.velocity.x * dt;
+      self.position.y += self.velocity.y * dt;
+    },
+  });
+}
 
 /**
  * The Carrier (GDD v0.8 §5.2.1): a straight horizontal crossing at 60 px/s, away from the side it

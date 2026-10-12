@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { AimedAttack } from '../../src/domain/game/attacks';
 import type { EnemyShotSpawner } from '../../src/domain/game/attacks';
 import { applyDamage } from '../../src/domain/game/body';
 import { DIVER, Enemy, GUNNER, POPCORN } from '../../src/domain/game/enemy';
@@ -180,7 +179,7 @@ describe('EnterHoldLeave and AimedAttack — Gunner (GDD v0.6 §5.2.1)', () => {
     const gunner = spawned(GUNNER, { spawn: { x: 120, y: -16 }, hover: { x: 120, y: 80 } });
     gunner.armed = false;
     const shots = new RecordingShots();
-    AimedAttack.tick(gunner, shipAt(0, 0), shots, DT);
+    GUNNER.attack.tick(gunner, shipAt(0, 0), shots, DT);
     expect(shots.shots).toEqual([]);
   });
 });

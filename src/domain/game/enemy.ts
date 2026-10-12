@@ -1,11 +1,12 @@
 import type { AttackPattern } from './attacks';
-import { AimedAttack, NoAttack } from './attacks';
+import { aimedAttack, NoAttack } from './attacks';
 import type { Body } from './body';
 import type { Formation } from './formation';
 import type { Vec2 } from './geometry';
 import type { MovementPattern } from './movements';
-import { CrossMovement, DiveMovement, EnterHoldLeave, PathMovement } from './movements';
+import { CrossMovement, DiveMovement, enterHoldLeave, PathMovement } from './movements';
 import { PickupKind } from './pickup';
+import { EnemyBulletTuning, GunnerTuning } from './tuning';
 
 /** Size tier of a role (GDD §5.2): it scales the explosion. */
 export const SizeTier = {
@@ -71,8 +72,12 @@ export const DIVER: EnemyArchetype = {
 export const GUNNER: EnemyArchetype = {
   id: 'gunner',
   stats: { hp: 80, width: 32, height: 32, score: 300, tier: SizeTier.Medium },
-  movement: EnterHoldLeave,
-  attack: AimedAttack,
+  movement: enterHoldLeave({
+    travelS: GunnerTuning.travelSeconds,
+    holdS: GunnerTuning.holdSeconds,
+    leaveSpeed: GunnerTuning.leaveSpeed,
+  }),
+  attack: aimedAttack({ periodS: GunnerTuning.firePeriodSeconds, speed: EnemyBulletTuning.speed }),
   formation: false,
   // GDD v0.8 §5.2: a P at 30 %, red or blue 50 / 50.
   drops: { rate: 0.3, kinds: [PickupKind.PRed, PickupKind.PBlue] },
