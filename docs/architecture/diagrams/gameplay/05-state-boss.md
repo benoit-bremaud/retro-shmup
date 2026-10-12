@@ -51,7 +51,7 @@ stateDiagram-v2
 | Warning | 3 s, the boss off the field |
 | Entering | from (120, −24) to (120, 56) in 3 s, linear |
 | Phase 1 (100 % → 66 %) | `swayMovement({ amplitude: 56, periodS: 8 })` around x 120; `sequenceAttack([[fan], [ring]], 1)` — one volley every 1 s, the groups taking turns, their own `periodS` ignored (ADR-0023): a fan of 5, 15° apart, aimed, 75 px/s, then a ring of 12 at 60 px/s, one volley a second, the first (a fan) 1 s into the fight |
-| Phase 2 (from 66 %, 1 980 tenths) | the forward turret breaks off (`brokenPart`, debris); `swayMovement({ amplitude: 72, periodS: 6 })`; `sequenceAttack([[ring], [ring, triple]], 1.5)` with `ring` = `ringAttack({ count: 16, speed: 60, rotateDeg: 11.25 })` and `triple` = `fanAttack({ count: 3, spreadDeg: 15, speed: 75 })` — one volley every 1.5 s, the ring on every volley (turned by 11.25° × the volley index, so by the number of rings fired), the triple on every second one: the first ring 1.5 s and the first triple 3 s after the change, `Body.volleys`, `fireTimer` and `age` restarted at the phase change (ADR-0023) |
+| Phase 2 (from 66 %, 1 980 tenths) | the forward turret breaks off (`brokenPart`, debris); `swayMovement({ amplitude: 72, periodS: 6 })`; `sequenceAttack([[ring], [ring, triple]], 1.5)` with `ring` = `ringAttack({ count: 16, speed: 60, rotateDeg: 11.25 })` and `triple` = `fanAttack({ count: 3, spreadDeg: 15, speed: 75 })` — one volley every 1.5 s, the ring on every volley (turned by 11.25° × the volley index, so by the number of rings fired), the triple on every second one: the first ring 1.5 s and the first triple 3 s after the change, `Body.volleys` and `fireTimer` restarted at the threshold, `age` at the movement swap (ADR-0023) |
 | Timer, bonus | 90 s; 10 000 + 100 × seconds left, flat |
 | Fleeing | straight up at 60 px/s |
 | Destroyed | 2 s, then `LEVEL_CLEARED` |
@@ -72,10 +72,11 @@ stateDiagram-v2
   and slow motion never change it (ADR-0010). If HP and timer reach 0 in the same step, the
   destruction wins. The HUD shows `secondsLeft()` — the steps left rounded up — from `Entering`
   (90) until the `Destroyed` or `Fleeing` sequence ends.
-- **Sway continuity** (ADR-0023): at a phase change the attack switches at once; the movement keeps
-  the old sway until `x − 120` changes sign, then the boss snaps to x 120, swaps the movement,
-  restarts `age`, `fireTimer` and `volleys` and sets `mirror` to its direction, so the new sway
-  starts there in the same direction and the body never jumps (GDD v0.10 §6.1).
+- **Phase change and sway continuity** (ADR-0023): at the HP threshold the attack switches at once
+  and `fireTimer` and `volleys` restart (the first ring 1.5 s later, counted from 0); the movement
+  keeps the old sway until `x − 120` changes sign, then the boss swaps the movement, restarts
+  `age` and sets `mirror` to its direction, so the new sway starts at x 120 in the same direction
+  and the body does not visibly jump (GDD v0.10 §6.1).
 - **End of the fight** (GDD v0.4 §6): enemy bullets are cancelled on both endings, so the player
   cannot die during the sequence. During `Destroyed` the ship keeps its control; its bullets are
   spent when the level ends. The waves stopped at `warningAt`; enemies still on the field live on.

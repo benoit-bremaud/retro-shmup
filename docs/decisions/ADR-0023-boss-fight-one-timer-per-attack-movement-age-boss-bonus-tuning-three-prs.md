@@ -4,7 +4,8 @@
 loses `parallelAttack` and `sequenceAttack` takes groups), decision 2 (`Body.volleys` stays, but
 the count a pattern receives is the volley index, not ⌊count / n⌋), decision 3 (the
 `BossDefinition` fields, the meaning of `age`) and decision 10 (the delivery of F-2). Decisions 4
-to 9 stand unchanged. Values are GDD v0.10 values (§6, §6.1); no GDD rule changes.
+to 9 stand unchanged. ADR-0003's `AttackPattern { tick }` signature, already out of date, is now
+`{ fire, tick }`. Values are GDD v0.10 values (§6, §6.1); no GDD rule changes.
 
 ## Context
 
@@ -53,17 +54,20 @@ to 9 stand unchanged. Values are GDD v0.10 values (§6, §6.1); no GDD rule chan
      volley index, which is the number of rings fired since the change because it fires on every
      volley; the triple fires on every second volley, 3 s after the change.
    `parallelAttack` and `Body.volleys[1]` are not used. This satisfies "each pattern keeps its own
-   count" (GDD §6.1) for the Cruiser because its ring fires on every volley. A boss whose periods
-   are not multiples of one another would need independent timers; `parallelAttack` is added
+   count" (GDD §6.1) for the Cruiser only because its ring fires on every volley and its triple does
+   not turn, so its count does not matter: the sentence is not literally true in general. A boss
+   whose periods are not multiples of one another would need independent timers; `parallelAttack` is added
    then, as an extension that removes nothing.
 3. **`Body.age` is the number of steps since the current movement began.** For an enemy and a
-   pickup that is the age since spawn, as today. For the boss it restarts at every phase change
-   (and at the start of the fight). `swayMovement({ amplitude, periodS })` is a closed form of
-   `age` around x 120, its direction given by `Body.mirror`. The `Boss` holds a pending phase:
-   when the HP crosses a threshold the attack switches at once and the boss keeps its movement
-   until `x − 120` changes sign, then snaps to x 120, switches the movement, restarts `age`,
-   `fireTimer` and `volleys`, and sets `mirror` to the direction it was moving in, so the body
-   never jumps.
+   pickup that is the age since spawn, as today. For the boss it restarts at the start of the fight and at
+   each movement swap. `swayMovement({ amplitude, periodS })` is a closed form of `age` around
+   x 120, its direction given by `Body.mirror`. A phase change has two moments. At the HP
+   threshold the attack switches at once and `fireTimer` and `volleys` restart, so the first ring
+   fires 1.5 s after the change and the ring count starts at 0 (GDD §6.1). The movement keeps its
+   phase-1 path; the `Boss` holds the pending phase until `x − 120` changes sign, then swaps the
+   movement, restarts `age` and sets `mirror` to the direction it was moving in. The swap puts the
+   boss on x 120: the correction is under one step of its motion (about 1.25 px at ±72 over 6 s)
+   and `previousPosition` hides it, so the body does not visibly jump.
 4. **`BossDefinition` holds the fight, not the score.** Its fields: `stats`, `phases:
    BossPhaseSpec[]` (`hpThreshold` in tenths, `movement`, `attack`, `brokenPart`), `timeLimit`,
    `warningS`, `entryFrom`, `entryTo`, `entryS`, `fleeSpeed` and `destroyedS`. `bonus` and
@@ -117,8 +121,7 @@ to 9 stand unchanged. Values are GDD v0.10 values (§6, §6.1); no GDD rule chan
   periods will need `parallelAttack` and a second timer; `age` means "since the current movement
   began", which every movement author must know.
 - Code review checks: no pattern reads `volleys` inside `fire`; `sequenceAttack` passes the volley
-  index and nothing else; the boss restarts `age`, `fireTimer` and `volleys` together at a phase
-  change; `ScoreKeeper` reads `BossTuning`, not a definition; `LEVEL_CLEARED` published once and
+  index and nothing else; the boss restarts `fireTimer` and `volleys` at the HP threshold and `age` at the movement swap; `ScoreKeeper` reads `BossTuning`, not a definition; `LEVEL_CLEARED` published once and
   never while the ship is `Dead`.
 - Tests (ADR-0003 pyramid): the Gunner and the Heavy unchanged; `fire` of each pattern for a given
   count; `sequenceAttack` for phase 1 (fan then ring, the ring not turning) and phase 2 (a ring
