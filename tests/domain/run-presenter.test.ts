@@ -1,3 +1,4 @@
+import { PlayerTuning } from '../../src/domain/game/tuning';
 import { describe, expect, it } from 'vitest';
 import { Pickup, PickupKind } from '../../src/domain/game/pickup';
 import { WeaponKind } from '../../src/domain/game/weapon';
@@ -97,6 +98,36 @@ function snapshot(
 function hullRects(render: RecordingRender): RecordedRect[] {
   return render.rectsOf(Palette.shipHull);
 }
+
+describe('RunPresenter — the cockpit is the hitbox (GDD v0.10 §4.1, playtest of 2026-10-12)', () => {
+  const HITBOX = PlayerTuning.hitboxSize;
+
+  it('draws the bright cockpit exactly on the hitbox, centred on the ship', () => {
+    const render = new RecordingRender();
+    const at = ship({ position: { x: 100, y: 200 }, previousPosition: { x: 100, y: 200 } });
+    presenter(render, false).draw(snapshot(at), 1, 16);
+    expect(render.rectsOf(Palette.shipCockpit)).toEqual([
+      {
+        region: 'field',
+        x: 100 - HITBOX / 2,
+        y: 200 - HITBOX / 2,
+        w: HITBOX,
+        h: HITBOX,
+        colour: Palette.shipCockpit,
+      },
+    ]);
+  });
+
+  it('draws it over the hull and the wings, so the player sees where a bullet counts', () => {
+    const render = new RecordingRender();
+    presenter(render, false).draw(snapshot(ship()), 1, 16);
+    const hull = render.rects.findIndex((r) => r.colour === Palette.shipHull);
+    const wing = render.rects.findIndex((r) => r.colour === Palette.shipWing);
+    const core = render.rects.findIndex((r) => r.colour === Palette.shipCockpit);
+    expect(core).toBeGreaterThan(hull);
+    expect(core).toBeGreaterThan(wing);
+  });
+});
 
 describe('RunPresenter — ship and bullets (05-state-scenes, first playable)', () => {
   it('draws the ship in the field region, its hull centred on the interpolated position', () => {

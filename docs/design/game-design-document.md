@@ -139,7 +139,8 @@ Minimal, arcade style: one intro card (two sentences), one title card per level,
   and y 16–304 *(v0.5)*.
 - **Hitbox: 4 × 4 px** at the sprite's centre. The visible ship is much larger than what can be
   hit; bullets graze the wings. This is the genre's standard since the 1990s and the single most
-  important fairness rule of the game.
+  important fairness rule of the game. *(v0.10 playtest)* The ship's bright cockpit is drawn
+  exactly on that hitbox, so the player can see where a bullet counts; only the drawing changes.
 - Spawn / respawn: the ship enters from the bottom with **2 s of invulnerability** (blinking); the
   fly-in *(initial: 0.5 s)* is part of those 2 s and gives no control. The ship flies in like this
   at the start of **every level** *(v0.4)*. It appears centred (x 120) fully hidden below the
