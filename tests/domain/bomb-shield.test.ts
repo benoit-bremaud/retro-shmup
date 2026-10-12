@@ -323,7 +323,14 @@ describe('Effects — bomb flash and shake (GDD v0.8 §9.4)', () => {
   ])('honours its switches: with them %s, a bomb flashes and shakes: %s', (on, seen) => {
     const run = vulnerableRun();
     const render = new RecordingRender();
-    const effects = { blink: true, hitFlash: true, explosions: true, shake: on, bombFlash: on };
+    const effects = {
+      blink: true,
+      hitFlash: true,
+      explosions: true,
+      shake: on,
+      bombFlash: on,
+      slowMotion: on,
+    };
     const presenter = new RunPresenter(render, effects, run.events());
     run.step(DT, pressing(Button.Bomb));
     presenter.applyShake();
@@ -338,7 +345,14 @@ describe('RunPresenter — the shield ring (GDD v0.8 §4.4)', () => {
     const run = vulnerableRun();
     collect(run, PickupKind.Shield);
     const render = new RecordingRender();
-    const effects = { blink: true, hitFlash: true, explosions: true, shake: true, bombFlash: true };
+    const effects = {
+      blink: true,
+      hitFlash: true,
+      explosions: true,
+      shake: true,
+      bombFlash: true,
+      slowMotion: true,
+    };
     new RunPresenter(render, effects, run.events()).draw(run.snapshot(), 1, 16);
     const ring = render.rectsOf(Palette.shieldRing);
     expect(ring).toHaveLength(4);

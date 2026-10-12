@@ -16,6 +16,11 @@ export const EffectTuning = {
   shakeMs: 300,
   /** The shake changes side every this many ms. */
   shakeFlipMs: 33,
+  /** The boss's death chain (GDD v0.10 §9.4): a burst on the hull every 1/3 s, never closer. */
+  bossChainSpacingMs: 1000 / 3,
+  /** Slow motion on the boss's death: this much wall time at this simulation speed. */
+  slowMotionMs: 500,
+  slowMotionScale: 0.5,
 } as const;
 
 const FLASH_SLOTS = 16;
@@ -193,5 +198,63 @@ export class Shake {
 
   advance(ms: number): void {
     this.elapsedMs += ms;
+  }
+}
+
+// Where the six medium bursts of the boss's death go, from its centre, inside its 112 x 48 hull;
+// spread left, right, up and down in turn so two in a row never overlap.
+const HULL_OFFSET_X = [-36, 28, -8, 40, -44, 10] as const;
+const HULL_OFFSET_Y = [-10, 8, 14, -12, 10, -14] as const;
+const HULL_BURSTS: number = HULL_OFFSET_X.length;
+
+/**
+ * The boss's death (GDD v0.10 §9.4): one boss burst, then six medium ones on the hull from a fixed
+ * table, one per 1/3 s of wall time at most — 3 bursts a second is the §9.7 limit, so one long
+ * frame never fires two. Records into the presenter's explosions; allocates nothing.
+ */
+export class BossChain {
+  private x = 0;
+  private y = 0;
+  private fired = HULL_BURSTS;
+  private sinceLastMs = 0;
+
+  trigger(x: number, y: number, explosions: Explosions): void {
+    this.x = x;
+    this.y = y;
+    this.fired = 0;
+    this.sinceLastMs = 0;
+    explosions.record(x, y, ExplosionTier.Boss);
+  }
+
+  advance(ms: number, explosions: Explosions): void {
+    if (this.fired >= HULL_BURSTS) return;
+    this.sinceLastMs += ms;
+    if (this.sinceLastMs < EffectTuning.bossChainSpacingMs) return;
+    const dx = HULL_OFFSET_X[this.fired] ?? 0;
+    const dy = HULL_OFFSET_Y[this.fired] ?? 0;
+    explosions.record(this.x + dx, this.y + dy, ExplosionTier.Medium);
+    this.fired += 1;
+    this.sinceLastMs = 0;
+  }
+}
+
+/**
+ * Slow motion on the boss's death (GDD v0.10 §9.4, ADR-0010): half speed for 0.5 s of wall time,
+ * counted with the frame's wall time so a frozen frame never uses it up. Only the time scale the
+ * loop reads changes: the simulation still takes the same steps per simulated second.
+ */
+export class SlowMotion {
+  private msLeft = 0;
+
+  trigger(): void {
+    this.msLeft = EffectTuning.slowMotionMs;
+  }
+
+  scale(): number {
+    return this.msLeft > 0 ? EffectTuning.slowMotionScale : 1;
+  }
+
+  advance(ms: number): void {
+    this.msLeft = Math.max(this.msLeft - ms, 0);
   }
 }

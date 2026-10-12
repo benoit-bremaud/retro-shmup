@@ -117,7 +117,14 @@ const calm = globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const scenes: FrameTarget = new SceneMachine(
   renderer,
   new Starfield(Math.random),
-  { blink: true, hitFlash: !calm, explosions: true, shake: !calm, bombFlash: !calm },
+  {
+    blink: true,
+    hitFlash: !calm,
+    explosions: true,
+    shake: !calm,
+    bombFlash: !calm,
+    slowMotion: !calm,
+  },
   () => new Run({ seed: Math.floor(Math.random() * 2 ** 32) }),
 );
 const loop = new FrameLoop(new PerformanceClock(), input, scenes, (callback) => {
