@@ -1,6 +1,6 @@
-import { PlayerTuning } from '../../src/domain/game/tuning';
 import { describe, expect, it } from 'vitest';
 import { Pickup, PickupKind } from '../../src/domain/game/pickup';
+import { PlayerTuning } from '../../src/domain/game/tuning';
 import { WeaponKind } from '../../src/domain/game/weapon';
 import { PlayerState } from '../../src/domain/game/player';
 import type { BossSnapshot, PlayerSnapshot, WorldSnapshot } from '../../src/domain/game/run';
