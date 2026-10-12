@@ -1,4 +1,5 @@
 import type { Formation } from './formation';
+import { FIELD_WIDTH, overlapsField } from './geometry';
 import type { LevelScript, ScriptEvent } from './level-script';
 import { toSteps } from './tuning';
 
@@ -53,9 +54,36 @@ function checkEvent(event: Readonly<ScriptEvent>, loopSteps: number): void {
       );
     }
   }
+  checkCargo(event, label);
   const last = toSteps(event.at) + (event.count - 1) * toSteps(event.interval ?? 0);
   if (last >= loopSteps) {
     throw new RangeError(`Level script: ${label} spawns past the loop point`);
+  }
+}
+
+/**
+ * A Carrier row needs a cargo, no other row may carry one, and a Carrier spawns fully outside the
+ * field, at a height where its crossing passes through it, so the whole crossing is seen (GDD
+ * v0.8 §5.2.1).
+ */
+function checkCargo(event: Readonly<ScriptEvent>, label: string): void {
+  const carrier = event.archetype.carriesCargo;
+  if (carrier && event.cargo === undefined) {
+    throw new RangeError(`Level script: ${label} is a Carrier, it needs a cargo`);
+  }
+  if (!carrier && event.cargo !== undefined) {
+    throw new RangeError(`Level script: ${label} cannot carry a cargo`);
+  }
+  if (!carrier) return;
+  const { width, height } = event.archetype.stats;
+  const { x, y } = event.spawn;
+  if (overlapsField(x, y, width, height)) {
+    throw new RangeError(`Level script: ${label} must spawn outside the field`);
+  }
+  // Its crossing is horizontal at a constant y: a row off the field's height never enters it, and
+  // an enemy that never entered is never released.
+  if (!overlapsField(FIELD_WIDTH / 2, y, width, height)) {
+    throw new RangeError(`Level script: ${label} must cross the field`);
   }
 }
 

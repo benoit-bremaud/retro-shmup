@@ -12,6 +12,7 @@ import { WeaponKind } from '../game/weapon';
 import type { RenderPort } from '../ports/render-port';
 import { Explosions, HitFlashes } from './effects';
 import { drawHud } from './hud';
+import { drawHollowSquare, drawPlusIcon, drawShipIcon } from './icons';
 import { Palette } from './palette';
 import type { PaletteColour } from './palette';
 
@@ -44,6 +45,8 @@ function enemyColour(enemy: Readonly<Enemy>): PaletteColour {
       return Palette.diver;
     case 'gunner':
       return Palette.gunner;
+    case 'carrier':
+      return Palette.carrier;
   }
 }
 
@@ -114,19 +117,43 @@ export class RunPresenter {
    * the two never differ by colour only (GDD §9.7).
    */
   private drawPickups(pickups: ReadonlyActiveList<Pickup>, alpha: number): void {
-    const r = this.render;
     for (let i = 0; i < pickups.count; i += 1) {
       const pickup = pickups.at(i);
       const x = lerp(pickup.previousPosition.x, pickup.position.x, alpha);
       const y = lerp(pickup.previousPosition.y, pickup.position.y, alpha);
-      const red = pickup.kind === PickupKind.PRed;
-      r.drawRect(x - 8, y - 8, 16, 16, red ? Palette.pickupRed : Palette.pickupBlue);
-      if (red) {
+      this.drawPickup(pickup.kind, x, y);
+    }
+  }
+
+  // The 16 × 16 placeholder of a pickup centred on (x, y): each kind its own shape.
+  private drawPickup(kind: PickupKind, x: number, y: number): void {
+    const r = this.render;
+    const left = x - 8;
+    const top = y - 8;
+    switch (kind) {
+      case PickupKind.PRed:
+        r.drawRect(left, top, 16, 16, Palette.pickupRed);
         for (let dot = -1; dot <= 1; dot += 1) {
           r.drawRect(x + dot * 4 - 1, y - 1, 2, 2, Palette.pickupMark);
         }
-      } else {
+        return;
+      case PickupKind.PBlue:
+        r.drawRect(left, top, 16, 16, Palette.pickupBlue);
         r.drawRect(x - 1, y - 4, 2, 8, Palette.pickupMark);
+        return;
+      case PickupKind.Shield:
+        drawHollowSquare(r, left, top, 16, Palette.shieldPickup);
+        return;
+      case PickupKind.Bomb:
+        drawPlusIcon(r, left, top, 16, Palette.bombPickup);
+        return;
+      case PickupKind.OneUp:
+        drawShipIcon(r, left, top, 16, Palette.oneUpPickup);
+        return;
+      default: {
+        // A new pickup kind fails to compile here until it is drawn.
+        const unknown: never = kind;
+        return unknown;
       }
     }
   }

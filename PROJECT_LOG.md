@@ -8,6 +8,35 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-12
 
+### PR #27 merged (`dcb736b`) — E-2 weapons L1 to L5
+
+- One Codex finding (Laser hits in active-list order) fixed in `38089ad` by owner choice A. That
+  push used `--no-verify` (ADR-0013): `pnpm audit` timed out on the npm registry in the hook;
+  check and gitleaks had passed in it, the SonarQube gate passed and the audit passed on retry by
+  hand, no dependency changed.
+
+### Carrier and the other pickups E-3 (branch `feat/carrier`) — Refs #25
+
+- `CrossMovement` (a horizontal crossing at 60 px/s, a closed form of the age, rightwards from a
+  spawn left of the centre) and the `CARRIER` archetype: 32 × 32, 4 level-1 shots of HP, 500
+  points, no attack, no roll, `carriesCargo`. `ScriptEvent.cargo` → `Enemy.cargo`, dropped at
+  100 % instead of the roll; the load check rejects a Carrier without cargo, a cargo on another
+  role, and a Carrier spawning on the field. Level 1 gains the Shield Carrier at 28 s and the
+  interim Bomb Carrier at 40 s (GDD v0.8 §5.2.1, §7.2.1).
+- Shield, Bomb and 1-UP pickups with the cap rule (shield held, 5 bombs, 9 lives → 1 000);
+  2 bombs at the start. Interim until E-4: the shield absorbs nothing and bombs have no effect.
+- Presentation: shared 8 × 8 / 16 × 16 shapes (`icons.ts`): the ship (lives, 1-UP), the plus
+  (bombs) and the hollow square (shield); the Carrier in its own colour; HUD bombs and shield at
+  the GDD v0.8 positions in both screens.
+- Visual check: a headless run holding fire showed the Carrier entering at 29 s, then the shield
+  icon in the right band at 36 s, with the ship-shaped life and the two bomb plus icons.
+- Local pre-push review: no Must. Fixed: the load check also rejects a Carrier whose height
+  never crosses the field (it would never enter, so never be released — noted in the class
+  diagram); one `overlapsField` predicate in `geometry.ts` for the release and the load checks;
+  tests for both crossing directions escaping with no drop, a recycled enemy forgetting its cargo,
+  the 1 px rejection edges, and the cargo in the full simulation log; an exhaustiveness guard on
+  the pickup drawing; the level-1 rows in time order; `Enemy.cargo` public in the diagram.
+
 ### Weapons L1 to L5 E-2 (branch `feat/weapons`) — Refs #25
 
 - `WEAPONS[kind][level − 1]` tables built once at load (GDD v0.8 §4.3, ADR-0019): the Spread's

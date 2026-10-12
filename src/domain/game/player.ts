@@ -51,6 +51,8 @@ export class Player {
   /** Steps since the protection began; the blink phase comes from it, never from `stateSteps`. */
   private protection = 0;
   private livesLeft: number = NORMAL.lives;
+  private bombStock: number = NORMAL.bombsPerLife;
+  private shieldHeld = false;
 
   get state(): PlayerState {
     return this.currentState;
@@ -74,6 +76,16 @@ export class Player {
     return this.weapon.level;
   }
 
+  /** Bombs in stock (GDD §4.5). Interim until E-4: they have no effect yet. */
+  get bombs(): number {
+    return this.bombStock;
+  }
+
+  /** A shield charge is held (GDD §4.4). Interim until E-4: it absorbs nothing yet. */
+  get shield(): boolean {
+    return this.shieldHeld;
+  }
+
   /** A ship on its way in or in control catches pickups; a dead one never does (GDD v0.8 §4.6). */
   get canCollect(): boolean {
     return this.currentState !== PlayerState.Dead;
@@ -84,8 +96,24 @@ export class Player {
    * effect applied.
    */
   collect(kind: PickupKind): number {
-    const kindOfP = kind === PickupKind.PBlue ? WeaponKind.Laser : WeaponKind.Spread;
-    return this.weapon.powerUp(kindOfP) ? 0 : KitCaps.capBonus;
+    switch (kind) {
+      case PickupKind.PRed:
+        return this.weapon.powerUp(WeaponKind.Spread) ? 0 : KitCaps.capBonus;
+      case PickupKind.PBlue:
+        return this.weapon.powerUp(WeaponKind.Laser) ? 0 : KitCaps.capBonus;
+      case PickupKind.Shield:
+        if (this.shieldHeld) return KitCaps.capBonus;
+        this.shieldHeld = true;
+        return 0;
+      case PickupKind.Bomb:
+        if (this.bombStock >= KitCaps.maxBombs) return KitCaps.capBonus;
+        this.bombStock += 1;
+        return 0;
+      case PickupKind.OneUp:
+        if (this.livesLeft >= KitCaps.maxLives) return KitCaps.capBonus;
+        this.livesLeft += 1;
+        return 0;
+    }
   }
 
   /** True once the last death sequence has ended: `Run` reads it at step 8 (05-state-player). */

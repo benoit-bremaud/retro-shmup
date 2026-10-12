@@ -4,6 +4,7 @@ import { WeaponKind } from '../game/weapon';
 import { HUD_FONT_CELL } from '../ports/render-port';
 import type { RenderPort } from '../ports/render-port';
 import { HUD_LAYOUTS, PAUSE_BUTTONS, PORTRAIT_STRIP_EDGE } from './hud-layout';
+import { drawHollowSquare, drawPlusIcon, drawShipIcon } from './icons';
 import { Palette } from './palette';
 import { FIELD_WIDTH, HUD_BAND_WIDTH, HUD_STRIP_HEIGHT } from './screen';
 
@@ -47,7 +48,7 @@ export function drawHudFrame(render: RenderPort): void {
  */
 export function drawHud(render: RenderPort, snapshot: WorldSnapshot): void {
   render.setRegion('hud');
-  const { score, multiplier, chainBar, lives } = HUD_LAYOUTS[render.layout().kind];
+  const { score, multiplier, chainBar, lives, bombs, shield } = HUD_LAYOUTS[render.layout().kind];
   drawNumber(render, snapshot.score, score.x, score.y, score.digits);
   render.drawText(TIMES, multiplier.x, multiplier.y, 'hud');
   drawNumber(render, snapshot.multiplier, multiplier.x + HUD_FONT_CELL.width, multiplier.y, 1);
@@ -56,10 +57,17 @@ export function drawHud(render: RenderPort, snapshot: WorldSnapshot): void {
   if (fill > 0) render.drawRect(chainBar.x, chainBar.y, fill, chainBar.height, Palette.chainBar);
   const reserve = Math.max(snapshot.lives - 1, 0);
   for (let i = 0; i < reserve; i += 1) {
-    render.drawRect(lives.x + i * lives.spacing, lives.y, lives.size, lives.size, Palette.lifeIcon);
+    drawShipIcon(render, lives.x + i * lives.spacing, lives.y, ICON, Palette.lifeIcon);
   }
+  for (let i = 0; i < snapshot.bombs; i += 1) {
+    drawPlusIcon(render, bombs.x + i * bombs.spacing, bombs.y, ICON, Palette.bombIcon);
+  }
+  if (snapshot.shield) drawHollowSquare(render, shield.x, shield.y, ICON, Palette.shieldIcon);
   drawWeapon(render, snapshot);
 }
+
+/** HUD icons are 8 × 8 (GDD v0.8 §9.2). */
+const ICON = 8;
 
 // Weapon badge and pips (GDD v0.8 §9.2): told apart by shape, never by colour only (§9.7).
 const BADGE = 8;

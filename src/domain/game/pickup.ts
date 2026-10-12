@@ -5,6 +5,9 @@ import { PickupTuning } from './tuning';
 export const PickupKind = {
   PRed: 0,
   PBlue: 1,
+  Shield: 2,
+  Bomb: 3,
+  OneUp: 4,
 } as const;
 export type PickupKind = (typeof PickupKind)[keyof typeof PickupKind];
 

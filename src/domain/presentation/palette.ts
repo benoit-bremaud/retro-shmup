@@ -40,6 +40,13 @@ export const Palette = {
   pipOn: '#f6e05f',
   pipOff: '#718096',
   laserShot: '#63b3ed',
+  // The Carrier and the other pickups (GDD v0.8 §4.6, §5.2.1), and their HUD icons.
+  carrier: '#48bb78',
+  shieldPickup: '#b794f4',
+  bombPickup: '#ecc94b',
+  oneUpPickup: '#68d391',
+  bombIcon: '#faf089',
+  shieldIcon: '#d6bcfa',
 } as const;
 
 export type PaletteColour = (typeof Palette)[keyof typeof Palette];

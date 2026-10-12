@@ -325,12 +325,13 @@ classDiagram
   }
   class Enemy {
     <<pooled>>
-    -cargo: PickupKind [0..1]
+    +cargo: PickupKind [0..1]
   }
   class EnemyArchetype {
     <<data>>
     +id: ArchetypeId
     +formation: boolean
+    +carriesCargo: boolean
   }
   class EnemyStats {
     <<data>>
@@ -490,7 +491,7 @@ classDiagram
 | Seeded drops and spawn order (v0.8 §4.6, §7.1, ADR-0019) | `Run(config: RunConfig)` owns the `Random`, built by the optional `RunConfig.createRandom(levelSeed)` (default `new SeededRandom(levelSeed)`, the test seam for a scripted `Random`) with mix(seed, 0) for level 1 and mix(seed, levelIndex) by `startNextLevel` (`levelIndex` 0-based); `World.spawnPickup` returns false when the pool of 8 is full, and `PICKUP_SPAWNED` is published only for a pickup actually spawned; one draw per killed enemy with a rate above 0 and no cargo picks both the drop and its kind; `DropTable.rate` × `DifficultyProfile.dropRateScale` |
 | Pickup motion and lifetime (v0.8 §4.4, §4.6) | `Pickup.position` is a closed form of `age` and `motion` from `origin` (fall: 40 px/s with the 8 px, 2 s sway around x0 clamped to 16–224; release: up to max(y − 48, 24), then 20 px/s — the rise is linear over 0.8 s whatever its height (clamped at y 24 it simply rises less); x stays at the death x, with no sway, during the rise and the fall); `World.sweep` releases a spent pickup or one whose top edge reached y 320; a spawn on the full pool of 8 is dropped |
 | Shield (v0.8 §4.4) | `Player.shield`; `hit()` in `Vulnerable` with a charge clears it, sets 0.5 s of `Invulnerable` with the blink count restarted and returns `ABSORBED`; the resolver spends the bullet (a body survives) and calls `HitRules.shieldBroken()`, which publishes `PLAYER_HIT` |
-| Carrier (v0.8 §5.2.1) | `CARRIER` = `CrossMovement` (a closed form of the age: 60 px/s, y constant; spawn x < 120 → moves right, otherwise left; the load check rejects a Carrier whose spawn box overlaps the field with a `RangeError`) + `NoAttack` + `DropTable` none + script cargo |
+| Carrier (v0.8 §5.2.1) | `CARRIER` = `CrossMovement` (a closed form of the age: 60 px/s, y constant; spawn x < 120 → moves right, otherwise left; the load check rejects with a `RangeError` a Carrier whose spawn box overlaps the field, and one whose height never crosses the field — it would never enter, so never be released) + `NoAttack` + `DropTable` none + script cargo |
 
 ## Notes
 
