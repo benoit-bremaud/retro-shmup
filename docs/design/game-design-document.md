@@ -102,7 +102,7 @@ A full run is three levels, about 15–20 minutes.
   | Shot | Drawn | Hitbox (unchanged) |
   |---|---|---|
   | Enemy bullet | 6 × 6 with a 2 × 2 white core | 4 × 4 |
-  | Spread bullet | 2 × 6 | 2 × 8 |
+  | Spread bullet | 2 × 6, at 60 % opacity | 2 × 8 |
   | Laser bolt | its §4.3 size, at 60 % opacity | its §4.3 size |
 
   The sprites of the assets brick keep these proportions.
