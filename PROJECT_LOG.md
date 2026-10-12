@@ -20,6 +20,13 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   CHANGELOG (Changed) updated.
 - Visual check: the brainstorm's scene (Spread level 3 at 22.7 s, a temporary uncommitted level)
   matches the chosen V2 capture.
+- Local pre-push review: no Must. Fixed: a left press counts on a pointer down only, so after a
+  lost focus a button still held never restarts the fire nor taps until it is pressed again;
+  façade tests renamed to the held-fire meaning, plus tests for a held left button with the
+  keyboard owning the movement, the fresh press after a lost focus and a cancelled mouse pointer;
+  an explicit 60 % opacity test (Codex review on #31); the arbitration JSDoc; the Laser drawn
+  through `drawBox`.
+
 ### Design revision after the brick-E playtest (branch `docs/brainstorm-design`) — GDD v0.9, ADR-0020, ADR-0021
 
 - Owner playtest after brick E: every device works (keyboard, touch, mouse, gamepad); two

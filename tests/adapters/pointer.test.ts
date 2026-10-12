@@ -319,6 +319,13 @@ describe('PointerModule — mouse (GDD v0.7 §4.2, ADR-0018 decisions 2, 4 and 8
     expect(mouseSample(module).held).toBe(0);
   });
 
+  it('stops firing when the browser cancels the mouse pointer', () => {
+    const module = pointer();
+    module.down(event('mouse', 200, 250, LEFT), 1);
+    module.cancel(event('mouse', 200, 250, 0));
+    expect(mouseSample(module).held).toBe(0);
+  });
+
   it('stops firing on a lost focus or a rotation', () => {
     const module = pointer();
     module.down(event('mouse', 200, 250, LEFT), 1);

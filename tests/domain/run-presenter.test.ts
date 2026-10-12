@@ -285,3 +285,12 @@ describe('RunPresenter — the Carrier and the other pickups (player-kit additio
     expect(Math.max(...rects.map((r) => r.x + r.w))).toBe(108);
   });
 });
+
+describe('RunPresenter — shot opacity (GDD v0.9 §3.2)', () => {
+  it('draws player shots at 60 % opacity, so the enemy bullets read first', () => {
+    // 0x99 / 0xff = 60 %.
+    expect(Palette.playerShot).toMatch(/^#[0-9a-f]{6}99$/);
+    expect(Palette.laserShot).toMatch(/^#[0-9a-f]{6}99$/);
+    expect(Palette.enemyShot).toMatch(/^#[0-9a-f]{6}$/);
+  });
+});

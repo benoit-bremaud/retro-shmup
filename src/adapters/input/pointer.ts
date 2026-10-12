@@ -217,7 +217,9 @@ export class PointerModule {
       this.mouseStart = seq;
       this.mouseInput = seq;
     }
-    if ((pressedNow & LEFT_BUTTON) !== 0 && inside) {
+    // A left press counts on a down only: after a lost focus clears the buttons, a button still
+    // held arriving with a move is no new press (no tap, no fire) until it is pressed again.
+    if (!isMove && (pressedNow & LEFT_BUTTON) !== 0 && inside) {
       this.tap(field ? 'field' : 'hud', event.pointerId);
       this.mouseInput = seq;
       if (field) {

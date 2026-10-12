@@ -194,30 +194,19 @@ export class RunPresenter {
     }
   }
 
-  // Each shot in its weapon's colour, read from the bullet, never from its size.
+  // Each shot in its weapon's colour, read from the bullet, never from its size; a Spread bullet
+  // is drawn shorter than its 2 × 8 hitbox (GDD v0.9 §3.2).
   private drawPlayerShots(bullets: ReadonlyActiveList<Bullet>, alpha: number): void {
     for (let i = 0; i < bullets.count; i += 1) {
       const bullet = bullets.at(i);
+      if (bullet.weapon === WeaponKind.Laser) {
+        this.drawBox(bullet, alpha, Palette.laserShot);
+        continue;
+      }
       const x = lerp(bullet.previousPosition.x, bullet.position.x, alpha);
       const y = lerp(bullet.previousPosition.y, bullet.position.y, alpha);
-      if (bullet.weapon === WeaponKind.Laser) {
-        this.render.drawRect(
-          x - bullet.width / 2,
-          y - bullet.height / 2,
-          bullet.width,
-          bullet.height,
-          Palette.laserShot,
-        );
-      } else {
-        // Drawn shorter than its 2 × 8 hitbox (GDD v0.9 §3.2).
-        this.render.drawRect(
-          x - bullet.width / 2,
-          y - SPREAD_DRAWN_HEIGHT / 2,
-          bullet.width,
-          SPREAD_DRAWN_HEIGHT,
-          Palette.playerShot,
-        );
-      }
+      const h = SPREAD_DRAWN_HEIGHT;
+      this.render.drawRect(x - bullet.width / 2, y - h / 2, bullet.width, h, Palette.playerShot);
     }
   }
 
