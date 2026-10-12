@@ -28,6 +28,7 @@ describe('groupThousands — values grouped with a space (GDD v0.10 §8)', () =>
     [500, '500'],
     [1500, '1 500'],
     [10000, '10 000'],
+    [100000, '100 000'],
     [1234567, '1 234 567'],
   ])('writes %d as %j', (value, text) => {
     expect(groupThousands(value)).toBe(text);

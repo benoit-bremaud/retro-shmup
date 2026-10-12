@@ -76,7 +76,7 @@ export function drawResults(
   for (let i = 0; i < shown; i += 1) {
     const key = LABELS[i];
     const value = values[i];
-    if (key === undefined || value === undefined) return;
+    if (key === undefined || value === undefined) continue;
     const y = FIRST_LINE_Y + i * LINE_PITCH;
     render.drawText(message(key, language), MARGIN, y, 'title');
     const width = (value.length - 1) * HUD_FONT_CELL.width + HUD_FONT_CELL.glyphWidth;

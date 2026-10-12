@@ -8,9 +8,10 @@ const WINDOW_STEPS = toSteps(ChainTuning.windowSeconds);
 const NO_CHAIN = -1;
 
 /**
- * Points, the chain multiplier, the flat cap bonus of a collected pickup and the flat boss bonus
- * and the end-of-level tally, added flat at `LEVEL_CLEARED` (GDD §8, v0.8 §4.6, v0.10 §6, class diagram). `Run`'s constructor subscribes it first (ADR-0010 wording note), so the score
- * is counted with or without a presenter.
+ * Points, the chain multiplier, the flat cap bonus of a collected pickup, the flat boss bonus and
+ * the end-of-level tally, added flat at `LEVEL_CLEARED` (GDD §8, v0.8 §4.6, v0.10 §6, class
+ * diagram). `Run`'s constructor subscribes it first (ADR-0010 wording note), so the score is
+ * counted with or without a presenter.
  *
  * `chainTimer` counts the steps left in the window: 120 on a kill, −1 with no chain. `tick` runs at
  * step 7, after the collisions, and the chain breaks when the timer falls below 0, so a kill 120

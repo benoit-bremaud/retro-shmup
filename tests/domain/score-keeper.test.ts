@@ -120,6 +120,19 @@ describe('ScoreKeeper — the boss bonus (GDD v0.10 §6, ADR-0023)', () => {
 });
 
 describe('ScoreKeeper — the end-of-level tally (GDD v0.10 §8, ADR-0022 decision 7)', () => {
+  it('adds the tally exactly once and flat, even with a chain running at ×3', () => {
+    const { bus, keeper, kill } = setup();
+    for (let i = 0; i < 10; i += 1) killStep(keeper, kill); // 10 chained kills: ×3 from here
+    expect(keeper.multiplier).toBe(3);
+    const before = keeper.score;
+    const cleared = createGameEvent(GameEventKind.LevelCleared);
+    cleared.value = 2; // bombs left
+    bus.publish(cleared);
+    // No formation, no bomb used, no life lost, 2 bombs left: 5 000 + 10 000 + 2 000, not × 3.
+    expect(keeper.score - before).toBe(17000);
+    expect(keeper.multiplier).toBe(3);
+  });
+
   function publish(bus: EventBus, kind: GameEventKind, value = 0): void {
     const event = createGameEvent(kind);
     event.value = value;
