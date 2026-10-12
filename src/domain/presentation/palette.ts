@@ -47,6 +47,9 @@ export const Palette = {
   oneUpPickup: '#68d391',
   bombIcon: '#faf089',
   shieldIcon: '#d6bcfa',
+  // The shield ring around the ship and the bomb's tint of the field (GDD v0.8 §4.4, §9.4).
+  shieldRing: '#9f7aea9a',
+  bombFlash: '#fffbea59',
 } as const;
 
 export type PaletteColour = (typeof Palette)[keyof typeof Palette];

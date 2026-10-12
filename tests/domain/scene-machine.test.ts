@@ -20,6 +20,8 @@ function setup(): { machine: SceneMachine; render: RecordingRender } {
     blink: true,
     hitFlash: true,
     explosions: true,
+    shake: true,
+    bombFlash: true,
   });
   return { machine, render };
 }
@@ -280,7 +282,7 @@ function gameOverFixture(): ReturnType<typeof setup> {
   const machine = new SceneMachine(
     render,
     new Starfield(() => 0.5),
-    { blink: true, hitFlash: true, explosions: true },
+    { blink: true, hitFlash: true, explosions: true, shake: true, bombFlash: true },
     () => new Run({ script: KILLER }),
   );
   machine.step(DT, createIntentFrame());
@@ -381,7 +383,7 @@ describe('SceneMachine — effects per run (ADR-0010, 02-sequence-fixed-step-tic
     const machine = new SceneMachine(
       render,
       new Starfield(() => 0.5),
-      { blink: true, hitFlash: true, explosions: true },
+      { blink: true, hitFlash: true, explosions: true, shake: true, bombFlash: true },
       () => new Run({ script: TARGET }),
     );
     machine.step(DT, createIntentFrame());
@@ -425,7 +427,7 @@ describe('SceneMachine — effects per run (ADR-0010, 02-sequence-fixed-step-tic
     const machine = new SceneMachine(
       render,
       new Starfield(() => 0.5),
-      { blink: true, hitFlash: true, explosions: true },
+      { blink: true, hitFlash: true, explosions: true, shake: true, bombFlash: true },
       () => new Run({ script: script }),
     );
     machine.step(DT, createIntentFrame());

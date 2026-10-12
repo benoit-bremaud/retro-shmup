@@ -8,6 +8,26 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-12
 
+### Bomb, shield and death rule E-4 (branch `feat/bomb`) — Closes #25
+
+- The bomb at step slot 3 (02-sequence-bomb): `Player.useBomb()` in control only, one per press,
+  invulnerability max(time left, 1 s) with the blink restarted from `Vulnerable`; `BOMB_USED`
+  first, every enemy bullet cancelled, 30 level-1 shots once to every enemy on the field through
+  the normal kill path (score, chain, formation, drops and cargo); enemies outside the field are
+  untouched.
+- The shield: `HitOutcome.Absorbed` spends the charge, 0.5 s of invulnerability with the blink
+  restarted; the absorbed bullet is consumed, an absorbed body survives; `PLAYER_HIT` published.
+- The death rule (02-sequence-player-hit): the power drops a level (never below 1) and the bombs
+  reset to 2 at once; above level 1 the lost level is released as a P of the current colour that
+  rises 48 px over 0.8 s then falls at 20 px/s, published before `PLAYER_DIED`, last life included.
+- Presentation: the 36 × 36 shield ring; the bomb flash (≈ 300 ms, under 3 per second) and the
+  field shake (4 px, side every 33 ms, fading over 300 ms — owner choice A, GDD v0.8 §9.4 and a
+  Decision record row), each behind its own `EffectSettings` switch; the scene machine applies the
+  shake before the starfield and never in a frozen frame. The "E-1 to E-4" interim deviation is
+  lifted.
+- Visual check: with a temporary, uncommitted shield at start, the ring around the ship; on `X`,
+  the tinted and shaken field (HUD still), the bomb stock 2 → 1 and two Divers destroyed.
+
 ### PR #27 merged (`dcb736b`) — E-2 weapons L1 to L5
 
 - One Codex finding (Laser hits in active-list order) fixed in `38089ad` by owner choice A. That

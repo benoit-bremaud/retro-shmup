@@ -112,7 +112,7 @@ watchPixelRatio();
 const scenes: FrameTarget = new SceneMachine(
   renderer,
   new Starfield(Math.random),
-  { blink: true, hitFlash: true, explosions: true },
+  { blink: true, hitFlash: true, explosions: true, shake: true, bombFlash: true },
   () => new Run({ seed: Math.floor(Math.random() * 2 ** 32) }),
 );
 const loop = new FrameLoop(new PerformanceClock(), input, scenes, (callback) => {

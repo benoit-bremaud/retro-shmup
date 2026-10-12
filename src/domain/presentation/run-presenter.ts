@@ -7,10 +7,11 @@ import { GameEventKind } from '../game/events';
 import type { GameEvent, RunEvents } from '../game/events';
 import { PlayerState } from '../game/player';
 import type { PlayerSnapshot, WorldSnapshot } from '../game/run';
+import { FIELD_HEIGHT, FIELD_WIDTH } from '../game/geometry';
 import { PlayerTuning, STEPS_PER_SECOND } from '../game/tuning';
 import { WeaponKind } from '../game/weapon';
 import type { RenderPort } from '../ports/render-port';
-import { Explosions, HitFlashes } from './effects';
+import { BombFlash, Explosions, HitFlashes, Shake } from './effects';
 import { drawHud } from './hud';
 import { drawHollowSquare, drawPlusIcon, drawShipIcon } from './icons';
 import { Palette } from './palette';
@@ -21,6 +22,10 @@ export interface EffectSettings {
   blink: boolean;
   hitFlash: boolean;
   explosions: boolean;
+  /** The bomb's field shake (GDD v0.8 §9.3, §9.4). */
+  shake: boolean;
+  /** The bomb's tint of the field. */
+  bombFlash: boolean;
 }
 
 const BLINK_HALF_PERIOD_STEPS = STEPS_PER_SECOND / (PlayerTuning.blinksPerSecond * 2);
@@ -61,12 +66,23 @@ export class RunPresenter {
   private readonly effects: Readonly<EffectSettings>;
   private readonly flashes = new HitFlashes();
   private readonly explosions = new Explosions();
+  private readonly bombFlash = new BombFlash();
+  private readonly shake = new Shake();
 
   constructor(render: RenderPort, effects: Readonly<EffectSettings>, events: RunEvents) {
     this.render = render;
     this.effects = effects;
     events.subscribe(GameEventKind.EnemyHit, this.onEnemyHit);
     events.subscribe(GameEventKind.EnemyDestroyed, this.onEnemyDestroyed);
+    events.subscribe(GameEventKind.BombUsed, this.onBombUsed);
+  }
+
+  /**
+   * Sets the field's camera offset for this frame (ADR-0014: field draws only); the scene machine
+   * calls it before the starfield, so the whole field shakes and the HUD never does.
+   */
+  applyShake(): void {
+    this.shake.apply(this.render);
   }
 
   /** Hit-stop and slow motion arrive with the later game-feel effects; until then full speed. */
@@ -93,16 +109,25 @@ export class RunPresenter {
       const x = lerp(player.previousPosition.x, player.position.x, alpha);
       const y = lerp(player.previousPosition.y, player.position.y, alpha);
       this.drawShip(x, y);
+      if (snapshot.shield) this.drawShieldRing(x, y);
     }
     this.drawBullets(snapshot.enemyBullets, alpha, Palette.enemyShot);
+    this.bombFlash.draw(this.render, FIELD_WIDTH, FIELD_HEIGHT);
     drawHud(this.render, snapshot);
     this.flashes.advance(wallDtMs);
     this.explosions.advance(wallDtMs);
+    this.bombFlash.advance(wallDtMs);
+    this.shake.advance(wallDtMs);
   }
 
   // Handlers only record (ADR-0010): copied out of the reused event, never kept.
   private readonly onEnemyHit = (event: Readonly<GameEvent>): void => {
     if (this.effects.hitFlash) this.flashes.record(event.subject);
+  };
+
+  private readonly onBombUsed = (): void => {
+    if (this.effects.bombFlash) this.bombFlash.trigger();
+    if (this.effects.shake) this.shake.trigger();
   };
 
   private readonly onEnemyDestroyed = (event: Readonly<GameEvent>): void => {
@@ -176,6 +201,17 @@ export class RunPresenter {
     const x = lerp(box.previousPosition.x, box.position.x, alpha);
     const y = lerp(box.previousPosition.y, box.position.y, alpha);
     this.render.drawRect(x - box.width / 2, y - box.height / 2, box.width, box.height, colour);
+  }
+
+  // The shield ring: a 36 × 36 outline of four 2 px rectangles around the ship (GDD v0.8 §4.4).
+  private drawShieldRing(x: number, y: number): void {
+    const r = this.render;
+    const half = 18;
+    const t = 2;
+    r.drawRect(x - half, y - half, 2 * half, t, Palette.shieldRing);
+    r.drawRect(x - half, y + half - t, 2 * half, t, Palette.shieldRing);
+    r.drawRect(x - half, y - half + t, t, 2 * half - 2 * t, Palette.shieldRing);
+    r.drawRect(x + half - t, y - half + t, t, 2 * half - 2 * t, Palette.shieldRing);
   }
 
   // Placeholder silhouette inside the 32 × 32 sprite box; the hull covers the centre.

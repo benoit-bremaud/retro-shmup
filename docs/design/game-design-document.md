@@ -580,7 +580,8 @@ click, tap or key press, including during a run *(v0.4, ADR-0009)*.
 ### 9.4 Game feel (all effects individually toggleable in §9.3)
 
 Hit flash (white, about 33 ms *(v0.6)*), hit-stop on large kills (2–3 frames), screen shake on bombs and boss
-hits (the play field only), bomb flash (a tint of the play field, about 300 ms, at most 3 per
+hits (the play field only; a bomb's shake is 4 logical px changing side every 33 ms and fading
+out over 300 ms *(initial, v0.8)*), bomb flash (a tint of the play field, about 300 ms, at most 3 per
 second *(v0.8)*), invulnerability blink (non-flashing replacement when off, §9.7) *(v0.5)*, muzzle flash,
 explosion particles with size-scaled bursts, floating score pop-ups, slow
 motion on boss death (0.5 s), boss "part breaks off" debris.
@@ -781,6 +782,7 @@ fully playable at release quality, used to validate the design before producing 
 | P colours *(v0.8)* | Formation P of the level's dominant colour (red in level 1); Gunner P red or blue, 50 / 50, from its one drop draw; the other-colour switch is accepted as a choice (§4.6) | The P takes the player's current colour (the second weapon would never be offered); a P cycling between colours (timing-based, unreadable at 16 px, colour-only information) |
 | Carrier *(v0.8)* | 32 × 32, 4 HP, 500 points, a straight horizontal crossing at 60 px/s, no attack, 100 % script cargo; Shield Carrier at 28 s; an interim Bomb Carrier at 40 s; no 1-UP before the level brick | A 1-UP Carrier in the 45 s interim loop (a life every loop, far too generous) |
 | Bomb timing and reach *(v0.8)* | One step, before the collisions; on-field enemies only, through the normal kill path; invulnerability max(time left, 1 s); usable in control only (`Vulnerable`, `Invulnerable`), one per press | Damage to enemies not yet on the field (kills the player never saw); a bomb during the fly-in or the death sequence (a free clear at every respawn, or a bomb lost to a dead ship); a fixed 1 s that can shorten a longer protection |
+| Bomb shake *(v0.8)* | 4 logical px, changing side every 33 ms, fading out over 300 ms, the field only, deterministic (no random draw), its own switch | 2 px for 200 ms (too discreet for the "large shake" of §4.5); 8 px for 500 ms (hides the enemy bullets the bomb just cleared and the next ones) |
 | Touch bomb *(v0.8)* | No drawn bomb button for now; the second-finger tap stays the only touch bomb; revisited with the options and screens | A landscape-only button (two behaviours by orientation); the bomb-stock icon as the tap target (the portrait strip is full and far from the thumb); a button over the play field (hides play) |
 | Shield *(v0.8)* | One charge, a 36 × 36 ring outline in its own colour; absorbs a bullet or a body (the body survives), 0.5 s of invulnerability with the blink restarted; kept until used; none at the start | A ring in the hull's cyan (reads as part of the ship) |
 | HUD icons *(v0.8)* | Lives, bombs, shield, weapon badge and power pips told apart by shape (§9.2) | Icons told apart by colour only (§9.7) |

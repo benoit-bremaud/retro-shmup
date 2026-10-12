@@ -11,6 +11,10 @@ export const GameEventKind = {
   PickupCollected: 4,
   /** A whole Popcorn formation destroyed; `position` = its last member. */
   FormationCleared: 5,
+  /** The shield absorbed a hit; `position` = the ship. */
+  PlayerHit: 6,
+  /** A bomb went off; `position` = the ship. */
+  BombUsed: 7,
 } as const;
 export type GameEventKind = (typeof GameEventKind)[keyof typeof GameEventKind];
 

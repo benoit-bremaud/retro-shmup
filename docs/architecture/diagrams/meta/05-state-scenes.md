@@ -285,7 +285,8 @@ boss and the end-of-level tally wait for the level brick (F).
   `WEAPONS` tables. E-1 brought `Weapon.kind`, `level`,
   `powerUp` and the HUD badge and pips, but until E-2 `WEAPONS` holds the level-1 Spread record
   for every level and both kinds: the level, the kind and the pips change, the shot does not.
-- **Interim deviation, E-1 to E-4**: a Shield caught before E-4 sets the charge and its HUD icon
+- ~~**Interim deviation, E-1 to E-4**~~: lifted by E-4 (bomb, shield absorption, death rule). A
+  Shield caught before E-4 sets the charge and its HUD icon
   but absorbs nothing; Bomb pickups raise the stock (the cap bonus at 5) with no effect, the bomb
   itself arriving in E-4; death keeps the power and the bombs until E-4 (no `powerDown`, no
   release, no bombs reset).

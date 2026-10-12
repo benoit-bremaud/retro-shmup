@@ -133,6 +133,21 @@ export const PickupTuning = {
   /** The sway axis is clamped so the whole box always stays on the field. */
   minAxisX: 16,
   maxAxisX: 224,
+  /** The death release (GDD v0.8 §4.4): rises linearly, never above this y, then falls slowly. */
+  releaseRise: 48,
+  releaseRiseSeconds: 0.8,
+  releaseTopY: 24,
+  releaseFallSpeed: 20,
+} as const;
+
+/** Bombs and the shield (GDD v0.8 §4.4, §4.5). */
+export const KitTuning = {
+  /** The bomb's damage, in tenths: 30 level-1 shots. */
+  bombDamage: 300,
+  /** The bomb's invulnerability: max(time left, this). */
+  bombInvulnerableSeconds: 1,
+  /** A shield charge absorbing a hit gives this much invulnerability. */
+  shieldInvulnerableSeconds: 0.5,
 } as const;
 
 /** Pickups on the field at once (GDD v0.8 §4.6); a spawn on a full pool is dropped (ADR-0019). */

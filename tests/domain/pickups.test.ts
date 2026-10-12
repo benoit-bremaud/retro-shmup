@@ -153,6 +153,9 @@ class Collected implements HitRules {
   pickupCollected(pickup: Pickup): void {
     this.kinds.push(pickup.kind);
   }
+  shieldBroken(): void {
+    // Not exercised here.
+  }
 }
 
 /** A world whose ship sits at (120, 272) in `state` after `steps` idle steps. */

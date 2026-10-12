@@ -223,6 +223,10 @@ export class SceneMachine {
     // The HUD background first: the presenter draws the HUD contents over it.
     drawHudFrame(r);
     r.setRegion('field');
+    // The bomb's shake moves the whole field, starfield included, and never in a frozen frame.
+    const shaking = !traits.frozen && traits.drawsRun && this.presenter !== undefined;
+    if (shaking) this.presenter?.applyShake();
+    else r.setCameraOffset(0, 0);
     // Frozen scenes draw the starfield at alpha 1 too, so it never steps back at the pause.
     const scroll = traits.scrolls || traits.frozen ? frameAlpha : 0;
     this.starfield.draw(r, (this.backgroundSteps + scroll) * STEP_SECONDS);

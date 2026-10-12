@@ -1,11 +1,14 @@
+import { Button } from '../ports/input-port';
 import type { IntentFrame } from '../ports/input-port';
 import type { Random } from '../ports/random';
 import { mixSeed, SeededRandom } from '../random/seeded-random';
 import type { ReadonlyActiveList } from './active-list';
 import type { Bullet } from './bullet';
+import { applyDamage } from './body';
 import { CollisionResolver } from './collision';
 import type { HitRules } from './collision';
 import { NORMAL } from './difficulty';
+import { KitTuning } from './tuning';
 import type { Enemy } from './enemy';
 import { createGameEvent, EventBus, GameEventKind } from './events';
 import type { GameEvent, RunEvents } from './events';
@@ -15,10 +18,11 @@ import { LevelDirector } from './level-director';
 import type { EnemySpawner } from './level-director';
 import { LEVEL_1 } from './level-script';
 import type { LevelScript, ScriptEvent } from './level-script';
-import type { Pickup, PickupKind } from './pickup';
+import { PickupKind, PickupMotion } from './pickup';
+import type { Pickup } from './pickup';
 import type { PlayerState } from './player';
 import { ScoreKeeper } from './score-keeper';
-import type { WeaponKind } from './weapon';
+import { WeaponKind } from './weapon';
 import { World } from './world';
 
 /**
@@ -92,7 +96,7 @@ export interface RunView {
 
 /**
  * The simulation of one run (class diagram: `Simulation`, `RunView`, `HitRules`). `step` follows
- * the fixed order of the class diagram; the bomb slot (3) arrives with the pickups and rules brick.
+ * the fixed order of the class diagram.
  */
 export class Run implements Simulation, RunView, HitRules, EnemySpawner {
   private readonly world = new World();
@@ -106,6 +110,8 @@ export class Run implements Simulation, RunView, HitRules, EnemySpawner {
   private readonly pickupSpawnedEvent = createGameEvent(GameEventKind.PickupSpawned);
   private readonly pickupCollectedEvent = createGameEvent(GameEventKind.PickupCollected);
   private readonly formationClearedEvent = createGameEvent(GameEventKind.FormationCleared);
+  private readonly playerHitEvent = createGameEvent(GameEventKind.PlayerHit);
+  private readonly bombUsedEvent = createGameEvent(GameEventKind.BombUsed);
   private currentOutcome: RunOutcome = RunOutcome.Playing;
   private readonly snapshotView: WorldSnapshot = createSnapshot(this.world, this.scoreKeeper);
   private readonly script: LevelScript;
@@ -127,6 +133,8 @@ export class Run implements Simulation, RunView, HitRules, EnemySpawner {
     this.director.tick(this);
     // (2) the player moves and its weapon fires.
     this.world.player.update(frame, dt, this.world);
+    // (3) a bomb pressed in control goes off, before this step's collisions.
+    if ((frame.pressed & Button.Bomb) !== 0 && this.world.player.useBomb()) this.detonate();
     // (4) enemies move and attack, then every bullet moves.
     this.world.moveEnemies(dt);
     this.world.moveBullets(dt);
@@ -258,14 +266,47 @@ export class Run implements Simulation, RunView, HitRules, EnemySpawner {
   }
 
   /** `HitRules`: the ship died this step. */
+  /**
+   * `HitRules`: the ship died this step (02-sequence-player-hit). The death effects apply at once
+   * — the power drops a level and the bombs reset — and a lost level is released as a P of the
+   * current weapon's colour, spawned before `PLAYER_DIED` is published, last life included.
+   */
   playerDied(): void {
-    const event = this.playerDiedEvent;
-    event.position.x = this.world.player.position.x;
-    event.position.y = this.world.player.position.y;
-    event.subject = 0;
-    event.value = 0;
-    event.detail = 0;
-    this.bus.publish(event);
+    const player = this.world.player;
+    const x = player.position.x;
+    const y = player.position.y;
+    if (player.applyDeathPenalty()) {
+      const colour = player.weaponKind === WeaponKind.Laser ? PickupKind.PBlue : PickupKind.PRed;
+      if (this.world.spawnPickup(colour, x, y, PickupMotion.Release)) {
+        this.publishAt(this.pickupSpawnedEvent, x, y, 0, colour);
+      }
+    }
+    this.publishAt(this.playerDiedEvent, x, y, 0, 0);
+  }
+
+  /** `HitRules`: the shield charge took the hit (GDD v0.8 §4.4). */
+  shieldBroken(): void {
+    const ship = this.world.player.position;
+    this.publishAt(this.playerHitEvent, ship.x, ship.y, 0, 0);
+  }
+
+  /**
+   * The bomb (02-sequence-bomb, GDD v0.8 §4.5): `BOMB_USED` first, then every enemy bullet is
+   * cancelled and every enemy on the field takes 30 level-1 shots once, through the normal kill
+   * path. Enemies still outside the field are untouched.
+   */
+  private detonate(): void {
+    const ship = this.world.player.position;
+    this.publishAt(this.bombUsedEvent, ship.x, ship.y, 0, 0);
+    this.world.cancelEnemyBullets();
+    const enemies = this.world.enemies;
+    for (let i = 0; i < enemies.count; i += 1) {
+      const enemy = enemies.at(i);
+      if (enemy.spent || !this.world.isOnField(enemy)) continue;
+      const destroyed = applyDamage(enemy, KitTuning.bombDamage);
+      this.enemyHit(enemy);
+      if (destroyed) this.destroyEnemy(enemy);
+    }
   }
 }
 

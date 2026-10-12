@@ -153,7 +153,13 @@ describe('Level simulation — effects never change the run (ADR-0010)', () => {
       const render = new RecordingRender();
       const presenter = new RunPresenter(
         render,
-        { blink: effectsOn, hitFlash: effectsOn, explosions: effectsOn },
+        {
+          blink: effectsOn,
+          hitFlash: effectsOn,
+          explosions: effectsOn,
+          shake: effectsOn,
+          bombFlash: effectsOn,
+        },
         run.events(),
       );
       const log: string[] = [];

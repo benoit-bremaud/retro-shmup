@@ -44,6 +44,10 @@ class Rules implements HitRules {
   pickupCollected(pickup: Pickup): void {
     this.collected.push(pickup.kind);
   }
+  absorbed = 0;
+  shieldBroken(): void {
+    this.absorbed += 1;
+  }
 }
 
 /** A world whose ship is vulnerable at its resting point (120, 272). */

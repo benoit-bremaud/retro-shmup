@@ -41,7 +41,11 @@ function bullet(
 
 /** A presenter over a fresh bus; the effect switches on, the blink as given. */
 function presenter(render: RecordingRender, blink: boolean, bus = new EventBus()): RunPresenter {
-  return new RunPresenter(render, { blink, hitFlash: true, explosions: true }, bus);
+  return new RunPresenter(
+    render,
+    { blink, hitFlash: true, explosions: true, shake: true, bombFlash: true },
+    bus,
+  );
 }
 
 /** A fixed active list for presenter tests: the presenter only reads `count` and `at`. */
