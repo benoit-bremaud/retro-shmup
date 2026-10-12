@@ -1,12 +1,14 @@
 import type { ReadonlyActiveList } from '../game/active-list';
+import { BossState } from '../game/boss';
 import type { Bullet } from '../game/bullet';
+import { CRUISER_TURRET } from '../game/cruiser';
 import type { Enemy } from '../game/enemy';
 import { PickupKind } from '../game/pickup';
 import type { Pickup } from '../game/pickup';
 import { GameEventKind } from '../game/events';
 import type { GameEvent, RunEvents } from '../game/events';
 import { PlayerState } from '../game/player';
-import type { PlayerSnapshot, WorldSnapshot } from '../game/run';
+import type { BossSnapshot, PlayerSnapshot, WorldSnapshot } from '../game/run';
 import { FIELD_HEIGHT, FIELD_WIDTH } from '../game/geometry';
 import { PlayerTuning, STEPS_PER_SECOND } from '../game/tuning';
 import { WeaponKind } from '../game/weapon';
@@ -103,12 +105,13 @@ export class RunPresenter {
   }
 
   /**
-   * Enemies, explosions, pickups, player bullets, the ship and its shield ring, then enemy
+   * The boss, enemies, explosions, pickups, player bullets, the ship and its shield ring, then enemy
    * bullets on top, then the bomb flash over the field; then the HUD contents; then the effects
    * age by `wallDtMs` (0 in a frozen frame).
    */
   draw(snapshot: WorldSnapshot, alpha: number, wallDtMs: number): void {
     this.render.setRegion('field');
+    this.drawBoss(snapshot.boss, alpha);
     for (let i = 0; i < snapshot.enemies.count; i += 1) {
       const enemy = snapshot.enemies.at(i);
       const flashing = this.effects.hitFlash && this.flashes.isFlashing(enemy.serial);
@@ -131,6 +134,34 @@ export class RunPresenter {
     this.explosions.advance(wallDtMs);
     this.bombFlash.advance(wallDtMs);
     this.shake.advance(wallDtMs);
+  }
+
+  /**
+   * The boss as plain grey boxes (F-2a): the 112 × 48 body and, until phase 2 breaks it off, the
+   * forward turret. Nothing while it is idle or warning, off the field; the HP bar, the WARNING
+   * banner and the debris are F-2b and F-2c.
+   */
+  private drawBoss(boss: BossSnapshot, alpha: number): void {
+    if (boss.state === BossState.Idle || boss.state === BossState.Warning) return;
+    const x = lerp(boss.previousPosition.x, boss.position.x, alpha);
+    const y = lerp(boss.previousPosition.y, boss.position.y, alpha);
+    const flashing = this.effects.hitFlash && this.flashes.isFlashing(boss.serial);
+    const r = this.render;
+    r.drawRect(
+      x - boss.width / 2,
+      y - boss.height / 2,
+      boss.width,
+      boss.height,
+      flashing ? Palette.hitFlash : Palette.boss,
+    );
+    if (boss.phase > 0 || flashing) return;
+    r.drawRect(
+      x + CRUISER_TURRET.offsetX - CRUISER_TURRET.width / 2,
+      y + CRUISER_TURRET.offsetY - CRUISER_TURRET.height / 2,
+      CRUISER_TURRET.width,
+      CRUISER_TURRET.height,
+      Palette.bossTurret,
+    );
   }
 
   // Handlers only record (ADR-0010): copied out of the reused event, never kept.

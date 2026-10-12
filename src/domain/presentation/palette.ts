@@ -52,6 +52,10 @@ export const Palette = {
   oneUpPickup: '#68d391',
   bombIcon: '#faf089',
   shieldIcon: '#d6bcfa',
+  // The Cruiser, level 1's boss, and its forward turret (GDD v0.10 §6.1): plain grey boxes until
+  // the sprites land.
+  boss: '#8a919e',
+  bossTurret: '#5b616d',
   // The shield ring around the ship and the bomb's tint of the field (GDD v0.8 §4.4, §9.4).
   shieldRing: '#9f7aea9a',
   bombFlash: '#fffbea59',

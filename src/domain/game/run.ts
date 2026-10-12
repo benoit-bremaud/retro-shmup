@@ -72,6 +72,8 @@ export interface PlayerSnapshot {
  * it allocates nothing. `stateSteps` drives the WARNING blink from the state, never from wall time.
  */
 export interface BossSnapshot {
+  /** The boss's serial, the subject of its `ENEMY_HIT` (the white flash). */
+  readonly serial: number;
   readonly state: BossState;
   readonly position: Readonly<Vec2>;
   readonly previousPosition: Readonly<Vec2>;
@@ -475,6 +477,9 @@ function createBossSnapshot(world: World): BossSnapshot {
   return {
     position: boss.position,
     previousPosition: boss.previousPosition,
+    get serial(): number {
+      return boss.serial;
+    },
     get state(): BossState {
       return boss.state;
     },
