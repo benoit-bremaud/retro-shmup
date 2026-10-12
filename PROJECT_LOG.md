@@ -14,8 +14,8 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   written in the main checkout as `feat/heavy`, unpushed; it was cherry-picked onto `origin/main`
   (after #35) in a worktree as `feat/level-heavy`, since the local `main` lagged behind.
 - `review-local` found no Must. Fixed before the push: the ring-angle test around 0°, the Heavy's
-  death path and an off-axis fan now tested, the 102–116 s bullet peak pinned (30 of a pool of
-  48), `aimedAttack` counts its volleys (ADR-0022 §2), stale scene-state notes.
+  death path and an off-axis fan now tested, the 102–116 s bullet peak pinned (about 30, asserted
+  between 24 and 36, of a pool of 48), `aimedAttack` counts its volleys (ADR-0022 §2), stale scene-state notes.
 - Decision: the frozen-strategy test is kept; ADR-0022 requires shared strategies to be
   immutable. The merge gate hook reads the raw command, so `--repo` must be written out in full.
 
