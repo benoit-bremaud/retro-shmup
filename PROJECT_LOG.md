@@ -8,6 +8,24 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-12
 
+### The boss's HUD — F-2b (branch `feat/boss-hud`)
+
+- `drawBossBar` (`boss-hud.ts`, called by `RunPresenter`): a 224 × 4 frame at x 8, y 4 of the
+  field, the fill following the HP, a tick at 66 %, the seconds left right-aligned in HUD digits
+  under the bar's end, from the entry to the end of the sequence. `drawWarning` (`overlays.ts`,
+  called by the scene machine under the pause veil): "WARNING" / "ATTENTION" in the title font,
+  blinking twice in 3 s from `stateSteps` (so a pause freezes it); steady when the blink effect is
+  off, as the announcement is information. Four palette tokens, `BossHudTuning` (0.75 s half blink,
+  66 % tick), the catalogue key `warning`. 714 tests; checked in the browser with a temporary,
+  uncommitted script (WARNING, then the bar and the seconds going 90 to 87).
+- Decisions (scored): the blink-off banner stays steady (not hidden); one-digit seconds take the
+  right-hand cell (x 226). Invented: the colours (cream frame, grey fill, amber tick), the 4 px
+  bar height inside the GDD's y 4–8.
+
+### PR #40 merged (`57d8ea4`) — RunRules extracted from Run
+
+- Merged with a Codex comment fixed (the sequence diagrams now name a `RunRules` participant).
+
 ### Refactor: `RunRules` extracted from `Run` (branch `refactor/run-rules`)
 
 - Pure move per ADR-0023 decision 7: `RunRules` (`src/domain/game/run-rules.ts`) realizes
