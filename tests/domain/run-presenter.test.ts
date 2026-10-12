@@ -469,7 +469,7 @@ describe('RunPresenter — the boss fight game feel (GDD v0.10 §9.4, F-2c)', ()
     expect(render.drew(Palette.explosionCool)).toBe(false);
   });
 
-  it('chains 1 boss burst then 6 medium ones on the hull, at least 1/3 s apart', () => {
+  it('chains 1 boss burst then 5 medium ones on the hull, at least 1/3 s apart', () => {
     const bus = new EventBus();
     const render = new RecordingRender();
     const view = presenter(render, false, bus);
@@ -488,14 +488,14 @@ describe('RunPresenter — the boss fight game feel (GDD v0.10 §9.4, F-2c)', ()
       }
     }
     expect(bossBursts).toBe(1);
-    expect(starts).toHaveLength(6);
+    expect(starts).toHaveLength(5);
     expect(starts[0]).toBeGreaterThanOrEqual(1000 / 3);
     for (let i = 1; i < starts.length; i += 1) {
       expect((starts[i] ?? 0) - (starts[i - 1] ?? 0)).toBeGreaterThanOrEqual(1000 / 3);
     }
-    // All six inside the destroyed sequence: 2 s of simulation, stretched by the 0.5 s of slow
+    // All five inside the destroyed sequence: 2 s of simulation, stretched by the 0.5 s of slow
     // motion at half speed to 2.25 s of wall time.
-    expect(starts[5]).toBeLessThanOrEqual(2250);
+    expect(starts[4]).toBeLessThanOrEqual(2250);
   });
 
   it('throws no turret debris on a later phase change: the turret breaks once, into phase 2', () => {
@@ -533,6 +533,26 @@ describe('RunPresenter — the boss fight game feel (GDD v0.10 §9.4, F-2c)', ()
     expect(view.timeScale()).toBe(0.5);
     view.draw(snapshot(ship()), 1, 1);
     expect(view.timeScale()).toBe(1);
+  });
+
+  it('completes the chain inside the sequence even at 10 frames per second', () => {
+    // Codex review of #43: each burst waits for the frame after its 1/3 s, so slow frames stretch
+    // the chain; five bursts still end inside the 2.25 s of wall time of the destroyed sequence.
+    const bus = new EventBus();
+    const render = new RecordingRender();
+    const view = presenter(render, false, bus);
+    publish(bus, GameEventKind.BossDestroyed, 120, 60);
+    let inSequence = 0;
+    let total = 0;
+    for (let frame = 1; frame <= 40; frame += 1) {
+      render.clear();
+      view.draw(snapshot(ship()), 1, 100);
+      const bursts = newCores(render, MEDIUM_CORE).length;
+      total += bursts;
+      if (frame * 100 <= 2250) inSequence += bursts;
+    }
+    expect(inSequence).toBe(total); // none left for after the sequence
+    expect(total).toBe(5);
   });
 
   it('keeps the whole 0.5 s of slow motion when the frame of the death is a long one', () => {

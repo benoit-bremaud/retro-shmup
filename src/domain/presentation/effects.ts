@@ -203,8 +203,10 @@ export class Shake {
 
 // Where the six medium bursts of the boss's death go, from its centre, inside its 112 x 48 hull;
 // spread left, right, up and down in turn so two in a row never overlap.
-const HULL_OFFSET_X = [-36, 28, -8, 40, -44, 10] as const;
-const HULL_OFFSET_Y = [-10, 8, 14, -12, 10, -14] as const;
+// Five bursts: each waits for the first frame past its 1/3 s, so slow frames stretch the chain;
+// five still end inside the destroyed sequence down to 10 frames per second (Codex review, #43).
+const HULL_OFFSET_X = [-36, 28, -8, 40, -44] as const;
+const HULL_OFFSET_Y = [-10, 8, 14, -12, 10] as const;
 const HULL_BURSTS: number = HULL_OFFSET_X.length;
 
 /**

@@ -16,7 +16,7 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   keeps centre, tier and age only). Tiers small 16 px / 8, medium 32 / 12, large 56 / 16, boss
   112 / 24, debris 24 / 10 without a core (`ExplosionTier`).
 - The ship explodes on `PLAYER_DIED` (medium); the turret bursts into debris on
-  `BOSS_PHASE_CHANGED`; `BOSS_DESTROYED` starts `BossChain` (one boss burst, then 6 medium on fixed
+  `BOSS_PHASE_CHANGED`; `BOSS_DESTROYED` starts `BossChain` (one boss burst, then 5 medium on fixed
   hull offsets, one per 1/3 s of wall time at most) and `SlowMotion` (`timeScale()` 0.5 for 0.5 s
   of wall time, frozen frames excluded), behind the new `EffectSettings.slowMotion`, off under
   `prefers-reduced-motion`.
@@ -30,6 +30,12 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   phase. Agent's tuning kept: debris 24 px, 10 fragments, no core. The §9.7 limit is read as
   white or full-field flashes: the explosions' hot colour is not white, and the switch turns them
   all off. Checked in headless Chromium with a weakened, uncommitted Cruiser killed by one bomb.
+
+- Codex review of #43 (two P2, both fixed): the frame loop re-reads the time scale after each
+  step and re-counts the frame's remaining wall time at the new scale, so the slow motion starts
+  on the killing step even in a long catch-up frame; the hull chain is 5 bursts, not 6, so it ends
+  inside the destroyed sequence down to 10 frames per second without shortening the 1/3 s
+  spacing (carrying the overshoot would have broken the spacing).
 
 ### PR #42 merged (`75700fd`) — the boss HUD
 

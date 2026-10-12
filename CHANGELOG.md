@@ -50,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tick at 66 % and the seconds left, from the start of the entry to the end of the sequence.
 - Animated explosions: a shrinking core and fragments flying out, sized by tier (small, medium,
   large) and never white (photosensitivity); the ship now explodes when it dies; the Cruiser's
-  turret bursts into debris when it breaks off, and its destruction chains a big burst and six
+  turret bursts into debris when it breaks off, and its destruction chains a big burst and five
   smaller ones on the hull, one every 1/3 s, with 0.5 s of slow motion (its own switch, off by
   default under reduced motion).
 

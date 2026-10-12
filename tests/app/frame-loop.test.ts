@@ -212,6 +212,18 @@ describe('FrameLoop — time scale (ADR-0010)', () => {
     expect(fixture.target.steps).toHaveLength(2);
   });
 
+  it('applies a scale that changes during a step to the steps left in the same frame', () => {
+    // The boss dies in the first step of a long catch-up frame: the slow motion must start there,
+    // not on the next frame, so the steps left in this frame run at half speed.
+    const fixture = started();
+    fixture.target.onStep = (): void => {
+      fixture.target.scale = 0.5;
+    };
+    advance(fixture, 15 * STEP_MS);
+    // One full-speed step, then the 14 steps of wall time left count half: 7 more.
+    expect(fixture.target.steps).toHaveLength(8);
+  });
+
   it.each([Number.NaN, -1])('treats an invalid scale (%s) as 0', (scale) => {
     const fixture = started();
     fixture.target.scale = scale;
