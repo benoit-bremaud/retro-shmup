@@ -45,8 +45,9 @@ What the current build plays:
   - gamepad: stick or d-pad, `A` fire, `B` bomb, `Start` pause and confirm.
 
 Play it at <https://retro-shmup.pages.dev>, or locally with `pnpm install` then `pnpm dev` (see
-CONTRIBUTING.md). Next: the rest of the level brick (F) — the warning, the level-1 boss and the
-end-of-level tally.
+CONTRIBUTING.md). Level 1 now ends in the Cruiser, its boss: a 3 s warning, a 90 s fight in two
+phases, a bonus for the seconds left, then a "LEVEL CLEAR" banner (drawn as grey boxes until the
+next bricks). Next: the boss HUD and game feel (F-2b, F-2c), then the end-of-level tally (F-3).
 
 Roadmap (GDD section 11):
 

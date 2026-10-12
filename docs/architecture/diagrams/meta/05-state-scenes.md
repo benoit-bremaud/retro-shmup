@@ -163,13 +163,14 @@ The enemies brick adds `Paused`, `Count-in` and `Game over`, and removes the pau
   pure draw functions of the presentation module, never drawn by the navigator (ADR-0010).
   Scene objects (State pattern, ADR-0003) wait until the screens brick brings the machine to
   about ten states. Count-in and game-over times live in `SceneTuning` (`tuning.ts`).
-- **Interim deviation, level script**: since F-1 the level script holds the 120 s rows of GDD
+- ~~**Interim deviation, level script**: since F-1 the level script holds the 120 s rows of GDD
   v0.10 §7.2.1 and §7.2.2 and its time wraps to 0 at 120 s, the slot of the absent WARNING
   (`LevelScript.loopAt`; 45 s before F-1, the slot of the then-absent Heavy); enemies of the
   previous pass stay alive. It loops until the level brick adds the rest of level 1, the
-  warning and the boss: no `LEVEL_CLEARED`, no `BossDefinition` and no `warningAt` before then.
-  **Lifted by the level brick**: F-1 (done) replaced the rows with the 120 s script, still
-  wrapping at 120 s; F-2 removes `loopAt` (level brick additions below).
+  warning and the boss: no `LEVEL_CLEARED`, no `BossDefinition` and no `warningAt` before then.~~
+  **Lifted by the level brick**: F-1 replaced the rows with the 120 s script, still wrapping at
+  120 s; F-2a removed `loopAt`: the script ends at `warningAt` 120 s with the Cruiser (level
+  brick additions below).
 - ~~**Interim deviation, drops and formations**: no `DropTable` roll, no full-formation P, no
   `Formation` count, no death release of the weapon and no bombs until the pickups and rules
   brick, so `Run` holds no `Random` yet and the determinism test compares (script, inputs) only.~~
@@ -351,9 +352,12 @@ unchanged.
 - **Interim deviation, slice end**: `Results --> Title` for `RUN_CLEARED`, releasing the run,
   instead of `Ending` and `Name entry` (screens brick G); the `Title` reached from `Results`
   applies the 60-step lock, as from Game over. `LEVEL_CLEARED → LevelCard` waits for level 2.
-- **Interim deviation, F-2 before F-3**: `Results` exists with a "LEVEL CLEAR" banner (FR "FIN DU
-  NIVEAU", `title` font) in place of the tally lines, no lock, and leaves for the title after 3 s
-  (`ResultsTuning` holds that interim time until F-3).
+- **Interim deviation, F-2 before F-3** (built in F-2a): `Results` exists with a "LEVEL CLEAR"
+  banner (FR "FIN DU NIVEAU", `title` font, the `levelClear` message) over the veil in place of the
+  tally lines; it has no lock, ignores every input, and leaves for the title after
+  `toSteps(ResultsTuning.levelClearSeconds)` = 180 steps (3 s), the title applying the 60-step
+  lock; the run stands still behind it (`frozen`) while the starfield scrolls. It is entered on
+  `RUN_CLEARED` only, the one outcome of the slice; the pending pause arrives with F-3.
 - **Pause**: during `Results` a `Pause` (player or automatic) sets the pending pause, as during a
   card; in the slice it is cleared when the run is released at the title. During the WARNING and
   the fight the pause rules are unchanged: the run, the boss timer and the banner freeze with it.

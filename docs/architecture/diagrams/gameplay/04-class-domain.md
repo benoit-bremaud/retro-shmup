@@ -410,11 +410,16 @@ classDiagram
     -phaseIndex: number
     -timeLeft: number
     -stateSteps: number
-    -pendingPhase: number
-    +start(definition: BossDefinition) void
+    -movementPhase: number
+    +start(definition: BossDefinition, serial: number) void
+    +move(world: BossWorld, dt: number) void
+    +advance(world: BossWorld) BossAdvance
+    +advancePhase(world: BossWorld) boolean
+    +destroy() void
     +isTargetable() boolean
     +isHarmful() boolean
     +secondsLeft() number
+    +hpRatio() number
   }
   class BossState {
     <<enumeration>>
@@ -673,6 +678,19 @@ classDiagram
   and `RunView.tally()`; in the vertical slice the level list holds level 1 only, so
   `startNextLevel` waits for level 2 (F-1: factories, Heavy, rings and fans; F-2: the boss; F-3:
   the tally).
+- **Built in F-2a** (the domain of the boss, ADR-0023): the model above stands; what the code adds
+  or names differently — `Boss.move` (step 4, called by `World.moveEnemies` after the enemies) and
+  `Boss.advance` (step 7, returning `BossAdvance`: none, fled, ended) hold the timers, so the boss
+  publishes nothing and `Run` publishes from what they return; `Boss.advancePhase` is called in a
+  loop by `Run.damageBoss`, once per threshold crossed; the pending phase is `movementPhase`, the
+  phase whose movement is running, behind `phaseIndex` until the sway crosses x 120; the attack of
+  a new phase or of the fight is restarted by a disarmed `tick`, which fills `fireTimer`; `phase`
+  and the `BOSS_PHASE_CHANGED` detail are the 0-based phase index; the boss view of the snapshot
+  (`BossSnapshot`) also carries `serial` (the subject of its `ENEMY_HIT`, for the flash), `width`
+  and `height`; event kinds are written `BossWarning`, `BossPhaseChanged`, `BossDestroyed`,
+  `BossFled` and `LevelCleared` in code, like the existing kinds; `ResultsTuning` holds the interim
+  banner time; `RunConfig.levels` is the level list, `script` a list of one. `Run` ends the level
+  at step 8 through `clearLevel`, once; `startNextLevel` waits for level 2.
 - **Not modelled**: geometric helpers (`Vec2`, `Rect`), ids (`SpriteId`, `PathId`,
   `ArchetypeId` = popcorn, diver, gunner, carrier, heavy-ring, heavy-fan), the factories'
   configuration records, `KillCause` (shot or bomb),

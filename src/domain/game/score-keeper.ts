@@ -6,8 +6,8 @@ const WINDOW_STEPS = toSteps(ChainTuning.windowSeconds);
 const NO_CHAIN = -1;
 
 /**
- * Points, the chain multiplier and the flat cap bonus of a collected pickup (GDD §8, v0.8 §4.6,
- * class diagram). `Run`'s constructor subscribes it first (ADR-0010 wording note), so the score
+ * Points, the chain multiplier, the flat cap bonus of a collected pickup and the flat boss bonus
+ * (GDD §8, v0.8 §4.6, v0.10 §6, class diagram). `Run`'s constructor subscribes it first (ADR-0010 wording note), so the score
  * is counted with or without a presenter.
  *
  * `chainTimer` counts the steps left in the window: 120 on a kill, −1 with no chain. `tick` runs at
