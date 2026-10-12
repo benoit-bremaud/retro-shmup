@@ -224,6 +224,24 @@ describe('Level simulation — level 1, headless', () => {
 });
 
 describe('Level simulation — the Cruiser, headless (GDD v0.10 §6, §6.1)', () => {
+  it.each([
+    ['a firing player', scripted],
+    ['a player who never fires', pacifist],
+    ['an idle ship', idle],
+  ])('leaves the field empty of wave enemies when the WARNING starts, for %s', (_label, inputs) => {
+    // GDD §6: the ship cannot die during the end of the fight, so no wave enemy may still be alive.
+    for (let seed = 1; seed <= 4; seed += 1) {
+      const run = new Run({ seed });
+      let aliveAtWarning = -1;
+      for (let i = 0; i < ONE_PASS + 600 && aliveAtWarning < 0; i += 1) {
+        run.step(DT, inputs(i));
+        const snapshot = run.snapshot();
+        if (snapshot.boss.state === BossState.Warning) aliveAtWarning = snapshot.enemies.count;
+      }
+      expect(aliveAtWarning, `seed ${String(seed)}`).toBe(0);
+    }
+  });
+
   it('reaches BOSS_WARNING at step 7200, once, and not a step before', () => {
     const run = new Run({ seed: 1 });
     const warnedAt: number[] = [];

@@ -25,7 +25,10 @@ export interface LevelScript {
   readonly events: readonly ScriptEvent[];
   /**
    * Seconds from the start: the waves stop and the `LevelDirector` starts `boss` (GDD v0.10 §6).
-   * No row may spawn at or after `warningAt` − 4 s, a load check.
+   * No row may spawn at or after `warningAt` − 4 s, a load check. That check alone does not keep
+   * the field clear: a Heavy stays about 14 s, so a script must also leave the field empty when
+   * the WARNING starts, or a wave enemy could fire during the end of the boss fight, which the
+   * GDD (§6) promises cannot kill the ship. The level simulation asserts it for each level.
    */
   readonly warningAt: number;
   readonly boss: BossDefinition;

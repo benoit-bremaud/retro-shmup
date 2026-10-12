@@ -79,7 +79,10 @@ stateDiagram-v2
   and the body does not visibly jump (GDD v0.10 §6.1).
 - **End of the fight** (GDD v0.4 §6): enemy bullets are cancelled on both endings, so the player
   cannot die during the sequence. During `Destroyed` the ship keeps its control; its bullets are
-  spent when the level ends. The waves stopped at `warningAt`; enemies still on the field live on.
+  spent when the level ends. The waves stop at `warningAt`, and a level script must leave the field
+  empty by the time the WARNING starts (the level simulation asserts it): the 4 s load rule alone
+  does not, since a Heavy stays about 14 s, and an enemy still alive would keep firing and hurting
+  during the end of the fight, which this guarantee forbids.
 - **Score and outcome**: `BOSS_DESTROYED` carries the seconds left; `ScoreKeeper` adds 10 000 +
   100 × seconds (GDD §6; `BossTuning`, ADR-0023), flat, outside the chain; hits score 0; `BOSS_FLED` scores nothing.
   `LEVEL_CLEARED` (`value` = bombs left) is published by `Run` at step 8 when the sequence ends,
