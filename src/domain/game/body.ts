@@ -19,7 +19,12 @@ export interface Body {
   width: number;
   height: number;
   hp: number;
-  /** Steps since the spawn, incremented before the movement. */
+  /**
+   * Steps since the current movement began, incremented before the movement (ADR-0023). For an
+   * enemy and a pickup that is the steps since the spawn; for the boss it restarts at the start
+   * of the fight and at each movement swap, so a closed-form movement such as the sway reads it
+   * as its own clock.
+   */
   age: number;
   fireTimer: number;
   /**
