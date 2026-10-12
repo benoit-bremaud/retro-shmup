@@ -352,14 +352,20 @@ unchanged.
 - **Interim deviation, slice end**: `Results --> Title` for `RUN_CLEARED`, releasing the run,
   instead of `Ending` and `Name entry` (screens brick G); the `Title` reached from `Results`
   applies the 60-step lock, as from Game over. `LEVEL_CLEARED → LevelCard` waits for level 2.
-- **Interim deviation, F-2 before F-3** (built in F-2a): `Results` exists with a "LEVEL CLEAR"
-  banner (FR "FIN DU NIVEAU", `title` font, the `levelClear` message) over the veil in place of the
-  tally lines; it has no lock, ignores every input, and leaves for the title after
-  `toSteps(ResultsTuning.levelClearSeconds)` = 180 steps (3 s), the title applying the 60-step
-  lock; the run stands still behind it (`frozen`) while the starfield scrolls. It is entered on
-  `RUN_CLEARED` only, the one outcome of the slice; the pending pause arrives with F-3.
+- ~~**Interim deviation, F-2 before F-3**~~ (built in F-2a): lifted by F-3 — the "LEVEL CLEAR"
+  banner for 3 s is replaced by the tally lines, the lock and the 8 s exit above;
+  `ResultsTuning.levelClearSeconds` is removed.
+- **Built in F-3**: a header "LEVEL CLEAR" (FR "FIN DU NIVEAU", the `levelClear` message, `title`
+  font, centred at y 16) stands above the lines (owner decision 2026-10-12, GDD v0.10 §8); the
+  lines start at y 52, one every 48 px, labels at x 8, values right-aligned to x 232 at y + 24, so
+  the TOTAL value ends at y 278 in both screens (the field region). The first line shows on the
+  entering step, the TOTAL from step 120. The values are formatted once on entry from
+  `RunView.tally()`; each frame only draws them.
 - **Pause**: during `Results` a `Pause` (player or automatic) sets the pending pause, as during a
-  card; in the slice it is cleared when the run is released at the title. During the WARNING and
+  card; in the slice it is cleared when the run is released at the title. **Interim deviation,
+  pending pause (F-3)**: since the slice's `Results` lead to the title and never back to play,
+  the code keeps no pending pause: `Pause` and `Back` are simply ignored in `Results`, which is
+  the same behaviour; the pending flag arrives with the next-level flow (brick G). During the WARNING and
   the fight the pause rules are unchanged: the run, the boss timer and the banner freeze with it.
 - **The time scale** stays 1 in every scene but `Playing`, where the presenter returns 0.5 for
   0.5 s of wall time after `BOSS_DESTROYED` when `EffectSettings.slowMotion` is on (ADR-0010

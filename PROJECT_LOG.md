@@ -8,6 +8,28 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-12
 
+### The end-of-level tally and the Results screen — F-3 (branch `feat/level-tally`)
+
+- `LevelTally` (GDD v0.10 §8, ADR-0022 decision 7): a subscriber owned by `ScoreKeeper` —
+  `FORMATION_CLEARED` (bomb-completed formations included), `BOMB_USED`, `PLAYER_DIED` (a shield
+  absorb is `PLAYER_HIT` and keeps the no-miss), `LEVEL_CLEARED` (bombs left); `ScoreKeeper` adds
+  `total()` flat at `LEVEL_CLEARED`, the chain unchanged; the boss bonus stays on
+  `BOSS_DESTROYED`. Values in `TallyTuning`; `RunView.tally()` returns a read-only `TallyView`.
+- The `hud` font gains a space (an empty cell) in the adapter, the `RenderPort` contract and the
+  `RecordingRender` double (ADR-0022 decision 8).
+- `Results` (ADR-0022 decision 9): one line every 0.5 s from the entering step, labels in the
+  title font at x 8, values right-aligned on the row below with thousands grouped by a space,
+  formatted once on entry; 1 s lock, then confirm or a tap; 8 s automatic exit; the title lock as
+  after Game over. `ResultsTuning` is `lockSeconds`, `autoSeconds`, `lineSeconds`; the interim
+  banner and `levelClearSeconds` are gone.
+- Owner decision (scored 88 vs 87): a "LEVEL CLEAR" / "FIN DU NIVEAU" header above the lines
+  (GDD §8 sentence added). Interim deviation recorded in `meta/05-state-scenes`: no pending pause
+  in `Results` (the slice goes to the title); `LevelTally.reset()` waits for level 2.
+
+### PR #43 merged (`1845da6`) — F-2c
+
+- Brick F-2c on `main`; F-3 branches from it.
+
 ### The boss's game feel — F-2c (branch `feat/boss-feel`)
 
 - Animated explosions replace the growing square (`Explosions` in `effects.ts`): a hot core

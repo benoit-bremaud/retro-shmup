@@ -53,6 +53,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   turret bursts into debris when it breaks off, and its destruction chains a big burst and five
   smaller ones on the hull, one every 1/3 s, with 0.5 s of slow motion (its own switch, off by
   default under reduced motion).
+- The end-of-level tally and the Results screen: under a LEVEL CLEAR header (FIN DU NIVEAU in
+  French), one line every 0.5 s — formations destroyed × 500, no bomb 5 000, no miss 10 000, bombs
+  left × 1 000, and the total, added to the score when the level ends; a missed bonus shows as 0.
+  Confirm, a tap or a click leaves after 1 s, or the title comes back after 8 s. It replaces the
+  3 s "LEVEL CLEAR" banner.
 
 ### Changed
 
