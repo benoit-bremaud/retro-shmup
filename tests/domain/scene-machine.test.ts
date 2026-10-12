@@ -645,3 +645,65 @@ describe('SceneMachine — Results, interim banner (meta/05-state-scenes, F-2a)'
     expect(machine.scene).toBe(Scene.Playing);
   });
 });
+
+describe('SceneMachine — the boss HUD (meta/05-state-scenes, F-2b)', () => {
+  /** A run whose boss warns at 5 s (the director's minimum is above 4 s): the WARNING lasts about
+   * 180 steps from step 300, then the entry about 180 more. */
+  function warningFixture(blink = true): ReturnType<typeof setup> {
+    const render = new RecordingRender();
+    const machine = new SceneMachine(
+      render,
+      new Starfield(() => 0.5),
+      { blink, hitFlash: true, explosions: true, shake: true, bombFlash: true },
+      () => new Run({ script: testScript([], { warningAt: 5, boss: STUB_BOSS }) }),
+    );
+    machine.step(DT, createIntentFrame());
+    machine.step(DT, pressed(Button.Confirm));
+    return { machine, render };
+  }
+
+  function advance(fixture: ReturnType<typeof setup>, steps: number): void {
+    for (let i = 0; i < steps; i += 1) fixture.machine.step(DT, createIntentFrame());
+  }
+
+  function titleTexts(render: RecordingRender): string[] {
+    return render.texts.filter((text) => text.font === 'title').map((text) => text.text);
+  }
+
+  it('shows WARNING during the warning, blinking, and no HP bar yet', () => {
+    const fixture = warningFixture();
+    advance(fixture, 310); // 10 steps into the warning: the first, visible half of the first blink
+    fixture.machine.render(0, 16);
+    expect(titleTexts(fixture.render)).toEqual(['WARNING']);
+    expect(fixture.render.drew(Palette.bossBarFrame)).toBe(false);
+    advance(fixture, 60); // 70 steps in: the hidden half
+    fixture.machine.render(0, 16);
+    expect(titleTexts(fixture.render)).toEqual([]);
+  });
+
+  it('keeps WARNING steady with the blink effect off', () => {
+    const fixture = warningFixture(false);
+    advance(fixture, 370); // 70 steps into the warning: hidden when blinking
+    fixture.machine.render(0, 16);
+    expect(titleTexts(fixture.render)).toEqual(['WARNING']);
+  });
+
+  it('freezes the banner with the pause, under the veil', () => {
+    const fixture = warningFixture();
+    advance(fixture, 310);
+    fixture.machine.step(DT, pressed(Button.Pause));
+    expect(fixture.machine.scene).toBe(Scene.Paused);
+    fixture.machine.render(0, 16);
+    expect(titleTexts(fixture.render)).toEqual(['WARNING']);
+    expect(fixture.render.drew(Palette.veil)).toBe(true);
+  });
+
+  it('swaps the banner for the HP bar and the seconds when the boss enters', () => {
+    const fixture = warningFixture();
+    advance(fixture, 520); // 220 steps after the warning began: the entry has started
+    fixture.machine.render(0, 16);
+    expect(titleTexts(fixture.render)).toEqual([]);
+    expect(fixture.render.drew(Palette.bossBarFrame)).toBe(true);
+    expect(fixture.render.texts.filter((text) => text.y === 12)).toHaveLength(2);
+  });
+});

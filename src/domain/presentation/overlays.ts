@@ -1,7 +1,11 @@
 // Overlays of the frozen scenes (meta/05-state-scenes): pure draw functions, so the scene machine
 // only picks which ones a scene shows (ADR-0010: no drawing inside the navigator). Each selects the
 // field region it draws in.
-import { SceneTuning, toSteps } from '../game/tuning';
+import { BossState } from '../game/boss';
+import type { BossSnapshot } from '../game/run';
+import { BossHudTuning, SceneTuning, toSteps } from '../game/tuning';
+import { message } from '../i18n/messages';
+import type { Language } from '../i18n/messages';
 import { HUD_FONT_CELL, TITLE_FONT_CELL } from '../ports/render-port';
 import type { RenderPort } from '../ports/render-port';
 import { Palette } from './palette';
@@ -13,6 +17,7 @@ const BAR_HEIGHT = 20;
 const BAR_GAP = 6;
 const COUNT_IN_DIGITS = ['1', '2', '3'] as const;
 const STEPS_PER_DIGIT = toSteps(SceneTuning.countInSeconds) / COUNT_IN_DIGITS.length;
+const WARNING_HALF_STEPS = toSteps(BossHudTuning.warningBlinkHalfSeconds);
 
 /** The dark veil over the whole field, under the pause and Game over overlays. */
 export function drawVeil(render: RenderPort): void {
@@ -52,4 +57,21 @@ export function drawBanner(render: RenderPort, text: string): void {
     Math.round((FIELD_HEIGHT - TITLE_FONT_CELL.height) / 2),
     'title',
   );
+}
+
+/**
+ * The WARNING banner (GDD v0.10 §6, §9.7) while the boss is in its `WARNING` state: it blinks twice
+ * in the 3 s, visible for the first half of each blink, from the steps spent in the state, so a
+ * pause freezes it and wall time never enters. With the blink effect off it stays steady: the
+ * announcement is information, not an effect. Drawn from the catalogue in the `title` font.
+ */
+export function drawWarning(
+  render: RenderPort,
+  boss: BossSnapshot,
+  blink: boolean,
+  language: Language,
+): void {
+  if (boss.state !== BossState.Warning) return;
+  if (blink && Math.floor(boss.stateSteps / WARNING_HALF_STEPS) % 2 === 1) return;
+  drawBanner(render, message('warning', language));
 }

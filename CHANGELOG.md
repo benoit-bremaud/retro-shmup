@@ -44,8 +44,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   from 66 % HP), destroyed in a 2 s sequence or fleeing when the timer runs out; the bonus is
   10 000 + 100 per second left. Shots and the bomb hurt it only while it fights. The level ends
   on its destruction or escape and a "LEVEL CLEAR" banner (EN / FR) shows for 3 s before the
-  title; the boss is drawn as grey boxes until the HUD and effects of the next PRs. The level no
-  longer loops at 120 s.
+  title; the boss is drawn as grey boxes until the sprites. The level no longer loops at 120 s.
+- The boss's HUD: a WARNING banner (ATTENTION in French) that blinks twice in the 3 s of warning
+  and stays steady when the blink effect is off, then an HP bar at the top of the field with a
+  tick at 66 % and the seconds left, from the start of the entry to the end of the sequence.
 
 ### Changed
 

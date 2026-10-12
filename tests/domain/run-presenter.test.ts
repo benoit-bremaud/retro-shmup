@@ -352,6 +352,18 @@ describe('RunPresenter — the boss as grey boxes (F-2a)', () => {
     expect([(body?.x ?? 0) + 56, (body?.y ?? 0) + 24]).toEqual([105, 57]);
   });
 
+  it('draws the HP bar and the seconds with the boss, after the field and before the HUD', () => {
+    const render = drawn({ ...FIGHTING, hpRatio: 0.5, secondsLeft: 42 });
+    expect(render.rectsOf(Palette.bossBarFill)).toEqual([
+      { region: 'field', x: 9, y: 5, w: 111, h: 2, colour: Palette.bossBarFill },
+    ]);
+    expect(render.texts.filter((text) => text.region === 'field' && text.y === 12)).toHaveLength(2);
+  });
+
+  it('draws no bar before the boss enters', () => {
+    expect(drawn({ ...FIGHTING, state: BossState.Warning }).drew(Palette.bossBarFrame)).toBe(false);
+  });
+
   it('draws the turret in phase 1 and no longer from phase 2', () => {
     expect(drawn(FIGHTING).rectsOf(Palette.bossTurret)).toHaveLength(1);
     expect(drawn({ ...FIGHTING, phase: 1 }).rectsOf(Palette.bossTurret)).toHaveLength(0);

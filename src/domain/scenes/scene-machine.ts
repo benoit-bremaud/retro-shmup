@@ -8,7 +8,13 @@ import { message } from '../i18n/messages';
 import type { Language } from '../i18n/messages';
 import { drawHudFrame, drawPauseButton } from '../presentation/hud';
 import { isPauseTap } from '../presentation/hud-layout';
-import { drawBanner, drawCountIn, drawPauseIcon, drawVeil } from '../presentation/overlays';
+import {
+  drawBanner,
+  drawCountIn,
+  drawPauseIcon,
+  drawVeil,
+  drawWarning,
+} from '../presentation/overlays';
 import { RunPresenter } from '../presentation/run-presenter';
 import type { EffectSettings } from '../presentation/run-presenter';
 import type { Starfield } from '../presentation/starfield';
@@ -258,7 +264,10 @@ export class SceneMachine {
     const scroll = traits.scrolls || traits.frozen ? frameAlpha : 0;
     this.starfield.draw(r, (this.backgroundSteps + scroll) * STEP_SECONDS);
     if (traits.drawsRun && this.run !== undefined && this.presenter !== undefined) {
-      this.presenter.draw(this.run.snapshot(), frameAlpha, effectMs);
+      const snapshot = this.run.snapshot();
+      this.presenter.draw(snapshot, frameAlpha, effectMs);
+      // The WARNING banner reads the boss state, so the pause freezes it; the overlays go over it.
+      drawWarning(r, snapshot.boss, this.effects.blink, this.language);
     }
     if (traits.pauseButton) drawPauseButton(r);
     this.drawOverlays();

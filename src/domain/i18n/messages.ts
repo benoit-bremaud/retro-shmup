@@ -9,6 +9,8 @@ export const MESSAGES = {
   gameOver: { en: 'GAME OVER', fr: 'GAME OVER' },
   /** The interim results banner (F-2a): the tally replaces it with the real results (F-3). */
   levelClear: { en: 'LEVEL CLEAR', fr: 'FIN DU NIVEAU' },
+  /** The boss announcement (GDD v0.10 §6), drawn in the title font. */
+  warning: { en: 'WARNING', fr: 'ATTENTION' },
 } as const;
 
 export type MessageKey = keyof typeof MESSAGES;

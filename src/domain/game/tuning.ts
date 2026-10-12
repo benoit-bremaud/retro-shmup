@@ -196,6 +196,17 @@ export const BossTuning = {
   bonusPerSecond: 100,
 } as const;
 
+/**
+ * The boss's HUD (GDD v0.10 §9.2, §9.7, initial): the WARNING banner blinks twice in its 3 s, so
+ * every half period is 0.75 s, under 3 blinks per second; the bar's tick marks the phase-2
+ * threshold of the Cruiser, 66 % of its HP. A later boss with other thresholds will hand its own
+ * to the snapshot.
+ */
+export const BossHudTuning = {
+  warningBlinkHalfSeconds: 0.75,
+  barTickRatio: 0.66,
+} as const;
+
 /** The Cruiser, level 1's boss (GDD v0.10 §6.1, initial): values in seconds, px and px/s. */
 export const CruiserTuning = {
   width: 112,
