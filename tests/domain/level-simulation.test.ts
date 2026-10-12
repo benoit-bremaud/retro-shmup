@@ -24,7 +24,8 @@ function scripted(i: number): IntentFrame {
   frame.moveX = Math.floor(i / 90) % 2 === 0 ? 1 : -1;
   frame.moveY = i % 240 < 120 ? -0.5 : 0.5;
   frame.held = i % 10 < 8 ? Button.Fire : 0;
-  frame.pressed = 0;
+  // A bomb every 10 s: the bomb's kills and effects are part of every replay.
+  frame.pressed = i % 600 === 300 ? Button.Bomb : 0;
   return frame;
 }
 
@@ -53,6 +54,7 @@ function replay(steps: number, seed = 1): string {
   events.subscribe(GameEventKind.PickupSpawned, recordPickup);
   events.subscribe(GameEventKind.PickupCollected, recordPickup);
   events.subscribe(GameEventKind.FormationCleared, record);
+  events.subscribe(GameEventKind.BombUsed, record);
   for (let i = 0; i < steps; i += 1) run.step(DT, scripted(i));
   const snapshot = run.snapshot();
   return JSON.stringify({
@@ -69,6 +71,7 @@ describe('Level simulation — the enemies brick, headless', () => {
     expect(first).toBe(replay(3 * ONE_PASS));
     expect(first).toContain(`"${String(GameEventKind.EnemyDestroyed)}:`);
     expect(first).toContain(`"${String(GameEventKind.PickupSpawned)}:`);
+    expect(first).toContain(`"${String(GameEventKind.BombUsed)}:`);
     // The Carriers' cargo is in the log, so the pickup-peak test below covers it.
     expect(first).toContain(
       `"${String(GameEventKind.PickupSpawned)}:${String(PickupKind.Shield)}:`,
@@ -164,9 +167,11 @@ describe('Level simulation — effects never change the run (ADR-0010)', () => {
       );
       const log: string[] = [];
       run.events().subscribe(GameEventKind.EnemyDestroyed, (e) => log.push(String(e.subject)));
+      run.events().subscribe(GameEventKind.BombUsed, () => log.push('bomb'));
       for (let i = 0; i < 2 * ONE_PASS; i += 1) {
         run.step(DT, scripted(i));
         render.clear();
+        presenter.applyShake();
         presenter.draw(run.snapshot(), 1, 16.7);
       }
       const snapshot = run.snapshot();
@@ -174,6 +179,7 @@ describe('Level simulation — effects never change the run (ADR-0010)', () => {
     };
     const on = play(true);
     expect(on).toBe(play(false));
+    expect(on).toContain('bomb');
     expect(on).not.toContain('"score":0,');
   });
 });

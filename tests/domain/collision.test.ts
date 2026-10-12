@@ -3,6 +3,7 @@ import { CollisionResolver } from '../../src/domain/game/collision';
 import type { HitRules } from '../../src/domain/game/collision';
 import { DIVER, GUNNER, POPCORN } from '../../src/domain/game/enemy';
 import type { Enemy, EnemyArchetype } from '../../src/domain/game/enemy';
+import { PickupKind } from '../../src/domain/game/pickup';
 import type { Pickup } from '../../src/domain/game/pickup';
 import { PlayerState } from '../../src/domain/game/player';
 import { WEAPONS, WeaponKind } from '../../src/domain/game/weapon';
@@ -265,5 +266,41 @@ describe('CollisionResolver — Laser hits in travel order (GDD v0.8 §4.3)', ()
     CollisionResolver.resolve(world, rules);
     expect([near.hp, middle.hp, far.hp]).toEqual([shots(7), shots(7), shots(8)]);
     expect(world.playerBullets.at(0).spent).toBe(true);
+  });
+});
+
+describe('CollisionResolver — the shield absorbs (GDD v0.8 §4.4)', () => {
+  /** A vulnerable world whose ship holds a shield charge. */
+  function shieldedWorld(): World {
+    const world = vulnerableWorld();
+    world.player.collect(PickupKind.Shield);
+    return world;
+  }
+
+  it('consumes the bullet it absorbed and reports the broken shield, not a death', () => {
+    const world = shieldedWorld();
+    world.spawnEnemyBullet(120, 272, 0, 75);
+    const rules = new Rules();
+    CollisionResolver.resolve(world, rules);
+    expect([rules.absorbed, rules.deaths]).toEqual([1, 0]);
+    expect(world.enemyBullets.at(0).spent).toBe(true);
+  });
+
+  it('leaves a body it absorbed alive', () => {
+    const world = shieldedWorld();
+    const gunner = enemyAt(world, GUNNER, 120, 272);
+    const rules = new Rules();
+    CollisionResolver.resolve(world, rules);
+    expect([rules.absorbed, gunner.spent]).toEqual([1, false]);
+  });
+
+  it('ignores a second hazard in the same step: the ship is already invulnerable', () => {
+    const world = shieldedWorld();
+    world.spawnEnemyBullet(120, 272, 0, 75);
+    world.spawnEnemyBullet(121, 272, 0, 75);
+    const rules = new Rules();
+    CollisionResolver.resolve(world, rules);
+    expect([rules.absorbed, rules.deaths]).toEqual([1, 0]);
+    expect(world.enemyBullets.at(1).spent).toBe(false);
   });
 });

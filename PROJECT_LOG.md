@@ -31,6 +31,14 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   lifted.
 - Visual check: with a temporary, uncommitted shield at start, the ring around the ship; on `X`,
   the tinted and shaken field (HUD still), the bomb stock 2 → 1 and two Divers destroyed.
+- Local pre-push review: 1 Must fixed — GDD §9.3 turns the shake and the white and bomb flashes
+  off by default under `prefers-reduced-motion`; `main.ts` now reads it once at boot (the
+  non-flashing blink stays with the options). Also fixed: the shake is horizontal only, as the GDD
+  sentence says; the run-level tests go through scripted level rows and `run.step` instead of
+  reaching into `Run`'s private world; collision tests for an absorbed bullet, an absorbed body
+  and a second hazard in the same step; the effects-on/off simulation now drops bombs; the scene
+  machine's shake (on in play, still in frozen frames and on the title) is tested; the switches
+  test has a positive control; the bomb flash covers the shaken field to its clip.
 
 ### PR #27 merged (`dcb736b`) — E-2 weapons L1 to L5
 

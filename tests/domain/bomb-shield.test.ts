@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { CARRIER, GUNNER, POPCORN } from '../../src/domain/game/enemy';
-import { EventBus, GameEventKind } from '../../src/domain/game/events';
+import { GameEventKind } from '../../src/domain/game/events';
 import type { GameEvent } from '../../src/domain/game/events';
-import type { LevelScript } from '../../src/domain/game/level-script';
+import type { LevelScript, ScriptEvent } from '../../src/domain/game/level-script';
 import { Pickup, PickupKind, PickupMotion } from '../../src/domain/game/pickup';
 import { HitOutcome, Player, PlayerState } from '../../src/domain/game/player';
 import { Run } from '../../src/domain/game/run';
@@ -128,14 +128,51 @@ describe('Player — shield and death (GDD v0.8 §4.4)', () => {
   });
 });
 
+/** A pickup caught through `Run`'s public `HitRules` side, as the collisions would report it. */
+function collect(run: Run, kind: PickupKind): void {
+  const pickup = new Pickup();
+  pickup.spawn(kind, 0, 0, 1);
+  run.pickupCollected(pickup);
+}
+
+/** Steps a run idle until `kind` is published, at most `limit` steps; true if it was. */
+function stepUntil(run: Run, kind: GameEventKind, limit: number): boolean {
+  // A record, not a local: the handler's write is invisible to the type narrowing of a `let`.
+  const seen = { value: false };
+  run.events().subscribe(kind, () => {
+    seen.value = true;
+  });
+  for (let i = 0; i < limit && !seen.value; i += 1) run.step(DT, idle());
+  return seen.value;
+}
+
+// A Gunner hovering on the field from 1 s, straight above the resting ship, firing aimed volleys.
+const GUNNER_ABOVE: ScriptEvent = {
+  at: 0,
+  archetype: GUNNER,
+  count: 1,
+  spawn: { x: 120, y: -16 },
+  hover: { x: 120, y: 80 },
+};
+
+// The bomb's step: the Gunner has fired, none of its bullets has reached the ship yet.
+const BOMB_STEP = 200;
+
 describe('Run — the bomb in step slot 3 (02-sequence-bomb)', () => {
   it('publishes BOMB_USED first, cancels enemy bullets, and strikes on-field enemies once', () => {
-    const run = vulnerableRun();
-    const world = (run as unknown as { world: World }).world;
-    world.spawnEnemyBullet(60, 60, 0, 75);
-    world.spawnEnemy({ at: 0, archetype: GUNNER, count: 1, spawn: { x: 60, y: 80 } }, undefined);
-    world.spawnEnemy({ at: 0, archetype: POPCORN, count: 1, spawn: { x: 120, y: -40 } }, undefined);
-    const outside = world.enemies.at(1);
+    // A Popcorn due on the bomb's step is still above the field when the bomb goes off.
+    const run = new Run({
+      script: {
+        dominantColour: PickupKind.PRed,
+        events: [
+          { ...GUNNER_ABOVE, spawn: { x: 60, y: -16 }, hover: { x: 60, y: 80 } },
+          { at: BOMB_STEP / 60, archetype: POPCORN, count: 1, spawn: { x: 200, y: -8 } },
+        ],
+      },
+    });
+    for (let i = 0; i < BOMB_STEP; i += 1) run.step(DT, idle());
+    expect(run.snapshot().player.state).toBe(PlayerState.Vulnerable);
+    expect(run.snapshot().enemyBullets.count).toBeGreaterThan(0);
     const log = logOf(run, [
       GameEventKind.BombUsed,
       GameEventKind.EnemyHit,
@@ -148,20 +185,25 @@ describe('Run — the bomb in step slot 3 (02-sequence-bomb)', () => {
       `${String(GameEventKind.EnemyDestroyed)}:1`,
     ]);
     expect(run.snapshot().enemyBullets.count).toBe(0);
-    // The Gunner is gone; the Popcorn still above the field is untouched.
+    // The Gunner is gone; the Popcorn spawned above the field is untouched.
     expect(run.snapshot().enemies.count).toBe(1);
-    expect(outside.hp).toBe(shots(1));
-    expect(run.snapshot().bombs).toBe(1);
-    expect(run.snapshot().player.state).toBe(PlayerState.Invulnerable);
+    expect(run.snapshot().enemies.at(0).hp).toBe(shots(1));
+    expect([run.snapshot().bombs, run.snapshot().player.state]).toEqual([
+      1,
+      PlayerState.Invulnerable,
+    ]);
   });
 
   it("drops a bombed Carrier's cargo and scores the kill", () => {
-    const run = vulnerableRun();
-    const world = (run as unknown as { world: World }).world;
-    world.spawnEnemy(
-      { at: 0, archetype: CARRIER, count: 1, spawn: { x: 100, y: 64 }, cargo: PickupKind.Bomb },
-      undefined,
-    );
+    const run = new Run({
+      script: {
+        dominantColour: PickupKind.PRed,
+        events: [
+          { at: 0, archetype: CARRIER, count: 1, spawn: { x: -16, y: 64 }, cargo: PickupKind.Bomb },
+        ],
+      },
+    });
+    for (let i = 0; i < 120; i += 1) run.step(DT, idle());
     const log = logOf(run, [GameEventKind.PickupSpawned]);
     run.step(DT, pressing(Button.Bomb));
     expect(log).toEqual([`${String(GameEventKind.PickupSpawned)}:${String(PickupKind.Bomb)}`]);
@@ -176,38 +218,22 @@ describe('Run — the bomb in step slot 3 (02-sequence-bomb)', () => {
 });
 
 describe('Run — shield and death through the collisions (GDD v0.8 §4.4)', () => {
-  it('consumes the bullet the shield absorbed and publishes PLAYER_HIT, no death', () => {
-    const run = vulnerableRun();
-    const world = (run as unknown as { world: World }).world;
-    world.player.collect(PickupKind.Shield);
-    world.spawnEnemyBullet(120, 272, 0, 0);
-    const log = logOf(run, [GameEventKind.PlayerHit, GameEventKind.PlayerDied]);
-    run.step(DT, idle());
-    expect(log).toEqual([`${String(GameEventKind.PlayerHit)}:0`]);
-    expect(run.snapshot().lives).toBe(3);
-    expect(run.snapshot().enemyBullets.count).toBe(0);
-  });
-
-  it('keeps a body the shield absorbed alive', () => {
-    const run = vulnerableRun();
-    const world = (run as unknown as { world: World }).world;
-    world.player.collect(PickupKind.Shield);
-    world.spawnEnemy({ at: 0, archetype: GUNNER, count: 1, spawn: { x: 120, y: 272 } }, undefined);
-    run.step(DT, idle());
-    expect(run.snapshot().enemies.count).toBe(1);
-    expect(run.snapshot().shield).toBe(false);
+  it('lets the shield take the first aimed bullet: PLAYER_HIT, no life lost', () => {
+    const run = new Run({ script: { dominantColour: PickupKind.PRed, events: [GUNNER_ABOVE] } });
+    collect(run, PickupKind.Shield);
+    const died = logOf(run, [GameEventKind.PlayerDied]);
+    expect(stepUntil(run, GameEventKind.PlayerHit, 600)).toBe(true);
+    expect(died).toEqual([]);
+    expect([run.snapshot().lives, run.snapshot().shield]).toEqual([3, false]);
   });
 
   it('releases the lost level as a P before PLAYER_DIED, and resets the bombs', () => {
-    const run = vulnerableRun();
-    const world = (run as unknown as { world: World }).world;
-    world.player.collect(PickupKind.PBlue);
-    world.player.useBomb();
-    world.player.advanceTimers();
-    for (let i = 0; i < 60; i += 1) run.step(DT, idle());
-    world.spawnEnemyBullet(120, 272, 0, 0);
+    const run = new Run({ script: { dominantColour: PickupKind.PRed, events: [GUNNER_ABOVE] } });
+    collect(run, PickupKind.PBlue);
+    collect(run, PickupKind.Bomb);
+    expect([run.snapshot().power, run.snapshot().bombs]).toEqual([2, 3]);
     const log = logOf(run, [GameEventKind.PickupSpawned, GameEventKind.PlayerDied]);
-    run.step(DT, idle());
+    expect(stepUntil(run, GameEventKind.PlayerDied, 600)).toBe(true);
     expect(log).toEqual([
       `${String(GameEventKind.PickupSpawned)}:${String(PickupKind.PBlue)}`,
       `${String(GameEventKind.PlayerDied)}:0`,
@@ -217,10 +243,8 @@ describe('Run — shield and death through the collisions (GDD v0.8 §4.4)', () 
   });
 
   it('releases nothing at level 1', () => {
-    const run = vulnerableRun();
-    const world = (run as unknown as { world: World }).world;
-    world.spawnEnemyBullet(120, 272, 0, 0);
-    run.step(DT, idle());
+    const run = new Run({ script: { dominantColour: PickupKind.PRed, events: [GUNNER_ABOVE] } });
+    expect(stepUntil(run, GameEventKind.PlayerDied, 600)).toBe(true);
     expect(run.snapshot().pickups.count).toBe(0);
   });
 });
@@ -289,7 +313,7 @@ describe('Effects — bomb flash and shake (GDD v0.8 §9.4)', () => {
     const render = new RecordingRender();
     shake.trigger();
     shake.apply(render);
-    expect(render.camera).toEqual({ x: 4, y: 2 });
+    expect(render.camera).toEqual({ x: 4, y: 0 });
     shake.advance(40);
     shake.apply(render);
     expect(render.camera.x).toBeLessThan(0);
@@ -298,35 +322,26 @@ describe('Effects — bomb flash and shake (GDD v0.8 §9.4)', () => {
     expect(render.camera).toEqual({ x: 0, y: 0 });
   });
 
-  it('honours its switches: no flash nor shake when they are off', () => {
+  it.each([
+    [false, false],
+    [true, true],
+  ])('honours its switches: with them %s, a bomb flashes and shakes: %s', (on, seen) => {
+    const run = vulnerableRun();
     const render = new RecordingRender();
-    const bus = new EventBus();
-    const effects = {
-      blink: true,
-      hitFlash: true,
-      explosions: true,
-      shake: false,
-      bombFlash: false,
-    };
-    const presenter = new RunPresenter(render, effects, bus);
-    const event = {
-      kind: GameEventKind.BombUsed,
-      position: { x: 0, y: 0 },
-      value: 0,
-      subject: 0,
-      detail: 0,
-    };
-    bus.publish(event);
+    const effects = { blink: true, hitFlash: true, explosions: true, shake: on, bombFlash: on };
+    const presenter = new RunPresenter(render, effects, run.events());
+    run.step(DT, pressing(Button.Bomb));
     presenter.applyShake();
-    expect(render.camera).toEqual({ x: 0, y: 0 });
+    presenter.draw(run.snapshot(), 1, 16);
+    expect(render.drew(Palette.bombFlash)).toBe(seen);
+    expect(render.camera.x !== 0).toBe(seen);
   });
 });
 
 describe('RunPresenter — the shield ring (GDD v0.8 §4.4)', () => {
   it('draws a 36 × 36 ring of four rectangles around a visible ship holding a charge', () => {
     const run = vulnerableRun();
-    const world = (run as unknown as { world: World }).world;
-    world.player.collect(PickupKind.Shield);
+    collect(run, PickupKind.Shield);
     const render = new RecordingRender();
     const effects = { blink: true, hitFlash: true, explosions: true, shake: true, bombFlash: true };
     new RunPresenter(render, effects, run.events()).draw(run.snapshot(), 1, 16);

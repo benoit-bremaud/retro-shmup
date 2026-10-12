@@ -91,8 +91,9 @@ export class RunPresenter {
   }
 
   /**
-   * Enemies, explosions, player bullets, the ship, then enemy bullets on top; then the HUD
-   * contents; then the effects age by `wallDtMs` (0 in a frozen frame).
+   * Enemies, explosions, pickups, player bullets, the ship and its shield ring, then enemy
+   * bullets on top, then the bomb flash over the field; then the HUD contents; then the effects
+   * age by `wallDtMs` (0 in a frozen frame).
    */
   draw(snapshot: WorldSnapshot, alpha: number, wallDtMs: number): void {
     this.render.setRegion('field');

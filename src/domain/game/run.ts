@@ -8,7 +8,6 @@ import { applyDamage } from './body';
 import { CollisionResolver } from './collision';
 import type { HitRules } from './collision';
 import { NORMAL } from './difficulty';
-import { KitTuning } from './tuning';
 import type { Enemy } from './enemy';
 import { createGameEvent, EventBus, GameEventKind } from './events';
 import type { GameEvent, RunEvents } from './events';
@@ -22,6 +21,7 @@ import { PickupKind, PickupMotion } from './pickup';
 import type { Pickup } from './pickup';
 import type { PlayerState } from './player';
 import { ScoreKeeper } from './score-keeper';
+import { KitTuning } from './tuning';
 import { WeaponKind } from './weapon';
 import { World } from './world';
 
@@ -265,7 +265,6 @@ export class Run implements Simulation, RunView, HitRules, EnemySpawner {
     this.bus.publish(event);
   }
 
-  /** `HitRules`: the ship died this step. */
   /**
    * `HitRules`: the ship died this step (02-sequence-player-hit). The death effects apply at once
    * — the power drops a level and the bombs reset — and a lost level is released as a P of the

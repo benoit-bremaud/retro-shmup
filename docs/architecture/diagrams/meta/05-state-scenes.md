@@ -266,8 +266,9 @@ boss and the end-of-level tally wait for the level brick (F).
   weapon {x 368, y 84, pipX 380, pipSpacing 6} (badge x 368–376, pips ending at x 407),
   shield {x 368, y 100}. Icons are 8 × 8, pips
   3 × 8; `hud.ts` draws them from the snapshot, with no text and no allocation.
-- **Effects**: `EffectSettings` gains `shake` and `bombFlash`, both on by default, separate
-  switches (GDD v0.8 §9.3, §9.4); the shake moves field draws only (ADR-0014), the flash tints
+- **Effects**: `EffectSettings` gains `shake` and `bombFlash`, separate switches, on by default
+  and off — with `hitFlash` — when the browser reports `prefers-reduced-motion`, read once by the
+  composition root at boot (GDD v0.8 §9.3, §9.4); the shake moves field draws only (ADR-0014), the flash tints
   the field for about 300 ms of wall time and starts at most once per 1/3 s. Both freeze in the
   frozen scenes like the other effects.
 - **Interim deviation, first-time labels**: no "SHIELD", "BOMB", "1UP" label (GDD §7.3) until the

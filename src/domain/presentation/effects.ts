@@ -112,9 +112,11 @@ export class BombFlash {
     this.sinceStartMs = 0;
   }
 
+  /** Drawn past the field's edges by the shake's reach, so a shaken field is tinted to its clip. */
   draw(render: RenderPort, width: number, height: number): void {
     if (this.msLeft <= 0) return;
-    render.drawRect(0, 0, width, height, Palette.bombFlash);
+    const reach = EffectTuning.shakePx;
+    render.drawRect(-reach, -reach, width + 2 * reach, height + 2 * reach, Palette.bombFlash);
   }
 
   advance(ms: number): void {
@@ -124,8 +126,8 @@ export class BombFlash {
 }
 
 /**
- * The bomb's field shake (GDD v0.8 §9.4, ADR-0014): a whole-pixel camera offset that changes side
- * every 33 ms and fades out over 300 ms. Deterministic, so it needs no random draw.
+ * The bomb's field shake (GDD v0.8 §9.4, ADR-0014): a horizontal whole-pixel camera offset that
+ * changes side every 33 ms and fades out over 300 ms. Deterministic, so it needs no random draw.
  */
 export class Shake {
   private elapsedMs = Number.POSITIVE_INFINITY;
@@ -142,9 +144,7 @@ export class Shake {
     }
     const amplitude = EffectTuning.shakePx * (1 - this.elapsedMs / EffectTuning.shakeMs);
     const phase = Math.floor(this.elapsedMs / EffectTuning.shakeFlipMs);
-    const dx = Math.round((phase % 2 === 0 ? 1 : -1) * amplitude);
-    const dy = Math.round((phase % 4 < 2 ? 1 : -1) * amplitude * 0.5);
-    render.setCameraOffset(dx, dy);
+    render.setCameraOffset(Math.round((phase % 2 === 0 ? 1 : -1) * amplitude), 0);
   }
 
   advance(ms: number): void {

@@ -547,3 +547,22 @@ describe('SceneMachine — taps and the pause button (devices brick additions)',
     expect(render.drew(Palette.pauseButton)).toBe(true);
   });
 });
+
+describe('SceneMachine — the bomb shake (ADR-0014, GDD v0.8 §9.4)', () => {
+  it('shakes the field after a bomb in play, and never in a frozen frame', () => {
+    const fixture = playing();
+    fixture.machine.step(DT, pressed(Button.Bomb));
+    fixture.machine.render(1, 16);
+    expect(fixture.render.camera.x).not.toBe(0);
+    fixture.machine.step(DT, pressed(Button.Pause));
+    fixture.machine.render(1, 16);
+    expect(fixture.render.camera).toEqual({ x: 0, y: 0 });
+  });
+
+  it('keeps the camera still on the title', () => {
+    const { machine, render } = onTitle();
+    render.setCameraOffset(3, 3);
+    machine.render(0, 16);
+    expect(render.camera).toEqual({ x: 0, y: 0 });
+  });
+});
