@@ -97,6 +97,10 @@ stateDiagram-v2
   count-in digit, which share its centre; F-2b); the HP bar and the seconds, from `Entering` to
   the end of the sequence (the boss is `Idle` again at `Results`); the debris on `BOSS_PHASE_CHANGED`; the boss explosion and the **slow motion** on
   `BOSS_DESTROYED` — half speed for 0.5 s of wall time, a time scale in the loop behind
-  `EffectSettings.slowMotion`; it never changes the 2 s of the dying sequence in steps.
+  `EffectSettings.slowMotion`; it never changes the 2 s of the dying sequence in steps. Built in
+  F-2c: the debris is a fragment burst at the turret's offset (`CRUISER_TURRET`); the boss
+  explosion is one boss-tier burst (112 px, 24 fragments, its core 0.3 × its size so the hull stays
+  readable), then six medium bursts at fixed hull offsets, one per 1/3 s of wall time at most
+  (GDD §9.7); none is white; debris and bursts follow the `explosions` switch.
 - **Silence** (GDD §6): the 3 s of silence and the boss track wait for audio; until then the
   warning is visual only.

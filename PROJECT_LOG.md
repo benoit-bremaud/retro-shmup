@@ -8,6 +8,26 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-12
 
+### The boss's game feel — F-2c (branch `feat/boss-feel`)
+
+- Animated explosions replace the growing square (`Explosions` in `effects.ts`): a hot core
+  shrinking until 40 % of the 300 ms, fragments on an ease-out radius, hot then cool, 2 × 2 then
+  1 × 1, computed from the age (deterministic, no random draw, no allocation; the 16-slot ring
+  keeps centre, tier and age only). Tiers small 16 px / 8, medium 32 / 12, large 56 / 16, boss
+  112 / 24, debris 24 / 10 without a core (`ExplosionTier`).
+- The ship explodes on `PLAYER_DIED` (medium); the turret bursts into debris on
+  `BOSS_PHASE_CHANGED`; `BOSS_DESTROYED` starts `BossChain` (one boss burst, then 6 medium on fixed
+  hull offsets, one per 1/3 s of wall time at most) and `SlowMotion` (`timeScale()` 0.5 for 0.5 s
+  of wall time, frozen frames excluded), behind the new `EffectSettings.slowMotion`, off under
+  `prefers-reduced-motion`.
+- Owner decisions (scored): style A **without** the white flash — measured 12 white flashes a
+  second for one Popcorn formation with it, against the 3 a second of GDD §9.7; the boss burst's
+  core reduced to 0.3 × its size so the boss stays visible.
+
+### PR #42 merged (`75700fd`) — the boss HUD
+
+- Brick F-2b on `main`; F-2c branches from it.
+
 ### PR #41 merged (`b6aada7`) — the cockpit is the hitbox
 
 - Merged first, as planned; the boss HUD branch then took `main` in by a merge (no force push).
