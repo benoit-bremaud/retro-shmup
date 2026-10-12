@@ -8,6 +8,11 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-12
 
+### PR #31 merged (`6d99055`) — GDD v0.9, ADR-0020, ADR-0021
+
+- One Codex finding (the Spread opacity missing from the readability table) fixed in `2e1c239` by
+  owner choice A. CI green.
+
 ### Pointer fire and shot readability (branch `feat/pointer-fire`)
 
 - ADR-0020: the mouse fires while the left button pressed on the field stays down, wherever it
