@@ -1,7 +1,7 @@
 # Use-case diagram — system — player goals (1.0)
 
 > **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.2 — §2, §3.4,
-> §4, §6–§9
+> §4, §6–§9; v0.10 §6, §8, §9.1 (the vertical slice's end)
 > **Related ADRs**: ADR-0002 (timestep), ADR-0003 (architecture), ADR-0005 (credits),
 > ADR-0006 (player data)
 > **Realized by**: the sequence, class and state diagrams of `gameplay/` and `meta/`, stitched
@@ -55,7 +55,8 @@ step depends on them.
   6. Player catches pickups dropped by destroyed enemies; each effect applies at once (GDD §4.6).
   7. After the scripted waves the game announces the boss (GDD §6).
   8. Player destroys the boss through its phases (GDD §6).
-  9. The game shows the level results tally (GDD §8).
+  9. The game shows the level results tally, one line at a time; Player leaves it by confirm or
+     a tap, or it closes on its own (GDD v0.10 §8).
   10. Steps 4–9 repeat for levels 2 and 3. Lives, weapon colour, power level, bombs, shield
       charge, chain and score carry over between levels.
   11. After level 3 the game shows the Ending; the game compares the final score with the local
@@ -82,6 +83,10 @@ step depends on them.
     grants 1 000 points instead; a P of the other colour still switches the weapon (GDD §4.6).
   - 6c. Player lets a pickup leave the screen: it is lost.
   - 8a. The boss timer expires: the boss flees, no boss bonus, continue at step 9 (GDD §6).
+  - 9a. Vertical slice (GDD v0.10 §9.1, ADR-0022): the level list holds level 1 only, so after
+    its results the run is cleared and the game returns to the title (step 12); steps 10 and 11
+    — the next levels, the Ending and the top-10 comparison — arrive with level 2 and the
+    screens brick (G).
   - 11a. The final score enters the top 10: UC3 runs at *run end*, then step 12.
   - *a. At any moment of play (steps 4–8), Player pauses: UC2.
   - *b. At any moment of play, the tab is hidden, the window loses focus, the gamepad in use

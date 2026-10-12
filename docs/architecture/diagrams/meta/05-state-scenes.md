@@ -1,10 +1,11 @@
 # State machine diagram — meta — screens and their transitions (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.9 §3.2, §3.4,
-> §4.2, §4.3–§4.6, §5.2.1, §7.2.1, §7.3, §8, §9.1, §9.2, §9.3, §9.4
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.10 §3.2, §3.4,
+> §4.2, §4.3–§4.6, §5.2.1, §6, §7.2.1, §7.2.2, §7.3, §8, §9.1, §9.2, §9.3, §9.4, §9.7
 > **Related ADRs**: ADR-0006 (save document), ADR-0009 (gestures, automatic pause), ADR-0010
 > (one run, one bus), ADR-0015 (pause in the first playable), ADR-0018 (taps, locks, pause button),
-> ADR-0019 (run seed, player-kit build order), ADR-0020 (pointer fire, autofire option), ADR-0021 (hall of fame entry)
+> ADR-0019 (run seed, player-kit build order), ADR-0020 (pointer fire, autofire option), ADR-0021 (hall of fame entry), ADR-0022 (level
+> brick, `Results`, the one-level slice)
 > **Realizes**: UC1–UC7 of [01-use-case](../system/01-use-case.md) at the screen level; the
 > `SceneMachine` component of [03-component](../system/03-component.md)
 
@@ -164,7 +165,9 @@ The enemies brick adds `Paused`, `Count-in` and `Game over`, and removes the pau
 - **Interim deviation, level script**: the level script holds the rows of GDD §7.2.1 and its time
   wraps to 0 at 45 s, the slot of the absent Heavy (`LevelScript.loopAt`); enemies of the previous
   pass stay alive. It loops until the level brick adds the rest of level 1, the warning and the
-  boss: no `LEVEL_CLEARED`, no `BossDefinition` and no `warningAt` before then.
+  boss: no `LEVEL_CLEARED`, no `BossDefinition` and no `warningAt` before then. **Lifted by the
+  level brick**: F-1 replaces the rows with the 120 s script (still wrapping at 120 s), F-2 removes
+  `loopAt` (level brick additions below).
 - ~~**Interim deviation, drops and formations**: no `DropTable` roll, no full-formation P, no
   `Formation` count, no death release of the weapon and no bombs until the pickups and rules
   brick, so `Run` holds no `Random` yet and the determinism test compares (script, inputs) only.~~
@@ -276,9 +279,10 @@ boss and the end-of-level tally wait for the level brick (F).
   already carries the kind.
 - **Interim deviation, Bomb Carrier**: the level script holds a second Carrier at 40 s carrying a
   Bomb (GDD v0.8 §7.2.1), the only Bomb source until the level brick brings the Heavy; the row is
-  removed then.
+  removed then. **Lifted by F-1** (the Heavy and the 120 s script).
 - **Interim deviation, 1-UP unsourced**: the 1-UP pickup exists and is collectable, but no script
   row carries it before the level brick (a 1-UP every 45 s loop would be too generous).
+  **Lifted by F-1**: one 1-UP Carrier at 78 s (GDD v0.10 §7.2.2).
 - **Interim deviation, no touch bomb button**: no bomb button is drawn (GDD v0.8 §4.2); the
   second-finger tap stays the only touch bomb, and the right click the mouse bomb. Revisited
   with the options and screens.
@@ -302,7 +306,7 @@ bricks deliver.
 
 - **Pointer fire** (ADR-0020 decisions 1 to 3 and 6): the mouse fires while the left button is held
   after a press on the field, touch while a finger steers; the held pointer `Fire` combines like
-  any button. In a small dedicated PR before brick F, or in F's first PR.
+  any button. **Done** by the pointer-fire PR (#32, `91691e4`) before brick F.
 - **Interim deviation, no autofire option**: until the options screen (screens brick G), pointer
   fire is always the held fire; the v0.8 always-on fire is not reachable (ADR-0020 decision 4).
 - **Field drawing, shot proportions** (GDD v0.9 §3.2; presentation only, the hitboxes and the
@@ -310,7 +314,7 @@ bricks deliver.
   with a 2 × 2 white core, Spread bullets 2 × 6 centred on their 2 × 8 box, Laser bolts at 60 %
   opacity, player shots translucent. Enemy bullets stay drawn on top (player-kit additions). With
   the pointer fire PR, before or in F's first PR; the sprites of the assets brick keep the
-  proportions.
+  proportions. **Done** by the same PR (#32).
 - **Difficulty ramp** (GDD v0.9 §7.1, §10): the level brick F replaces the 45 s interim loop with
   the real ~120 s level-1 script rising to the Heavy, then the boss.
 - **Named top 10 and country** (GDD v0.9 §8, §9.1, §9.8): the screens brick G brings the name
@@ -318,6 +322,53 @@ bricks deliver.
   language's region), the save-document schema and its allowlist validation (ADR-0006,
   ADR-0021: first `version: 1` with `name` and `country`, no migration), and the bitmap font glyphs the entry needs (A–Z, 0–9, space, `?`). The pixel flags wait for the
   assets brick.
+
+### Level brick additions (F)
+
+The level brick turns level 1 into a whole level — the 120 s script, the Heavy, the WARNING, the
+Cruiser, the tally and the results — and ends the vertical slice after it (GDD v0.10 §6, §6.1,
+§7.2.2, §8, §9.1, §9.2, §9.4; ADR-0022). It adds one state, `Results`; the diagram above is
+unchanged.
+
+- **Results**: `Playing --> Results` when the outcome is `RUN_CLEARED` (and, from level 2,
+  `LEVEL_CLEARED`). Traits: `frozen` (the run does not step, alpha 1, effects get `wallDtMs = 0`),
+  `scrolls` (the starfield keeps moving — a new combination of the two traits), `drawsRun`, no
+  pause button. Over a dim veil, the tally lines of GDD v0.10 §8 appear one every
+  `toSteps(ResultsTuning.lineSeconds)` = 30 steps, read from `RunView.tally()`: label in the
+  `title` font from the message catalogue (FORMATIONS, NO BOMB, NO MISS, BOMBS, TOTAL; FR
+  FORMATIONS, SANS BOMBE, SANS PERTE, BOMBES, TOTAL — A–Z and space only), value right-aligned on
+  the row below in the `hud` font (digits and ×), a missed bonus shown with 0. `Confirm` and taps
+  are ignored for `toSteps(ResultsTuning.lockSeconds)` = 60 steps and accepted from the 61st; the
+  scene leaves on its own after `toSteps(ResultsTuning.autoSeconds)` = 480 steps (the entering step
+  is step 0 for all three, as for Game over). The values live in `ResultsTuning`, beside
+  `SceneTuning`.
+- **Interim deviation, slice end**: `Results --> Title` for `RUN_CLEARED`, releasing the run,
+  instead of `Ending` and `Name entry` (screens brick G); the `Title` reached from `Results`
+  applies the 60-step lock, as from Game over. `LEVEL_CLEARED → LevelCard` waits for level 2.
+- **Interim deviation, F-2 before F-3**: `Results` exists with a "LEVEL CLEAR" banner (FR "FIN DU
+  NIVEAU", `title` font) in place of the tally lines, no lock, and leaves for the title after 3 s
+  (`ResultsTuning` holds that interim time until F-3).
+- **Pause**: during `Results` a `Pause` (player or automatic) sets the pending pause, as during a
+  card; in the slice it is cleared when the run is released at the title. During the WARNING and
+  the fight the pause rules are unchanged: the run, the boss timer and the banner freeze with it.
+- **The time scale** stays 1 in every scene but `Playing`, where the presenter returns 0.5 for
+  0.5 s of wall time after `BOSS_DESTROYED` when `EffectSettings.slowMotion` is on (ADR-0010
+  decision 2); a pause during the slow motion freezes its wall-time clock like every effect.
+- **Field drawing** (placeholders until the sprites): the Heavy a 56 × 48 rectangle in its own
+  colour; the Cruiser a 112 × 48 rectangle with its forward turret drawn as a separate rectangle
+  until phase 2; enemy bullets as today. The **WARNING** banner ("WARNING", FR "ATTENTION",
+  `title` font, centred on the field) is drawn while the snapshot's boss state is `WARNING`,
+  visible for the first 0.75 s of each 1.5 s — two blinks in 3 s, under 3 per second (GDD v0.10
+  §9.7). The **HP bar** (a 1 px outline over x 8–232, y 4–8, filled in proportion to the HP left,
+  a 1 px tick at 66 %) and the **seconds left** (HUD digits right-aligned in the box x 218–232, y 12–22) are
+  drawn in the field region from `ENTERING` until the `DESTROYED` or `FLEEING` sequence ends.
+- **Effects**: `EffectSettings` gains `slowMotion`, on by default and off under
+  `prefers-reduced-motion` (composition root, as `hitFlash`); the explosion sizes gain a Large
+  tier (the Heavy) and a boss tier; the debris — a few fragments flying from the broken part —
+  is recorded on `BOSS_PHASE_CHANGED` and drawn behind the `explosions` switch. Each effect is
+  outcome-neutral (ADR-0010).
+- **Strings**: the message catalogue gains `warning`, `levelClear` (interim), and the five tally
+  labels, EN and FR.
 
 ### Build order
 
@@ -327,5 +378,6 @@ bricks deliver.
 | D — enemies | Popcorn, Diver, Gunner as archetype data and stateless strategies; `LevelDirector` with the looping rows of GDD §7.2.1; `ActiveList` for player bullets, enemy bullets and enemies; `CollisionResolver` with `HitRules`; lives, `hit()`, `Dead` and respawn; `EventBus` with `ScoreKeeper` (points and chain); `RunOutcome.GAME_OVER`; `Paused`, `Count-in`, `Game over`; HUD digits, chain bar and life icons; hit flash and small explosion behind effect switches; an ESLint rule keeping `src/domain/game` from importing `presentation` and `scenes`; the `RenderPort` glyph-set contract |
 | C2 — the other devices | five PRs (ADR-0018): C2-0 this design; C2-A the browser-free arbitration (no behaviour change); C2-L the portrait screen (`RenderPort.layout()`, `HUD_LAYOUTS`, `hud.ts` draws bands or strip, page CSS); C2-P touch and mouse (`pointer` module, pause button, tap resume, Game over and title locks, crosshair, layout-change pause, the new smoke test); C2-G the gamepad (`gamepad` module, fixed `A`/`B`/`Start` roles) |
 | E — the player kit | five PRs (ADR-0019), each merge playable: E-0 this design; E-1 randomness, pickups and their sources (run seed, pickup pool, fall and sway, collision pass 4, P-red and P-blue, `Weapon.kind` and `level` with `powerUp`, the cap bonus, `Formation` with the formation P and `FORMATION_CLEARED`, `LevelScript.dominantColour`, the Gunner `DropTable` at 30 %, the `DifficultyProfile` subset, the HUD weapon badge and pips, the determinism test with a seed; until E-2, `WEAPONS` holds the level-1 Spread record for every level and both kinds: the level, the kind and the pips change, the shot does not); E-2 the weapons on levels 1 to 5 (the data tables, damage in tenths, Laser bolts, pierce memory, the player bullet pool at 80); E-3 the Carrier (`CrossMovement`, the archetype, cargo with its load checks, the §7.2.1 rows, the Shield, Bomb and 1-UP pickups collectable, the HUD shield and bomb icons as needed); E-4 the bomb, the shield and the death rule (step slot 3, `useBomb`, `BOMB_USED`, flash and shake, `ABSORBED`, `shieldBroken`, `PLAYER_HIT`, the ring, `powerDown` with the release hop and the bombs reset). The Carrier comes before the bomb, so Shield and Bomb are catchable as soon as they exist |
-| Pointer fire and shot proportions | ADR-0020 decisions 1 to 3 and 6 (mouse left-button fire latch, touch fire while steering, samples with `autofire = false`) and the GDD v0.9 §3.2 drawn sizes in `RunPresenter`; a small dedicated PR before F, or F's first PR (design revision v0.9 above) |
-| Later bricks | level brick F: the real ~120 s level-1 script that ramps up to the Heavy and the boss (GDD v0.9 §7.1), replacing the 45 s loop; the Heavy (the real Bomb and Shield source, replacing the interim Bomb Carrier), ring and fan attacks, 1-UP Carriers, the warning, the boss and `damageBoss`, the end-of-level tally; screens brick: the bitmap fonts with the first-time pickup labels, the options with the effect switches, a touch bomb button if the screens revisit it (GDD v0.8 §4.2), the autofire option (ADR-0020 decision 4), the name entry with the letter picker and the optional country, and the save-document schema for the named top 10 (GDD v0.9 §9.1, §9.8) |
+| Pointer fire and shot proportions | ADR-0020 decisions 1 to 3 and 6 (mouse left-button fire latch, touch fire while steering, samples with `autofire = false`) and the GDD v0.9 §3.2 drawn sizes in `RunPresenter`; done by #32 (`91691e4`) before F (design revision v0.9 above) |
+| F — the level | four PRs (ADR-0022), each merge playable: F-0 this design (GDD v0.10, ADR-0022); F-1 the strategy factories (the Gunner refactor first, no behaviour change), `Body.volley`, `SizeTier.LARGE`, the Heavy (ring and fan archetypes, its drop), the ring and fan attacks, the 120 s script of GDD v0.10 §7.2.2 with the 1-UP Carrier and without the Bomb Carrier (interim: it still wraps at 120 s), the level simulation at ≤ 16 enemies and ≤ 40 enemy bullets; F-2 the boss (`warningAt`, `startBoss`, `Boss` and `BossState`, the Cruiser's `BossDefinition`, `damageBoss` in pass 1 and the bomb, the boss body in pass 3, the boss events, `RunOutcome.LEVEL_CLEARED` and `RUN_CLEARED` over the level list, the snapshot's boss view, the HP bar, the seconds and the WARNING banner, the debris, the slow motion and its switch, `loopAt` removed; interim `Results` with the "LEVEL CLEAR" banner for 3 s, then the title); F-3 `LevelTally`, `TallyTuning`, `RunView.tally()`, the `Results` lines, lock and 8 s exit, `RUN_CLEARED` → `Results` → `Title`, the documentation pass |
+| Later bricks | screens brick (G): the Ending card and the name entry after a cleared run (lifting the slice-end deviation), the bitmap fonts with the first-time pickup labels, the options with the effect switches, a touch bomb button if the screens revisit it (GDD v0.8 §4.2), the autofire option (ADR-0020 decision 4), the name entry with the letter picker and the optional country, and the save-document schema for the named top 10 (GDD v0.9 §9.1, §9.8) |

@@ -1,8 +1,8 @@
 # Traceability matrix — UML study (1.0)
 
 > **Scope**: the UML study of [docs/architecture](README.md) against the
-> [Game Design Document](../design/game-design-document.md) v0.9, ADR-0001 to ADR-0010,
-> ADR-0014, ADR-0015, ADR-0018, ADR-0019 to ADR-0021 (ADR-0011 to ADR-0013 are tooling decisions with no UML realization).
+> [Game Design Document](../design/game-design-document.md) v0.10, ADR-0001 to ADR-0010,
+> ADR-0014, ADR-0015, ADR-0018, ADR-0019 to ADR-0022 (ADR-0011 to ADR-0013 are tooling decisions with no UML realization).
 > **Purpose**: prove coverage — every use case is realized, every class and component is used,
 > nothing is orphaned. Update this file in the same change as any diagram.
 
@@ -11,7 +11,8 @@ Diagram abbreviations: **UC** [01-use-case](diagrams/system/01-use-case.md) · *
 [04-class-domain](diagrams/gameplay/04-class-domain.md) · **SD-tick** [02-sequence-fixed-step-tick](diagrams/gameplay/02-sequence-fixed-step-tick.md) ·
 **SD-kill** [02-sequence-enemy-destroyed](diagrams/gameplay/02-sequence-enemy-destroyed.md) ·
 **SD-hit** [02-sequence-player-hit](diagrams/gameplay/02-sequence-player-hit.md) · **SD-bomb**
-[02-sequence-bomb](diagrams/gameplay/02-sequence-bomb.md) · **STM-player**
+[02-sequence-bomb](diagrams/gameplay/02-sequence-bomb.md) · **SD-boss**
+[02-sequence-boss-fight](diagrams/gameplay/02-sequence-boss-fight.md) · **STM-player**
 [05-state-player](diagrams/gameplay/05-state-player.md) · **STM-boss**
 [05-state-boss](diagrams/gameplay/05-state-boss.md) · **STM-scenes**
 [05-state-scenes](diagrams/meta/05-state-scenes.md).
@@ -20,7 +21,7 @@ Diagram abbreviations: **UC** [01-use-case](diagrams/system/01-use-case.md) · *
 
 | Use case | Components (CMP) | Behaviour | Structure (CD) | Covered by text only |
 |---|---|---|---|---|
-| UC1 Play a run | FrameLoop, SceneMachine, Run, RunPresenter, LevelScripts, SeededRandom, all ports | SD-tick, SD-kill, SD-hit, SD-bomb, STM-player, STM-boss, STM-scenes (`InRun`) | every class of CD | intro and level cards (STM-scenes) |
+| UC1 Play a run | FrameLoop, SceneMachine, Run, RunPresenter, LevelScripts, SeededRandom, all ports | SD-tick, SD-kill, SD-hit, SD-bomb, SD-boss, STM-player, STM-boss, STM-scenes (`InRun`, `Results`) | every class of CD | intro and level cards (STM-scenes); the slice end (UC1 9a) |
 | UC2 Pause the run | FrameLoop, SceneMachine, DeviceInput, WebAudioPlayer | SD-tick (pause decided before the step), STM-scenes (`Paused`, `Count-in`, `Confirm quit`) | — (scene level, no run class) | music ducking (ADR-0009) |
 | UC3 Record a high score | SceneMachine, SaveDocument, LocalStorageStore | STM-scenes (`Name entry` → `High scores`) | `RunView.snapshot().score` | insertion rule and storage failure (UC3 text, ADR-0006) |
 | UC4 Consult the high scores | SceneMachine, SaveDocument, LocalStorageStore | STM-scenes (`High scores`) | — | unreadable or newer document (UC4 text, ADR-0006) |
@@ -32,6 +33,8 @@ UC2 to UC7 are realized at the screen level only: they are plain navigation, rea
 whose conditional steps live in the use-case text (proportionality rule of the study).
 
 ## 2. Classes of the domain model → where they are used
+
+SD-boss (added with the level brick) uses `Run`, `World`, `LevelDirector`, `EnemySpawner` (`startBoss`), `HitRules` (`damageBoss`), `CollisionResolver`, `Boss`, `BossState`, `EventBus`, `ScoreKeeper`, `LevelTally` and `RunView` (`outcome`, `tally`); it is not a column below.
 
 | Class (CD) | SD-tick | SD-kill | SD-hit | SD-bomb | STM | GDD |
 |---|---|---|---|---|---|---|
@@ -45,17 +48,18 @@ whose conditional steps live in the use-case text (proportionality rule of the s
 | `Bullet` | | ✓ (`canHit`, `recordHit`) | ✓ (released) | ✓ (cancelled) | | §4.3 |
 | `Pickup`, `PickupKind`, `PickupMotion` | | ✓ (spawned, moved, collected) | ✓ (death release spawned) | ✓ (drops of bomb kills) | STM-player (collection guard) | §4.4, §4.6 |
 | `Pool<T>` | | ✓ (releases) | ✓ | ✓ | | ADR-0002 |
-| `ScoreKeeper`, `LevelTally` | | ✓ | ✓ | ✓ (`bombUsed`) | STM-boss (bonuses) | §8 |
+| `ScoreKeeper`, `LevelTally`, `TallyTuning` | | ✓ (`formationsCleared`) | ✓ (`lifeLost`) | ✓ (`bombUsed`) | STM-boss (bonuses), STM-scenes (`Results`), SD-boss | §8 |
 | `CollisionResolver` | | ✓ (passes 1 and 4) | ✓ (passes 2 and 3) | | | §4.1, §4.6, §5.2 |
-| `LevelDirector`, `LevelScript` | | ✓ (`dominantColour`, a formation per pass) | | | STM-boss (`warningAt`) | §7.1 |
+| `LevelDirector`, `LevelScript` | | ✓ (`dominantColour`, a formation per pass) | | | STM-boss (`warningAt`, `startBoss`), SD-boss | §7.1, §7.2.2 |
 | `ScriptEvent` | | ✓ (cargo) | | | CD rule table (Carrier cargo, load checks, spawns) | §5.2, §7.1, §7.2.1 |
 | `EventBus`, `GameEvent`, `GameEventKind` | | ✓ | ✓ | ✓ (`BOMB_USED`) | STM-boss (events) | ADR-0010 |
 | `DifficultyProfile` | | ✓ (`dropRateScale`) | ✓ (`bombsPerLife`) | | | §10 |
-| `Body`, `Enemy`, `EnemyArchetype`, `EnemyStats`, `DropTable` | | ✓ | | ✓ (on-field damage) | | §5.2, §5.3 |
-| `MovementPattern`, `PathMovement`, `DiveMovement`, `EnterHoldLeave`, `CrossMovement` | | | | | STM-boss (phase strategies) | §5.2, §5.2.1 |
-| `AttackPattern`, `NoAttack`, `AimedAttack`, `RingAttack`, `FanAttack` | | | | | STM-boss (phase strategies) | §5.2 |
+| `Body`, `Enemy`, `EnemyArchetype`, `EnemyStats`, `SizeTier`, `DropTable` | | ✓ | | ✓ (on-field damage) | | §5.2, §5.3, §5.2.1 |
+| `MovementPattern`, `PathMovement`, `DiveMovement`, `EnterHoldLeave`, `CrossMovement`, `SwayMovement` | | | | | STM-boss (phase strategies, Cruiser table) | §5.2, §5.2.1, §6.1 |
+| `AttackPattern`, `NoAttack`, `AimedAttack`, `RingAttack`, `FanAttack`, `SequenceAttack` | | | | | STM-boss (phase strategies, Cruiser table) | §5.2, §5.2.1, §6.1 |
+| `StrategyFactories` | | | | | CD rule table (Heavy, strategies built from data) | §5.2.1, §6.1 (ADR-0022) |
 | `Formation` | | ✓ | | ✓ (bomb kills count) | | §5.2, §4.6 |
-| `Boss`, `BossDefinition`, `BossPhaseSpec` | | (via `damageBoss`) | | (via `damageBoss`) | STM-boss | §6 |
+| `Boss`, `BossState`, `BossDefinition`, `BossPhaseSpec` | | (via `damageBoss`) | ✓ (boss contact, pass 3) | ✓ (`damageBoss` while `FIGHTING`) | STM-boss, SD-boss | §6, §6.1 |
 
 Every class is used by at least one behaviour diagram or by the GDD rule table of CD. The
 movement and attack strategies are exercised per archetype by the level scripts; their behaviour
@@ -67,10 +71,10 @@ is a calculation covered by unit tests (ADR-0003), not by a diagram.
 |---|---|
 | Bootstrap | CMP (the run factory and its seed, ADR-0019) |
 | FrameLoop | SD-tick |
-| SceneMachine | SD-tick, STM-scenes |
-| Run | SD-tick, SD-kill, SD-hit, SD-bomb, CD |
-| RunPresenter | SD-tick, SD-kill, SD-hit, SD-bomb (flash, shake) |
-| LevelScripts | CD (`LevelScript`, archetypes), STM-boss |
+| SceneMachine | SD-tick, STM-scenes, SD-boss (`Results`) |
+| Run | SD-tick, SD-kill, SD-hit, SD-bomb, SD-boss, CD |
+| RunPresenter | SD-tick, SD-kill, SD-hit, SD-bomb (flash, shake), SD-boss (debris, slow motion), STM-scenes (WARNING, HP bar) |
+| LevelScripts | CD (`LevelScript`, archetypes, `BossDefinition`), STM-boss, SD-boss |
 | SaveDocument | STM-scenes (`Boot`, `Name entry`), UC3–UC6 text |
 | MessageCatalogue | CMP; implied by UC7 and the cards and menus of STM-scenes |
 | SeededRandom | SD-kill (`Random`), CD (`Run` owns it); in the code since PR #5 but unused by the game; owned by `Run` from the player-kit brick E-1 (ADR-0019) |
@@ -100,6 +104,8 @@ is a calculation covered by unit tests (ADR-0003), not by a diagram.
 | ADR-0020 pointer fire (held left button, steering finger, autofire option) | STM-scenes (design revision v0.9, build order); tests: touch holds `Fire` only while a finger steers (lift and `pointercancel` drop it, a second finger adds none), the mouse holds `Fire` from a left press on the field until the left bit is lost (up, move, cancel, lost focus), a left press or hold on the HUD never fires, the right button never fires, both samples `autofire = false`; with the options brick, the option restores the v0.8 samples and the arbitration mask |
 | ADR-0021 hall of fame entry (name, optional country, allowlist, preselection on confirmation) | UC3 and UC4 text, STM-scenes (design revision v0.9, build order); tests with the screens brick: `parseSaveDocument` keeps a valid entry with and without a country, drops a 9-character, lowercase, all-space or untrimmed name and a country `fr`, `ZZ` or `FRA`, accepts `???`; the preselection from `fr-FR` gives `FR`, from `fr` none and is not stored without confirmation |
 | GDD v0.9 (§3.2 shot proportions; §7.1, §10 difficulty ramp; §8, §9.1, §9.8 named top 10 and country; §4.2, §9.3 pointer fire and autofire option) | STM-scenes (design revision v0.9, build order), UC3 and UC4 text (name, country), ADR-0020, ADR-0021; tests: enemy bullets drawn 6 × 6 with the core while the hitbox stays 4 × 4, Spread drawn 2 × 6 at 60 % opacity with a 2 × 8 hitbox (presenter, mocked `RenderPort`); with the screens brick, `parseSaveDocument` drops a name outside A–Z, 0–9, space or longer than 8 (except `???`) and a country outside the allowlist, the preselection from `fr-FR` gives `FR` and a language without region gives none |
+| ADR-0022 strategy factories, the boss outside the enemy pool, level list, `damageBoss`, events, `LevelTally`, `Results`, the one-level slice | CD (`StrategyFactories`, `Body.volley`, `SizeTier`, `Boss`, `BossState`, `BossDefinition`, `EnemySpawner.startBoss`, `HitRules.damageBoss`, `RunConfig.levels`, `LevelTally`, `TallyTuning`, rule table and notes), STM-boss, SD-boss, SD-bomb (boss only while fighting), SD-kill and SD-hit (tally hooks), STM-scenes (level brick additions, build order F-0 to F-3), UC1 9a; tests: listed in ADR-0022 Consequences — the Gunner unchanged after the refactor, the Heavy's movement, ring turning every other volley and fan, the Cruiser's sway and phases, two thresholds in one bomb, no damage before `FIGHTING`, contact only in `ENTERING` and `FIGHTING`, flee on timer, destruction winning a tie, the flat bonus from the seconds shown, the tally lines, the `warningAt` − 4 s load check, the level simulation at ≤ 16 enemies and ≤ 40 enemy bullets with determinism, the `Results` lock, lines and 8 s exit |
+| GDD v0.10 (§5.2.1 Heavy; §6, §6.1 warning, Cruiser, boss HUD; §7.1, §7.2, §7.2.2 the 120 s level 1; §8 tally and Results; §9.1 the slice end; §9.2 HP bar and seconds; §9.3, §9.4 slow-motion switch, debris; §9.7 WARNING blink) | STM-boss (Cruiser table), SD-boss, CD rule table, STM-scenes (level brick additions), UC1 9 and 9a; tests: the WARNING banner visible 0.75 s of each 1.5 s, the HP bar fill and tick and the seconds from `ENTERING` (presenter, mocked `RenderPort`), slow motion off under reduced motion and never changing the step count |
 
 ## 5. Known gaps (accepted)
 

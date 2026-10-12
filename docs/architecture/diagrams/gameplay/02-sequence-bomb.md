@@ -1,9 +1,10 @@
 # Sequence diagram — gameplay — the player drops a bomb (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.8 §4.1,
-> §4.5, §5.2, §8, §9.3, §9.4
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.10 §4.1,
+> §4.5, §5.2, §6, §8, §9.3, §9.4
 > **Related ADRs**: ADR-0002 (fixed step order), ADR-0010 (bus per run, handler rules, effects in
-> wall time), ADR-0014 (field-only shake), ADR-0019 (step slot 3, damage in tenths, `BOMB_USED`)
+> wall time), ADR-0014 (field-only shake), ADR-0019 (step slot 3, damage in tenths, `BOMB_USED`), ADR-0022
+> (`damageBoss`, `LevelTally`)
 > **Realizes**: UC1 extension 5a of [01-use-case](../system/01-use-case.md); the bomb transitions
 > of [05-state-player](05-state-player.md); classes of [04-class-domain](04-class-domain.md)
 
@@ -41,7 +42,7 @@ sequenceDiagram
       Note over Pl: bombs −= 1, state Invulnerable, timer = max(timer, 1 s)
       Pl-->>Run: true
       Run->>Bus: publish BOMB_USED (position = the ship)
-      Bus->>SK: tally.bombUsed = true (from the level brick)
+      Bus->>SK: LevelTally.bombUsed = true — the no-bomb bonus lost
       Bus->>P: bomb flash and field shake if enabled, bomb SFX
       Run->>W: cancelEnemyBullets()
       Note over W: every live enemy bullet spent — released at step 6
@@ -53,8 +54,8 @@ sequenceDiagram
           Run->>Run: destroyEnemy(E, BOMB) — score, chain, drop or cargo, formation count
         end
       end
-      opt [a boss is on the field — level brick]
-        Run->>Run: damageBoss(300 tenths)
+      opt [the boss is FIGHTING]
+        Run->>Run: damageBoss(300 tenths) — phases per threshold crossed (02-sequence-boss-fight)
       end
     end
   end
@@ -83,5 +84,8 @@ sequenceDiagram
   and the shake moves field draws only (ADR-0014); each has its own switch in `EffectSettings`
   (`bombFlash`, `shake`), both outcome-neutral. A new flash starts only 1/3 s or more after the
   previous one started, so a burst of bombs stays at or under 3 flashes per second.
-- **Tally**: `BOMB_USED` is published from the player-kit brick; `LevelTally` and the no-bomb
-  bonus arrive with the level brick.
+- **Tally**: `BOMB_USED` is published from the player-kit brick; `LevelTally` subscribes to it
+  from the level brick (F-3, ADR-0022), and any bomb used in the level loses the no-bomb bonus.
+- **The boss** (GDD v0.10 §6): a bomb damages it only while it is `FIGHTING` — in `WARNING` and
+  `ENTERING` the bomb still cancels the bullets and hits the enemies on the field, not the boss;
+  a bomb crossing a threshold advances the phase (05-state-boss).

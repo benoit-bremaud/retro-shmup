@@ -56,7 +56,7 @@ flowchart LR
 ## 3. UML study — index
 
 Status: complete for 1.0 (2026-10-08); the bomb sequence added with the player-kit design
-(2026-10-12, #24).
+(2026-10-12, #24); the boss-fight sequence added with the level-brick design (2026-10-12, F-0).
 
 | Folder | Diagram | Question it answers |
 |---|---|---|
@@ -66,6 +66,7 @@ Status: complete for 1.0 (2026-10-08); the bomb sequence added with the player-k
 | `gameplay` | [02 sequence — enemy destroyed](diagrams/gameplay/02-sequence-enemy-destroyed.md) | Hit → destruction → drop → score, audio, HUD, without coupling |
 | `gameplay` | [02 sequence — player hit](diagrams/gameplay/02-sequence-player-hit.md) | Shield or death, with every conditional branch |
 | `gameplay` | [02 sequence — bomb](diagrams/gameplay/02-sequence-bomb.md) | What does a bomb do inside one step, and in what order? |
+| `gameplay` | [02 sequence — boss fight](diagrams/gameplay/02-sequence-boss-fight.md) | From the warning to the results: `startBoss`, `damageBoss`, the boss events, the tally |
 | `gameplay` | [04 class — domain](diagrams/gameplay/04-class-domain.md) | Entity composition, pools, event bus, difficulty profile |
 | `gameplay` | [05 state — player](diagrams/gameplay/05-state-player.md) | Player lifecycle |
 | `gameplay` | [05 state — boss](diagrams/gameplay/05-state-boss.md) | Boss phases and timer |

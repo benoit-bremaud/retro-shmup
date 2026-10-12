@@ -8,6 +8,59 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-12
 
+### Design of the level brick F (branch `docs/f-design`) — GDD v0.10, ADR-0022
+
+- F-0, design only: the conception study of brick F, each GDD rule chosen by the owner from
+  scored options, the technical batch validated as a whole.
+  - **Level 1 length** (§7.1, §7.2): the 0–45 s opening kept without the interim Bomb Carrier, a
+    45–115 s ramp, the field drains, WARNING at 120 s; load check: no spawn at or after
+    `warningAt` − 4 s. A 33/35; rejected the boss at 58 s (20/35) and the first Heavy at ~100 s
+    (21/35).
+  - **Rows** (new §7.2.2): Divers at 40 s, ring Heavy at 45 s, mirrored formations, Gunners from
+    the top then three sides, the 1-UP Carrier high at 78 s, fan Heavy at 90 s, the ring and fan
+    pair at 102 s (the peak), the last formation at 110 s; ≤ 16 enemies, ≤ 40 enemy bullets by
+    simulation. A 34/35; rejected less dense (29/35), denser (24/35).
+  - **Heavy** (§5.2.1): 56 × 48, tier Large, 40 HP, 1 000 points; 2 s in, 10 s hold, out at
+    40 px/s; ring of 12 at 60 px/s turned 15° every other volley, or fan of 5 at 75 px/s, every
+    2 s; Bomb or Shield at 60 %. A 37/40; rejected a fixed ring (31/40), a 1.5 s 75 px/s ring
+    (32/40).
+  - **Cruiser** (§6.1): 112 × 48, 300 shots, 90 s, phase 2 at 66 %; 3 s entry; phase 1 fan and
+    ring alternating; phase 2 turret debris, a turning ring of 16 every 1.5 s and an aimed
+    triple; flees at power 1 by design. A 36/40; rejected one pattern per phase without debris
+    (34/40), 3 phases with an escort (28/40).
+  - **After level 1** (§9.1): `RUN_CLEARED` → Results → Title, Ending and name entry with brick G
+    (interim deviation), a data-driven level list. A 34/35; rejected looping level 1 harder
+    (15/35), Game over (11/35).
+  - **Results** (§8): one line every 0.5 s, zeros shown, leave by confirm or tap after 1 s or after
+    8 s; only a life lost breaks the no-miss; bomb-completed formations count; the boss bonus
+    flat, boss hits 0. A 34/35; rejected all at once with zeros hidden (23/35), a counting-up
+    score (29/35, revisited with audio).
+  - **Batch**: waves stop at `warningAt`; WARNING / ATTENTION 3 s in two blinks; silence a no-op
+    until audio; HP bar and seconds; bomb on the boss only while fighting; contact in entry and
+    fight; slow motion 0.5 s behind `EffectSettings.slowMotion`; the ship keeps control during
+    the 2 s explosion; no Popcorn bullet in level 1; pause and timer as elsewhere.
+- ADR-0022 partially supersedes ADR-0003 (decision 1, "A `Boss` is an `Enemy`"): strategy
+  factories from tuning data, `Body.volley`, `SizeTier.LARGE`, one preallocated `Boss` outside
+  the enemy pool, `startBoss`, `damageBoss`, boss and level events (8 to 12), `LEVEL_CLEARED` /
+  `RUN_CLEARED` over a level list, `LevelTally` as a subscriber, `Results`; `loopAt` removed.
+- UML: class diagram, boss state machine (Cruiser table), new boss-fight sequence, tally hooks
+  in the bomb, kill and hit sequences, UC1 9a (slice end), the scene machine's level brick
+  additions (Results, interim F-2 banner, lifted loop, Bomb Carrier and 1-UP deviations, the
+  v0.9 prerequisites marked done by #32) and build order F-0 to F-3, traceability matrix,
+  architecture index. Mermaid checked with `mmdc`.
+- Design review of F-0: 2 Must (phase 2 needs `parallelAttack`; the volley counting per
+  pattern and per phase), 6 Should (pass wording, `sequenceAttack` period, the boss serial, the
+  level end after a respawn, the fleeing tally line and the formation value layout, the
+  ≤ 40 check over phase 2 and the pool rule) and 4 Nice fixed.
+- PR split: F-1 factories (Gunner refactor first) + Heavy + rings and fans + the 120 s script
+  (still wrapping at 120 s); F-2 the boss (interim "LEVEL CLEAR" banner, then the title); F-3
+  the tally, Results and the documentation pass. Each merge playable.
+
+### PR #32 merged (`91691e4`) — pointer fire and shot readability
+
+- One Codex finding (a left press reported as a move while the right button is held) fixed by
+  owner choice A. CI green.
+
 ### PR #31 merged (`6d99055`) — GDD v0.9, ADR-0020, ADR-0021
 
 - One Codex finding (the Spread opacity missing from the readability table) fixed in `2e1c239` by

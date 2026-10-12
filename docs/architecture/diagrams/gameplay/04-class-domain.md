@@ -1,10 +1,10 @@
 # Class diagram — gameplay — domain model of a run (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.8 §4–§8 (with §5.2.1 and §7.2.1), §10
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.10 §4–§8 (with §5.2.1, §6.1, §7.2.1 and §7.2.2), §9.2, §10
 > **Related ADRs**: ADR-0002 (Simulation, Random, Pool), ADR-0003 (composition, patterns),
 > ADR-0009 (IntentFrame), ADR-0010 (event bus per run, `DropTable` as data,
 > presentation outside the outcome), ADR-0019 (run seed, damage in tenths, weapons as data,
-> pickups, formations)
+> pickups, formations), ADR-0022 (strategy factories, the boss outside the enemy pool, level list)
 > **Realizes**: UC1 of [01-use-case](../system/01-use-case.md); the structure is placed in
 > [03-component](../system/03-component.md) (`Run` component)
 
@@ -69,7 +69,7 @@ classDiagram
   }
   class RunConfig {
     <<data>>
-    +script: LevelScript
+    +levels: LevelScript[]
     +seed: number
     +createRandom(levelSeed: number) Random
   }
@@ -101,6 +101,7 @@ classDiagram
     -pickups: Pool~Pickup~
     -enemies: Pool~Enemy~
     -formations: Pool~Formation~
+    -boss: Boss
     +spawnPickup(kind: PickupKind, x, y, motion: PickupMotion) boolean
     +cancelEnemyBullets() void
     +spendPlayerBullets() void
@@ -110,6 +111,7 @@ classDiagram
     <<interface>>
     +spawnEnemy(event: ScriptEvent, formation: Formation [0..1]) void
     +startFormation(total: number) Formation [0..1]
+    +startBoss(definition: BossDefinition) void
   }
   class WorldView {
     <<interface>>
@@ -236,6 +238,14 @@ classDiagram
     +bombUsed: boolean
     +lifeLost: boolean
     +bombsLeft: number
+    +total() number
+  }
+  class TallyTuning {
+    <<data>>
+    +perFormation: number
+    +noBomb: number
+    +noMiss: number
+    +perBombLeft: number
   }
   class Boss {
   }
@@ -271,6 +281,7 @@ classDiagram
   Run *-- "1" LevelDirector
   Run *-- "1" EventBus
   Run --> "1" DifficultyProfile
+  Run --> "1..*" LevelScript : levels, in order
   Run *-- "1" Random : gameplay stream, seeded per level
   Run ..> RunConfig : built from
   Run ..> CollisionResolver : uses each step
@@ -280,7 +291,7 @@ classDiagram
   EnemySpawner <|.. World
   LevelDirector ..> EnemySpawner : spawns through (parameter)
   World *-- "1" Player
-  World *-- "0..1" Boss
+  World *-- "1" Boss : preallocated, outside the enemy pool
   World *-- "0..*" Formation
   World --> "0..*" Bullet : active
   World --> "0..*" Pickup : active
@@ -294,6 +305,7 @@ classDiagram
   Pickup --> "1" PickupKind : kind
   Pickup --> "1" PickupMotion : motion
   ScoreKeeper *-- "1" LevelTally
+  LevelTally ..> TallyTuning : reads
   ScoreKeeper ..> EventBus : subscribed first by Run
   EventBus ..> GameEvent : dispatches
   LevelDirector --> "1" LevelScript : walks
@@ -321,6 +333,7 @@ classDiagram
     +mirror: boolean
     +entered: boolean
     +armed: boolean
+    +volley: number
     +spent: boolean
   }
   class Enemy {
@@ -339,6 +352,23 @@ classDiagram
     +hitbox: Rect
     +sprite: SpriteId
     +score: number
+    +tier: SizeTier
+  }
+  class SizeTier {
+    <<enumeration>>
+    SMALL
+    MEDIUM
+    LARGE
+  }
+  class StrategyFactories {
+    <<utility>>
+    +enterHoldLeave(travelS, holdS, leaveSpeed) MovementPattern
+    +swayMovement(amplitude, periodS) MovementPattern
+    +aimedAttack(periodS, speed) AttackPattern
+    +ringAttack(count, periodS, speed, rotateDeg) AttackPattern
+    +fanAttack(count, spreadDeg, periodS, speed) AttackPattern
+    +sequenceAttack(patterns: AttackPattern[], periodS) AttackPattern
+    +parallelAttack(patterns: AttackPattern[]) AttackPattern
   }
   class DropTable {
     <<data>>
@@ -357,10 +387,13 @@ classDiagram
   class DiveMovement
   class EnterHoldLeave
   class CrossMovement
+  class SwayMovement
   class NoAttack
   class AimedAttack
   class RingAttack
   class FanAttack
+  class SequenceAttack
+  class ParallelAttack
   class Formation {
     <<pooled>>
     -total: number
@@ -373,12 +406,35 @@ classDiagram
     +isResolved() boolean
   }
   class Boss {
+    -state: BossState
     -phaseIndex: number
     -timeLeft: number
+    -stateSteps: number
+    +start(definition: BossDefinition) void
+    +isTargetable() boolean
+    +isHarmful() boolean
+    +secondsLeft() number
+  }
+  class BossState {
+    <<enumeration>>
+    IDLE
+    WARNING
+    ENTERING
+    FIGHTING
+    DESTROYED
+    FLEEING
   }
   class BossDefinition {
     <<data>>
     +timeLimit: number
+    +warningS: number
+    +entryFrom: Vec2
+    +entryTo: Vec2
+    +entryS: number
+    +fleeSpeed: number
+    +destroyedS: number
+    +bonus: number
+    +bonusPerSecond: number
   }
   class BossPhaseSpec {
     <<data>>
@@ -389,7 +445,6 @@ classDiagram
     <<data>>
     +dominantColour: WeaponKind
     +warningAt: number
-    +loopAt: number [0..1]
   }
   class ScriptEvent {
     <<data>>
@@ -430,6 +485,10 @@ classDiagram
 
   Body <|.. Enemy
   Body <|.. Boss
+  Boss --> "1" BossState : state
+  EnemyStats --> "1" SizeTier : tier
+  StrategyFactories ..> MovementPattern : builds at load
+  StrategyFactories ..> AttackPattern : builds at load
   Enemy --> "1" EnemyArchetype
   Enemy --> "0..1" Formation
   EnemyArchetype *-- "1" EnemyStats
@@ -440,10 +499,15 @@ classDiagram
   MovementPattern <|.. DiveMovement
   MovementPattern <|.. EnterHoldLeave
   MovementPattern <|.. CrossMovement
+  MovementPattern <|.. SwayMovement
   AttackPattern <|.. NoAttack
   AttackPattern <|.. AimedAttack
   AttackPattern <|.. RingAttack
   AttackPattern <|.. FanAttack
+  AttackPattern <|.. SequenceAttack
+  SequenceAttack --> "2..*" AttackPattern : takes turns
+  AttackPattern <|.. ParallelAttack
+  ParallelAttack --> "2" AttackPattern : fire together
   Boss --> "1" BossDefinition
   BossDefinition *-- "1" EnemyStats
   BossDefinition *-- "2..3" BossPhaseSpec
@@ -457,12 +521,12 @@ classDiagram
 
 ## How each GDD rule is carried
 
-| Rule (GDD v0.4–v0.8) | Where it lives |
+| Rule (GDD v0.4–v0.10) | Where it lives |
 |---|---|
 | Two weapons × 5 levels, Spread first, switch keeps the level (§4.3) | `Weapon.powerUp(kind): boolean` sets `kind` and raises `level` (true when it rose); `WEAPONS[kind][level − 1]` is a `WeaponLevel` record and one generic `fire()` spawns its `ShotSpec`s (ADR-0019 — no `WeaponPattern`); `cooldown` counts `cooldownSteps` and is kept across a switch |
 | Laser width and piercing (§4.3, v0.8) | 48 px bolts from the player bullet pool with `pierceLeft` (the pass-throughs, 1 to 3) and `alreadyHit` — the **serials** of the bodies already hit, enemies and boss alike, 3 at most — so one body is hit once per bolt, even when a pooled enemy is reused or the bolt overlaps a large boss for several steps; when a bolt overlaps more bodies than it can hit, it hits them in the order it meets them along its path (nearest first: smallest position · velocity), never in the active list's order; every body crossed takes the full damage; a hit with `pierceLeft` = 0 spends the bolt |
 | One hit = one life, shield charge, invulnerability (§4.4) | `Player.hit(): HitOutcome` — `IGNORED` while entering, invulnerable or dead (the bullet passes through), `ABSORBED` by the shield, `DIED` otherwise; Game over is decided when the death sequence ends (`05-state-player`) |
-| Next level, run cleared (§2, §7) | `Run.startNextLevel()` resets the outcome, the tally and the level script, reseeds `Random` from the run seed and the level index; the outcome is `LEVEL_CLEARED` after levels 1–2, `RUN_CLEARED` after level 3 |
+| Next level, run cleared (§2, §7, v0.10 §9.1) | `RunConfig.levels` is the ordered level list (data); `Run.startNextLevel()` resets the outcome, the tally and the level script, reseeds `Random` from the run seed and the level index; the outcome is `LEVEL_CLEARED` after a level that has a successor, `RUN_CLEARED` after the last — in the vertical slice the list holds level 1 only, so its end is `RUN_CLEARED` (ADR-0022) |
 | Death: −1 level and release, none at level 1 (§4.4, v0.8) | `Weapon.powerDown(): boolean`; `Run.playerDied()` resets the bombs to `DifficultyProfile.bombsPerLife`, calls `powerDown()` and, when it returns `true`, spawns a P of the current kind with `PickupMotion.RELEASE` (the hop, then the slow fall) before publishing `PLAYER_DIED`; on the last life too |
 | Bombs per life, cap, empty stock, hit the boss (§4.5, v0.8) | at step slot (3), on a `Bomb` press, `Player.useBomb(): boolean` (stock > 0, `Vulnerable` or `Invulnerable`; sets the timer to max(time left, 1 s)); on `true` the run publishes `BOMB_USED`, calls `World.cancelEnemyBullets()` and deals 300 tenths once to every live enemy overlapping the field through `applyDamage`, `enemyHit` and `destroyEnemy(enemy, BOMB)`; the boss through `damageBoss` (02-sequence-bomb) |
 | Pickup at its cap → 1 000 points (§4.6, v0.8) | `Player.collect(kind): number` returns the bonus, 0 or 1 000 (an other-colour P at level 5 switches **and** returns 1 000); `PICKUP_COLLECTED` carries the kind in `detail` and the bonus in `value`; `ScoreKeeper` adds `value` flat, outside the chain |
@@ -472,17 +536,20 @@ classDiagram
 | Roles as data lines (§5.2, §5.3) | `EnemyArchetype` = `EnemyStats` + `DropTable` + one movement + one attack |
 | Carrier cargo set by the script (§5.2, v0.8 §5.2.1) | `ScriptEvent.cargo` → `Enemy.cargo`, which overrides the `DropTable` roll (ADR-0010); the load check throws a `RangeError` for a Carrier row without a cargo or a cargo on another archetype; an escaped Carrier drops nothing, a bomb kill drops the cargo |
 | Formation guarantee, bomb kills count (§5.2) | `Formation` counts destroyed, escaped and refused, and keeps the position of its last destroyed member; one completion check, `Run.resolveFormationMember`, runs whenever a member resolves (destroyed, escaped at step 6, or refused by the director) and, the first time `isCleared()` holds, spawns the P at that position and publishes `FORMATION_CLEARED`, once; one `Run.destroyEnemy(enemy, cause)` path for shots and bombs updates `Enemy.formation`; the boss has its own `Run.damageBoss` path (no formation) |
-| Boss phases, timer, flee, broken parts (§6) | `Boss.phaseIndex`, `timeLeft`; `BossPhaseSpec.hpThreshold`, `brokenPart`; lifecycle in `05-state-boss` |
-| Boss bonus 10 000 + 100 × seconds left (§6) | `BOSS_DESTROYED` carries the seconds left in `value`; `ScoreKeeper` scores it |
-| Deterministic script, WARNING, boss entry (§6, §7.1) | `LevelDirector` walks `LevelScript.events` by `scriptStep`; publishes `BOSS_WARNING` at `warningAt` |
+| Boss phases, timer, flee, broken parts (§6, v0.10 §6.1) | one preallocated `Boss` in `World`, outside the enemy pool (ADR-0022); `Boss.state` (`BossState`), `phaseIndex`, `timeLeft` in steps; `BossPhaseSpec.hpThreshold`, `brokenPart`, movement and attack; `Boss.start(definition)` resets every field from the `BossDefinition`; lifecycle and the Cruiser's values in `05-state-boss` |
+| Boss damage, targetable only while fighting (v0.10 §6) | `HitRules.damageBoss(amount)`: `applyDamage`, `ENEMY_HIT` with the boss serial, then one `BOSS_PHASE_CHANGED` per threshold crossed, or `BOSS_DESTROYED` at 0 HP; collision pass 1 adds the boss to the nearest-target candidates only while `isTargetable()` (`FIGHTING`); pass 3 tests its body while `isHarmful()` (`ENTERING`, `FIGHTING`); the bomb calls `damageBoss(300)` only in `FIGHTING` |
+| Boss bonus 10 000 + 100 × seconds left, flat (§6, v0.10) | `BOSS_DESTROYED` carries `Boss.secondsLeft()` — the steps left rounded up to whole seconds, the number the HUD shows — in `value`; `ScoreKeeper` adds 10 000 + 100 × `value`, flat, outside the chain; boss hits score 0 |
+| Deterministic script, WARNING, boss entry (§6, §7.1, v0.10) | `LevelDirector` walks `LevelScript.events` by `scriptStep`; at `warningAt` it stops spawning and calls `EnemySpawner.startBoss(LevelScript.boss)`, which puts the boss in `WARNING` and publishes `BOSS_WARNING`; the load check throws a `RangeError` for a spawn at or after `warningAt` − 4 s |
 | Chain: 2 s window, step every 5 kills, ×8 cap, reset on death (§8) | `ScoreKeeper.chainKills`, `chainTimer`, `multiplier()` |
-| Tally: full formations, no bomb, no miss, bombs left (§8) | `LevelTally`, reset at each level; on `LEVEL_CLEARED` `ScoreKeeper` adds the bonuses; `RunView.tally()` feeds the results screen |
-| Bomb used (§4.5, §8) | `BOMB_USED` → `ScoreKeeper` sets `tally.bombUsed` (no-bomb bonus lost) |
+| Tally: full formations, no bomb, no miss, bombs left (§8, v0.10) | `LevelTally`, owned by `ScoreKeeper` and reset at each level, subscribes to `FORMATION_CLEARED` (+1, bomb kills included), `BOMB_USED` (`bombUsed`), `PLAYER_DIED` (`lifeLost`; a shield absorb publishes `PLAYER_HIT` and leaves it) and `LEVEL_CLEARED` (`bombsLeft` = its `value`); then `ScoreKeeper` adds `total()` flat; values in `TallyTuning` (500, 5 000, 10 000, 1 000); `RunView.tally()` feeds the Results scene |
+| Bomb used (§4.5, §8) | `BOMB_USED` → `LevelTally.bombUsed` (no-bomb bonus lost) |
+| Heavy (v0.10 §5.2.1) | two archetypes, `HEAVY_RING` and `HEAVY_FAN`: 56 × 48, `SizeTier.LARGE`, 400 tenths, 1 000 points, `enterHoldLeave({ travelS: 2, holdS: 10, leaveSpeed: 40 })`, `ringAttack({ count: 12, periodS: 2, speed: 60, rotateDeg: 15 })` turning on every other volley (`Body.volley`) or `fanAttack({ count: 5, spreadDeg: 15, periodS: 2, speed: 75 })`, `DropTable` {Bomb, Shield, 60 %} |
+| Strategies built from data (ADR-0022) | `StrategyFactories` run once at module load and return frozen strategy objects closed over their configuration in steps; the Gunner is `enterHoldLeave({ travelS: 1, holdS: 3.5, leaveSpeed: 60 })` + `aimedAttack({ periodS: 1.5, speed: 75 })`, unchanged in behaviour; `Body.volley` counts the volleys of the current attack, reset on spawn and on a phase change |
 | Chain expiry, inclusive window (v0.6 §8) | `chainTimer` counts the steps left in the window: 120 on a kill, −1 when there is no chain (start, death). `ScoreKeeper.tick` (step 7, after the collisions) decrements it, and the chain breaks when it falls below 0, so a kill 120 steps after the previous one still extends it and one 121 steps after does not; `chainRatio` = (`chainTimer` + 1) / 120, full right after a kill and empty exactly when the chain breaks |
 | Difficulty knobs (§10) | `DifficultyProfile`; the caps (9 lives, 5 bombs, level 5, the 1 000 bonus) are constants, not knobs |
 | Clamp to the field, fly-in (v0.5 §4.1) | `Player.update`: clamp applied once `Entering` ends; fly-in path in 05-state-player |
 | Enemy roles of the enemies brick (v0.6 §5.2.1) | `PathMovement` (S curve from `ScriptEvent.spawn`, mirrored by `mirror`), `DiveMovement` (`Body.diveTarget` captured at the dive, heading kept until the enemy leaves), `EnterHoldLeave` (spawn → `ScriptEvent.hover` → back); `AimedAttack` counts `fireTimer` only while `Body.armed`, which the movement sets (during the hold for `EnterHoldLeave`); a zero aim vector fires straight down |
-| Script rows, groups, loop (v0.6 §7.2.1) | `ScriptEvent.interval` is absent on a one-enemy row ("—" in the GDD) and required above one: the script is checked at load and a row breaking the rule throws a `RangeError`; `spawn`, `hover`, expanded at load into single spawns that each keep their source event and member rank; the members of one event form a `Formation` only when `EnemyArchetype.formation` is set (Popcorn) and `count` > 1 — a lone enemy never does, and the load check rejects a formation group outside 5 to 8 members (GDD §5.2) with a `RangeError`: `LevelDirector` acquires a `Formation` through `World.startFormation(count)` (from the 16-slot pool `World` owns — one per enemy slot, and the level simulation tests check it never empties over a level — `undefined` when it is empty) when rank 0 is due, whether or not that enemy gets a pool slot, attaches the following ranks of that event in the same loop pass, and a new pass starts a new `Formation`; a member refused by a full enemy pool counts as `refused`; `isCleared()` = destroyed > 0 and destroyed + refused = total (the engine limit never costs the player the reward); `World.sweep()` returns the `Formation` to its pool once `isResolved()` (destroyed + escaped + refused = total); if the formation pool is empty all the same, the whole group is dropped, so no visible group ever lacks its reward; `PathMovement` mirrored negates the offset from the axis x0; `LevelScript.loopAt` wraps `scriptStep` to 0 (interim, enemies brick) |
+| Script rows, groups (v0.6 §7.2.1, v0.10 §7.2.2) | `ScriptEvent.interval` is absent on a one-enemy row ("—" in the GDD) and required above one: the script is checked at load and a row breaking the rule throws a `RangeError`; `spawn`, `hover`, expanded at load into single spawns that each keep their source event and member rank; the members of one event form a `Formation` only when `EnemyArchetype.formation` is set (Popcorn) and `count` > 1 — a lone enemy never does, and the load check rejects a formation group outside 5 to 8 members (GDD §5.2) with a `RangeError`: `LevelDirector` acquires a `Formation` through `World.startFormation(count)` (from the 16-slot pool `World` owns — one per enemy slot, and the level simulation tests check it never empties over a level — `undefined` when it is empty) when rank 0 is due, whether or not that enemy gets a pool slot, attaches the following ranks of that event in the same loop pass, and a new pass starts a new `Formation`; a member refused by a full enemy pool counts as `refused`; `isCleared()` = destroyed > 0 and destroyed + refused = total (the engine limit never costs the player the reward); `World.sweep()` returns the `Formation` to its pool once `isResolved()` (destroyed + escaped + refused = total); if the formation pool is empty all the same, the whole group is dropped, so no visible group ever lacks its reward; `PathMovement` mirrored negates the offset from the axis x0; *(v0.10)* `LevelScript.loopAt` is removed — the script ends at `warningAt` (ADR-0022) |
 | Leaving the field (v0.6 §5.2.1) | `Body.entered` set once the enemy overlaps the field; `World.sweep` releases an entered enemy fully outside it, with no score |
 | Pools (v0.6 §5.2.1) | sizes from the GDD; a request on a full pool is dropped (ADR-0002) |
 | Game over time (v0.6 §4.4) | `SceneTuning` in the scene machine, not `Run` (meta/05-state-scenes) |
@@ -500,14 +567,22 @@ classDiagram
   stateless strategies drive both. GDD §5.2 roles as data lines: Popcorn = `PathMovement` + `NoAttack` (the leader
   of some formations uses `AimedAttack` with a single volley); Diver = `DiveMovement` +
   `NoAttack`; Gunner = `EnterHoldLeave` + `AimedAttack` + drop {P-red or P-blue, 30 %}; Carrier =
-  `CrossMovement` (a straight horizontal crossing) + `NoAttack` + cargo; Heavy = `EnterHoldLeave` (long hold) + `RingAttack`
-  or `FanAttack` + drop {Bomb or Shield, 60 %}.
+  `CrossMovement` (a straight horizontal crossing) + `NoAttack` + cargo; Heavy = `EnterHoldLeave` (its own configuration, ADR-0022) + `RingAttack`
+  or `FanAttack` + drop {Bomb or Shield, 60 %}; the Cruiser's phases = `SwayMovement` +
+  `SequenceAttack` (fan, ring) in phase 1, `SwayMovement` + `ParallelAttack` (ring of 16, aimed
+  triple, each on its own period) in phase 2. `sequenceAttack(patterns, periodS)` fires one
+  volley every `periodS`, the patterns taking turns (the inner patterns' own `periodS` is
+  ignored), pattern i counting ⌊volley / n⌋; `parallelAttack` keeps one volley counter per
+  pattern on `Body` (a fixed array of 2); `Body.volley` is reset on spawn and on a phase change.
 - **Strategies are stateless**: they hold no per-enemy state, only immutable configuration
   (speeds, hold steps, fire period); per-enemy scratch state (path progress, fire timer, dive
   target, `armed`) lives on `Body`, so archetypes are shared data and nothing is allocated per
   spawn. `Enemy.spawn(archetype, event, serial)` resets every `Body` field in one place; the
   serial comes from a run-scoped counter that only increases, never from the pool slot. Boss phases
   are data that swap the strategies — this is how ADR-0003's "BossPhase" State is realized.
+  *(v0.10, ADR-0022)* Strategies are built once, at module load, by `StrategyFactories` from
+  tuning data, so two roles share one movement with different numbers; no factory runs in the
+  loop, and no strategy tests the role.
 - **One owner per object**: `Run` owns `World`, `World` owns `Player` and the pools; active
   bullets, pickups and enemies are references into the pools, kept in preallocated lists.
 - **Firing**: `World` passes itself, as the `PlayerShotSpawner`, to `Player.update` each step, which
@@ -564,8 +639,8 @@ classDiagram
 - **Fixed order of `Run.step`** — the determinism contract (ADR-0002): (1) `LevelDirector.tick`
   spawns due events; (2) the player moves and its `Weapon` fires; (3) a pressed bomb is applied
   (02-sequence-bomb); (4) enemies, boss, bullets and pickups move, their strategies act;
-  (5) `CollisionResolver` runs (pass 1 bullets vs enemies and boss, passes 2 and 3 hazards vs
-  player, pass 4 pickups vs player); (6) `World.sweep()` releases
+  (5) `CollisionResolver` runs (pass 1 bullets vs enemies and the boss while it fights, passes 2
+  and 3 hazards vs player — the boss body while it enters or fights — pass 4 pickups vs player); (6) `World.sweep()` releases
   spent items and bodies leaving the screen, formations count escapes; (7) `ScoreKeeper.tick` and the boss and player
   timers advance; (8) the outcome is updated — a level end is deferred while the player is `Dead`,
   and a final death (no life left) sets `GAME_OVER`, which wins over a pending level end. Once
@@ -574,14 +649,15 @@ classDiagram
 - **HUD data**: `WorldSnapshot` exposes the HUD values as getters, read by `RunPresenter` each
   frame without allocation: `score`, `multiplier`, `chainRatio` (0 to 1) and `lives` from the
   enemies brick; `weapon`, `power`, `bombs`, `shield` and the `pickups` list from the player-kit
-  brick; boss HP with the level brick.
+  brick; *(v0.10)* a boss view with the level brick — state, position, HP ratio, seconds left,
+  phase — from which the presenter draws the boss, the HP bar, the seconds and the WARNING banner.
 - **`HitRules`** is declared in the collision module and realized by `Run`: `CollisionResolver`
   and the bomb path call it, and no other client sees it, since the scene machine holds the run
   as `Simulation & RunView`. The resolver never sees the bus: every hit it finds goes through
   `HitRules`, and `Run`, the single publisher of each kind, publishes `ENEMY_HIT`, `PLAYER_HIT`,
   `ENEMY_DESTROYED` and `PLAYER_DIED`. The enemies brick implements `enemyHit`, `destroyEnemy`
   and `playerDied`; the player-kit brick adds `pickupCollected` (E-1), the cause to
-  `destroyEnemy` and `shieldBroken` (with the shield, E-4); `damageBoss` joins with the boss (level brick).
+  `destroyEnemy` and `shieldBroken` (with the shield, E-4); `damageBoss` joins with the boss (level brick, F-2).
 - **Brick subsets**: this diagram is the 1.0 model. A brick implements a subset of a type's
   fields and associations, recorded in the build order of meta/05-state-scenes, never weakened
   here: in the enemies brick `LevelScript` holds only its events and `loopAt` (interim), and
@@ -589,8 +665,17 @@ classDiagram
   brick adds `dominantColour` and `ScriptEvent.cargo`, and builds `DifficultyProfile` with the
   knobs it reads only (`lives`, `bombsPerLife`, `dropRateScale`), the `NORMAL` profile
   replacing `PlayerTuning.lives`; `powerLossOnDeath` stays a later knob (the rule is one level).
+  The level brick (F, ADR-0022) adds `StrategyFactories`, `SwayMovement`, `RingAttack`,
+  `FanAttack`, `SequenceAttack`, `Body.volley`, `SizeTier.LARGE`, the Heavy archetypes, `Boss`,
+  `BossState`, `BossDefinition`, `BossPhaseSpec`, `EnemySpawner.startBoss`, `HitRules.damageBoss`,
+  `LevelScript.warningAt` and `boss` (required) with `loopAt` removed, the boss and level events,
+  `RunOutcome.LEVEL_CLEARED` and `RUN_CLEARED`, `RunConfig.levels`, `LevelTally`, `TallyTuning`
+  and `RunView.tally()`; in the vertical slice the level list holds level 1 only, so
+  `startNextLevel` waits for level 2 (F-1: factories, Heavy, rings and fans; F-2: the boss; F-3:
+  the tally).
 - **Not modelled**: geometric helpers (`Vec2`, `Rect`), ids (`SpriteId`, `PathId`,
-  `ArchetypeId` = popcorn, diver, gunner, carrier, heavy), `KillCause` (shot or bomb),
+  `ArchetypeId` = popcorn, diver, gunner, carrier, heavy-ring, heavy-fan), the factories'
+  configuration records, `KillCause` (shot or bomb),
   `WorldSnapshot` (the read-only view returned to the presenter), `ActiveList`, `PickupTuning`,
   the `WEAPONS` table.
 - **Run seed** (ADR-0019): the composition root draws each run's seed and builds the run through

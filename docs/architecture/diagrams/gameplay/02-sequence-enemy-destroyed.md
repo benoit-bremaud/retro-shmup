@@ -1,9 +1,9 @@
 # Sequence diagram — gameplay — a player bullet destroys an enemy (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.8 §4.3,
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.10 §4.3,
 > §4.6, §5.2, §5.2.1, §7.3, §8, §9.4
 > **Related ADRs**: ADR-0002 (pools, seeded Random), ADR-0003 (Observer), ADR-0010 (bus per run,
-> handler rules, `DropTable` as data), ADR-0019 (run seed, pierce memory, pickups, formations)
+> handler rules, `DropTable` as data), ADR-0019 (run seed, pierce memory, pickups, formations), ADR-0022 (`LevelTally`, `damageBoss`)
 > **Realizes**: UC1 steps 5–6 of [01-use-case](../system/01-use-case.md); classes of
 > [04-class-domain](04-class-domain.md)
 
@@ -15,7 +15,7 @@ formation; the score, the effects and the sounds react without the entities know
 second diagram follows the pickup until the ship catches it. Bomb kills enter at
 `destroyEnemy(E, BOMB)` and follow the same path (02-sequence-bomb). Enemy bullets and bodies hitting
 the player are in `02-sequence-player-hit`; boss hits go through `damageBoss` and publish
-`ENEMY_HIT` with the boss serial.
+`ENEMY_HIT` with the boss serial, and score nothing (02-sequence-boss-fight).
 
 ## Diagram
 
@@ -81,7 +81,7 @@ sequenceDiagram
         Note over Run: F.rewarded = true — one P per formation, each loop pass being a new formation
         Run->>W: spawnPickup(P of LevelScript.dominantColour, at F.lastDestroyed, FALL)
         Run->>Bus: publish FORMATION_CLEARED
-        Bus->>SK: tally.formationsCleared += 1 (from the level brick)
+        Bus->>SK: LevelTally.formationsCleared += 1
       end
     end
     loop each spawnPickup above that returned true — a full pool of 8 drops the spawn and publishes nothing

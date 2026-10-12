@@ -1,9 +1,9 @@
 # Sequence diagram — gameplay — the player is hit (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.8 §4.1,
-> §4.4, §4.6, §5.2, §8
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.10 §4.1,
+> §4.4, §4.6, §5.2, §6, §8
 > **Related ADRs**: ADR-0002 (pools), ADR-0010 (bus per run, handler rules), ADR-0019 (release
-> motion, `ABSORBED`, `shieldBroken`, `DifficultyProfile`)
+> motion, `ABSORBED`, `shieldBroken`, `DifficultyProfile`), ADR-0022 (`LevelTally`, boss contact)
 > **Realizes**: UC1 extensions 5b, 5c and 5c1 of [01-use-case](../system/01-use-case.md);
 > lifecycle in [05-state-player](05-state-player.md)
 
@@ -62,7 +62,7 @@ sequenceDiagram
     end
     Run->>Bus: publish PLAYER_DIED
     activate Bus
-    Bus->>SK: chain reset to ×1, tally.lifeLost = true
+    Bus->>SK: chain reset to ×1, LevelTally.lifeLost = true — the no-miss lost
     Bus->>P: explosion, death SFX, shake if enabled
     deactivate Bus
   end
@@ -95,3 +95,7 @@ sequenceDiagram
 - **Order**: the release pickup spawns before `PLAYER_DIED` is published, so every listener sees
   a consistent world; `ScoreKeeper` resets the chain before the presenter reacts.
 - **Bombs reset to the difficulty value** (`bombsPerLife`, GDD §10), not to a literal.
+- **Tally** (GDD v0.10 §8): only `PLAYER_DIED` breaks the no-miss; an absorbed hit publishes
+  `PLAYER_HIT`, to which `LevelTally` does not subscribe.
+- **Boss body** (GDD v0.10 §6): pass 3 tests it while the boss is `ENTERING` or `FIGHTING`, never
+  in `DESTROYED` or `FLEEING`; it survives the contact like any body.
