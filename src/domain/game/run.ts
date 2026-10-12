@@ -168,13 +168,7 @@ export class Run implements Simulation, RunView, HitRules, EnemySpawner {
 
   /** `HitRules`: a shot touched a live enemy (white flash). */
   enemyHit(enemy: Enemy): void {
-    const event = this.enemyHitEvent;
-    event.position.x = enemy.position.x;
-    event.position.y = enemy.position.y;
-    event.subject = enemy.serial;
-    event.value = 0;
-    event.detail = 0;
-    this.bus.publish(event);
+    this.publishAt(this.enemyHitEvent, enemy.position.x, enemy.position.y, 0, 0, enemy.serial);
   }
 
   /**
@@ -186,13 +180,14 @@ export class Run implements Simulation, RunView, HitRules, EnemySpawner {
     enemy.spent = true;
     const x = enemy.position.x;
     const y = enemy.position.y;
-    const event = this.enemyDestroyedEvent;
-    event.position.x = x;
-    event.position.y = y;
-    event.subject = enemy.serial;
-    event.value = enemy.archetype.stats.score;
-    event.detail = enemy.archetype.stats.tier;
-    this.bus.publish(event);
+    this.publishAt(
+      this.enemyDestroyedEvent,
+      x,
+      y,
+      enemy.archetype.stats.score,
+      enemy.archetype.stats.tier,
+      enemy.serial,
+    );
     const dropped = enemy.cargo ?? this.rollDrop(enemy);
     const droppedSpawned = dropped !== NONE && this.world.spawnPickup(dropped, x, y);
     enemy.formation?.memberDestroyed(x, y);
@@ -257,10 +252,17 @@ export class Run implements Simulation, RunView, HitRules, EnemySpawner {
     return drops.kinds[Math.floor((r / rate) * drops.kinds.length)] ?? NONE;
   }
 
-  private publishAt(event: GameEvent, x: number, y: number, value: number, detail: number): void {
+  private publishAt(
+    event: GameEvent,
+    x: number,
+    y: number,
+    value: number,
+    detail: number,
+    subject = 0,
+  ): void {
     event.position.x = x;
     event.position.y = y;
-    event.subject = 0;
+    event.subject = subject;
     event.value = value;
     event.detail = detail;
     this.bus.publish(event);

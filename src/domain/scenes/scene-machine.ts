@@ -1,4 +1,4 @@
-import { Run, RunOutcome } from '../game/run';
+import { RunOutcome } from '../game/run';
 import type { RunView, Simulation } from '../game/run';
 import { SceneTuning, STEP_SECONDS, toSteps } from '../game/tuning';
 import { Button } from '../ports/input-port';
@@ -85,12 +85,12 @@ export class SceneMachine {
   /** A frozen step ran since the last render: that frame ages no effect (count-in handoff). */
   private frozenStepSinceRender = false;
 
-  /** `createRun` builds each new run; tests pass a short level script, the game the default. */
+  /** `createRun` builds each new run; tests pass a short level script, the game a seeded one. */
   constructor(
     render: RenderPort,
     starfield: Starfield,
     effects: Readonly<EffectSettings>,
-    createRun: () => InRun = () => new Run(),
+    createRun: () => InRun,
   ) {
     this.renderer = render;
     this.starfield = starfield;

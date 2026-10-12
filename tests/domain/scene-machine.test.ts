@@ -16,13 +16,18 @@ const DT = 1 / 60;
 
 function setup(): { machine: SceneMachine; render: RecordingRender } {
   const render = new RecordingRender();
-  const machine = new SceneMachine(render, new Starfield(() => 0.5), {
-    blink: true,
-    hitFlash: true,
-    explosions: true,
-    shake: true,
-    bombFlash: true,
-  });
+  const machine = new SceneMachine(
+    render,
+    new Starfield(() => 0.5),
+    {
+      blink: true,
+      hitFlash: true,
+      explosions: true,
+      shake: true,
+      bombFlash: true,
+    },
+    () => new Run(),
+  );
   return { machine, render };
 }
 

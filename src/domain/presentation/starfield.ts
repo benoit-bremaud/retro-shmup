@@ -28,7 +28,8 @@ export class Starfield {
   private readonly ys: Float32Array;
 
   constructor(random: () => number) {
-    const total = STARFIELD_LAYERS.reduce((sum, layer) => sum + layer.count, 0);
+    let total = 0;
+    for (let l = 0; l < STARFIELD_LAYERS.length; l += 1) total += STARFIELD_LAYERS[l]?.count ?? 0;
     this.xs = new Float32Array(total);
     this.ys = new Float32Array(total);
     let i = 0;
