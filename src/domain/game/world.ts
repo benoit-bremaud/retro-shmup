@@ -1,5 +1,6 @@
 import { ActiveList } from './active-list';
 import type { EnemyShotSpawner } from './attacks';
+import { Boss } from './boss';
 import { Bullet } from './bullet';
 import { Enemy } from './enemy';
 import { Formation } from './formation';
@@ -34,8 +35,17 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, WorldView {
   readonly enemies = new ActiveList(ENEMY_POOL_SIZE, () => new Enemy());
   readonly pickups = new ActiveList(PICKUP_POOL_SIZE, () => new Pickup());
   readonly formations = new ActiveList(FORMATION_POOL_SIZE, () => new Formation());
+  /** The level's one boss, preallocated and idle, outside the enemy pool (ADR-0022). */
+  readonly boss = new Boss();
   /** Run-scoped, only increases, never reused: a recycled body is never its predecessor. */
   private nextSerial = 1;
+
+  /** The next serial of the run: enemies, pickups and the boss draw from one counter. */
+  takeSerial(): number {
+    const serial = this.nextSerial;
+    this.nextSerial += 1;
+    return serial;
+  }
 
   playerPosition(): Readonly<{ x: number; y: number }> {
     return this.player.position;
@@ -73,8 +83,7 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, WorldView {
   spawnEnemy(event: Readonly<ScriptEvent>, formation: Formation | undefined): boolean {
     const enemy = this.enemies.add();
     if (enemy === undefined) return false;
-    enemy.spawn(event.archetype, event, this.nextSerial, formation);
-    this.nextSerial += 1;
+    enemy.spawn(event.archetype, event, this.takeSerial(), formation);
     event.archetype.movement.tick(enemy, this, 0);
     enemy.previousPosition.x = enemy.position.x;
     enemy.previousPosition.y = enemy.position.y;
@@ -104,8 +113,7 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, WorldView {
   ): boolean {
     const pickup = this.pickups.add();
     if (pickup === undefined) return false;
-    pickup.spawn(kind, x, y, this.nextSerial, motion);
-    this.nextSerial += 1;
+    pickup.spawn(kind, x, y, this.takeSerial(), motion);
     return true;
   }
 
@@ -142,7 +150,10 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, WorldView {
     return boxOverlapsField(enemy);
   }
 
-  /** Step 4: enemies age, move and attack; a spawned enemy bullet moves with the others. */
+  /**
+   * Step 4: enemies age, move and attack, then the boss does; a spawned enemy bullet moves with the
+   * others.
+   */
   moveEnemies(dt: number): void {
     for (let i = 0; i < this.enemies.count; i += 1) {
       const enemy = this.enemies.at(i);
@@ -154,6 +165,7 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, WorldView {
       if (!enemy.entered && boxOverlapsField(enemy)) enemy.entered = true;
       enemy.archetype.attack.tick(enemy, this, this, dt);
     }
+    this.boss.move(this, dt);
   }
 
   /** Step 4: every bullet moves by its velocity. */

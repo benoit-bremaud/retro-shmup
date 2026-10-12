@@ -23,6 +23,7 @@ import { World } from '../../src/domain/game/world';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { Random } from '../../src/domain/ports/random';
 import { mixSeed } from '../../src/domain/random/seeded-random';
+import { testScript } from '../support/script';
 
 const DT = 1 / 60;
 
@@ -156,6 +157,9 @@ class Collected implements HitRules {
   shieldBroken(): void {
     // Not exercised here.
   }
+  damageBoss(): void {
+    // Not exercised here.
+  }
 }
 
 /** A world whose ship sits at (120, 272) in `state` after `steps` idle steps. */
@@ -222,18 +226,18 @@ class FormationRecorder implements EnemySpawner {
     this.members.push(formation);
     return true;
   }
+  startBoss(): void {
+    // Not exercised here.
+  }
 }
 
 describe('LevelDirector — one formation per pass (GDD v0.8 §4.6, ADR-0019)', () => {
-  it('gives every member of a Popcorn group one formation, a new one each loop pass', () => {
-    const script: LevelScript = {
-      loopAt: 3,
-      dominantColour: PickupKind.PRed,
-      events: [
-        { at: 0, archetype: POPCORN, count: 5, interval: 0.25, spawn: { x: 80, y: -8 } },
-        { at: 0, archetype: GUNNER, count: 1, spawn: { x: -16, y: 80 }, hover: { x: 60, y: 80 } },
-      ],
-    };
+  it('gives every member of a Popcorn group one formation, a new one for each group', () => {
+    const script: LevelScript = testScript([
+      { at: 0, archetype: POPCORN, count: 5, interval: 0.25, spawn: { x: 80, y: -8 } },
+      { at: 3, archetype: POPCORN, count: 5, interval: 0.25, spawn: { x: 80, y: -8 } },
+      { at: 0, archetype: GUNNER, count: 1, spawn: { x: -16, y: 80 }, hover: { x: 60, y: 80 } },
+    ]);
     const director = new LevelDirector(script);
     const recorder = new FormationRecorder();
     for (let i = 0; i < 2 * 180; i += 1) director.tick(recorder);
@@ -242,7 +246,7 @@ describe('LevelDirector — one formation per pass (GDD v0.8 §4.6, ADR-0019)', 
     expect(popcorn).toHaveLength(10);
     expect(new Set(popcorn.slice(0, 5)).size).toBe(1);
     expect(new Set(popcorn).size).toBe(2);
-    expect(recorder.members.filter((m) => m === undefined)).toHaveLength(2);
+    expect(recorder.members.filter((m) => m === undefined)).toHaveLength(1);
   });
 });
 
@@ -412,13 +416,12 @@ describe('Formations — refused members never count against the player (GDD v0.
   });
 
   it('drops the whole group when the formation pool is full', () => {
-    const director = new LevelDirector({
-      dominantColour: PickupKind.PRed,
-      events: [
+    const director = new LevelDirector(
+      testScript([
         { at: 0, archetype: POPCORN, count: 5, interval: 0.25, spawn: { x: 80, y: -8 } },
         { at: 0, archetype: GUNNER, count: 1, spawn: { x: -16, y: 80 }, hover: { x: 60, y: 80 } },
-      ],
-    });
+      ]),
+    );
     const spawned: string[] = [];
     const noFormation: EnemySpawner = {
       startFormation: () => undefined,
@@ -426,17 +429,23 @@ describe('Formations — refused members never count against the player (GDD v0.
         spawned.push(event.archetype.id);
         return true;
       },
+      startBoss: () => undefined,
     };
     for (let i = 0; i < 120; i += 1) director.tick(noFormation);
     expect(spawned).toEqual(['gunner']);
   });
 
-  it('never needs more than 16 formations over three passes of level 1, nobody shooting', () => {
+  it('never needs more than 16 formations over level 1, nobody shooting', () => {
     const world = new World();
+    const spawner: EnemySpawner = {
+      startFormation: (total) => world.startFormation(total),
+      spawnEnemy: (event, formation) => world.spawnEnemy(event, formation),
+      startBoss: () => undefined,
+    };
     const director = new LevelDirector(LEVEL_1);
     let most = 0;
-    for (let i = 0; i < 3 * 7200; i += 1) {
-      director.tick(world);
+    for (let i = 0; i < 7200; i += 1) {
+      director.tick(spawner);
       world.moveEnemies(DT);
       world.moveBullets(DT);
       world.sweep();
@@ -490,7 +499,7 @@ describe('mixSeed — the per-level seed (ADR-0019)', () => {
 
 describe('Run — the player bullet pool at Spread level 5 (GDD v0.8 §5.2.1)', () => {
   it('never fills the 80-bullet pool with fire held at level 5', () => {
-    const run = new Run({ script: { dominantColour: PickupKind.PRed, events: [] } });
+    const run = new Run({ script: testScript() });
     const red = new Pickup();
     red.spawn(PickupKind.PRed, 0, 0, 1);
     for (let i = 0; i < 4; i += 1) run.pickupCollected(red);

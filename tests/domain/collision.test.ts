@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { CollisionResolver } from '../../src/domain/game/collision';
 import type { HitRules } from '../../src/domain/game/collision';
+import { BossState } from '../../src/domain/game/boss';
+import { CRUISER } from '../../src/domain/game/cruiser';
 import { DIVER, GUNNER, POPCORN } from '../../src/domain/game/enemy';
 import type { Enemy, EnemyArchetype } from '../../src/domain/game/enemy';
 import { PickupKind } from '../../src/domain/game/pickup';
@@ -48,6 +50,10 @@ class Rules implements HitRules {
   absorbed = 0;
   shieldBroken(): void {
     this.absorbed += 1;
+  }
+  readonly bossDamage: number[] = [];
+  damageBoss(amount: number): void {
+    this.bossDamage.push(amount);
   }
 }
 
@@ -303,4 +309,79 @@ describe('CollisionResolver — the shield absorbs (GDD v0.8 §4.4)', () => {
     expect([rules.absorbed, rules.deaths]).toEqual([1, 0]);
     expect(world.enemyBullets.at(1).spent).toBe(false);
   });
+});
+
+describe('CollisionResolver — the boss (ADR-0022 decision 5, GDD v0.10 §6)', () => {
+  /** A boss in `state`, its body over (120, 100). */
+  function bossIn(state: BossState, world = vulnerableWorld()): World {
+    world.boss.start(CRUISER, world.takeSerial());
+    world.boss.state = state;
+    world.boss.position.x = 120;
+    world.boss.position.y = 100;
+    return world;
+  }
+
+  it('hands a shot that meets the fighting boss to damageBoss and consumes the bullet', () => {
+    const world = bossIn(BossState.Fighting);
+    world.spawnPlayerBullet(120, 100, SHOT);
+    const rules = new Rules();
+    CollisionResolver.resolve(world, rules);
+    expect(rules.bossDamage).toEqual([shots(1)]);
+    expect(world.playerBullets.at(0).spent).toBe(true);
+  });
+
+  it.each([BossState.Warning, BossState.Entering, BossState.Destroyed, BossState.Fleeing])(
+    'lets a shot pass through the boss in %s',
+    (state) => {
+      const world = bossIn(state);
+      world.spawnPlayerBullet(120, 100, SHOT);
+      const rules = new Rules();
+      CollisionResolver.resolve(world, rules);
+      expect(rules.bossDamage).toEqual([]);
+      expect(world.playerBullets.at(0).spent).toBe(false);
+    },
+  );
+
+  it('hits the boss once per Laser bolt, by serial, however many steps the bolt overlaps it', () => {
+    const world = bossIn(BossState.Fighting);
+    const bolt: ShotSpec = { ...SHOT, height: 48, pierce: 2, weapon: WeaponKind.Laser };
+    world.spawnPlayerBullet(120, 100, bolt);
+    const rules = new Rules();
+    CollisionResolver.resolve(world, rules);
+    CollisionResolver.resolve(world, rules);
+    expect(rules.bossDamage).toHaveLength(1);
+    expect(world.playerBullets.at(0).spent).toBe(false);
+  });
+
+  it('meets the boss and an enemy in the order of the bolt path, nearest first', () => {
+    const world = bossIn(BossState.Fighting);
+    const gunner = enemyAt(world, GUNNER, 120, 130);
+    const bolt: ShotSpec = { ...SHOT, height: 120, pierce: 1, weapon: WeaponKind.Laser };
+    world.spawnPlayerBullet(120, 100, bolt);
+    const rules = new Rules();
+    CollisionResolver.resolve(world, rules);
+    // The bolt flies up: the boss (y 100) is met after the gunner (y 130), which is nearer.
+    expect(rules.hits).toBe(1);
+    expect(gunner.hp).toBe(shots(8) - SHOT.damage);
+    expect(rules.bossDamage).toHaveLength(1);
+  });
+
+  it.each([BossState.Entering, BossState.Fighting])('hurts the ship by contact in %s', (state) => {
+    const world = bossIn(state);
+    world.boss.position.y = 272;
+    const rules = new Rules();
+    CollisionResolver.resolve(world, rules);
+    expect(rules.deaths).toBe(1);
+  });
+
+  it.each([BossState.Warning, BossState.Destroyed, BossState.Fleeing])(
+    'is harmless to the ship in %s',
+    (state) => {
+      const world = bossIn(state);
+      world.boss.position.y = 272;
+      const rules = new Rules();
+      CollisionResolver.resolve(world, rules);
+      expect(rules.deaths).toBe(0);
+    },
+  );
 });

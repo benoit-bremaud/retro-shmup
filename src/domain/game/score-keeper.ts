@@ -1,6 +1,6 @@
 import { GameEventKind } from './events';
 import type { GameEvent, RunEvents } from './events';
-import { ChainTuning, toSteps } from './tuning';
+import { BossTuning, ChainTuning, toSteps } from './tuning';
 
 const WINDOW_STEPS = toSteps(ChainTuning.windowSeconds);
 const NO_CHAIN = -1;
@@ -23,6 +23,7 @@ export class ScoreKeeper {
     events.subscribe(GameEventKind.EnemyDestroyed, this.onEnemyDestroyed);
     events.subscribe(GameEventKind.PlayerDied, this.onPlayerDied);
     events.subscribe(GameEventKind.PickupCollected, this.onPickupCollected);
+    events.subscribe(GameEventKind.BossDestroyed, this.onBossDestroyed);
   }
 
   get score(): number {
@@ -59,6 +60,12 @@ export class ScoreKeeper {
   // The cap bonus is flat: never multiplied, and the chain does not move (GDD v0.8 §4.6).
   private readonly onPickupCollected = (event: Readonly<GameEvent>): void => {
     this.points += event.value;
+  };
+
+  // The boss bonus is flat too, and neither extends nor breaks the chain (GDD v0.10 §6): `value`
+  // is the whole seconds the HUD showed.
+  private readonly onBossDestroyed = (event: Readonly<GameEvent>): void => {
+    this.points += BossTuning.bonus + BossTuning.bonusPerSecond * event.value;
   };
 
   private readonly onPlayerDied = (): void => {

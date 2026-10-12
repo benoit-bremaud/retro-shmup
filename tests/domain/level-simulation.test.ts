@@ -186,18 +186,6 @@ describe('Level simulation — level 1, headless', () => {
     for (let i = 0; i < ONE_PASS; i += 1) run.step(DT, idle());
     expect(destroyed).toBe(0);
   });
-
-  it('wraps the script at 120 s (interim): enemies keep spawning in the second pass', () => {
-    const run = new Run();
-    const serials = new Set<number>();
-    for (let i = 0; i < 2 * ONE_PASS; i += 1) {
-      run.step(DT, scripted(i));
-      if (i < ONE_PASS) continue;
-      const enemies = run.snapshot().enemies;
-      for (let e = 0; e < enemies.count; e += 1) serials.add(enemies.at(e).serial);
-    }
-    expect(serials.size).toBeGreaterThan(10);
-  });
 });
 
 describe('Level simulation — effects never change the run (ADR-0010)', () => {

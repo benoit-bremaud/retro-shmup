@@ -5,12 +5,12 @@ import { Palette } from '../../src/domain/presentation/palette';
 import { Starfield } from '../../src/domain/presentation/starfield';
 import { DIVER, POPCORN } from '../../src/domain/game/enemy';
 import type { LevelScript } from '../../src/domain/game/level-script';
-import { PickupKind } from '../../src/domain/game/pickup';
 import { Run } from '../../src/domain/game/run';
 import { Scene, SceneMachine } from '../../src/domain/scenes/scene-machine';
 import { PORTRAIT } from '../../src/domain/presentation/screen';
 import { RecordingRender } from '../support/recording-render';
 import type { RecordedRect } from '../support/recording-render';
+import { testScript } from '../support/script';
 
 const DT = 1 / 60;
 
@@ -267,19 +267,16 @@ describe('SceneMachine — Paused and Count-in (meta/05-state-scenes, pause rule
 });
 
 /** Three Divers straight down on an idle ship at rest: three deaths, then Game over. */
-const KILLER: LevelScript = {
-  dominantColour: PickupKind.PRed,
-  events: [
-    ...[2, 6.5, 11].map((at) => ({
-      at,
-      archetype: DIVER,
-      count: 1,
-      spawn: { x: 120, y: -8 },
-    })),
-    // Far from the ship (x 0 to 80): still flying when the run ends, so Game over shows it move.
-    { at: 14, archetype: POPCORN, count: 1, spawn: { x: 40, y: -8 } },
-  ],
-};
+const KILLER: LevelScript = testScript([
+  ...[2, 6.5, 11].map((at) => ({
+    at,
+    archetype: DIVER,
+    count: 1,
+    spawn: { x: 120, y: -8 },
+  })),
+  // Far from the ship (x 0 to 80): still flying when the run ends, so Game over shows it move.
+  { at: 14, archetype: POPCORN, count: 1, spawn: { x: 40, y: -8 } },
+]);
 
 function gameOverFixture(): ReturnType<typeof setup> {
   const render = new RecordingRender();
@@ -377,10 +374,9 @@ describe('SceneMachine — Game over (GDD §4.4, meta/05-state-scenes)', () => {
 
 describe('SceneMachine — effects per run (ADR-0010, 02-sequence-fixed-step-tick)', () => {
   /** A run whose first Diver is shot at once: it explodes on screen. */
-  const TARGET: LevelScript = {
-    dominantColour: PickupKind.PRed,
-    events: [{ at: 0, archetype: DIVER, count: 1, spawn: { x: 120, y: -8 } }],
-  };
+  const TARGET: LevelScript = testScript([
+    { at: 0, archetype: DIVER, count: 1, spawn: { x: 120, y: -8 } },
+  ]);
 
   function exploding(): ReturnType<typeof setup> {
     const render = new RecordingRender();
@@ -418,15 +414,14 @@ describe('SceneMachine — effects per run (ADR-0010, 02-sequence-fixed-step-tic
 
   it('gives a new run a new presenter: no effect carries over from the previous run', () => {
     // A Diver shot at once (an explosion, never aged: no render), then three that kill the ship.
-    const script: LevelScript = {
-      dominantColour: PickupKind.PRed,
-      events: [0, 2, 6.5, 11].map((at) => ({
+    const script: LevelScript = testScript(
+      [0, 2, 6.5, 11].map((at) => ({
         at,
         archetype: DIVER,
         count: 1,
         spawn: { x: 120, y: -8 },
       })),
-    };
+    );
     const render = new RecordingRender();
     const machine = new SceneMachine(
       render,

@@ -15,6 +15,16 @@ export const GameEventKind = {
   PlayerHit: 6,
   /** A bomb went off; `position` = the ship. */
   BombUsed: 7,
+  /** The boss warning began; `position` = the boss, `subject` = its serial. */
+  BossWarning: 8,
+  /** The boss entered a new phase; `detail` = the phase index, `position` = the boss. */
+  BossPhaseChanged: 9,
+  /** The boss was destroyed; `value` = the seconds left on its timer (the bonus's multiplier). */
+  BossDestroyed: 10,
+  /** The boss timer ran out and it flees; `position` = the boss. */
+  BossFled: 11,
+  /** The level ended; `value` = the bombs left. */
+  LevelCleared: 12,
 } as const;
 export type GameEventKind = (typeof GameEventKind)[keyof typeof GameEventKind];
 

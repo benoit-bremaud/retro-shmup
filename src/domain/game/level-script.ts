@@ -1,3 +1,5 @@
+import type { BossDefinition } from './boss';
+import { CRUISER } from './cruiser';
 import { CARRIER, DIVER, GUNNER, HEAVY_FAN, HEAVY_RING, POPCORN } from './enemy';
 import type { EnemyArchetype, SpawnSpec } from './enemy';
 import { PickupKind } from './pickup';
@@ -15,14 +17,18 @@ export interface ScriptEvent extends SpawnSpec {
 }
 
 /**
- * A level script, a subset until the level brick (04-class-domain, brick subsets): its events, the
- * interim `loopAt` and the formation colour; the warning and the boss arrive, required, with the
- * level brick (F).
+ * A level script (04-class-domain): its rows, the second the waves stop and the boss starts, the
+ * boss itself, and the colour of a full formation's P. A script ends in its boss, never loops
+ * (ADR-0022 decision 4).
  */
 export interface LevelScript {
   readonly events: readonly ScriptEvent[];
-  /** Interim (enemies brick): seconds after which the script time wraps to 0. */
-  readonly loopAt?: number;
+  /**
+   * Seconds from the start: the waves stop and the `LevelDirector` starts `boss` (GDD v0.10 §6).
+   * No row may spawn at or after `warningAt` − 4 s, a load check.
+   */
+  readonly warningAt: number;
+  readonly boss: BossDefinition;
   /** The colour of a full formation's P (GDD v0.8 §4.6): red in level 1. */
   readonly dominantColour: PickupKind;
 }
@@ -31,11 +37,11 @@ const POPCORN_INTERVAL = 1 / 3;
 
 /**
  * Level 1 (GDD v0.10 §7.2.1, §7.2.2): the opening, then the ramp to the 102 s Heavy pair, the
- * last spawn at 112.3 s and the field draining until 120 s. Interim (meta/05-state-scenes, F-1):
- * the script time still wraps at 120 s, the WARNING's slot, until the boss arrives (F-2).
+ * last spawn at 112.3 s and the field draining until the WARNING at 120 s, then the Cruiser.
  */
 export const LEVEL_1: LevelScript = {
-  loopAt: 120,
+  warningAt: 120,
+  boss: CRUISER,
   dominantColour: PickupKind.PRed,
   events: [
     // The opening (§7.2.1).

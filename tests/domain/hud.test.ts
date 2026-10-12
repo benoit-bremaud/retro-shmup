@@ -20,6 +20,7 @@ import type { ScreenLayout } from '../../src/domain/presentation/screen';
 
 import { RecordingRender } from '../support/recording-render';
 import type { RecordedRect } from '../support/recording-render';
+import { IDLE_BOSS } from '../support/boss-snapshot';
 
 const HUD_LAYOUT = HUD_LAYOUTS.landscape;
 
@@ -51,6 +52,7 @@ function hudOf(values: Partial<WorldSnapshot>, screen: ScreenLayout = LANDSCAPE)
     enemyBullets: empty,
     enemies: empty,
     pickups: empty,
+    boss: IDLE_BOSS,
     weaponKind: WeaponKind.Spread,
     power: 1,
     bombs: 0,

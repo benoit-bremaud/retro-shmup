@@ -19,6 +19,7 @@ import { EventBus } from '../../src/domain/game/events';
 import type { ReadonlyActiveList } from '../../src/domain/game/active-list';
 import { RecordingRender } from '../support/recording-render';
 import type { RecordedRect } from '../support/recording-render';
+import { IDLE_BOSS } from '../support/boss-snapshot';
 
 function ship(overrides: Partial<PlayerSnapshot> = {}): PlayerSnapshot {
   return {
@@ -79,6 +80,7 @@ function snapshot(
     enemyBullets: listOf<Bullet>([]),
     enemies: listOf<Enemy>([]),
     pickups: listOf<Pickup>([]),
+    boss: IDLE_BOSS,
     weaponKind: WeaponKind.Spread,
     power: 1,
     bombs: 0,

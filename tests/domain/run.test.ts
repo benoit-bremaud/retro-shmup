@@ -4,11 +4,11 @@ import type { Bullet } from '../../src/domain/game/bullet';
 import { DIVER, POPCORN } from '../../src/domain/game/enemy';
 import { GameEventKind } from '../../src/domain/game/events';
 import type { LevelScript } from '../../src/domain/game/level-script';
-import { PickupKind } from '../../src/domain/game/pickup';
 import { Run, RunOutcome } from '../../src/domain/game/run';
 import { PLAYER_BULLET_POOL_SIZE } from '../../src/domain/game/tuning';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
+import { testScript } from '../support/script';
 
 const DT = 1 / 60;
 const FLY_IN_STEPS = 30;
@@ -72,10 +72,9 @@ describe('Run — fixed step order (class diagram notes)', () => {
 
 describe('Run — events of the enemies brick (ADR-0010, enemy-destroyed sequence)', () => {
   it('publishes ENEMY_HIT, then one ENEMY_DESTROYED carrying position, score and size tier', () => {
-    const script: LevelScript = {
-      dominantColour: PickupKind.PRed,
-      events: [{ at: 0, archetype: DIVER, count: 1, spawn: { x: 120, y: -8 } }],
-    };
+    const script: LevelScript = testScript([
+      { at: 0, archetype: DIVER, count: 1, spawn: { x: 120, y: -8 } },
+    ]);
     const run = new Run({ script: script });
     const log: string[] = [];
     run.events().subscribe(GameEventKind.EnemyHit, (e) => log.push(`hit ${String(e.subject)}`));
@@ -89,19 +88,16 @@ describe('Run — events of the enemies brick (ADR-0010, enemy-destroyed sequenc
   });
 
   it('plays on without the ship after GAME_OVER: the script goes on, the score never moves', () => {
-    const script: LevelScript = {
-      dominantColour: PickupKind.PRed,
-      events: [
-        ...[2, 6.5, 11].map((at) => ({
-          at,
-          archetype: DIVER,
-          count: 1,
-          spawn: { x: 120, y: -8 },
-        })),
-        // Due after the Game over (about 15 s): it spawns only if the run plays on.
-        { at: 20, archetype: POPCORN, count: 1, spawn: { x: 40, y: -8 } },
-      ],
-    };
+    const script: LevelScript = testScript([
+      ...[2, 6.5, 11].map((at) => ({
+        at,
+        archetype: DIVER,
+        count: 1,
+        spawn: { x: 120, y: -8 },
+      })),
+      // Due after the Game over (about 15 s): it spawns only if the run plays on.
+      { at: 20, archetype: POPCORN, count: 1, spawn: { x: 40, y: -8 } },
+    ]);
     const run = new Run({ script: script });
     for (let i = 0; i < 3000 && run.outcome() === RunOutcome.Playing; i += 1) {
       run.step(DT, frame(0));
@@ -133,10 +129,9 @@ describe('Run — events of the enemies brick (ADR-0010, enemy-destroyed sequenc
 
 describe('Run — scoring (GDD §8, ADR-0010 wording note)', () => {
   it('subscribes its ScoreKeeper first: a later listener already reads the new score', () => {
-    const script: LevelScript = {
-      dominantColour: PickupKind.PRed,
-      events: [{ at: 0, archetype: DIVER, count: 1, spawn: { x: 120, y: -8 } }],
-    };
+    const script: LevelScript = testScript([
+      { at: 0, archetype: DIVER, count: 1, spawn: { x: 120, y: -8 } },
+    ]);
     const run = new Run({ script: script });
     let seen = -1;
     run.events().subscribe(GameEventKind.EnemyDestroyed, () => {

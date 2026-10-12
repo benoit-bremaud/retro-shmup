@@ -5,6 +5,8 @@ import { mixSeed, SeededRandom } from '../random/seeded-random';
 import type { ReadonlyActiveList } from './active-list';
 import type { Bullet } from './bullet';
 import { applyDamage } from './body';
+import { BossAdvance } from './boss';
+import type { BossDefinition, BossState } from './boss';
 import { CollisionResolver } from './collision';
 import type { HitRules } from './collision';
 import { NORMAL } from './difficulty';
@@ -19,7 +21,7 @@ import { LEVEL_1 } from './level-script';
 import type { LevelScript, ScriptEvent } from './level-script';
 import { PickupKind, PickupMotion } from './pickup';
 import type { Pickup } from './pickup';
-import type { PlayerState } from './player';
+import { PlayerState } from './player';
 import { ScoreKeeper } from './score-keeper';
 import { KitTuning } from './tuning';
 import { WeaponKind } from './weapon';
@@ -28,9 +30,12 @@ import { World } from './world';
 /**
  * How a run is built (class diagram, ADR-0019). The composition root draws `seed`; tests give a
  * short script, a fixed seed, or a scripted `Random` through `createRandom`, called once per level.
+ * `levels` is the run's level list (the vertical slice holds level 1 only); `script` is a single
+ * level, a shorthand for a list of one, and `levels` wins when both are given.
  */
 export interface RunConfig {
   readonly script?: LevelScript;
+  readonly levels?: readonly LevelScript[];
   readonly seed?: number;
   readonly createRandom?: (levelSeed: number) => Random;
 }
@@ -41,10 +46,15 @@ function seededRandom(levelSeed: number): Random {
 
 const NONE = -1;
 
-/** How a run stands after a step (class diagram); levels end with the level brick. */
+/**
+ * How a run stands after a step (class diagram): `LEVEL_CLEARED` when a level ends and another
+ * follows, `RUN_CLEARED` when the last level of the list ends (ADR-0022 decision 6).
+ */
 export const RunOutcome = {
   Playing: 'PLAYING',
   GameOver: 'GAME_OVER',
+  LevelCleared: 'LEVEL_CLEARED',
+  RunCleared: 'RUN_CLEARED',
 } as const;
 export type RunOutcome = (typeof RunOutcome)[keyof typeof RunOutcome];
 
@@ -58,6 +68,26 @@ export interface PlayerSnapshot {
 }
 
 /**
+ * The boss as the presenter sees it (ADR-0023 decision 5): getters over the live boss, so reading
+ * it allocates nothing. `stateSteps` drives the WARNING blink from the state, never from wall time.
+ */
+export interface BossSnapshot {
+  readonly state: BossState;
+  readonly position: Readonly<Vec2>;
+  readonly previousPosition: Readonly<Vec2>;
+  readonly width: number;
+  readonly height: number;
+  /** The HP bar, 0 to 1. */
+  readonly hpRatio: number;
+  /** The whole seconds left on the timer, as the HUD shows them. */
+  readonly secondsLeft: number;
+  /** The index of the phase fighting (0 for the first). */
+  readonly phase: number;
+  /** Steps spent in the current state. */
+  readonly stateSteps: number;
+}
+
+/**
  * The read-only view the presenter draws from (`RunView.snapshot()`), returned without allocating:
  * it reads the live objects of the run. HUD values are getters (class diagram notes, HUD data).
  */
@@ -67,6 +97,7 @@ export interface WorldSnapshot {
   readonly enemyBullets: ReadonlyActiveList<Bullet>;
   readonly enemies: ReadonlyActiveList<Enemy>;
   readonly pickups: ReadonlyActiveList<Pickup>;
+  readonly boss: BossSnapshot;
   readonly weaponKind: WeaponKind;
   /** The power level, 1 to 5 (the HUD pips). */
   readonly power: number;
@@ -113,14 +144,26 @@ export class Run implements Simulation, RunView, HitRules, EnemySpawner {
   private readonly formationClearedEvent = createGameEvent(GameEventKind.FormationCleared);
   private readonly playerHitEvent = createGameEvent(GameEventKind.PlayerHit);
   private readonly bombUsedEvent = createGameEvent(GameEventKind.BombUsed);
+  private readonly bossWarningEvent = createGameEvent(GameEventKind.BossWarning);
+  private readonly bossPhaseChangedEvent = createGameEvent(GameEventKind.BossPhaseChanged);
+  private readonly bossDestroyedEvent = createGameEvent(GameEventKind.BossDestroyed);
+  private readonly bossFledEvent = createGameEvent(GameEventKind.BossFled);
+  private readonly levelClearedEvent = createGameEvent(GameEventKind.LevelCleared);
   private currentOutcome: RunOutcome = RunOutcome.Playing;
   private readonly snapshotView: WorldSnapshot = createSnapshot(this.world, this.scoreKeeper);
   private readonly script: LevelScript;
+  /** The run's level list; the slice plays its first level only (`startNextLevel` waits for level 2). */
+  private readonly levels: readonly LevelScript[];
+  /** The boss sequence ended (destroyed or fled): the level end waits for a living ship (step 8). */
+  private bossSequenceEnded = false;
   /** Drops only (ADR-0010 decision 1); level 1 is seeded with mixSeed(seed, 0) (ADR-0019). */
   private readonly random: Random;
 
   constructor(config: RunConfig = {}) {
-    this.script = config.script ?? LEVEL_1;
+    this.levels = config.levels ?? [config.script ?? LEVEL_1];
+    const first = this.levels[0];
+    if (first === undefined) throw new RangeError('Run: needs at least one level');
+    this.script = first;
     this.director = new LevelDirector(this.script);
     this.random = (config.createRandom ?? seededRandom)(mixSeed(config.seed ?? 0, 0));
   }
@@ -146,11 +189,16 @@ export class Run implements Simulation, RunView, HitRules, EnemySpawner {
     // (7) timers advance: the chain, then the ship.
     this.scoreKeeper.tick();
     this.world.player.advanceTimers();
-    // (8) the outcome: Game over once the last death sequence has ended. The ship's last
-    // bullets are spent then, so nothing scores while the run plays on.
-    if (this.currentOutcome === RunOutcome.Playing && this.world.player.isOut) {
+    this.advanceBoss();
+    // (8) the outcome: Game over once the last death sequence has ended, which wins over a
+    // pending level end. The ship's last bullets are spent then, so nothing scores while the run
+    // plays on.
+    if (this.currentOutcome !== RunOutcome.Playing) return;
+    if (this.world.player.isOut) {
       this.currentOutcome = RunOutcome.GameOver;
       this.world.spendPlayerBullets();
+    } else if (this.bossSequenceEnded && this.world.player.state !== PlayerState.Dead) {
+      this.clearLevel();
     }
   }
 
@@ -199,6 +247,79 @@ export class Run implements Simulation, RunView, HitRules, EnemySpawner {
   /** `EnemySpawner`, step 1: the world spawns; a refused member may complete its formation. */
   startFormation(total: number): Formation | undefined {
     return this.world.startFormation(total);
+  }
+
+  /**
+   * `EnemySpawner`, step 1, at the script's `warningAt` (02-sequence-boss-fight): the boss starts
+   * in `WARNING` with a fresh serial and the run says so.
+   */
+  startBoss(definition: BossDefinition): void {
+    const boss = this.world.boss;
+    boss.start(definition, this.world.takeSerial());
+    this.publishAt(this.bossWarningEvent, boss.position.x, boss.position.y, 0, 0, boss.serial);
+  }
+
+  /**
+   * `HitRules`: a shot or the bomb hit the fighting boss (02-sequence-boss-fight). `ENEMY_HIT`
+   * carries its serial. At 0 HP the enemy bullets are cancelled and the boss is destroyed;
+   * otherwise one `BOSS_PHASE_CHANGED` follows per threshold crossed, `detail` = the new phase.
+   */
+  damageBoss(amount: number): void {
+    const boss = this.world.boss;
+    const destroyed = applyDamage(boss, amount);
+    this.publishAt(this.enemyHitEvent, boss.position.x, boss.position.y, 0, 0, boss.serial);
+    if (destroyed) {
+      this.world.cancelEnemyBullets();
+      boss.destroy();
+      this.publishAt(
+        this.bossDestroyedEvent,
+        boss.position.x,
+        boss.position.y,
+        boss.secondsLeft(),
+        0,
+        boss.serial,
+      );
+      return;
+    }
+    while (boss.advancePhase(this.world)) {
+      const detail = boss.phaseIndex;
+      this.publishAt(
+        this.bossPhaseChangedEvent,
+        boss.position.x,
+        boss.position.y,
+        0,
+        detail,
+        boss.serial,
+      );
+    }
+  }
+
+  /**
+   * Step 7: the boss's state timers advance. An expired timer cancels the enemy bullets and
+   * publishes the escape; the end of the destroyed or fleeing sequence arms the level end.
+   */
+  private advanceBoss(): void {
+    const boss = this.world.boss;
+    const advance = boss.advance(this.world);
+    if (advance === BossAdvance.Fled) {
+      this.world.cancelEnemyBullets();
+      this.publishAt(this.bossFledEvent, boss.position.x, boss.position.y, 0, 0, boss.serial);
+    } else if (advance === BossAdvance.Ended) {
+      this.bossSequenceEnded = true;
+    }
+  }
+
+  /**
+   * Step 8, once the boss sequence has ended and the ship is not `Dead`: the ship's bullets are
+   * spent, `LEVEL_CLEARED` carries the bombs left, and the outcome is `RUN_CLEARED` after the last
+   * level of the list, `LEVEL_CLEARED` before it.
+   */
+  private clearLevel(): void {
+    this.bossSequenceEnded = false;
+    this.world.spendPlayerBullets();
+    const ship = this.world.player;
+    this.publishAt(this.levelClearedEvent, ship.position.x, ship.position.y, ship.bombs, 0);
+    this.currentOutcome = this.levels.length > 1 ? RunOutcome.LevelCleared : RunOutcome.RunCleared;
   }
 
   spawnEnemy(event: Readonly<ScriptEvent>, formation: Formation | undefined): boolean {
@@ -309,6 +430,8 @@ export class Run implements Simulation, RunView, HitRules, EnemySpawner {
       this.enemyHit(enemy);
       if (destroyed) this.destroyEnemy(enemy);
     }
+    // The boss takes the bomb only while it fights; in WARNING and ENTERING it is untouched.
+    if (this.world.boss.isTargetable()) this.damageBoss(KitTuning.bombDamage);
   }
 }
 
@@ -319,6 +442,7 @@ function createSnapshot(world: World, scoreKeeper: ScoreKeeper): WorldSnapshot {
     enemyBullets: world.enemyBullets,
     enemies: world.enemies,
     pickups: world.pickups,
+    boss: createBossSnapshot(world),
     get weaponKind(): WeaponKind {
       return world.player.weaponKind;
     },
@@ -342,6 +466,35 @@ function createSnapshot(world: World, scoreKeeper: ScoreKeeper): WorldSnapshot {
     },
     get chainRatio(): number {
       return scoreKeeper.chainRatio;
+    },
+  };
+}
+
+function createBossSnapshot(world: World): BossSnapshot {
+  const boss = world.boss;
+  return {
+    position: boss.position,
+    previousPosition: boss.previousPosition,
+    get state(): BossState {
+      return boss.state;
+    },
+    get width(): number {
+      return boss.width;
+    },
+    get height(): number {
+      return boss.height;
+    },
+    get hpRatio(): number {
+      return boss.hpRatio();
+    },
+    get secondsLeft(): number {
+      return boss.secondsLeft();
+    },
+    get phase(): number {
+      return boss.phaseIndex;
+    },
+    get stateSteps(): number {
+      return boss.stateSteps;
     },
   };
 }
