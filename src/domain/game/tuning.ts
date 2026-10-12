@@ -130,6 +130,7 @@ export const ChainTuning = {
 
 /** Pools of the enemies brick (GDD v0.6 §5.2.1). */
 export const ENEMY_POOL_SIZE = 16;
+/** 48 leaves 12 slots over the 30-bullet peak of the level-1 script (level-simulation test). */
 export const ENEMY_BULLET_POOL_SIZE = 48;
 
 /**

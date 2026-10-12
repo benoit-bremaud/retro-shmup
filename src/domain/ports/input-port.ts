@@ -7,8 +7,11 @@ export const Button = {
   Back: 16,
 } as const;
 
+/** The device that produced an intent frame; the arbitration picks the last one used. */
 export type Device = 'keyboard' | 'gamepad' | 'touch' | 'mouse';
+/** `direction`: stick or keys in [-1, 1]; `target`: a point to follow (touch, mouse). */
 export type MoveKind = 'none' | 'direction' | 'target';
+/** Where this step's tap landed: on the play field, on the HUD strip, or nowhere. */
 export type TapRegion = 'none' | 'field' | 'hud';
 
 /**

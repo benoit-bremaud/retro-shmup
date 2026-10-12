@@ -54,6 +54,7 @@ const LETTER_A = 0x41;
 const LETTER_Z = 0x5a;
 const SPACE = 0x20;
 
+/** The `hud` glyph cell: 3 columns by 5 rows. */
 export const GLYPH_COLUMNS = 3;
 export const GLYPH_ROWS = 5;
 

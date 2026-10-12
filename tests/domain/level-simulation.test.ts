@@ -77,14 +77,14 @@ describe('Level simulation — level 1, headless', () => {
   it('replays identically from the same seed and scripted inputs over two passes', () => {
     const first = replay(2 * ONE_PASS);
     expect(first).toBe(replay(2 * ONE_PASS));
-    expect(first).toContain(`"${String(GameEventKind.EnemyDestroyed)}:`);
-    expect(first).toContain(`"${String(GameEventKind.PickupSpawned)}:`);
-    expect(first).toContain(`"${String(GameEventKind.BombUsed)}:`);
+    const { log } = JSON.parse(first) as { log: string[] };
+    const has = (prefix: string): boolean => log.some((entry) => entry.startsWith(prefix));
+    expect(has(`${String(GameEventKind.EnemyDestroyed)}:`)).toBe(true);
+    expect(has(`${String(GameEventKind.PickupSpawned)}:`)).toBe(true);
+    expect(has(`${String(GameEventKind.BombUsed)}:`)).toBe(true);
     // The Carriers' cargo is in the log, so the pickup-peak test below covers it.
-    expect(first).toContain(
-      `"${String(GameEventKind.PickupSpawned)}:${String(PickupKind.Shield)}:`,
-    );
-    expect(first).toContain(`"${String(GameEventKind.PickupSpawned)}:${String(PickupKind.Bomb)}:`);
+    expect(has(`${String(GameEventKind.PickupSpawned)}:${String(PickupKind.Shield)}:`)).toBe(true);
+    expect(has(`${String(GameEventKind.PickupSpawned)}:${String(PickupKind.Bomb)}:`)).toBe(true);
   });
 
   it('lets the seed change the drops (ADR-0019)', () => {
@@ -231,6 +231,6 @@ describe('Level simulation — effects never change the run (ADR-0010)', () => {
     const on = play(true);
     expect(on).toBe(play(false));
     expect(on).toContain('bomb');
-    expect(on).not.toContain('"score":0,');
+    expect((JSON.parse(on) as { score: number }).score).toBeGreaterThan(0);
   });
 });

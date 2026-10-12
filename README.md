@@ -108,6 +108,8 @@ Roadmap (GDD section 11):
     fire: held button and steering finger, autofire as an option
   - [ADR-0021](docs/decisions/ADR-0021-hall-of-fame-entry-name-and-optional-country.md) — Hall of
     fame entry: an 8-character name and an optional country
+  - [ADR-0022](docs/decisions/ADR-0022-level-brick-strategy-factories-boss-outside-the-pool-one-level-slice.md)
+    — Level brick: strategy factories, the boss outside the enemy pool, a one-level slice
 - [Architecture and UML study](docs/architecture/README.md) — C4 context and containers, then
   the UML diagrams (Mermaid, PlantUML for use cases and components) and the traceability matrix.
 - [PROJECT_LOG.md](PROJECT_LOG.md) — operational logbook (what was done, why, by which PR).

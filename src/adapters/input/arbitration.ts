@@ -26,6 +26,7 @@ export interface DeviceSample {
   autofire: boolean;
 }
 
+/** One mutable sample per device: its listener writes it, `arbitrate` merges them each step. */
 export interface DeviceSamples {
   readonly keyboard: DeviceSample;
   readonly touch: DeviceSample;
@@ -38,6 +39,7 @@ export interface Arbitration {
   clearedAt: number;
 }
 
+/** A blank sample, allocated once at boot and mutated in place (no allocation in the loop). */
 export function createSample(): DeviceSample {
   return {
     moving: false,
@@ -52,6 +54,7 @@ export function createSample(): DeviceSample {
   };
 }
 
+/** A fresh arbitration state, allocated once at boot. */
 export function createArbitration(): Arbitration {
   return { clearedAt: 0 };
 }

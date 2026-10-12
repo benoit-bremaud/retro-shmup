@@ -227,7 +227,6 @@ describe('SceneMachine — Paused and Count-in (meta/05-state-scenes, pause rule
     fixture.machine.step(DT, frame(Button.Pause));
     fixture.machine.step(DT, frame(Button.Confirm));
     const frozen = hull(fixture, 0); // a frozen frame ignores the loop alpha: current position
-    expect(frozen).toBeDefined();
     expect(frozen).not.toEqual(moving);
     for (let i = 0; i < 60; i += 1) fixture.machine.step(DT, frame(0, 1));
     expect(hull(fixture, 0)).toEqual(frozen);

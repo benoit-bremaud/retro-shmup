@@ -50,6 +50,7 @@ export interface EnemyArchetype {
   readonly carriesCargo: boolean;
 }
 
+/** GDD v0.8 §5.2.1: `hp` is in tenths (ADR-0019), so 10 is one level-1 shot, not ten shots. */
 export const POPCORN: EnemyArchetype = {
   id: 'popcorn',
   stats: { hp: 10, width: 16, height: 16, score: 100, tier: SizeTier.Small },
@@ -60,6 +61,7 @@ export const POPCORN: EnemyArchetype = {
   carriesCargo: false,
 };
 
+/** GDD v0.8 §5.2.1: one shot (`hp` in tenths, ADR-0019), 150 points, dives at the ship. */
 export const DIVER: EnemyArchetype = {
   id: 'diver',
   stats: { hp: 10, width: 16, height: 16, score: 150, tier: SizeTier.Small },
@@ -70,6 +72,7 @@ export const DIVER: EnemyArchetype = {
   carriesCargo: false,
 };
 
+/** GDD v0.8 §5.2.1: 8 shots (`hp` in tenths, ADR-0019); enters, holds, fires aimed bullets. */
 export const GUNNER: EnemyArchetype = {
   id: 'gunner',
   stats: { hp: 80, width: 32, height: 32, score: 300, tier: SizeTier.Medium },
@@ -85,6 +88,7 @@ export const GUNNER: EnemyArchetype = {
   carriesCargo: false,
 };
 
+/** GDD v0.8 §5.2.1: 4 shots (`hp` in tenths, ADR-0019); crosses the field with its cargo. */
 export const CARRIER: EnemyArchetype = {
   id: 'carrier',
   stats: { hp: 40, width: 32, height: 32, score: 500, tier: SizeTier.Medium },
