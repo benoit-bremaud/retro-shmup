@@ -42,8 +42,9 @@ function clamp(value: number, min: number, max: number): number {
 
 /**
  * The player's ship (class diagram, view A). `Run.step` calls `update` at step 2 (move),
- * `useBomb` at step slot 3 and `advanceTimers` at step 7, so a state change takes effect from the
- * next step, after the collisions of step 5.
+ * `useBomb` at step slot 3 and `advanceTimers` at step 7. A timer-driven change (step 7) takes
+ * effect from the next step; a bomb's protection (slot 3) takes effect at once, before the
+ * collisions of step 5 in the same step, so a last-moment bomb saves the ship.
  */
 export class Player {
   readonly position: Vec2 = { x: PlayerTuning.spawnX, y: PlayerTuning.spawnY };
