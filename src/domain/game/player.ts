@@ -4,7 +4,7 @@ import type { IntentFrame } from '../ports/input-port';
 import { FIELD_HEIGHT, FIELD_WIDTH } from './geometry';
 import type { Vec2 } from './geometry';
 import { PickupKind } from './pickup';
-import { KitCaps, PlayerTuning, toSteps } from './tuning';
+import { KitCaps, KitTuning, PlayerTuning, toSteps } from './tuning';
 import { Weapon, WeaponKind } from './weapon';
 import type { PlayerShotSpawner } from './weapon';
 
@@ -17,9 +17,11 @@ export const PlayerState = {
 } as const;
 export type PlayerState = (typeof PlayerState)[keyof typeof PlayerState];
 
-/** What a hit did (class diagram); `ABSORBED` arrives with the shield. */
+/** What a hit did (class diagram). */
 export const HitOutcome = {
   Ignored: 'IGNORED',
+  /** The shield charge took it (GDD v0.8 §4.4). */
+  Absorbed: 'ABSORBED',
   Died: 'DIED',
 } as const;
 export type HitOutcome = (typeof HitOutcome)[keyof typeof HitOutcome];
@@ -27,6 +29,8 @@ export type HitOutcome = (typeof HitOutcome)[keyof typeof HitOutcome];
 const FLY_IN_STEPS = toSteps(PlayerTuning.flyInSeconds);
 const INVULNERABLE_STEPS = toSteps(PlayerTuning.invulnerableSeconds);
 const RESPAWN_STEPS = toSteps(PlayerTuning.respawnSeconds);
+const SHIELD_STEPS = toSteps(KitTuning.shieldInvulnerableSeconds);
+const BOMB_STEPS = toSteps(KitTuning.bombInvulnerableSeconds);
 const MIN_X = PlayerTuning.halfSize;
 const MAX_X = FIELD_WIDTH - PlayerTuning.halfSize;
 const MIN_Y = PlayerTuning.halfSize;
@@ -76,12 +80,12 @@ export class Player {
     return this.weapon.level;
   }
 
-  /** Bombs in stock (GDD §4.5). Interim until E-4: they have no effect yet. */
+  /** Bombs in stock (GDD §4.5). */
   get bombs(): number {
     return this.bombStock;
   }
 
-  /** A shield charge is held (GDD §4.4). Interim until E-4: it absorbs nothing yet. */
+  /** A shield charge is held (GDD §4.4). */
   get shield(): boolean {
     return this.shieldHeld;
   }
@@ -122,15 +126,56 @@ export class Player {
   }
 
   /**
-   * Step 5 of `Run.step`: an enemy bullet or body overlaps the hitbox. Only a vulnerable ship
-   * dies; in every other state the hit passes through, so at most one life is lost per step.
+   * Step 5 of `Run.step`: an enemy bullet or body overlaps the hitbox. Only a vulnerable ship is
+   * hurt; in every other state the hit passes through, so at most one hit counts per step. A held
+   * shield charge absorbs it: 0.5 s of invulnerability, the blink restarted (GDD v0.8 §4.4).
    */
   hit(): HitOutcome {
     if (this.currentState !== PlayerState.Vulnerable) return HitOutcome.Ignored;
+    if (this.shieldHeld) {
+      this.shieldHeld = false;
+      this.protect(SHIELD_STEPS);
+      return HitOutcome.Absorbed;
+    }
     this.livesLeft -= 1;
     this.currentState = PlayerState.Dead;
     this.stateSteps = RESPAWN_STEPS;
     return HitOutcome.Died;
+  }
+
+  /**
+   * The death effects, applied at once (GDD v0.8 §4.4): the power level drops by one and the
+   * bombs reset to the profile's stock. Returns whether a level was lost, to be released as a P.
+   */
+  applyDeathPenalty(): boolean {
+    this.bombStock = NORMAL.bombsPerLife;
+    return this.weapon.powerDown();
+  }
+
+  /**
+   * Step slot 3 (02-sequence-bomb): a bomb in stock, in control only (`Vulnerable` or
+   * `Invulnerable`). The ship is then invulnerable for max(time left, 1 s): a bomb never shortens
+   * a protection. Returns whether the bomb goes off.
+   */
+  useBomb(): boolean {
+    const inControl =
+      this.currentState === PlayerState.Vulnerable ||
+      this.currentState === PlayerState.Invulnerable;
+    if (!inControl || this.bombStock <= 0) return false;
+    this.bombStock -= 1;
+    if (this.currentState === PlayerState.Invulnerable) {
+      this.stateSteps = Math.max(this.stateSteps, BOMB_STEPS);
+    } else {
+      this.protect(BOMB_STEPS);
+    }
+    return true;
+  }
+
+  // A vulnerable ship becomes invulnerable for `steps`, its blink starting over.
+  private protect(steps: number): void {
+    this.currentState = PlayerState.Invulnerable;
+    this.stateSteps = steps;
+    this.protection = 0;
   }
 
   /**

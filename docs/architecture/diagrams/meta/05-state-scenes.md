@@ -266,8 +266,9 @@ boss and the end-of-level tally wait for the level brick (F).
   weapon {x 368, y 84, pipX 380, pipSpacing 6} (badge x 368–376, pips ending at x 407),
   shield {x 368, y 100}. Icons are 8 × 8, pips
   3 × 8; `hud.ts` draws them from the snapshot, with no text and no allocation.
-- **Effects**: `EffectSettings` gains `shake` and `bombFlash`, both on by default, separate
-  switches (GDD v0.8 §9.3, §9.4); the shake moves field draws only (ADR-0014), the flash tints
+- **Effects**: `EffectSettings` gains `shake` and `bombFlash`, separate switches, on by default
+  and off — with `hitFlash` — when the browser reports `prefers-reduced-motion`, read once by the
+  composition root at boot (GDD v0.8 §9.3, §9.4); the shake moves field draws only (ADR-0014), the flash tints
   the field for about 300 ms of wall time and starts at most once per 1/3 s. Both freeze in the
   frozen scenes like the other effects.
 - **Interim deviation, first-time labels**: no "SHIELD", "BOMB", "1UP" label (GDD §7.3) until the
@@ -285,7 +286,8 @@ boss and the end-of-level tally wait for the level brick (F).
   `WEAPONS` tables. E-1 brought `Weapon.kind`, `level`,
   `powerUp` and the HUD badge and pips, but until E-2 `WEAPONS` holds the level-1 Spread record
   for every level and both kinds: the level, the kind and the pips change, the shot does not.
-- **Interim deviation, E-1 to E-4**: a Shield caught before E-4 sets the charge and its HUD icon
+- ~~**Interim deviation, E-1 to E-4**~~: lifted by E-4 (bomb, shield absorption, death rule). A
+  Shield caught before E-4 sets the charge and its HUD icon
   but absorbs nothing; Bomb pickups raise the stock (the cap bonus at 5) with no effect, the bomb
   itself arriving in E-4; death keeps the power and the bombs until E-4 (no `powerDown`, no
   release, no bombs reset).

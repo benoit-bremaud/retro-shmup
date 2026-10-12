@@ -72,8 +72,11 @@ export class RecordingRender implements RenderPort {
   layout(): ScreenLayout {
     return this.screen;
   }
-  setCameraOffset(): void {
-    // No test reads the camera yet.
+  /** The last camera offset set (screen shake). */
+  readonly camera = { x: 0, y: 0 };
+  setCameraOffset(dx: number, dy: number): void {
+    this.camera.x = dx;
+    this.camera.y = dy;
   }
   present(): void {
     this.presented += 1;

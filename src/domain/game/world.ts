@@ -8,7 +8,7 @@ import type { Box } from './geometry';
 import type { EnemySpawner } from './level-director';
 import type { ScriptEvent } from './level-script';
 import type { WorldView } from './movements';
-import { Pickup } from './pickup';
+import { Pickup, PickupMotion } from './pickup';
 import type { PickupKind } from './pickup';
 import { Player } from './player';
 import {
@@ -96,15 +96,23 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, EnemySpawner,
    * A pickup at (x, y), falling from there; false when the pool is full and the spawn is dropped
    * (ADR-0019), so the caller publishes `PICKUP_SPAWNED` only for a pickup that exists.
    */
-  spawnPickup(kind: PickupKind, x: number, y: number): boolean {
+  spawnPickup(
+    kind: PickupKind,
+    x: number,
+    y: number,
+    motion: PickupMotion = PickupMotion.Fall,
+  ): boolean {
     const pickup = this.pickups.add();
     if (pickup === undefined) return false;
-    pickup.spawn(kind, x, y, this.nextSerial);
+    pickup.spawn(kind, x, y, this.nextSerial, motion);
     this.nextSerial += 1;
     return true;
   }
 
-  /** Step 4: pickups fall and sway, as a closed form of their age (GDD v0.8 §4.6). */
+  /**
+   * Step 4: pickups move as a closed form of their age (GDD v0.8 §4.4, §4.6): a drop falls and
+   * sways; the death release rises linearly to `riseTo`, then falls slowly, with no sway.
+   */
   movePickups(): void {
     for (let i = 0; i < this.pickups.count; i += 1) {
       const pickup = this.pickups.at(i);
@@ -113,10 +121,25 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, EnemySpawner,
       pickup.previousPosition.y = pickup.position.y;
       pickup.age += 1;
       const seconds = pickup.age * STEP_SECONDS;
+      if (pickup.motion === PickupMotion.Release) {
+        pickup.position.x = pickup.origin.x;
+        pickup.position.y = releaseY(pickup, seconds);
+        continue;
+      }
       pickup.position.x =
         pickup.origin.x + PickupTuning.swayAmplitude * Math.sin(SWAY_RADIANS_PER_SECOND * seconds);
       pickup.position.y = pickup.origin.y + PickupTuning.fallSpeed * seconds;
     }
+  }
+
+  /** The bomb (step slot 3): every enemy bullet is cancelled, released at step 6. */
+  cancelEnemyBullets(): void {
+    for (let i = 0; i < this.enemyBullets.count; i += 1) this.enemyBullets.at(i).spent = true;
+  }
+
+  /** Whether an enemy's box overlaps the field: the bomb's reach (GDD v0.8 §4.5). */
+  isOnField(enemy: Enemy): boolean {
+    return boxOverlapsField(enemy);
   }
 
   /** Step 4: enemies age, move and attack; a spawned enemy bullet moves with the others. */
@@ -167,6 +190,15 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, EnemySpawner,
 }
 
 const SWAY_RADIANS_PER_SECOND = (2 * Math.PI) / PickupTuning.swayPeriodSeconds;
+
+// The release hop: a linear rise over 0.8 s, then a fall at 20 px/s.
+function releaseY(pickup: Pickup, seconds: number): number {
+  const rise = PickupTuning.releaseRiseSeconds;
+  if (seconds <= rise) {
+    return pickup.origin.y + ((pickup.riseTo - pickup.origin.y) * seconds) / rise;
+  }
+  return pickup.riseTo + PickupTuning.releaseFallSpeed * (seconds - rise);
+}
 
 function placeBullet(bullet: Bullet, x: number, y: number, vx: number, vy: number): void {
   bullet.position.x = x;

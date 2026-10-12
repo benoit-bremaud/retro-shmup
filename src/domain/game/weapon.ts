@@ -154,6 +154,16 @@ export class Weapon {
     return true;
   }
 
+  /**
+   * A death (GDD v0.8 §4.4): the level drops by one, never below 1, the kind unchanged. Returns
+   * whether it dropped, so the run releases the lost level as a P only above level 1.
+   */
+  powerDown(): boolean {
+    if (this.currentLevel <= 1) return false;
+    this.currentLevel -= 1;
+    return true;
+  }
+
   /** A new ship fires at once (05-state-player, fly-in). */
   reset(): void {
     this.cooldown = 0;

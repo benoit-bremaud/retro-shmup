@@ -42,7 +42,7 @@ sequenceDiagram
     Pl-->>CR: ABSORBED
     Note over CR: the bullet's spent = true, released at step 6 (a body is unaffected)
     CR->>Run: shieldBroken()
-    Run->>Bus: publish PLAYER_HIT (detail = absorbed)
+    Run->>Bus: publish PLAYER_HIT
     Bus->>P: shield break effect and SFX
   else [Vulnerable, no shield]
     Note over Pl: lives −= 1, state Dead
@@ -90,7 +90,7 @@ sequenceDiagram
   an ordinary P (the cap rule applies), released on the last life too — the run plays on after
   Game over, and the rule stays uniform.
 - **Shield** (GDD v0.8 §4.4): a bullet or a body contact both consume the charge; the bullet is
-  spent, the body survives. `PLAYER_HIT` (detail = absorbed) is published by
+  spent, the body survives. `PLAYER_HIT` is published by
   `HitRules.shieldBroken()`, which `Run` realizes.
 - **Order**: the release pickup spawns before `PLAYER_DIED` is published, so every listener sees
   a consistent world; `ScoreKeeper` resets the chain before the presenter reacts.

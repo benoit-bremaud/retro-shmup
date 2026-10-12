@@ -7,6 +7,15 @@ export const EffectTuning = {
   explosionMs: 300,
   /** At most this many explosions at once; the oldest is recycled first. */
   maxExplosions: 16,
+  /** The bomb flash tints the field (GDD v0.8 §9.4)… */
+  bombFlashMs: 300,
+  /** …and a new one starts at most every 1/3 s: under 3 flashes per second. */
+  bombFlashSpacingMs: 1000 / 3,
+  /** The bomb's field shake *(initial, v0.8)*: 4 logical px, damped to 0 over 300 ms. */
+  shakePx: 4,
+  shakeMs: 300,
+  /** The shake changes side every this many ms. */
+  shakeFlipMs: 33,
 } as const;
 
 const FLASH_SLOTS = 16;
@@ -85,5 +94,60 @@ export class Explosions {
     for (let i = 0; i < EffectTuning.maxExplosions; i += 1) {
       this.ageMs[i] = (this.ageMs[i] ?? 0) + ms;
     }
+  }
+}
+
+/**
+ * The bomb's tint of the play field (GDD v0.8 §9.4): about 300 ms of wall time, and a new flash
+ * starts only 1/3 s or more after the previous one started, so bombs in a row never flash more
+ * than 3 times a second (photosensitivity, §9.7).
+ */
+export class BombFlash {
+  private msLeft = 0;
+  private sinceStartMs = Number.POSITIVE_INFINITY;
+
+  trigger(): void {
+    if (this.sinceStartMs < EffectTuning.bombFlashSpacingMs) return;
+    this.msLeft = EffectTuning.bombFlashMs;
+    this.sinceStartMs = 0;
+  }
+
+  /** Drawn past the field's edges by the shake's reach, so a shaken field is tinted to its clip. */
+  draw(render: RenderPort, width: number, height: number): void {
+    if (this.msLeft <= 0) return;
+    const reach = EffectTuning.shakePx;
+    render.drawRect(-reach, -reach, width + 2 * reach, height + 2 * reach, Palette.bombFlash);
+  }
+
+  advance(ms: number): void {
+    this.msLeft -= ms;
+    this.sinceStartMs += ms;
+  }
+}
+
+/**
+ * The bomb's field shake (GDD v0.8 §9.4, ADR-0014): a horizontal whole-pixel camera offset that
+ * changes side every 33 ms and fades out over 300 ms. Deterministic, so it needs no random draw.
+ */
+export class Shake {
+  private elapsedMs = Number.POSITIVE_INFINITY;
+
+  trigger(): void {
+    this.elapsedMs = 0;
+  }
+
+  /** Sets the field's camera offset: (0, 0) once the shake is over. */
+  apply(render: RenderPort): void {
+    if (this.elapsedMs >= EffectTuning.shakeMs) {
+      render.setCameraOffset(0, 0);
+      return;
+    }
+    const amplitude = EffectTuning.shakePx * (1 - this.elapsedMs / EffectTuning.shakeMs);
+    const phase = Math.floor(this.elapsedMs / EffectTuning.shakeFlipMs);
+    render.setCameraOffset(Math.round((phase % 2 === 0 ? 1 : -1) * amplitude), 0);
+  }
+
+  advance(ms: number): void {
+    this.elapsedMs += ms;
   }
 }

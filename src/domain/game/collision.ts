@@ -19,6 +19,8 @@ export interface HitRules {
   playerDied(): void;
   /** The ship caught the pickup, already marked spent: `Run` applies it and publishes it. */
   pickupCollected(pickup: Pickup): void;
+  /** The shield charge absorbed a hit (GDD v0.8 §4.4). */
+  shieldBroken(): void;
 }
 
 function overlaps(a: Box, b: Box): boolean {
@@ -87,23 +89,32 @@ function shotsAgainstEnemies(world: World, rules: HitRules): void {
   }
 }
 
-// Pass 2: enemy bullets against the hitbox; an ignored hit passes through, not consumed.
+// Reports a hit that counted: a death, or the shield taking it.
+function report(outcome: HitOutcome, rules: HitRules): void {
+  if (outcome === HitOutcome.Died) rules.playerDied();
+  else if (outcome === HitOutcome.Absorbed) rules.shieldBroken();
+}
+
+// Pass 2: enemy bullets against the hitbox. A bullet that killed the ship or broke its shield is
+// consumed; an ignored hit passes through.
 function bulletsAgainstPlayer(world: World, rules: HitRules): void {
   for (let i = 0; i < world.enemyBullets.count; i += 1) {
     const bullet = world.enemyBullets.at(i);
     if (bullet.spent || !overlapsHitbox(world.player, bullet)) continue;
-    if (world.player.hit() !== HitOutcome.Died) continue;
+    const outcome = world.player.hit();
+    if (outcome === HitOutcome.Ignored) continue;
     bullet.spent = true;
-    rules.playerDied();
+    report(outcome, rules);
   }
 }
 
-// Pass 3: enemy bodies against the hitbox; contact hurts the player, never the enemy (GDD §5.2).
+// Pass 3: enemy bodies against the hitbox; contact hurts the player, never the enemy (GDD §5.2),
+// and a body the shield absorbed survives.
 function bodiesAgainstPlayer(world: World, rules: HitRules): void {
   for (let i = 0; i < world.enemies.count; i += 1) {
     const enemy = world.enemies.at(i);
     if (enemy.spent || !overlapsHitbox(world.player, enemy)) continue;
-    if (world.player.hit() === HitOutcome.Died) rules.playerDied();
+    report(world.player.hit(), rules);
   }
 }
 

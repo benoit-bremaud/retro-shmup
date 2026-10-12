@@ -106,13 +106,17 @@ function watchPixelRatio(): void {
 }
 watchPixelRatio();
 
+// GDD §9.3: when the browser reports reduced motion, the shake and the white and bomb flashes
+// default to off (the non-flashing blink comes with the options; meta/05-state-scenes).
+const calm = globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 // Presentation randomness is unseeded on purpose: it never touches the outcome (ADR-0010).
 // Each run draws its seed here, the only module allowed Math.random (ADR-0014, ADR-0019): the
 // domain replays a run from (seed, script, inputs).
 const scenes: FrameTarget = new SceneMachine(
   renderer,
   new Starfield(Math.random),
-  { blink: true, hitFlash: true, explosions: true },
+  { blink: true, hitFlash: !calm, explosions: true, shake: !calm, bombFlash: !calm },
   () => new Run({ seed: Math.floor(Math.random() * 2 ** 32) }),
 );
 const loop = new FrameLoop(new PerformanceClock(), input, scenes, (callback) => {

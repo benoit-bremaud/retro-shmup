@@ -29,7 +29,7 @@ describe('EventBus — per-run, synchronous, ordered (ADR-0003, ADR-0010)', () =
 
   it('fails closed on an unknown kind', () => {
     const bus = new EventBus();
-    const unknown = 7 as Kind;
+    const unknown = 99 as Kind;
     expect(() => bus.subscribe(unknown, () => undefined)).toThrow(RangeError);
   });
 
