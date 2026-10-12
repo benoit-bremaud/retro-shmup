@@ -24,6 +24,13 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   second for one Popcorn formation with it, against the 3 a second of GDD §9.7; the boss burst's
   core reduced to 0.3 × its size so the boss stays visible.
 
+- Review (`review-local`): no Must. Fixed: the frame that runs the killing step no longer eats
+  the slow motion or the chain's first gap (a long frame could halve the 0.5 s); turret debris
+  only at the start of phase 2 (index 1), so a later 3-phase boss would not throw it at every
+  phase. Agent's tuning kept: debris 24 px, 10 fragments, no core. The §9.7 limit is read as
+  white or full-field flashes: the explosions' hot colour is not white, and the switch turns them
+  all off. Checked in headless Chromium with a weakened, uncommitted Cruiser killed by one bomb.
+
 ### PR #42 merged (`75700fd`) — the boss HUD
 
 - Brick F-2b on `main`; F-2c branches from it.

@@ -50,6 +50,9 @@ const ENEMY_SHOT_DRAWN = 6;
 const ENEMY_SHOT_CORE = 2;
 const SPREAD_DRAWN_HEIGHT = 6;
 
+/** The phase index whose start breaks the Cruiser's turret off (phase 2). */
+const TURRET_BREAKS_AT_PHASE = 1;
+
 const BLINK_HALF_PERIOD_STEPS = STEPS_PER_SECOND / (PlayerTuning.blinksPerSecond * 2);
 
 function lerp(from: number, to: number, alpha: number): number {
@@ -95,6 +98,8 @@ export class RunPresenter {
   private readonly shake = new Shake();
   private readonly bossChain = new BossChain();
   private readonly slowMotion = new SlowMotion();
+  /** The boss died during this frame's steps: its slow motion and chain start on the next frame. */
+  private bossDiedThisFrame = false;
 
   constructor(render: RenderPort, effects: Readonly<EffectSettings>, events: RunEvents) {
     this.render = render;
@@ -150,9 +155,12 @@ export class RunPresenter {
     drawHud(this.render, snapshot);
     this.flashes.advance(wallDtMs);
     this.explosions.advance(wallDtMs);
-    // After the explosions age, so a chained burst is first drawn at age 0.
-    this.bossChain.advance(wallDtMs, this.explosions);
-    this.slowMotion.advance(wallDtMs);
+    // After the explosions age, so a chained burst is first drawn at age 0. The frame that ran the
+    // killing step counts for neither: a long frame would otherwise eat the slow motion.
+    const sinceDeathMs = this.bossDiedThisFrame ? 0 : wallDtMs;
+    this.bossDiedThisFrame = false;
+    this.bossChain.advance(sinceDeathMs, this.explosions);
+    this.slowMotion.advance(sinceDeathMs);
     this.bombFlash.advance(wallDtMs);
     this.shake.advance(wallDtMs);
   }
@@ -202,15 +210,17 @@ export class RunPresenter {
   };
 
   // Debris where the broken part was (GDD v0.10 §9.4). The presenter only knows the Cruiser's
-  // turret, the one broken part of the vertical slice; it breaks off when phase 2 starts.
+  // turret, the one broken part of the vertical slice; it breaks off when phase 2 (index 1) starts.
+  // A later boss with more phases and parts hands its broken part to the snapshot.
   private readonly onBossPhaseChanged = (event: Readonly<GameEvent>): void => {
-    if (!this.effects.explosions || event.detail === 0) return;
+    if (!this.effects.explosions || event.detail !== TURRET_BREAKS_AT_PHASE) return;
     const x = event.position.x + CRUISER_TURRET.offsetX;
     const y = event.position.y + CRUISER_TURRET.offsetY;
     this.explosions.record(x, y, ExplosionTier.Debris);
   };
 
   private readonly onBossDestroyed = (event: Readonly<GameEvent>): void => {
+    this.bossDiedThisFrame = true;
     if (this.effects.explosions) {
       this.bossChain.trigger(event.position.x, event.position.y, this.explosions);
     }

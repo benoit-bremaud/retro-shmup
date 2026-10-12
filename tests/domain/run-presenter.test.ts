@@ -493,6 +493,18 @@ describe('RunPresenter — the boss fight game feel (GDD v0.10 §9.4, F-2c)', ()
     for (let i = 1; i < starts.length; i += 1) {
       expect((starts[i] ?? 0) - (starts[i - 1] ?? 0)).toBeGreaterThanOrEqual(1000 / 3);
     }
+    // All six inside the destroyed sequence: 2 s of simulation, stretched by the 0.5 s of slow
+    // motion at half speed to 2.25 s of wall time.
+    expect(starts[5]).toBeLessThanOrEqual(2250);
+  });
+
+  it('throws no turret debris on a later phase change: the turret breaks once, into phase 2', () => {
+    const bus = new EventBus();
+    const render = new RecordingRender();
+    const view = presenter(render, false, bus);
+    publish(bus, GameEventKind.BossPhaseChanged, 120, 60, 2);
+    view.draw(snapshot(ship()), 1, FRAME_MS);
+    expect(render.drew(Palette.explosionHot)).toBe(false);
   });
 
   it('bursts debris where the turret was on the phase change', () => {
@@ -517,6 +529,17 @@ describe('RunPresenter — the boss fight game feel (GDD v0.10 §9.4, F-2c)', ()
     expect(view.timeScale()).toBe(0.5);
     for (let i = 0; i < 100; i += 1) view.draw(snapshot(ship()), 1, 0); // frozen frames
     expect(view.timeScale()).toBe(0.5);
+    view.draw(snapshot(ship()), 1, 499);
+    expect(view.timeScale()).toBe(0.5);
+    view.draw(snapshot(ship()), 1, 1);
+    expect(view.timeScale()).toBe(1);
+  });
+
+  it('keeps the whole 0.5 s of slow motion when the frame of the death is a long one', () => {
+    const bus = new EventBus();
+    const view = presenter(new RecordingRender(), false, bus);
+    publish(bus, GameEventKind.BossDestroyed, 120, 60);
+    view.draw(snapshot(ship()), 1, 250); // the frame that ran the killing step
     view.draw(snapshot(ship()), 1, 499);
     expect(view.timeScale()).toBe(0.5);
     view.draw(snapshot(ship()), 1, 1);
