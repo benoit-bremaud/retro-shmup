@@ -180,3 +180,48 @@ export const KitCaps = {
   /** Paid when a pickup's effect cannot apply; never multiplied by the chain. */
   capBonus: 1000,
 } as const;
+
+/** The boss bonus (GDD v0.10 §6, ADR-0023): paid flat on `BOSS_DESTROYED`, never multiplied. */
+export const BossTuning = {
+  bonus: 10000,
+  /** Per whole second left on the timer, the seconds the HUD shows. */
+  bonusPerSecond: 100,
+} as const;
+
+/** The Cruiser, level 1's boss (GDD v0.10 §6.1, initial): values in seconds, px and px/s. */
+export const CruiserTuning = {
+  width: 112,
+  height: 48,
+  /** 300 level-1 shots, in tenths (ADR-0019). */
+  hp: 3000,
+  timeLimitSeconds: 90,
+  warningSeconds: 3,
+  entryFromY: -24,
+  entryToY: 56,
+  entrySeconds: 3,
+  fleeSpeed: 60,
+  destroyedSeconds: 2,
+  /** Phase 2 starts at 66 % HP: 1 980 tenths. */
+  phase2HpThreshold: 1980,
+  phase1: {
+    swayAmplitude: 56,
+    swayPeriodSeconds: 8,
+    volleyPeriodSeconds: 1,
+    fanCount: 5,
+    fanSpreadDegrees: 15,
+    fanSpeed: 75,
+    ringCount: 12,
+    ringSpeed: 60,
+  },
+  phase2: {
+    swayAmplitude: 72,
+    swayPeriodSeconds: 6,
+    volleyPeriodSeconds: 1.5,
+    ringCount: 16,
+    ringSpeed: 60,
+    ringRotateDegrees: 11.25,
+    tripleCount: 3,
+    tripleSpreadDegrees: 15,
+    tripleSpeed: 75,
+  },
+} as const;
