@@ -136,6 +136,21 @@ export const ChainTuning = {
   maxMultiplier: 8,
 } as const;
 
+/**
+ * The end-of-level tally (GDD v0.10 §8, ADR-0022 decision 7): its lines are added to the score
+ * flat when the level ends, outside the chain.
+ */
+export const TallyTuning = {
+  /** Per whole formation destroyed, a bomb-completed one included. */
+  perFormation: 500,
+  /** No bomb used in the level. */
+  noBomb: 5000,
+  /** No life lost in the level (a shield absorb is not a loss). */
+  noMiss: 10000,
+  /** Per bomb left when the level ends. */
+  perBombLeft: 1000,
+} as const;
+
 /** Pools of the enemies brick (GDD v0.6 §5.2.1). */
 export const ENEMY_POOL_SIZE = 16;
 /** 48 leaves at least 12 slots over the level-1 script's peak (about 30, pinned by the level-simulation test). */

@@ -118,3 +118,24 @@ describe('ScoreKeeper — the boss bonus (GDD v0.10 §6, ADR-0023)', () => {
     expect(keeper.score).toBe(0);
   });
 });
+
+describe('ScoreKeeper — the end-of-level tally (GDD v0.10 §8, ADR-0022 decision 7)', () => {
+  function publish(bus: EventBus, kind: GameEventKind, value = 0): void {
+    const event = createGameEvent(kind);
+    event.value = value;
+    bus.publish(event);
+  }
+
+  it('owns a LevelTally and adds its total flat, once, at LEVEL_CLEARED', () => {
+    const { bus, keeper, kill } = setup();
+    for (let i = 0; i < 10; i += 1) killStep(keeper, kill); // the chain at ×3
+    const before = keeper.score;
+    publish(bus, GameEventKind.FormationCleared);
+    publish(bus, GameEventKind.BombUsed);
+    expect(keeper.score).toBe(before);
+    publish(bus, GameEventKind.LevelCleared, 2);
+    expect(keeper.tally.total()).toBe(500 + 10000 + 2000);
+    expect(keeper.score).toBe(before + 12500);
+    expect(keeper.multiplier).toBe(3); // the chain unchanged
+  });
+});
