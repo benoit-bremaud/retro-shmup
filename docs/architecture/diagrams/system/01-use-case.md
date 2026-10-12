@@ -117,19 +117,22 @@ step depends on them.
 - **Primary actor**: Player. **Level**: subfunction, extends UC1.
 - **Preconditions**: a run has ended on Ending or Game over, and its final score enters the top
   10 (strictly greater than the 10th entry, or fewer than 10 entries are stored).
-- **Success guarantee**: the entry (initials, score, level reached, date) is stored at its rank;
+- **Success guarantee**: the entry (name, optional country, score, level reached, date) is stored
+  at its rank;
   the high-score table shows it highlighted.
 - **Minimal guarantee**: if storage fails, the table still shows the entry for the session;
   nothing crashes (ADR-0006).
 - **Main success scenario**:
-  1. The game shows the arcade name entry with the score, initials preset to `AAA`.
-  2. Player enters three characters (A–Z, 0–9, space, `.`) and confirms; there is no timer.
+  1. The game shows the arcade name entry with the score and a letter picker (GDD v0.9 §9.1).
+  2. Player enters up to 8 characters (A–Z, 0–9, space), then keeps, changes or clears the
+     country preselected from the browser language's region, and confirms; there is no timer.
   3. The game inserts the entry at its rank — after earlier entries of equal score — keeps the 10
      best, and saves the table.
   4. The game shows the high scores with the new entry highlighted.
   5. Player returns to the title screen.
 - **Extensions**:
-  - 2a. On touch: the characters are picked from an on-screen letter grid.
+  - 2a. The letter picker works the same on keyboard, gamepad, touch and mouse.
+  - 2b. Player skips the entry: the name is stored as `???`.
   - 3a. Storage is unavailable or full: the save is skipped silently; the in-memory table is
     shown for the session.
 
@@ -138,7 +141,7 @@ step depends on them.
 - **Primary actor**: Player. **Level**: user goal.
 - **Main success scenario**:
   1. Player opens the high scores from the title screen.
-  2. The game shows the local top 10: rank, initials, score, level reached.
+  2. The game shows the local top 10: rank, name, country code (blank when absent), score, level reached.
   3. Player returns to the title screen.
 - **Extensions**:
   - 2a. Fewer than 10 entries exist: the empty rows show dashes.

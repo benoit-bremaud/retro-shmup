@@ -1,10 +1,10 @@
 # State machine diagram — meta — screens and their transitions (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.8 §3.4,
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.9 §3.2, §3.4,
 > §4.2, §4.3–§4.6, §5.2.1, §7.2.1, §7.3, §8, §9.1, §9.2, §9.3, §9.4
 > **Related ADRs**: ADR-0006 (save document), ADR-0009 (gestures, automatic pause), ADR-0010
 > (one run, one bus), ADR-0015 (pause in the first playable), ADR-0018 (taps, locks, pause button),
-> ADR-0019 (run seed, player-kit build order)
+> ADR-0019 (run seed, player-kit build order), ADR-0020 (pointer fire, autofire option), ADR-0021 (hall of fame entry)
 > **Realizes**: UC1–UC7 of [01-use-case](../system/01-use-case.md) at the screen level; the
 > `SceneMachine` component of [03-component](../system/03-component.md)
 
@@ -295,6 +295,30 @@ boss and the end-of-level tally wait for the level brick (F).
   `bombsPerLife`, `dropRateScale`; the power lost on death stays a rule, one level); `FORMATION_CLEARED` and `BOMB_USED` are
   published but `LevelTally` waits for the level brick; `damageBoss` waits for the boss.
 
+### Design revision v0.9 (after the brick-E playtest)
+
+GDD v0.9 and ADR-0020 change no state and no transition of the diagram; they change what some
+bricks deliver.
+
+- **Pointer fire** (ADR-0020 decisions 1 to 3 and 6): the mouse fires while the left button is held
+  after a press on the field, touch while a finger steers; the held pointer `Fire` combines like
+  any button. In a small dedicated PR before brick F, or in F's first PR.
+- **Interim deviation, no autofire option**: until the options screen (screens brick G), pointer
+  fire is always the held fire; the v0.8 always-on fire is not reachable (ADR-0020 decision 4).
+- **Field drawing, shot proportions** (GDD v0.9 §3.2; presentation only, the hitboxes and the
+  snapshot do not change): `RunPresenter` draws enemy bullets 6 × 6 centred on their 4 × 4 box
+  with a 2 × 2 white core, Spread bullets 2 × 6 centred on their 2 × 8 box, Laser bolts at 60 %
+  opacity, player shots translucent. Enemy bullets stay drawn on top (player-kit additions). With
+  the pointer fire PR, before or in F's first PR; the sprites of the assets brick keep the
+  proportions.
+- **Difficulty ramp** (GDD v0.9 §7.1, §10): the level brick F replaces the 45 s interim loop with
+  the real ~120 s level-1 script rising to the Heavy, then the boss.
+- **Named top 10 and country** (GDD v0.9 §8, §9.1, §9.8): the screens brick G brings the name
+  entry (8-character letter picker, skip as `???`, country preselected from the browser
+  language's region), the save-document schema and its allowlist validation (ADR-0006,
+  ADR-0021: first `version: 1` with `name` and `country`, no migration), and the bitmap font glyphs the entry needs (A–Z, 0–9, space, `?`). The pixel flags wait for the
+  assets brick.
+
 ### Build order
 
 | Brick | Delivers |
@@ -303,4 +327,5 @@ boss and the end-of-level tally wait for the level brick (F).
 | D — enemies | Popcorn, Diver, Gunner as archetype data and stateless strategies; `LevelDirector` with the looping rows of GDD §7.2.1; `ActiveList` for player bullets, enemy bullets and enemies; `CollisionResolver` with `HitRules`; lives, `hit()`, `Dead` and respawn; `EventBus` with `ScoreKeeper` (points and chain); `RunOutcome.GAME_OVER`; `Paused`, `Count-in`, `Game over`; HUD digits, chain bar and life icons; hit flash and small explosion behind effect switches; an ESLint rule keeping `src/domain/game` from importing `presentation` and `scenes`; the `RenderPort` glyph-set contract |
 | C2 — the other devices | five PRs (ADR-0018): C2-0 this design; C2-A the browser-free arbitration (no behaviour change); C2-L the portrait screen (`RenderPort.layout()`, `HUD_LAYOUTS`, `hud.ts` draws bands or strip, page CSS); C2-P touch and mouse (`pointer` module, pause button, tap resume, Game over and title locks, crosshair, layout-change pause, the new smoke test); C2-G the gamepad (`gamepad` module, fixed `A`/`B`/`Start` roles) |
 | E — the player kit | five PRs (ADR-0019), each merge playable: E-0 this design; E-1 randomness, pickups and their sources (run seed, pickup pool, fall and sway, collision pass 4, P-red and P-blue, `Weapon.kind` and `level` with `powerUp`, the cap bonus, `Formation` with the formation P and `FORMATION_CLEARED`, `LevelScript.dominantColour`, the Gunner `DropTable` at 30 %, the `DifficultyProfile` subset, the HUD weapon badge and pips, the determinism test with a seed; until E-2, `WEAPONS` holds the level-1 Spread record for every level and both kinds: the level, the kind and the pips change, the shot does not); E-2 the weapons on levels 1 to 5 (the data tables, damage in tenths, Laser bolts, pierce memory, the player bullet pool at 80); E-3 the Carrier (`CrossMovement`, the archetype, cargo with its load checks, the §7.2.1 rows, the Shield, Bomb and 1-UP pickups collectable, the HUD shield and bomb icons as needed); E-4 the bomb, the shield and the death rule (step slot 3, `useBomb`, `BOMB_USED`, flash and shake, `ABSORBED`, `shieldBroken`, `PLAYER_HIT`, the ring, `powerDown` with the release hop and the bombs reset). The Carrier comes before the bomb, so Shield and Bomb are catchable as soon as they exist |
-| Later bricks | level brick F: the Heavy (the real Bomb and Shield source, replacing the interim Bomb Carrier), ring and fan attacks, 1-UP Carriers, the warning, the boss and `damageBoss`, the end-of-level tally; screens brick: the bitmap fonts with the first-time pickup labels, the options with the effect switches, a touch bomb button if the screens revisit it (GDD v0.8 §4.2) |
+| Pointer fire and shot proportions | ADR-0020 decisions 1 to 3 and 6 (mouse left-button fire latch, touch fire while steering, samples with `autofire = false`) and the GDD v0.9 §3.2 drawn sizes in `RunPresenter`; a small dedicated PR before F, or F's first PR (design revision v0.9 above) |
+| Later bricks | level brick F: the real ~120 s level-1 script that ramps up to the Heavy and the boss (GDD v0.9 §7.1), replacing the 45 s loop; the Heavy (the real Bomb and Shield source, replacing the interim Bomb Carrier), ring and fan attacks, 1-UP Carriers, the warning, the boss and `damageBoss`, the end-of-level tally; screens brick: the bitmap fonts with the first-time pickup labels, the options with the effect switches, a touch bomb button if the screens revisit it (GDD v0.8 §4.2), the autofire option (ADR-0020 decision 4), the name entry with the letter picker and the optional country, and the save-document schema for the named top 10 (GDD v0.9 §9.1, §9.8) |
