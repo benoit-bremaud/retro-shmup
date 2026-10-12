@@ -8,7 +8,19 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-12
 
-### F-2a, the boss fight domain (branch `feat/boss-domain`, not yet merged)
+### Refactor: `RunRules` extracted from `Run` (branch `refactor/run-rules`)
+
+- Pure move per ADR-0023 decision 7: `RunRules` (`src/domain/game/run-rules.ts`) realizes
+  `HitRules` and `EnemySpawner` and holds the kill, drop, boss, bomb and death rules and the
+  preallocated events; `Run` keeps the 8-step order, the outcome, the snapshot and the level
+  list and exposes `run.rules`. `Run` 505 to 278 lines; tests only changed call sites
+  (`run.X` to `run.rules.X`), 680 tests green, the seeded replay logs unchanged.
+
+### PR #39 merged (`5238a4f`) — F-2a, the boss fight domain
+
+- Merged as described in the F-2a entry below (674 tests at the time of the PR).
+
+### F-2a, the boss fight domain (branch `feat/boss-domain`, merged as #39)
 
 - Built per ADR-0023: every attack pattern is a `fire` and a `tick`, `sequenceAttack(groups)`,
   `swayMovement`, `Body.age` as movement time, `Boss` (`BossState`, `BossDefinition`,

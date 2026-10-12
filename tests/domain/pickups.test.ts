@@ -285,7 +285,7 @@ describe('Run — drops, formation P and collection (GDD v0.8 §4.6, §5.2; ADR-
   ])('drops a Gunner P on a draw of %d below 30 %, its colour from the same draw', (r, kind) => {
     const run = new Run({ createRandom: () => scripted([r]) });
     const log = logOf(run, [SPAWNED]);
-    run.destroyEnemy(enemyAt(GUNNER, 60, 80));
+    run.rules.destroyEnemy(enemyAt(GUNNER, 60, 80));
     expect(log).toEqual([`${String(SPAWNED)}:${String(kind)}:0@60,80`]);
     expect(run.snapshot().pickups.at(0).kind).toBe(kind);
   });
@@ -296,20 +296,20 @@ describe('Run — drops, formation P and collection (GDD v0.8 §4.6, §5.2; ADR-
   ])('drops a Heavy %d below 60 % as a Bomb or a Shield picked by the same draw', (r, kind) => {
     const run = new Run({ createRandom: () => scripted([r]) });
     const log = logOf(run, [SPAWNED]);
-    run.destroyEnemy(enemyAt(HEAVY_RING, 60, 80));
+    run.rules.destroyEnemy(enemyAt(HEAVY_RING, 60, 80));
     expect(log).toEqual([`${String(SPAWNED)}:${String(kind)}:0@60,80`]);
   });
 
   it('drops nothing from a Heavy on a draw of 60 % or more', () => {
     const run = new Run({ createRandom: () => scripted([0.6]) });
-    run.destroyEnemy(enemyAt(HEAVY_RING, 60, 80));
+    run.rules.destroyEnemy(enemyAt(HEAVY_RING, 60, 80));
     expect(run.snapshot().pickups.count).toBe(0);
   });
 
   it('scores a destroyed Heavy 1 000 points and announces its Large tier', () => {
     const run = new Run({ createRandom: () => scripted([]) });
     const log = logOf(run, [GameEventKind.EnemyDestroyed]);
-    run.destroyEnemy(enemyAt(HEAVY_RING, 60, 80));
+    run.rules.destroyEnemy(enemyAt(HEAVY_RING, 60, 80));
     expect(log).toEqual([
       `${String(GameEventKind.EnemyDestroyed)}:${String(SizeTier.Large)}:1000@60,80`,
     ]);
@@ -325,8 +325,8 @@ describe('Run — drops, formation P and collection (GDD v0.8 §4.6, §5.2; ADR-
       seed: (): void => undefined,
     };
     const run = new Run({ createRandom: () => random });
-    run.destroyEnemy(enemyAt(GUNNER, 60, 80));
-    run.destroyEnemy(enemyAt(POPCORN, 60, 80));
+    run.rules.destroyEnemy(enemyAt(GUNNER, 60, 80));
+    run.rules.destroyEnemy(enemyAt(POPCORN, 60, 80));
     expect(run.snapshot().pickups.count).toBe(0);
     expect(draws).toHaveLength(1);
   });
@@ -336,9 +336,9 @@ describe('Run — drops, formation P and collection (GDD v0.8 §4.6, §5.2; ADR-
     const log = logOf(run, [SPAWNED, CLEARED]);
     const formation = new Formation();
     formation.start(2);
-    run.destroyEnemy(enemyAt(POPCORN, 50, 40, formation));
+    run.rules.destroyEnemy(enemyAt(POPCORN, 50, 40, formation));
     expect(log).toEqual([]);
-    run.destroyEnemy(enemyAt(POPCORN, 70, 90, formation));
+    run.rules.destroyEnemy(enemyAt(POPCORN, 70, 90, formation));
     expect(log).toEqual([`${String(CLEARED)}:0:0@70,90`, `${String(SPAWNED)}:0:0@70,90`]);
   });
 
@@ -347,14 +347,15 @@ describe('Run — drops, formation P and collection (GDD v0.8 §4.6, §5.2; ADR-
     const formation = new Formation();
     formation.start(2);
     formation.escaped += 1;
-    run.destroyEnemy(enemyAt(POPCORN, 70, 90, formation));
+    run.rules.destroyEnemy(enemyAt(POPCORN, 70, 90, formation));
     expect(run.snapshot().pickups.count).toBe(0);
   });
 
   it('publishes no PICKUP_SPAWNED for a drop refused by a full pool', () => {
     const run = new Run({ createRandom: () => scripted(Array.from({ length: 9 }, () => 0.1)) });
     const log = logOf(run, [SPAWNED]);
-    for (let i = 0; i < PICKUP_POOL_SIZE + 1; i += 1) run.destroyEnemy(enemyAt(GUNNER, 60, 80));
+    for (let i = 0; i < PICKUP_POOL_SIZE + 1; i += 1)
+      run.rules.destroyEnemy(enemyAt(GUNNER, 60, 80));
     expect(log).toHaveLength(PICKUP_POOL_SIZE);
   });
 
@@ -363,11 +364,11 @@ describe('Run — drops, formation P and collection (GDD v0.8 §4.6, §5.2; ADR-
     const log = logOf(run, [COLLECTED]);
     const pickup = new Pickup();
     pickup.spawn(PickupKind.PBlue, 100, 200, 1);
-    run.pickupCollected(pickup);
+    run.rules.pickupCollected(pickup);
     expect([run.snapshot().weaponKind, run.snapshot().power]).toEqual([WeaponKind.Laser, 2]);
-    for (let i = 0; i < 3; i += 1) run.pickupCollected(pickup);
+    for (let i = 0; i < 3; i += 1) run.rules.pickupCollected(pickup);
     expect(run.snapshot().score).toBe(0);
-    run.pickupCollected(pickup);
+    run.rules.pickupCollected(pickup);
     expect(run.snapshot().score).toBe(1000);
     expect(run.snapshot().multiplier).toBe(1);
     expect(run.snapshot().chainRatio).toBe(0);
@@ -381,7 +382,7 @@ describe('Formations — refused members never count against the player (GDD v0.
   /** A run whose enemy pool is full: every further spawn is refused. */
   function fullRun(): Run {
     const run = new Run({ createRandom: () => scripted([]) });
-    for (let i = 0; i < ENEMY_POOL_SIZE; i += 1) run.spawnEnemy(POPCORN_ROW, undefined);
+    for (let i = 0; i < ENEMY_POOL_SIZE; i += 1) run.rules.spawnEnemy(POPCORN_ROW, undefined);
     return run;
   }
 
@@ -390,8 +391,8 @@ describe('Formations — refused members never count against the player (GDD v0.
     const log = logOf(run, [CLEARED, SPAWNED]);
     const formation = new Formation();
     formation.start(2);
-    expect(run.spawnEnemy(POPCORN_ROW, formation)).toBe(false);
-    run.destroyEnemy(enemyAt(POPCORN, 70, 90, formation));
+    expect(run.rules.spawnEnemy(POPCORN_ROW, formation)).toBe(false);
+    run.rules.destroyEnemy(enemyAt(POPCORN, 70, 90, formation));
     expect(log).toEqual([`${String(CLEARED)}:0:0@70,90`, `${String(SPAWNED)}:0:0@70,90`]);
   });
 
@@ -400,9 +401,9 @@ describe('Formations — refused members never count against the player (GDD v0.
     const log = logOf(run, [CLEARED, SPAWNED]);
     const formation = new Formation();
     formation.start(2);
-    run.destroyEnemy(enemyAt(POPCORN, 50, 60, formation));
+    run.rules.destroyEnemy(enemyAt(POPCORN, 50, 60, formation));
     expect(log).toEqual([]);
-    run.spawnEnemy(POPCORN_ROW, formation);
+    run.rules.spawnEnemy(POPCORN_ROW, formation);
     expect(log).toEqual([`${String(CLEARED)}:0:0@50,60`, `${String(SPAWNED)}:0:0@50,60`]);
   });
 
@@ -410,7 +411,7 @@ describe('Formations — refused members never count against the player (GDD v0.
     const run = fullRun();
     const formation = new Formation();
     formation.start(1);
-    run.spawnEnemy(POPCORN_ROW, formation);
+    run.rules.spawnEnemy(POPCORN_ROW, formation);
     expect(formation.isCleared()).toBe(false);
     expect(run.snapshot().pickups.count).toBe(0);
   });
@@ -468,7 +469,7 @@ describe('Pickups — several in one step, and after Game over (GDD v0.8 §4.6)'
     for (const kind of rules.kinds) {
       const pickup = new Pickup();
       pickup.spawn(kind, 0, 0, 1);
-      run.pickupCollected(pickup);
+      run.rules.pickupCollected(pickup);
     }
     expect([run.snapshot().weaponKind, run.snapshot().power]).toEqual([WeaponKind.Laser, 3]);
   });
@@ -502,7 +503,7 @@ describe('Run — the player bullet pool at Spread level 5 (GDD v0.8 §5.2.1)', 
     const run = new Run({ script: testScript() });
     const red = new Pickup();
     red.spawn(PickupKind.PRed, 0, 0, 1);
-    for (let i = 0; i < 4; i += 1) run.pickupCollected(red);
+    for (let i = 0; i < 4; i += 1) run.rules.pickupCollected(red);
     expect(run.snapshot().power).toBe(5);
     const fire = createIntentFrame();
     fire.held = Button.Fire;

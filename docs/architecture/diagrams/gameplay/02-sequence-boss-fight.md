@@ -27,6 +27,7 @@ sequenceDiagram
   autonumber
   participant SM as SceneMachine
   participant Run as Run
+  participant Rules as RunRules
   participant LD as LevelDirector
   participant W as World
   participant Bo as Boss
@@ -36,48 +37,49 @@ sequenceDiagram
   participant P as RunPresenter
 
   Note over LD: the step that reaches warningAt (120 s in level 1)
-  Run->>LD: tick(run as EnemySpawner)
-  LD->>Run: startBoss(LevelScript.boss)
-  Run->>Bo: start(definition) — state WARNING
-  Run->>Bus: publish BOSS_WARNING
+  Run->>LD: tick(run.rules as EnemySpawner)
+  LD->>Rules: startBoss(LevelScript.boss)
+  Rules->>Bo: start(definition) — state WARNING
+  Rules->>Bus: publish BOSS_WARNING
   Note over LD: no spawn from now on — enemies on the field live on
   Note over Bo: 3 s later ENTERING — slides to (120, 56) in 3 s, then FIGHTING with timeLeft = 90 s
   Note over P: WARNING banner while the snapshot says WARNING — HP bar and seconds from ENTERING
 
   loop each step while FIGHTING
     Run->>W: moveEnemies(dt) — the boss phase movement and attack act
-    Run->>CR: resolve(world, run as HitRules)
+    Run->>CR: resolve(world, run.rules as HitRules)
     Note over CR: pass 1 — a player bullet meets the boss, nearest along its path
-    CR->>Run: damageBoss(bullet damage)
-    Run->>Bo: applyDamage
-    Run->>Bus: publish ENEMY_HIT (subject = boss serial)
+    CR->>Rules: damageBoss(bullet damage)
+    Rules->>Bo: applyDamage
+    Rules->>Bus: publish ENEMY_HIT (subject = boss serial)
     Bus->>P: white flash on the boss
     opt [another phase follows and hp ≤ its threshold] — repeated per threshold crossed
-      Run->>Bo: phaseIndex += 1 — swap the phase strategies
-      Run->>Bus: publish BOSS_PHASE_CHANGED (detail = phase)
+      Rules->>Bo: phaseIndex += 1 — swap the phase strategies
+      Rules->>Bus: publish BOSS_PHASE_CHANGED (detail = phase)
       Bus->>P: debris where the part broke off
     end
-    Run->>Bo: advance timers — timeLeft −= 1 (step 7)
+    Rules->>Bo: advance timers — timeLeft −= 1 (step 7)
   end
 
   alt [hp ≤ 0]
-    Run->>W: cancelEnemyBullets()
-    Run->>Bo: state DESTROYED — harmless
-    Run->>Bus: publish BOSS_DESTROYED (value = seconds left)
+    Rules->>W: cancelEnemyBullets()
+    Rules->>Bo: state DESTROYED — harmless
+    Rules->>Bus: publish BOSS_DESTROYED (value = seconds left)
     Bus->>SK: score += 10 000 + 100 × value — flat, chain untouched
     Bus->>P: boss explosion, slow motion 0.5 s if enabled
     Note over Bo: 2 s of steps — the ship keeps its control
   else [timeLeft = 0 and hp > 0]
-    Run->>W: cancelEnemyBullets()
-    Run->>Bo: state FLEEING — harmless, up at 60 px/s
-    Run->>Bus: publish BOSS_FLED
+    Rules->>W: cancelEnemyBullets()
+    Rules->>Bo: state FLEEING — harmless, up at 60 px/s
+    Rules->>Bus: publish BOSS_FLED
     Note over Bo: until its box is fully above the field
   end
 
   Note over Run: step 8 — the sequence has ended and the ship is not Dead
   Run->>W: spendPlayerBullets()
   Run->>Bo: state IDLE
-  Run->>Bus: publish LEVEL_CLEARED (value = bombs left)
+  Run->>Rules: levelCleared()
+  Rules->>Bus: publish LEVEL_CLEARED (value = bombs left)
   Bus->>SK: tally.bombsLeft = value, then score += tally.total() — flat
   Note over Run: outcome RUN_CLEARED (last level of the list) or LEVEL_CLEARED
 

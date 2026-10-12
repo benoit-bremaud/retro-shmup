@@ -68,6 +68,20 @@ classDiagram
     +step(dt, frame: Readonly~IntentFrame~) void
     +startNextLevel() void
   }
+  class RunRules {
+    +enemyHit(enemy) void
+    +destroyEnemy(enemy) void
+    +damageBoss(amount) void
+    +pickupCollected(pickup) void
+    +playerDied() void
+    +shieldBroken() void
+    +startFormation(total) Formation
+    +spawnEnemy(event, formation) boolean
+    +startBoss(definition) void
+    +advanceBoss() boolean
+    +levelCleared() void
+    +detonate() void
+  }
   class RunConfig {
     <<data>>
     +levels: LevelScript[]
@@ -274,12 +288,14 @@ classDiagram
 
   Simulation <|.. Run
   RunView <|.. Run
-  HitRules <|.. Run
+  HitRules <|.. RunRules
   RunEvents <|.. EventBus
   Run --> "1" RunOutcome : outcome
   Run *-- "1" World
   Run *-- "1" ScoreKeeper
   Run *-- "1" LevelDirector
+  Run *-- "1" RunRules : the world rules, exposed as rules
+  RunRules --> "1" World : acts on
   Run *-- "1" EventBus
   Run --> "1" DifficultyProfile
   Run --> "1..*" LevelScript : levels, in order
@@ -289,7 +305,7 @@ classDiagram
   WorldView <|.. World
   PlayerShotSpawner <|.. World
   EnemyShotSpawner <|.. World
-  EnemySpawner <|.. Run
+  EnemySpawner <|.. RunRules
   LevelDirector ..> EnemySpawner : spawns through (parameter)
   World *-- "1" Player
   World *-- "1" Boss : preallocated, outside the enemy pool

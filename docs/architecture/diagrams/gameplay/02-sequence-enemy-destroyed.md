@@ -26,6 +26,7 @@ title: sd — a player bullet destroys an enemy
 sequenceDiagram
   autonumber
   participant Run as Run
+  participant Rules as RunRules
   participant CR as CollisionResolver
   participant B as Bullet
   participant E as Enemy
@@ -36,7 +37,7 @@ sequenceDiagram
   participant SK as ScoreKeeper
   participant P as RunPresenter
 
-  Run->>CR: resolve(world, run as HitRules)
+  Run->>CR: resolve(world, run.rules as HitRules)
   Note over CR: bullet B overlaps enemy E, neither spent
   CR->>B: canHit(E.serial)
   B-->>CR: true
@@ -47,12 +48,12 @@ sequenceDiagram
   else [a Laser bolt with a pass-through left]
     CR->>B: recordHit(E.serial), pierceLeft −= 1
   end
-  CR->>Run: enemyHit(E)
-  Run->>Bus: publish ENEMY_HIT (subject = E.serial)
+  CR->>Rules: enemyHit(E)
+  Rules->>Bus: publish ENEMY_HIT (subject = E.serial)
   Bus->>P: white flash on E, hit SFX
   opt [crossed]
-    CR->>Run: destroyEnemy(E, SHOT)
-    Run->>Bus: publish ENEMY_DESTROYED (position, value = archetype score, detail = size tier)
+    CR->>Rules: destroyEnemy(E, SHOT)
+    Rules->>Bus: publish ENEMY_DESTROYED (position, value = archetype score, detail = size tier)
     activate Bus
     Bus->>SK: score += value × current multiplier, chain extended
     activate SK
@@ -66,29 +67,29 @@ sequenceDiagram
     Bus->>P: explosion sized by detail, SFX
     deactivate Bus
     alt [E carries a cargo]
-      Run->>W: spawnPickup(cargo, E.x, E.y, FALL)
+      Rules->>W: spawnPickup(cargo, E.x, E.y, FALL)
     else [DropTable rate > 0]
-      Run->>Rng: next()
-      Rng-->>Run: r
+      Rules->>Rng: next()
+      Rng-->>Rules: r
       opt [r < rate × dropRateScale]
-        Note over Run: kind = kinds[floor(r / effective rate × kinds.length)] — a Gunner, P-red or P-blue 50 / 50
-        Run->>W: spawnPickup(kind, E.x, E.y, FALL)
+        Note over Rules: kind = kinds[floor(r / effective rate × kinds.length)] — a Gunner, P-red or P-blue 50 / 50
+        Rules->>W: spawnPickup(kind, E.x, E.y, FALL)
       end
     end
     opt [E belongs to a formation]
-      Run->>F: destroyed += 1, lastDestroyed = E position
+      Rules->>F: destroyed += 1, lastDestroyed = E position
       opt [F.isCleared() and not F.rewarded]
-        Note over Run: F.rewarded = true — one P per formation, each loop pass being a new formation
-        Run->>W: spawnPickup(P of LevelScript.dominantColour, at F.lastDestroyed, FALL)
-        Run->>Bus: publish FORMATION_CLEARED
+        Note over Rules: F.rewarded = true — one P per formation, each loop pass being a new formation
+        Rules->>W: spawnPickup(P of LevelScript.dominantColour, at F.lastDestroyed, FALL)
+        Rules->>Bus: publish FORMATION_CLEARED
         Bus->>SK: LevelTally.formationsCleared += 1
       end
     end
     loop each spawnPickup above that returned true — a full pool of 8 drops the spawn and publishes nothing
-      Run->>Bus: publish PICKUP_SPAWNED (detail = kind)
+      Rules->>Bus: publish PICKUP_SPAWNED (detail = kind)
       Bus->>P: first-time label if this kind is new in the run
     end
-    Run->>E: spent = true (released at step 6)
+    Rules->>E: spent = true (released at step 6)
   end
 ```
 
@@ -101,6 +102,7 @@ title: sd — the dropped pickup is caught
 sequenceDiagram
   autonumber
   participant Run as Run
+  participant Rules as RunRules
   participant W as World
   participant K as Pickup
   participant CR as CollisionResolver
@@ -114,15 +116,15 @@ sequenceDiagram
     W->>K: age += 1, position from origin, age and motion
     Note over K: FALL — y = origin.y + 40 px/s × age, x = x0 + 8 × sin(2π × age / 2 s), x0 clamped to 16–224
   end
-  Run->>CR: resolve(world, run as HitRules)
+  Run->>CR: resolve(world, run.rules as HitRules)
   Note over CR: pass 4, after the hazards — K live, its 16 × 16 box overlaps the ship's 32 × 32 box
   CR->>Pl: canCollect()
   Pl-->>CR: true in Entering, Invulnerable or Vulnerable
   CR->>K: spent = true (released at step 6)
-  CR->>Run: pickupCollected(K)
-  Run->>Pl: collect(K.kind)
-  Pl-->>Run: bonus — 0, or 1 000 when the effect could not apply
-  Run->>Bus: publish PICKUP_COLLECTED (detail = kind, value = bonus)
+  CR->>Rules: pickupCollected(K)
+  Rules->>Pl: collect(K.kind)
+  Pl-->>Rules: bonus — 0, or 1 000 when the effect could not apply
+  Rules->>Bus: publish PICKUP_COLLECTED (detail = kind, value = bonus)
   Bus->>SK: score += value, flat — no multiplier, the chain unchanged
   Bus->>P: pickup SFX, HUD follows the snapshot
 ```
@@ -138,7 +140,7 @@ sequenceDiagram
   then release), so no pool ever sees a double release. `ENEMY_DESTROYED`
   carries its position and size tier because `E` is gone before the frame is drawn.
 - **Spawning is a direct call, never a handler** (ADR-0010): pickups, the formation reward and
-  the `spent` mark happen in `Run.destroyEnemy`, in this fixed order — the pool release waits for
+  the `spent` mark happen in `RunRules.destroyEnemy`, in this fixed order — the pool release waits for
   `World.sweep()` at step 6; only `ScoreKeeper` changes
   state from a handler, and the presenter only reacts.
 - **Subscription order**: `ScoreKeeper` first (subscribed by `Run`'s constructor), `RunPresenter`

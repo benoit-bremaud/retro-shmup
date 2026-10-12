@@ -4,26 +4,19 @@ import type { Random } from '../ports/random';
 import { mixSeed, SeededRandom } from '../random/seeded-random';
 import type { ReadonlyActiveList } from './active-list';
 import type { Bullet } from './bullet';
-import { applyDamage } from './body';
-import { BossAdvance } from './boss';
-import type { BossDefinition, BossState } from './boss';
+import type { BossState } from './boss';
 import { CollisionResolver } from './collision';
-import type { HitRules } from './collision';
-import { NORMAL } from './difficulty';
 import type { Enemy } from './enemy';
-import { createGameEvent, EventBus, GameEventKind } from './events';
-import type { GameEvent, RunEvents } from './events';
-import type { Formation } from './formation';
+import { EventBus } from './events';
+import type { RunEvents } from './events';
 import type { Vec2 } from './geometry';
 import { LevelDirector } from './level-director';
-import type { EnemySpawner } from './level-director';
 import { LEVEL_1 } from './level-script';
-import type { LevelScript, ScriptEvent } from './level-script';
-import { PickupKind, PickupMotion } from './pickup';
+import type { LevelScript } from './level-script';
 import type { Pickup } from './pickup';
 import { PlayerState } from './player';
+import { RunRules } from './run-rules';
 import { ScoreKeeper } from './score-keeper';
-import { KitTuning } from './tuning';
 import { WeaponKind } from './weapon';
 import { World } from './world';
 
@@ -43,8 +36,6 @@ export interface RunConfig {
 function seededRandom(levelSeed: number): Random {
   return new SeededRandom(levelSeed);
 }
-
-const NONE = -1;
 
 /**
  * How a run stands after a step (class diagram): `LEVEL_CLEARED` when a level ends and another
@@ -129,45 +120,35 @@ export interface RunView {
 }
 
 /**
- * The simulation of one run (class diagram: `Simulation`, `RunView`, `HitRules`). `step` follows
+ * The simulation of one run (class diagram: `Simulation`, `RunView`); the rules live in `RunRules`. `step` follows
  * the fixed order of the class diagram.
  */
-export class Run implements Simulation, RunView, HitRules, EnemySpawner {
+export class Run implements Simulation, RunView {
   private readonly world = new World();
   private readonly director: LevelDirector;
   private readonly bus = new EventBus();
   // Built right after the bus, so it is subscribed first (ADR-0010 wording note).
   private readonly scoreKeeper = new ScoreKeeper(this.bus);
-  private readonly enemyHitEvent = createGameEvent(GameEventKind.EnemyHit);
-  private readonly enemyDestroyedEvent = createGameEvent(GameEventKind.EnemyDestroyed);
-  private readonly playerDiedEvent = createGameEvent(GameEventKind.PlayerDied);
-  private readonly pickupSpawnedEvent = createGameEvent(GameEventKind.PickupSpawned);
-  private readonly pickupCollectedEvent = createGameEvent(GameEventKind.PickupCollected);
-  private readonly formationClearedEvent = createGameEvent(GameEventKind.FormationCleared);
-  private readonly playerHitEvent = createGameEvent(GameEventKind.PlayerHit);
-  private readonly bombUsedEvent = createGameEvent(GameEventKind.BombUsed);
-  private readonly bossWarningEvent = createGameEvent(GameEventKind.BossWarning);
-  private readonly bossPhaseChangedEvent = createGameEvent(GameEventKind.BossPhaseChanged);
-  private readonly bossDestroyedEvent = createGameEvent(GameEventKind.BossDestroyed);
-  private readonly bossFledEvent = createGameEvent(GameEventKind.BossFled);
-  private readonly levelClearedEvent = createGameEvent(GameEventKind.LevelCleared);
   private currentOutcome: RunOutcome = RunOutcome.Playing;
   private readonly snapshotView: WorldSnapshot = createSnapshot(this.world, this.scoreKeeper);
-  private readonly script: LevelScript;
   /** The run's level list; the slice plays its first level only (`startNextLevel` waits for level 2). */
   private readonly levels: readonly LevelScript[];
   /** The boss sequence ended (destroyed or fled): the level end waits for a living ship (step 8). */
   private bossSequenceEnded = false;
-  /** Drops only (ADR-0010 decision 1); level 1 is seeded with mixSeed(seed, 0) (ADR-0019). */
-  private readonly random: Random;
+  /**
+   * The rules the run applies to the world. Public as the seam the collision resolver and the
+   * level director call (`HitRules`, `EnemySpawner`) and tests drive directly (ADR-0023 decision 7).
+   */
+  readonly rules: RunRules;
 
   constructor(config: RunConfig = {}) {
     this.levels = config.levels ?? [config.script ?? LEVEL_1];
     const first = this.levels[0];
     if (first === undefined) throw new RangeError('Run: needs at least one level');
-    this.script = first;
-    this.director = new LevelDirector(this.script);
-    this.random = (config.createRandom ?? seededRandom)(mixSeed(config.seed ?? 0, 0));
+    this.director = new LevelDirector(first);
+    // Drops only (ADR-0010 decision 1); level 1 is seeded with mixSeed(seed, 0) (ADR-0019).
+    const random = (config.createRandom ?? seededRandom)(mixSeed(config.seed ?? 0, 0));
+    this.rules = new RunRules(this.world, this.bus, random, first);
   }
 
   /**
@@ -176,22 +157,22 @@ export class Run implements Simulation, RunView, HitRules, EnemySpawner {
    */
   step(dt: number, frame: Readonly<IntentFrame>): void {
     // (1) the level script spawns what is due, through the run (refusals settle formations).
-    this.director.tick(this);
+    this.director.tick(this.rules);
     // (2) the player moves and its weapon fires.
     this.world.player.update(frame, dt, this.world);
     // (3) a bomb pressed in control goes off, before this step's collisions.
-    if ((frame.pressed & Button.Bomb) !== 0 && this.world.player.useBomb()) this.detonate();
+    if ((frame.pressed & Button.Bomb) !== 0 && this.world.player.useBomb()) this.rules.detonate();
     // (4) enemies move and attack, then every bullet and every pickup moves.
     this.world.moveEnemies(dt);
     this.world.moveBullets(dt);
     this.world.movePickups();
     // (5) collisions only mark; (6) the single release point.
-    CollisionResolver.resolve(this.world, this);
+    CollisionResolver.resolve(this.world, this.rules);
     this.world.sweep();
     // (7) timers advance: the chain, then the ship.
     this.scoreKeeper.tick();
     this.world.player.advanceTimers();
-    this.advanceBoss();
+    if (this.rules.advanceBoss()) this.bossSequenceEnded = true;
     // (8) the outcome: Game over once the last death sequence has ended, which wins over a
     // pending level end. The ship's last bullets are spent then, so nothing scores while the run
     // plays on.
@@ -216,101 +197,6 @@ export class Run implements Simulation, RunView, HitRules, EnemySpawner {
     return this.bus;
   }
 
-  /** `HitRules`: a shot touched a live enemy (white flash). */
-  enemyHit(enemy: Enemy): void {
-    this.publishAt(this.enemyHitEvent, enemy.position.x, enemy.position.y, 0, 0, enemy.serial);
-  }
-
-  /**
-   * `HitRules`: marks the enemy; it is released at step 6, so the event carries all it needs.
-   * Then its cargo or its drop, and its formation's P (02-sequence-enemy-destroyed):
-   * `PICKUP_SPAWNED` follows, once per pickup that exists.
-   */
-  destroyEnemy(enemy: Enemy): void {
-    enemy.spent = true;
-    const x = enemy.position.x;
-    const y = enemy.position.y;
-    this.publishAt(
-      this.enemyDestroyedEvent,
-      x,
-      y,
-      enemy.archetype.stats.score,
-      enemy.archetype.stats.tier,
-      enemy.serial,
-    );
-    const dropped = enemy.cargo ?? this.rollDrop(enemy);
-    const droppedSpawned = dropped !== NONE && this.world.spawnPickup(dropped, x, y);
-    enemy.formation?.memberDestroyed(x, y);
-    const rewardSpawned = this.rewardIfCleared(enemy.formation);
-    if (droppedSpawned) this.publishAt(this.pickupSpawnedEvent, x, y, 0, dropped);
-    if (rewardSpawned) this.publishReward(enemy.formation);
-  }
-
-  /** `EnemySpawner`, step 1: the world spawns; a refused member may complete its formation. */
-  startFormation(total: number): Formation | undefined {
-    return this.world.startFormation(total);
-  }
-
-  /**
-   * `EnemySpawner`, step 1, at the script's `warningAt` (02-sequence-boss-fight): the boss starts
-   * in `WARNING` with a fresh serial and the run says so.
-   */
-  startBoss(definition: BossDefinition): void {
-    const boss = this.world.boss;
-    boss.start(definition, this.world.takeSerial());
-    this.publishAt(this.bossWarningEvent, boss.position.x, boss.position.y, 0, 0, boss.serial);
-  }
-
-  /**
-   * `HitRules`: a shot or the bomb hit the fighting boss (02-sequence-boss-fight). `ENEMY_HIT`
-   * carries its serial. At 0 HP the enemy bullets are cancelled and the boss is destroyed;
-   * otherwise one `BOSS_PHASE_CHANGED` follows per threshold crossed, `detail` = the new phase.
-   */
-  damageBoss(amount: number): void {
-    const boss = this.world.boss;
-    const destroyed = applyDamage(boss, amount);
-    this.publishAt(this.enemyHitEvent, boss.position.x, boss.position.y, 0, 0, boss.serial);
-    if (destroyed) {
-      this.world.cancelEnemyBullets();
-      boss.destroy();
-      this.publishAt(
-        this.bossDestroyedEvent,
-        boss.position.x,
-        boss.position.y,
-        boss.secondsLeft(),
-        0,
-        boss.serial,
-      );
-      return;
-    }
-    while (boss.advancePhase(this.world)) {
-      const detail = boss.phaseIndex;
-      this.publishAt(
-        this.bossPhaseChangedEvent,
-        boss.position.x,
-        boss.position.y,
-        0,
-        detail,
-        boss.serial,
-      );
-    }
-  }
-
-  /**
-   * Step 7: the boss's state timers advance. An expired timer cancels the enemy bullets and
-   * publishes the escape; the end of the destroyed or fleeing sequence arms the level end.
-   */
-  private advanceBoss(): void {
-    const boss = this.world.boss;
-    const advance = boss.advance(this.world);
-    if (advance === BossAdvance.Fled) {
-      this.world.cancelEnemyBullets();
-      this.publishAt(this.bossFledEvent, boss.position.x, boss.position.y, 0, 0, boss.serial);
-    } else if (advance === BossAdvance.Ended) {
-      this.bossSequenceEnded = true;
-    }
-  }
-
   /**
    * Step 8, once the boss sequence has ended and the ship is not `Dead`: the ship's bullets are
    * spent, `LEVEL_CLEARED` carries the bombs left, and the outcome is `RUN_CLEARED` after the last
@@ -319,121 +205,8 @@ export class Run implements Simulation, RunView, HitRules, EnemySpawner {
   private clearLevel(): void {
     this.bossSequenceEnded = false;
     this.world.spendPlayerBullets();
-    const ship = this.world.player;
-    this.publishAt(this.levelClearedEvent, ship.position.x, ship.position.y, ship.bombs, 0);
+    this.rules.levelCleared();
     this.currentOutcome = this.levels.length > 1 ? RunOutcome.LevelCleared : RunOutcome.RunCleared;
-  }
-
-  spawnEnemy(event: Readonly<ScriptEvent>, formation: Formation | undefined): boolean {
-    if (this.world.spawnEnemy(event, formation)) return true;
-    if (formation === undefined) return false;
-    formation.refused += 1;
-    if (this.rewardIfCleared(formation)) this.publishReward(formation);
-    return false;
-  }
-
-  /**
-   * The formation completion check (class diagram), run whenever a member is destroyed or
-   * refused: the first time every member that appeared is destroyed, the P of the dominant colour
-   * spawns at the last one and `FORMATION_CLEARED` is published. Returns whether the P exists.
-   */
-  private rewardIfCleared(formation: Formation | undefined): boolean {
-    if (formation?.isCleared() !== true) return false;
-    formation.rewarded = true;
-    this.publishAt(this.formationClearedEvent, formation.lastX, formation.lastY, 0, 0);
-    return this.world.spawnPickup(this.script.dominantColour, formation.lastX, formation.lastY);
-  }
-
-  private publishReward(formation: Formation | undefined): void {
-    if (formation === undefined) return;
-    const colour = this.script.dominantColour;
-    this.publishAt(this.pickupSpawnedEvent, formation.lastX, formation.lastY, 0, colour);
-  }
-
-  /** `HitRules`: the ship caught the pickup; the cap bonus, if any, is scored flat. */
-  pickupCollected(pickup: Pickup): void {
-    const bonus = this.world.player.collect(pickup.kind);
-    this.publishAt(
-      this.pickupCollectedEvent,
-      pickup.position.x,
-      pickup.position.y,
-      bonus,
-      pickup.kind,
-    );
-  }
-
-  /**
-   * One draw per killed enemy whose table can drop (ADR-0019): a drop when
-   * `r < rate × dropRateScale`, and the same `r` picks the kind; `NONE` otherwise.
-   */
-  private rollDrop(enemy: Enemy): PickupKind | typeof NONE {
-    const drops = enemy.archetype.drops;
-    if (drops.rate <= 0 || drops.kinds.length === 0) return NONE;
-    const rate = drops.rate * NORMAL.dropRateScale;
-    const r = this.random.next();
-    if (r >= rate) return NONE;
-    return drops.kinds[Math.floor((r / rate) * drops.kinds.length)] ?? NONE;
-  }
-
-  private publishAt(
-    event: GameEvent,
-    x: number,
-    y: number,
-    value: number,
-    detail: number,
-    subject = 0,
-  ): void {
-    event.position.x = x;
-    event.position.y = y;
-    event.subject = subject;
-    event.value = value;
-    event.detail = detail;
-    this.bus.publish(event);
-  }
-
-  /**
-   * `HitRules`: the ship died this step (02-sequence-player-hit). The death effects apply at once
-   * — the power drops a level and the bombs reset — and a lost level is released as a P of the
-   * current weapon's colour, spawned before `PLAYER_DIED` is published, last life included.
-   */
-  playerDied(): void {
-    const player = this.world.player;
-    const x = player.position.x;
-    const y = player.position.y;
-    if (player.applyDeathPenalty()) {
-      const colour = player.weaponKind === WeaponKind.Laser ? PickupKind.PBlue : PickupKind.PRed;
-      if (this.world.spawnPickup(colour, x, y, PickupMotion.Release)) {
-        this.publishAt(this.pickupSpawnedEvent, x, y, 0, colour);
-      }
-    }
-    this.publishAt(this.playerDiedEvent, x, y, 0, 0);
-  }
-
-  /** `HitRules`: the shield charge took the hit (GDD v0.8 §4.4). */
-  shieldBroken(): void {
-    const ship = this.world.player.position;
-    this.publishAt(this.playerHitEvent, ship.x, ship.y, 0, 0);
-  }
-
-  /**
-   * The bomb (02-sequence-bomb, GDD v0.8 §4.5): `BOMB_USED` first, then every enemy bullet is
-   * cancelled and every enemy on the field takes 30 level-1 shots once, through the normal kill
-   * path. Enemies still outside the field are untouched.
-   */
-  private detonate(): void {
-    const ship = this.world.player.position;
-    this.publishAt(this.bombUsedEvent, ship.x, ship.y, 0, 0);
-    this.world.cancelEnemyBullets();
-    const enemies = this.world.enemies;
-    for (let i = 0; i < enemies.count; i += 1) {
-      const enemy = enemies.at(i);
-      if (enemy.spent || !this.world.isOnField(enemy)) continue;
-      const destroyed = applyDamage(enemy, KitTuning.bombDamage);
-      this.enemyHit(enemy);
-      if (destroyed) this.destroyEnemy(enemy);
-    }
-    // The boss takes the bomb only while it fights; in WARNING and ENTERING it is untouched.
-    if (this.world.boss.isTargetable()) this.damageBoss(KitTuning.bombDamage);
   }
 }
 

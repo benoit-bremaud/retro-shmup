@@ -110,7 +110,7 @@ describe('Run — the cargo drops at 100 % (GDD v0.8 §5.2)', () => {
     });
     const carrier = carrierFrom(-16, 64);
     carrier.position.x = 100;
-    run.destroyEnemy(carrier);
+    run.rules.destroyEnemy(carrier);
     expect(log).toEqual([`${String(PickupKind.Shield)}@100,64`]);
     expect(draws).toBe(0);
   });
@@ -145,8 +145,8 @@ describe('Player — Shield, Bomb and 1-UP with the cap rule (GDD v0.8 §4.6)', 
     const run = new Run();
     const shield = new Pickup();
     shield.spawn(PickupKind.Shield, 0, 0, 1);
-    run.pickupCollected(shield);
-    run.pickupCollected(shield);
+    run.rules.pickupCollected(shield);
+    run.rules.pickupCollected(shield);
     expect([run.snapshot().shield, run.snapshot().score]).toEqual([true, 1000]);
   });
 });

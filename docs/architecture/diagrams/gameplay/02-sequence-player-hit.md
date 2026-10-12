@@ -23,6 +23,7 @@ title: sd — the player is hit
 sequenceDiagram
   autonumber
   participant Run as Run
+  participant Rules as RunRules
   participant CR as CollisionResolver
   participant Pl as Player
   participant Wp as Weapon
@@ -31,7 +32,7 @@ sequenceDiagram
   participant SK as ScoreKeeper
   participant P as RunPresenter
 
-  Run->>CR: resolve(world, run as HitRules)
+  Run->>CR: resolve(world, run.rules as HitRules)
   Note over CR: enemy bullet or body overlaps the player hitbox
   CR->>Pl: hit()
   alt [Entering, Invulnerable or Dead]
@@ -41,26 +42,26 @@ sequenceDiagram
     Note over Pl: shield = false, Invulnerable for 0.5 s, blink count restarted
     Pl-->>CR: ABSORBED
     Note over CR: the bullet's spent = true, released at step 6 (a body is unaffected)
-    CR->>Run: shieldBroken()
-    Run->>Bus: publish PLAYER_HIT
+    CR->>Rules: shieldBroken()
+    Rules->>Bus: publish PLAYER_HIT
     Bus->>P: shield break effect and SFX
   else [Vulnerable, no shield]
     Note over Pl: lives −= 1, state Dead
     Pl-->>CR: DIED
     Note over CR: the bullet's spent = true, released at step 6 (a body is unaffected)
-    CR->>Run: playerDied()
-    Note over Run: bombs = DifficultyProfile.bombsPerLife, at once — the HUD shows them during the explosion
-    Run->>Wp: powerDown()
-    Wp-->>Run: powerDropped — true if the level dropped, false at level 1
+    CR->>Rules: playerDied()
+    Note over Rules: bombs = DifficultyProfile.bombsPerLife, at once — the HUD shows them during the explosion
+    Rules->>Wp: powerDown()
+    Wp-->>Rules: powerDropped — true if the level dropped, false at level 1
     opt [powerDropped, the last life included]
-      Run->>W: spawnPickup(P of the current weapon kind, death x, death y, RELEASE)
+      Rules->>W: spawnPickup(P of the current weapon kind, death x, death y, RELEASE)
       Note over W: rises linearly over 0.8 s to y = max(death y − 48, 24), then falls at 20 px/s — x fixed at the death x, no sway
-      W-->>Run: spawned — false when the pickup pool is full
+      W-->>Rules: spawned — false when the pickup pool is full
       opt [spawned]
-        Run->>Bus: publish PICKUP_SPAWNED (detail = kind)
+        Rules->>Bus: publish PICKUP_SPAWNED (detail = kind)
       end
     end
-    Run->>Bus: publish PLAYER_DIED
+    Rules->>Bus: publish PLAYER_DIED
     activate Bus
     Bus->>SK: chain reset to ×1, LevelTally.lifeLost = true — the no-miss lost
     Bus->>P: explosion, death SFX, shake if enabled
@@ -78,7 +79,7 @@ sequenceDiagram
   `05-state-player` either respawns the ship or, with no life left, sets the run outcome to
   `GAME_OVER` (GDD v0.4 §4.4 — the last explosion plays out).
 - **The player decides the outcome, the run applies the penalties**: `Player.hit()` returns
-  `IGNORED`, `ABSORBED` or `DIED`; `Run.playerDied()` applies what needs the difficulty profile
+  `IGNORED`, `ABSORBED` or `DIED`; `RunRules.playerDied()` applies what needs the difficulty profile
   and the world — bombs, power, release.
 - **No release at power 1** (GDD v0.2 §4.4): `powerDown()` returns `false` and nothing spawns.
   The weapon kind never changes on death.
@@ -91,7 +92,7 @@ sequenceDiagram
   Game over, and the rule stays uniform.
 - **Shield** (GDD v0.8 §4.4): a bullet or a body contact both consume the charge; the bullet is
   spent, the body survives. `PLAYER_HIT` is published by
-  `HitRules.shieldBroken()`, which `Run` realizes.
+  `HitRules.shieldBroken()`, which `RunRules` realizes.
 - **Order**: the release pickup spawns before `PLAYER_DIED` is published, so every listener sees
   a consistent world; `ScoreKeeper` resets the chain before the presenter reacts.
 - **Bombs reset to the difficulty value** (`bombsPerLife`, GDD §10), not to a literal.

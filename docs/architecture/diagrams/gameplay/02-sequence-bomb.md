@@ -25,6 +25,7 @@ title: sd — the player drops a bomb
 sequenceDiagram
   autonumber
   participant Run as Run
+  participant Rules as RunRules
   participant Pl as Player
   participant W as World
   participant E as Enemy
@@ -41,21 +42,22 @@ sequenceDiagram
     else [bombs > 0 and Vulnerable or Invulnerable]
       Note over Pl: bombs −= 1, state Invulnerable, timer = max(timer, 1 s)
       Pl-->>Run: true
-      Run->>Bus: publish BOMB_USED (position = the ship)
+      Run->>Rules: detonate()
+      Rules->>Bus: publish BOMB_USED (position = the ship)
       Bus->>SK: LevelTally.bombUsed = true — the no-bomb bonus lost
       Bus->>P: bomb flash and field shake if enabled, bomb SFX
-      Run->>W: cancelEnemyBullets()
+      Rules->>W: cancelEnemyBullets()
       Note over W: every live enemy bullet spent — released at step 6
       loop each live enemy E whose box overlaps the field
-        Run->>E: applyDamage(E, 300 tenths)
-        E-->>Run: crossed
-        Run->>Run: enemyHit(E) — ENEMY_HIT, white flash
+        Rules->>E: applyDamage(E, 300 tenths)
+        E-->>Rules: crossed
+        Rules->>Rules: enemyHit(E) — ENEMY_HIT, white flash
         opt [crossed]
-          Run->>Run: destroyEnemy(E, BOMB) — score, chain, drop or cargo, formation count
+          Rules->>Rules: destroyEnemy(E, BOMB) — score, chain, drop or cargo, formation count
         end
       end
       opt [the boss is FIGHTING]
-        Run->>Run: damageBoss(300 tenths) — phases per threshold crossed (02-sequence-boss-fight)
+        Rules->>Rules: damageBoss(300 tenths) — phases per threshold crossed (02-sequence-boss-fight)
       end
     end
   end
