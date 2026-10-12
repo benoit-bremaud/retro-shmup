@@ -55,7 +55,8 @@ flowchart LR
 
 ## 3. UML study — index
 
-Status: complete for 1.0 (2026-10-08).
+Status: complete for 1.0 (2026-10-08); the bomb sequence added with the player-kit design
+(2026-10-12, #24).
 
 | Folder | Diagram | Question it answers |
 |---|---|---|

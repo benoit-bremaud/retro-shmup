@@ -87,6 +87,7 @@ export interface Simulation {
   step(dt: number, frame: Readonly<IntentFrame>): void;
 }
 
+/** What the presenter and the scene machine read of a run, never write (class diagram, view A). */
 export interface RunView {
   outcome(): RunOutcome;
   snapshot(): WorldSnapshot;
@@ -135,7 +136,7 @@ export class Run implements Simulation, RunView, HitRules, EnemySpawner {
     this.world.player.update(frame, dt, this.world);
     // (3) a bomb pressed in control goes off, before this step's collisions.
     if ((frame.pressed & Button.Bomb) !== 0 && this.world.player.useBomb()) this.detonate();
-    // (4) enemies move and attack, then every bullet moves.
+    // (4) enemies move and attack, then every bullet and every pickup moves.
     this.world.moveEnemies(dt);
     this.world.moveBullets(dt);
     this.world.movePickups();
@@ -178,8 +179,8 @@ export class Run implements Simulation, RunView, HitRules, EnemySpawner {
 
   /**
    * `HitRules`: marks the enemy; it is released at step 6, so the event carries all it needs.
-   * Then its cargo or its drop, and its formation's P (02-sequence-enemy-destroyed): `PICKUP_SPAWNED` follows,
-   * once per pickup that exists.
+   * Then its cargo or its drop, and its formation's P (02-sequence-enemy-destroyed):
+   * `PICKUP_SPAWNED` follows, once per pickup that exists.
    */
   destroyEnemy(enemy: Enemy): void {
     enemy.spent = true;

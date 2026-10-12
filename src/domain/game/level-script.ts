@@ -15,8 +15,9 @@ export interface ScriptEvent extends SpawnSpec {
 }
 
 /**
- * A level script. The enemies brick implements a subset (04-class-domain, brick subsets): its
- * events and the interim `loopAt`; the warning and the boss arrive, required, with the level brick.
+ * A level script, a subset until the level brick (04-class-domain, brick subsets): its events, the
+ * interim `loopAt` and the formation colour; the warning and the boss arrive, required, with the
+ * level brick (F).
  */
 export interface LevelScript {
   readonly events: readonly ScriptEvent[];

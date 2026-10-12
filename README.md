@@ -20,20 +20,33 @@ per brick, up to level 1 at release quality. Every merge to `main` is playable a
 
 What the current build plays:
 
-- **Enemies**: Popcorn formations, Divers and Gunners from the first rows of level 1, looping
-  every 45 s until the level brick; aimed bullets, contact hits.
-- **Rules**: 3 lives, a 4 × 4 hitbox, death, respawn with invulnerability, the Spread at power
-  level 1; score with a chain multiplier ×1 to ×8; an arcade Game over over the running wave.
+- **Enemies**: Popcorn formations, Divers and Gunners from the first rows of level 1, and two
+  Carriers crossing the field, one with a Shield, one with a Bomb; the rows loop every 45 s until
+  the level brick; aimed bullets, contact hits.
+- **Player kit**: the Spread (red) and the Laser (blue) on five shared power levels, the weapon
+  chosen by the colour of the last P caught; Laser bolts pass through up to three enemies. A P
+  drops from Gunners (30 %) and from every fully destroyed Popcorn formation. Shield, Bomb and
+  1-UP pickups, with a 1 000-point bonus at the cap (1-UP Carriers arrive with the level brick).
+  Bombs, 2 per life up to 5, cancel every enemy bullet and hit every enemy on the field; the
+  shield absorbs one hit; a death costs a power level, released as a P to catch back, and resets
+  the bombs to 2.
+- **Rules**: 3 lives, a 4 × 4 hitbox, respawn with invulnerability; score with a chain
+  multiplier ×1 to ×8; an arcade Game over over the running wave.
 - **Screens**: title, play, pause with a 3-2-1 count-in, Game over; a landscape screen with side
-  HUD bands, or a portrait screen with a top HUD strip on phones.
-- **Devices**: keyboard (arrows or `W A S D`, fire `Space` / `Z`, pause `P` / `Esc`, `Enter`),
-  touch (the ship follows the finger, autofire, a pause button), mouse (crosshair, autofire)
-  and gamepad (stick or d-pad, `A` fire, `Start` pause and confirm). The bomb inputs are wired
-  but have no effect until the player kit.
+  HUD bands, or a portrait screen with a top HUD strip on phones. The bomb flash and the field
+  shake are off by default under reduced motion.
+- **Devices**:
+  - keyboard: arrows or `W A S D` move, `Space` / `Z` fire, `X` / `Left Shift` bomb, `P` / `Esc`
+    pause, `Enter` confirm;
+  - touch: the ship follows the finger 32 px above it with autofire, a second finger on the
+    field bombs, a pause button in the HUD, any tap resumes;
+  - mouse: the ship follows the crosshair with autofire, a right click on the field bombs, a left
+    click taps;
+  - gamepad: stick or d-pad, `A` fire, `B` bomb, `Start` pause and confirm.
 
-Next: the player kit — Spread and Laser on five power levels, pickups, bombs, shield, the
-Carrier (GDD v0.8, ADR-0019). To run the game locally: `pnpm install` then `pnpm dev`; see
-CONTRIBUTING.md.
+Play it at <https://retro-shmup.pages.dev>, or locally with `pnpm install` then `pnpm dev` (see
+CONTRIBUTING.md). Next: the level brick (F) — the Heavy, the ring and fan attacks, the 1-UP
+Carriers, the warning, the level-1 boss and the end-of-level tally.
 
 Roadmap (GDD section 11):
 
@@ -128,9 +141,10 @@ Every numeric value is an initial setting to be tuned in playtests; the rules th
   place. Design changes go through a GDD revision in its own PR.
 - **Design before code**: a feature is coded only after its GDD rules exist and its UML diagrams
   are validated.
-- **Quality gate, local first** (ADR-0007): git hooks run gitleaks, lint, typecheck, the tests
-  with coverage and the local SonarQube quality gate before every push; CI keeps only Gitleaks
-  and a light lint / typecheck / test job.
+- **Quality gate, local first** (ADR-0007, ADR-0013): git hooks run gitleaks, lint, typecheck,
+  the tests with coverage, `pnpm audit` and the local SonarQube quality gate before every push;
+  CI keeps a light `ci.yml` (lint, typecheck, format, tests, build) and the security workflows
+  (Gitleaks, CodeQL, Dependency Review, OSSF Scorecard).
 
 ## Licence
 

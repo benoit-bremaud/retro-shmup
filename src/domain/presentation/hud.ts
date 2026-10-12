@@ -43,8 +43,9 @@ export function drawHudFrame(render: RenderPort): void {
 }
 
 /**
- * Draws the HUD contents (GDD §9.2) at the positions of the current screen: the score, the
- * multiplier, the chain bar and the reserve lives (the ship in play not counted). Allocates nothing.
+ * Draws the HUD contents (GDD v0.8 §9.2) at the positions of the current screen: the score, the
+ * multiplier, the chain bar, the reserve lives (the ship in play not counted), the bombs, the
+ * shield while held, and the weapon badge with its five power pips. Allocates nothing.
  */
 export function drawHud(render: RenderPort, snapshot: WorldSnapshot): void {
   render.setRegion('hud');

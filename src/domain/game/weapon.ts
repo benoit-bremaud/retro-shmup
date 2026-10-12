@@ -144,8 +144,9 @@ export class Weapon {
   }
 
   /**
-   * A P of `kind` caught (GDD v0.8 §4.6): it selects that weapon, keeping the level and the
-   * cooldown, and raises the level by one. Returns false at level 5, where the level cannot rise.
+   * A P of `kind` caught (GDD v0.8 §4.6): it selects that weapon, keeping the shared level and the
+   * cooldown, then raises the level by one. Returns false at level 5 (the weapon still switches),
+   * so the run pays the cap bonus.
    */
   powerUp(kind: WeaponKind): boolean {
     this.currentKind = kind;

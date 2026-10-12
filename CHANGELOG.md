@@ -25,3 +25,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the screen is rotated (#22).
 - Gamepad controls: stick with a radial dead zone or d-pad, `A` fire, `Start` pause and confirm,
   a pause when the pad is lost (#23).
+- Seeded drops per run: Gunners drop a red or blue P at 30 %, every fully destroyed Popcorn
+  formation drops a P of the level's colour; pickups fall with a sway (#26).
+- Spread and Laser on five shared power levels; the Laser passes through up to three enemies,
+  nearest first; HUD weapon badge and power pips (#27).
+- The Carrier, crossing the field with a cargo it always drops; Shield, Bomb and 1-UP pickups
+  with a 1 000-point bonus at the cap; HUD bombs and shield (#28).
+- Bombs (`X` / `Left Shift`, gamepad `B`, right click, a second finger): every enemy bullet
+  cancelled, every enemy on the field hit, 1 s of invulnerability; the shield absorbs one hit; a
+  death costs a power level, released as a P, and resets the bombs to 2; bomb flash and field
+  shake, off by default under reduced motion (#29).
