@@ -1,6 +1,7 @@
 # ADR-0022: Level brick — strategy factories, the boss outside the enemy pool, a one-level slice ending at RUN_CLEARED
 
-**Status:** Accepted — 2026-10-12. **Partially supersedes ADR-0003**: in decision 1, the sentence
+**Status:** Accepted — 2026-10-12. **Partially superseded by ADR-0023** (decisions 1, 2, 3 and 10: the
+pattern factories, the volley count, the `BossDefinition` and the delivery of F-2). **Partially supersedes ADR-0003**: in decision 1, the sentence
 "A `Boss` is an `Enemy` with a phase state machine and a timer." becomes "A `Boss` is a `Body`,
 like an `Enemy`, with a state, phase data and a timer; it is not an `Enemy` and does not come
 from the enemy pool" (decision 3 below). Every other part of ADR-0003 stands: composition, no

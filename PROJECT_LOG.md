@@ -8,6 +8,31 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-12
 
+### PR #37 merged (`1a6a2c3`) — audit pass, docs and tests
+
+- TSDoc where the audit found gaps, an EN/FR key-parity test, sturdier assertions (580 tests),
+  the ADR-0022 entry in the README, the traceability scope for ADR-0016 and ADR-0017, the #35 and
+  #36 log entries.
+
+### Design of the boss fight F-2 (branch `docs/f2-design`) — ADR-0023
+
+- The planning of F-2 against the code at `1a6a2c3` found points ADR-0022 does not settle: the
+  Cruiser's phase 2 needs two periods but `Body` has one timer; the sway must continue to x 120
+  across a phase change; `BossDefinition` and the bonus owner differ between the ADR and the
+  diagram; the WARNING blink has no step count; F-2 as one PR is too large.
+- Owner decisions (scored recommendations, deeper analysis asked twice): every pattern split into
+  `fire` and `tick`; `sequenceAttack` takes groups and one timer (the triple fires on every
+  second ring volley, same instants as two timers, `parallelAttack` deferred until a boss needs
+  independent periods: 86 against 79); `Body.age` = steps since the current movement began;
+  `BossTuning` holds 10 000 + 100 per second, `bonus` and `bonusPerSecond` leave
+  `BossDefinition`; the boss view gains `stateSteps`; F-2 in three PRs (domain with a grey boss
+  and an interim banner, HUD, game feel); a `Run` size checkpoint (about 450 lines or a sixth
+  boss-touching method) for extracting `RunRules`.
+- Changes: ADR-0023 (partially supersedes ADR-0022 decisions 1, 2, 3 and 10), the class diagram,
+  `05-state-boss` (the end of the sequence no longer fires `LEVEL_CLEARED` by itself), the build
+  order of `05-state-scenes`, the decision index, the README and the traceability matrix. No GDD
+  rule changes.
+
 ### PR #36 merged (`76c342d`) — F-1, the Heavy and the 120 s level-1 script
 
 - Squash-merged with 7 green checks and a Codex review without comment. The branch had been
