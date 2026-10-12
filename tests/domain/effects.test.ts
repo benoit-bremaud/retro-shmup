@@ -36,6 +36,21 @@ describe('Explosions — small bursts at destroyed enemies (GDD §9.4)', () => {
     expect(explosions.active).toBe(0);
   });
 
+  it.each([
+    [0, 8],
+    [1, 16],
+    [2, 28],
+  ])(
+    'starts tier %i at half its largest size (%i px): Small 16, Medium 32, Large 56',
+    (tier, px) => {
+      const explosions = new Explosions();
+      explosions.record(100, 100, tier);
+      const render = new RecordingRender();
+      explosions.draw(render);
+      expect(render.rectsOf(Palette.explosionHot)[0]).toMatchObject({ w: px, h: px });
+    },
+  );
+
   it('holds at most 16 at once, recycling the oldest first', () => {
     const explosions = new Explosions();
     for (let i = 0; i < 16; i += 1) {

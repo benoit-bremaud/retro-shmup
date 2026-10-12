@@ -45,6 +45,8 @@ export const Palette = {
   laserShot: '#63b3ed99',
   // The Carrier and the other pickups (GDD v0.8 §4.6, §5.2.1), and their HUD icons.
   carrier: '#48bb78',
+  // The Heavy, both its ring and its fan form (GDD v0.10 §5.2.1).
+  heavy: '#c6a15b',
   shieldPickup: '#b794f4',
   bombPickup: '#ecc94b',
   oneUpPickup: '#68d391',

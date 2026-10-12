@@ -20,13 +20,13 @@ per brick, up to level 1 at release quality. Every merge to `main` is playable a
 
 What the current build plays:
 
-- **Enemies**: Popcorn formations, Divers and Gunners from the first rows of level 1, and two
-  Carriers crossing the field, one with a Shield, one with a Bomb; the rows loop every 45 s until
-  the level brick; aimed bullets, contact hits.
+- **Enemies**: the 120 s script of level 1 — Popcorn formations, Divers, Gunners, Heavies firing
+  turning rings or aimed fans, and two Carriers crossing the field, one with a Shield, one with a
+  1-UP; the script loops every 120 s until the boss arrives; aimed bullets, contact hits.
 - **Player kit**: the Spread (red) and the Laser (blue) on five shared power levels, the weapon
   chosen by the colour of the last P caught; Laser bolts pass through up to three enemies. A P
   drops from Gunners (30 %) and from every fully destroyed Popcorn formation. Shield, Bomb and
-  1-UP pickups, with a 1 000-point bonus at the cap (1-UP Carriers arrive with the level brick).
+  1-UP pickups, with a 1 000-point bonus at the cap; Heavies drop a Bomb or a Shield at 60 %.
   Bombs, 2 per life up to 5, cancel every enemy bullet and hit every enemy on the field; the
   shield absorbs one hit; a death costs a power level, released as a P to catch back, and resets
   the bombs to 2.
@@ -45,8 +45,8 @@ What the current build plays:
   - gamepad: stick or d-pad, `A` fire, `B` bomb, `Start` pause and confirm.
 
 Play it at <https://retro-shmup.pages.dev>, or locally with `pnpm install` then `pnpm dev` (see
-CONTRIBUTING.md). Next: the level brick (F) — the Heavy, the ring and fan attacks, the 1-UP
-Carriers, the warning, the level-1 boss and the end-of-level tally.
+CONTRIBUTING.md). Next: the rest of the level brick (F) — the warning, the level-1 boss and the
+end-of-level tally.
 
 Roadmap (GDD section 11):
 

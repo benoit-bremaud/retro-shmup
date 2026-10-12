@@ -19,8 +19,9 @@ export const EffectTuning = {
 } as const;
 
 const FLASH_SLOTS = 16;
-// Explosion square size per size tier (small, medium), at its largest.
-const TIER_SIZE = [16, 32] as const;
+// Explosion square size per size tier (small, medium, large), at its largest: the tier's sprite
+// width (GDD v0.10 §5.2.1: the Heavy is 56 px wide).
+const TIER_SIZE = [16, 32, 56] as const;
 
 /**
  * White flashes of hit enemies, keyed by serial (never by pool slot), in a fixed ring: recording

@@ -410,7 +410,7 @@ describe('Formations — refused members never count against the player (GDD v0.
     const world = new World();
     const director = new LevelDirector(LEVEL_1);
     let most = 0;
-    for (let i = 0; i < 3 * 2700; i += 1) {
+    for (let i = 0; i < 3 * 7200; i += 1) {
       director.tick(world);
       world.moveEnemies(DT);
       world.moveBullets(DT);
