@@ -295,7 +295,7 @@ describe('Level simulation — the Cruiser, headless (GDD v0.10 §6, §6.1)', ()
       const run = new Run({ seed: 1, script: { ...LEVEL_1, boss: HELD_IN_PHASE_2 } });
       let i = 0;
       while (run.snapshot().boss.state !== BossState.Fighting) run.step(DT, inputs(i++));
-      run.damageBoss(1);
+      run.rules.damageBoss(1);
       expect(run.snapshot().boss.phase).toBe(1);
       let peak = 0;
       while (run.snapshot().boss.state === BossState.Fighting) {

@@ -49,6 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The rules a run applies (kills, drops, the boss, the bomb) move from `Run` to a `RunRules` class,
+  with no change in behaviour (ADR-0023 decision 7).
 - The mouse fires while the left button pressed on the field is held and touch while a finger
   steers, instead of always (ADR-0020); enemy bullets are drawn larger with a white core and
   player shots shorter and translucent, so the danger reads first (GDD v0.9).

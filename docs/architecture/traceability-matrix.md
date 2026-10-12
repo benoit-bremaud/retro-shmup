@@ -34,7 +34,7 @@ whose conditional steps live in the use-case text (proportionality rule of the s
 
 ## 2. Classes of the domain model → where they are used
 
-SD-boss (added with the level brick) uses `Run`, `World`, `LevelDirector`, `EnemySpawner` (`startBoss`), `HitRules` (`damageBoss`), `CollisionResolver`, `Boss`, `BossState`, `EventBus`, `ScoreKeeper`, `LevelTally` and `RunView` (`outcome`, `tally`); it is not a column below.
+SD-boss (added with the level brick) uses `Run`, `RunRules`, `World`, `LevelDirector`, `EnemySpawner` (`startBoss`), `HitRules` (`damageBoss`), `CollisionResolver`, `Boss`, `BossState`, `EventBus`, `ScoreKeeper`, `LevelTally` and `RunView` (`outcome`, `tally`); it is not a column below.
 
 | Class (CD) | SD-tick | SD-kill | SD-hit | SD-bomb | STM | GDD |
 |---|---|---|---|---|---|---|

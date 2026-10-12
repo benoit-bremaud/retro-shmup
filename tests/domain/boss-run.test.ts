@@ -138,7 +138,7 @@ describe('Run.damageBoss (ADR-0022 decision 5)', () => {
   it('lowers the HP, publishes ENEMY_HIT with the boss serial and scores 0', () => {
     const run = fighting();
     const log = logOf(run, [GameEventKind.EnemyHit, GameEventKind.BossPhaseChanged]);
-    run.damageBoss(shots(10));
+    run.rules.damageBoss(shots(10));
     expect(run.snapshot().boss.hpRatio).toBeCloseTo(0.9666666, 6);
     expect(log).toHaveLength(1);
     expect(log[0]?.subject).toBe(BOSS_SERIAL);
@@ -148,11 +148,11 @@ describe('Run.damageBoss (ADR-0022 decision 5)', () => {
   it('publishes BOSS_PHASE_CHANGED once at 66 % HP, with the new phase as detail', () => {
     const run = fighting();
     const log = logOf(run, [GameEventKind.BossPhaseChanged]);
-    run.damageBoss(1019);
+    run.rules.damageBoss(1019);
     expect(log).toHaveLength(0);
-    run.damageBoss(1);
+    run.rules.damageBoss(1);
     expect(log).toEqual([expect.objectContaining({ detail: 1 })]);
-    run.damageBoss(1);
+    run.rules.damageBoss(1);
     expect(log).toHaveLength(1);
     expect(run.snapshot().boss.phase).toBe(1);
   });
@@ -160,7 +160,7 @@ describe('Run.damageBoss (ADR-0022 decision 5)', () => {
   it('publishes one BOSS_PHASE_CHANGED per threshold a single hit crosses', () => {
     const run = fighting(quiet([1980, 990]));
     const log = logOf(run, [GameEventKind.BossPhaseChanged]);
-    run.damageBoss(2100);
+    run.rules.damageBoss(2100);
     expect(log.map((e) => e.detail)).toEqual([1, 2]);
     expect(run.snapshot().boss.phase).toBe(2);
   });
@@ -171,7 +171,7 @@ describe('Run.damageBoss (ADR-0022 decision 5)', () => {
     expect(run.snapshot().enemyBullets.count).toBeGreaterThan(0);
     const log = logOf(run, [GameEventKind.BossDestroyed, GameEventKind.BossPhaseChanged]);
     const left = run.snapshot().boss.secondsLeft;
-    run.damageBoss(3000);
+    run.rules.damageBoss(3000);
     expect(log).toEqual([
       expect.objectContaining({ kind: GameEventKind.BossDestroyed, value: left }),
     ]);
@@ -185,7 +185,7 @@ describe('Run.damageBoss (ADR-0022 decision 5)', () => {
     steps(run, 100);
     expect(run.snapshot().boss.secondsLeft).toBe(89);
     const multiplier = run.snapshot().multiplier;
-    run.damageBoss(3000);
+    run.rules.damageBoss(3000);
     expect(run.snapshot().score).toBe(10000 + 100 * 89);
     expect(run.snapshot().multiplier).toBe(multiplier);
   });
@@ -236,10 +236,10 @@ describe('Run — the bomb and the boss (02-sequence-bomb, GDD v0.10 §6)', () =
   it('advances a phase when the bomb crosses the threshold, and destroys at 0 HP', () => {
     const run = fighting();
     const log = logOf(run, [GameEventKind.BossPhaseChanged, GameEventKind.BossDestroyed]);
-    run.damageBoss(1700);
+    run.rules.damageBoss(1700);
     steps(run, 1, pressing(Button.Bomb));
     expect(log.map((e) => e.kind)).toEqual([GameEventKind.BossPhaseChanged]);
-    run.damageBoss(shots(0) + 3000 - 1700 - KitTuning.bombDamage - 1);
+    run.rules.damageBoss(shots(0) + 3000 - 1700 - KitTuning.bombDamage - 1);
     expect(run.snapshot().boss.hpRatio).toBeGreaterThan(0);
     steps(run, 1, pressing(Button.Bomb));
     expect(log.map((e) => e.kind)).toEqual([
@@ -269,7 +269,7 @@ describe('Run — the end of the fight (GDD v0.10 §6)', () => {
     const tie = fighting(short);
     const tieLog = logOf(tie, kinds);
     steps(tie, expiry - 1);
-    tie.damageBoss(3000);
+    tie.rules.damageBoss(3000);
     steps(tie, 1);
     expect(tieLog.map((e) => e.kind)).toEqual([GameEventKind.BossDestroyed]);
     expect(tieLog[0]?.value).toBe(1);
@@ -300,7 +300,7 @@ describe('Run — the end of the fight (GDD v0.10 §6)', () => {
   it('publishes LEVEL_CLEARED once, 2 s after the kill, with the bombs left, and ends the run', () => {
     const run = fighting();
     const log = logOf(run, [GameEventKind.LevelCleared]);
-    run.damageBoss(3000);
+    run.rules.damageBoss(3000);
     steps(run, 119);
     expect(log).toHaveLength(0);
     expect(run.outcome()).toBe(RunOutcome.Playing);
@@ -317,14 +317,14 @@ describe('Run — the end of the fight (GDD v0.10 §6)', () => {
     const script = testScript([], { warningAt: WARNING_AT, boss: quiet() });
     const run = new Run({ levels: [script, script] });
     stepUntilBoss(run, BossState.Fighting);
-    run.damageBoss(3000);
+    run.rules.damageBoss(3000);
     steps(run, 120);
     expect(run.outcome()).toBe(RunOutcome.LevelCleared);
   });
 
   it('spends the ship bullets at the level end', () => {
     const run = fighting();
-    run.damageBoss(3000);
+    run.rules.damageBoss(3000);
     const fire = createIntentFrame();
     fire.held = Button.Fire;
     steps(run, 119, fire);
@@ -348,7 +348,7 @@ describe('Run — the end of the fight (GDD v0.10 §6)', () => {
   it('defers the level end while the ship is Dead, and clears it when the ship is back', () => {
     const run = fighting();
     const log = logOf(run, [GameEventKind.LevelCleared]);
-    run.damageBoss(3000);
+    run.rules.damageBoss(3000);
     steps(run, 100);
     hitShip(run);
     expect(run.snapshot().player.state).toBe(PlayerState.Dead);
@@ -370,7 +370,7 @@ describe('Run — the end of the fight (GDD v0.10 §6)', () => {
     hitShip(run);
     steps(run, 100 + 30 + 90 + 10);
     expect(run.snapshot().player.state).toBe(PlayerState.Vulnerable);
-    run.damageBoss(3000);
+    run.rules.damageBoss(3000);
     steps(run, 100);
     hitShip(run);
     steps(run, 200);

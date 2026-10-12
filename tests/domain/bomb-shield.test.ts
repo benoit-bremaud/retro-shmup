@@ -133,7 +133,7 @@ describe('Player — shield and death (GDD v0.8 §4.4)', () => {
 function collect(run: Run, kind: PickupKind): void {
   const pickup = new Pickup();
   pickup.spawn(kind, 0, 0, 1);
-  run.pickupCollected(pickup);
+  run.rules.pickupCollected(pickup);
 }
 
 /** Steps a run idle until `kind` is published, at most `limit` steps; true if it was. */
