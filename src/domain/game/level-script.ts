@@ -1,4 +1,4 @@
-import { DIVER, GUNNER, POPCORN } from './enemy';
+import { CARRIER, DIVER, GUNNER, POPCORN } from './enemy';
 import type { EnemyArchetype, SpawnSpec } from './enemy';
 import { PickupKind } from './pickup';
 
@@ -28,7 +28,10 @@ export interface LevelScript {
 
 const POPCORN_INTERVAL = 1 / 3;
 
-/** The first enemy rows of level 1 (GDD v0.6 §7.2.1), looping at 45 s, the Heavy's slot. */
+/**
+ * The first enemy rows of level 1 (GDD v0.8 §7.2.1), looping at 45 s, the Heavy's slot. Interim
+ * (meta/05-state-scenes): the Bomb Carrier at 40 s until the level brick brings the Heavy.
+ */
 export const LEVEL_1: LevelScript = {
   loopAt: 45,
   dominantColour: PickupKind.PRed,
@@ -47,6 +50,8 @@ export const LEVEL_1: LevelScript = {
     { at: 18, archetype: GUNNER, count: 1, spawn: { x: -16, y: 80 }, hover: { x: 60, y: 80 } },
     { at: 18, archetype: GUNNER, count: 1, spawn: { x: 256, y: 80 }, hover: { x: 180, y: 80 } },
     { at: 32, archetype: POPCORN, count: 8, interval: POPCORN_INTERVAL, spawn: { x: 120, y: -8 } },
+    { at: 28, archetype: CARRIER, count: 1, spawn: { x: -16, y: 64 }, cargo: PickupKind.Shield },
     { at: 32, archetype: GUNNER, count: 1, spawn: { x: 120, y: -16 }, hover: { x: 120, y: 80 } },
+    { at: 40, archetype: CARRIER, count: 1, spawn: { x: 256, y: 64 }, cargo: PickupKind.Bomb },
   ],
 };

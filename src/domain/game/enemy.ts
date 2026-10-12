@@ -4,7 +4,7 @@ import type { Body } from './body';
 import type { Formation } from './formation';
 import type { Vec2 } from './geometry';
 import type { MovementPattern } from './movements';
-import { DiveMovement, EnterHoldLeave, PathMovement } from './movements';
+import { CrossMovement, DiveMovement, EnterHoldLeave, PathMovement } from './movements';
 import { PickupKind } from './pickup';
 
 /** Size tier of a role (GDD §5.2): it scales the explosion. */
@@ -37,13 +37,15 @@ const NO_DROP: DropTable = { rate: 0, kinds: [] };
 
 /** A role as a data line (GDD §5.3, ADR-0003): stats plus one movement and one attack. */
 export interface EnemyArchetype {
-  readonly id: 'popcorn' | 'diver' | 'gunner';
+  readonly id: 'popcorn' | 'diver' | 'gunner' | 'carrier';
   readonly stats: EnemyStats;
   readonly movement: MovementPattern;
   readonly attack: AttackPattern;
   /** Its groups form formations (Popcorn only, GDD §5.2). */
   readonly formation: boolean;
   readonly drops: DropTable;
+  /** Its script rows carry a cargo it always drops (Carrier only, GDD v0.8 §5.2.1). */
+  readonly carriesCargo: boolean;
 }
 
 export const POPCORN: EnemyArchetype = {
@@ -53,6 +55,7 @@ export const POPCORN: EnemyArchetype = {
   attack: NoAttack,
   formation: true,
   drops: NO_DROP,
+  carriesCargo: false,
 };
 
 export const DIVER: EnemyArchetype = {
@@ -62,6 +65,7 @@ export const DIVER: EnemyArchetype = {
   attack: NoAttack,
   formation: false,
   drops: NO_DROP,
+  carriesCargo: false,
 };
 
 export const GUNNER: EnemyArchetype = {
@@ -72,6 +76,18 @@ export const GUNNER: EnemyArchetype = {
   formation: false,
   // GDD v0.8 §5.2: a P at 30 %, red or blue 50 / 50.
   drops: { rate: 0.3, kinds: [PickupKind.PRed, PickupKind.PBlue] },
+  carriesCargo: false,
+};
+
+export const CARRIER: EnemyArchetype = {
+  id: 'carrier',
+  stats: { hp: 40, width: 32, height: 32, score: 500, tier: SizeTier.Medium },
+  movement: CrossMovement,
+  attack: NoAttack,
+  formation: false,
+  // GDD v0.8 §5.2: no roll, its script cargo at 100 %.
+  drops: NO_DROP,
+  carriesCargo: true,
 };
 
 /** What a spawn reads of a script row. */
@@ -79,6 +95,8 @@ export interface SpawnSpec {
   readonly spawn: Readonly<Vec2>;
   readonly hover?: Readonly<Vec2>;
   readonly mirror?: boolean;
+  /** What a Carrier drops when destroyed (GDD v0.8 §5.2.1); only Carrier rows carry one. */
+  readonly cargo?: PickupKind;
 }
 
 /** A pooled enemy (class diagram: «pooled»): a Body plus the archetype it was spawned as. */
@@ -102,6 +120,8 @@ export class Enemy implements Body {
   archetype: EnemyArchetype = POPCORN;
   /** The Popcorn formation of this pass, if any. */
   formation: Formation | undefined;
+  /** Dropped at 100 % when destroyed, instead of the drop table's roll. */
+  cargo: PickupKind | undefined;
 
   /** Resets every field in one place, so a recycled enemy never inherits its predecessor's. */
   spawn(
@@ -112,6 +132,7 @@ export class Enemy implements Body {
   ): void {
     this.archetype = archetype;
     this.formation = formation;
+    this.cargo = spec.cargo;
     this.serial = serial;
     this.origin.x = spec.spawn.x;
     this.origin.y = spec.spawn.y;

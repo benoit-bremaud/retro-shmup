@@ -23,6 +23,14 @@ import type { RecordedRect } from '../support/recording-render';
 
 const HUD_LAYOUT = HUD_LAYOUTS.landscape;
 
+/** The left edge of each 8 × 8 icon drawn in `colour`: its widest rectangle spans the icon. */
+function iconLefts(render: RecordingRender, colour: string): number[] {
+  return render
+    .rectsOf(colour)
+    .filter((rect) => rect.w === 8)
+    .map((rect) => rect.x);
+}
+
 function hudOf(values: Partial<WorldSnapshot>, screen: ScreenLayout = LANDSCAPE): RecordingRender {
   const render = new RecordingRender();
   render.screen = screen;
@@ -45,6 +53,8 @@ function hudOf(values: Partial<WorldSnapshot>, screen: ScreenLayout = LANDSCAPE)
     pickups: empty,
     weaponKind: WeaponKind.Spread,
     power: 1,
+    bombs: 0,
+    shield: false,
     lives: 3,
     score: 0,
     multiplier: 1,
@@ -114,7 +124,7 @@ describe('drawHud — portrait strip (GDD v0.7 §9.2, meta/05-state-scenes devic
     expect(Math.min(...score.map((text) => text.x))).toBe(4);
     expect(render.texts.find((text) => text.y === portrait.multiplier.y)?.x).toBe(4);
     expect(render.rectsOf(Palette.chainTrack)[0]).toMatchObject({ x: 24, y: 21, w: 42, h: 4 });
-    expect(render.rectsOf(Palette.lifeIcon).map((icon) => icon.x)).toEqual([76, 88]);
+    expect(iconLefts(render, Palette.lifeIcon)).toEqual([76, 88]);
   });
 
   it("ends the chain bar under the score's last digit", () => {
@@ -137,7 +147,7 @@ describe('drawHud — portrait strip (GDD v0.7 §9.2, meta/05-state-scenes devic
     for (const text of render.texts) {
       expect(text.y + HUD_FONT_CELL.height).toBeLessThanOrEqual(HUD_STRIP_HEIGHT - 4);
     }
-    expect(render.rectsOf(Palette.lifeIcon)).toHaveLength(8);
+    expect(iconLefts(render, Palette.lifeIcon)).toHaveLength(8);
   });
 });
 
@@ -257,5 +267,26 @@ describe('drawHud — weapon badge and power pips (GDD v0.8 §9.2)', () => {
     expect(pips.map((r) => r.x)).toEqual([152, 158, 164, 170, 176]);
     expect(Math.max(...pips.map((r) => r.x + r.w))).toBe(179);
     expect(pips.every((r) => r.y === 19)).toBe(true);
+  });
+});
+
+describe('drawHud — bombs and shield (GDD v0.8 §9.2)', () => {
+  it('draws one plus per bomb and the shield square while a charge is held', () => {
+    const render = hudOf({ bombs: 5, shield: true });
+    expect(iconLefts(render, Palette.bombIcon)).toEqual([8, 20, 32, 44, 56]);
+    expect(render.rectsOf(Palette.bombIcon).every((r) => r.y >= 66 && r.y + r.h <= 74)).toBe(true);
+    expect(render.rectsOf(Palette.shieldIcon)[0]).toMatchObject({ x: 368, y: 100, w: 8 });
+    expect(hudOf({ shield: false }).drew(Palette.shieldIcon)).toBe(false);
+  });
+
+  it('keeps 5 bombs and the shield inside the portrait strip, left of the pause button', () => {
+    const render = hudOf({ bombs: 5, shield: true, lives: 9, power: 5 }, PORTRAIT);
+    expect(iconLefts(render, Palette.bombIcon)).toEqual([76, 88, 100, 112, 124]);
+    for (const rect of render.rects.filter((r) => r.region === 'hud' && r.y < 32)) {
+      if (rect.colour === Palette.hudBand || rect.colour === Palette.hudEdge) continue;
+      expect(rect.x + rect.w).toBeLessThanOrEqual(PORTRAIT_STRIP_EDGE.width - 4);
+      expect(rect.y + rect.h).toBeLessThanOrEqual(HUD_STRIP_HEIGHT - 4);
+    }
+    expect(render.rectsOf(Palette.shieldIcon)[0]).toMatchObject({ x: 172, y: 5 });
   });
 });

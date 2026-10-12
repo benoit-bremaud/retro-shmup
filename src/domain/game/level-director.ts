@@ -1,4 +1,5 @@
 import type { Formation } from './formation';
+import { FIELD_HEIGHT, FIELD_WIDTH } from './geometry';
 import type { LevelScript, ScriptEvent } from './level-script';
 import { toSteps } from './tuning';
 
@@ -53,10 +54,40 @@ function checkEvent(event: Readonly<ScriptEvent>, loopSteps: number): void {
       );
     }
   }
+  checkCargo(event, label);
   const last = toSteps(event.at) + (event.count - 1) * toSteps(event.interval ?? 0);
   if (last >= loopSteps) {
     throw new RangeError(`Level script: ${label} spawns past the loop point`);
   }
+}
+
+/**
+ * A Carrier row needs a cargo, no other row may carry one, and a Carrier spawns fully outside the
+ * field so its whole crossing is seen (GDD v0.8 §5.2.1).
+ */
+function checkCargo(event: Readonly<ScriptEvent>, label: string): void {
+  const carrier = event.archetype.carriesCargo;
+  if (carrier && event.cargo === undefined) {
+    throw new RangeError(`Level script: ${label} is a Carrier, it needs a cargo`);
+  }
+  if (!carrier && event.cargo !== undefined) {
+    throw new RangeError(`Level script: ${label} cannot carry a cargo`);
+  }
+  if (carrier && overlapsField(event)) {
+    throw new RangeError(`Level script: ${label} must spawn outside the field`);
+  }
+}
+
+function overlapsField(event: Readonly<ScriptEvent>): boolean {
+  const halfWidth = event.archetype.stats.width / 2;
+  const halfHeight = event.archetype.stats.height / 2;
+  const { x, y } = event.spawn;
+  return (
+    x + halfWidth > 0 &&
+    x - halfWidth < FIELD_WIDTH &&
+    y + halfHeight > 0 &&
+    y - halfHeight < FIELD_HEIGHT
+  );
 }
 
 /**

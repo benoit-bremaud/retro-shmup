@@ -1,6 +1,14 @@
 import type { Body } from './body';
 import type { Vec2 } from './geometry';
-import { DiverTuning, GunnerTuning, PopcornTuning, STEPS_PER_SECOND, toSteps } from './tuning';
+import { FIELD_WIDTH } from './geometry';
+import {
+  CarrierTuning,
+  DiverTuning,
+  GunnerTuning,
+  PopcornTuning,
+  STEPS_PER_SECOND,
+  toSteps,
+} from './tuning';
 
 /** What a strategy may read of the world (class diagram): the ship's position. */
 export interface WorldView {
@@ -101,5 +109,18 @@ export const EnterHoldLeave: MovementPattern = {
     }
     self.position.x += self.velocity.x * dt;
     self.position.y += self.velocity.y * dt;
+  },
+};
+
+/**
+ * The Carrier (GDD v0.8 §5.2.1): a straight horizontal crossing at 60 px/s, away from the side it
+ * spawned on — rightwards from a spawn left of the field's centre, leftwards otherwise. A closed
+ * form of the age; it never stops.
+ */
+export const CrossMovement: MovementPattern = {
+  tick(self: Body): void {
+    const heading = self.origin.x < FIELD_WIDTH / 2 ? 1 : -1;
+    self.position.x = self.origin.x + (heading * CarrierTuning.speed * self.age) / STEPS_PER_SECOND;
+    self.position.y = self.origin.y;
   },
 };

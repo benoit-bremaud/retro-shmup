@@ -331,6 +331,7 @@ classDiagram
     <<data>>
     +id: ArchetypeId
     +formation: boolean
+    +carriesCargo: boolean
   }
   class EnemyStats {
     <<data>>

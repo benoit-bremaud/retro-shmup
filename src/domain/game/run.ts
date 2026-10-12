@@ -66,6 +66,10 @@ export interface WorldSnapshot {
   readonly weaponKind: WeaponKind;
   /** The power level, 1 to 5 (the HUD pips). */
   readonly power: number;
+  /** Bombs in stock, 0 to 5. */
+  readonly bombs: number;
+  /** A shield charge is held. */
+  readonly shield: boolean;
   /** Lives left, the ship in play included; the HUD shows the reserve, `lives − 1`. */
   readonly lives: number;
   readonly score: number;
@@ -166,7 +170,7 @@ export class Run implements Simulation, RunView, HitRules, EnemySpawner {
 
   /**
    * `HitRules`: marks the enemy; it is released at step 6, so the event carries all it needs.
-   * Then its drop and its formation's P (02-sequence-enemy-destroyed): `PICKUP_SPAWNED` follows,
+   * Then its cargo or its drop, and its formation's P (02-sequence-enemy-destroyed): `PICKUP_SPAWNED` follows,
    * once per pickup that exists.
    */
   destroyEnemy(enemy: Enemy): void {
@@ -180,7 +184,7 @@ export class Run implements Simulation, RunView, HitRules, EnemySpawner {
     event.value = enemy.archetype.stats.score;
     event.detail = enemy.archetype.stats.tier;
     this.bus.publish(event);
-    const dropped = this.rollDrop(enemy);
+    const dropped = enemy.cargo ?? this.rollDrop(enemy);
     const droppedSpawned = dropped !== NONE && this.world.spawnPickup(dropped, x, y);
     enemy.formation?.memberDestroyed(x, y);
     const rewardSpawned = this.rewardIfCleared(enemy.formation);
@@ -277,6 +281,12 @@ function createSnapshot(world: World, scoreKeeper: ScoreKeeper): WorldSnapshot {
     },
     get power(): number {
       return world.player.power;
+    },
+    get bombs(): number {
+      return world.player.bombs;
+    },
+    get shield(): boolean {
+      return world.player.shield;
     },
     get lives(): number {
       return world.player.lives;

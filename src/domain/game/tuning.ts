@@ -101,6 +101,11 @@ export const GunnerTuning = {
   firePeriodSeconds: 1.5,
 } as const;
 
+/** Carrier (GDD v0.8 §5.2.1): a straight horizontal crossing that never stops. */
+export const CarrierTuning = {
+  speed: 60,
+} as const;
+
 /** The chain (GDD §8): a 2 s window, a step every 5 kills, capped at ×8. */
 export const ChainTuning = {
   windowSeconds: 2,
@@ -138,6 +143,9 @@ export const FORMATION_POOL_SIZE = 16;
 /** Caps of the player kit (GDD v0.8 §4.4, §4.6). */
 export const KitCaps = {
   maxPower: 5,
+  maxBombs: 5,
+  /** The HUD shows at most 9 lives (GDD §4.4). */
+  maxLives: 9,
   /** Paid when a pickup's effect cannot apply; never multiplied by the chain. */
   capBonus: 1000,
 } as const;

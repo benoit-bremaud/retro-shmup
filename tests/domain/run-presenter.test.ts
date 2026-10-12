@@ -4,7 +4,7 @@ import { WeaponKind } from '../../src/domain/game/weapon';
 import { PlayerState } from '../../src/domain/game/player';
 import type { PlayerSnapshot, WorldSnapshot } from '../../src/domain/game/run';
 import { Bullet } from '../../src/domain/game/bullet';
-import { DIVER, Enemy, GUNNER, POPCORN } from '../../src/domain/game/enemy';
+import { CARRIER, DIVER, Enemy, GUNNER, POPCORN } from '../../src/domain/game/enemy';
 import { Palette } from '../../src/domain/presentation/palette';
 import { RunPresenter } from '../../src/domain/presentation/run-presenter';
 import { EventBus } from '../../src/domain/game/events';
@@ -69,6 +69,8 @@ function snapshot(
     pickups: listOf<Pickup>([]),
     weaponKind: WeaponKind.Spread,
     power: 1,
+    bombs: 0,
+    shield: false,
     lives: 3,
     score: 0,
     multiplier: 1,
@@ -183,7 +185,8 @@ describe('RunPresenter — enemies, enemy bullets and the HUD (enemies brick)', 
     const render = new RecordingRender();
     presenter(render, true).draw(snapshot(ship(), [], { lives }), 0, 16);
     const drawn = render.rectsOf(Palette.lifeIcon);
-    expect(drawn).toHaveLength(icons);
+    // A life icon is a small ship: two rectangles.
+    expect(drawn).toHaveLength(2 * icons);
     for (const icon of drawn) {
       expect(icon.region).toBe('hud');
       expect(icon.x).toBeGreaterThanOrEqual(8);
@@ -229,5 +232,29 @@ describe('RunPresenter — shot colours per weapon (meta/05-state-scenes, player
     expect(render.rectsOf(Palette.laserShot)).toEqual([
       { region: 'field', x: 138, y: 76, w: 4, h: 48, colour: Palette.laserShot },
     ]);
+  });
+});
+
+describe('RunPresenter — the Carrier and the other pickups (player-kit additions)', () => {
+  it('draws the Carrier in its own colour', () => {
+    const render = new RecordingRender();
+    const carrier = enemyAt(CARRIER, 60, 64);
+    presenter(render, false).draw(snapshot(ship(), [], { enemies: listOf([carrier]) }), 1, 16);
+    expect(render.rectsOf(Palette.carrier)).toHaveLength(1);
+  });
+
+  it.each([
+    [PickupKind.Shield, Palette.shieldPickup, 4],
+    [PickupKind.Bomb, Palette.bombPickup, 2],
+    [PickupKind.OneUp, Palette.oneUpPickup, 2],
+  ])('draws pickup kind %i as its own 16 × 16 shape', (kind, colour, parts) => {
+    const render = new RecordingRender();
+    const pickup = new Pickup();
+    pickup.spawn(kind, 100, 50, 1);
+    presenter(render, false).draw(snapshot(ship(), [], { pickups: listOf([pickup]) }), 1, 16);
+    const rects = render.rectsOf(colour);
+    expect(rects).toHaveLength(parts);
+    expect(Math.min(...rects.map((r) => r.x))).toBe(92);
+    expect(Math.max(...rects.map((r) => r.x + r.w))).toBe(108);
   });
 });
