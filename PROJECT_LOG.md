@@ -8,6 +8,10 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-12
 
+### PR #28 merged (`bceda86`) — E-3 Carrier and the other pickups
+
+- Codex reviewed with no finding; CI green.
+
 ### Bomb, shield and death rule E-4 (branch `feat/bomb`) — Closes #25
 
 - The bomb at step slot 3 (02-sequence-bomb): `Player.useBomb()` in control only, one per press,
