@@ -6,9 +6,10 @@ import { Starfield } from '../../src/domain/presentation/starfield';
 import { DIVER, POPCORN } from '../../src/domain/game/enemy';
 import type { LevelScript } from '../../src/domain/game/level-script';
 import { NoAttack } from '../../src/domain/game/attacks';
+import { BossState } from '../../src/domain/game/boss';
 import type { BossDefinition } from '../../src/domain/game/boss';
 import { swayMovement } from '../../src/domain/game/movements';
-import { Run } from '../../src/domain/game/run';
+import { Run, RunOutcome } from '../../src/domain/game/run';
 import { Scene, SceneMachine } from '../../src/domain/scenes/scene-machine';
 import { PORTRAIT } from '../../src/domain/presentation/screen';
 import { RecordingRender } from '../support/recording-render';
@@ -608,6 +609,12 @@ describe('SceneMachine — Results, interim banner (meta/05-state-scenes, F-2a)'
     expect(render.drew(Palette.pauseButton)).toBe(false);
   });
 
+  it('draws no HP bar or seconds once the boss sequence has ended', () => {
+    const { machine, render } = clearedFixture();
+    machine.render(0, 16);
+    expect(render.drew(Palette.bossBarFrame)).toBe(false);
+  });
+
   it('shows LEVEL CLEAR from the catalogue, centred in the title font, over a veil', () => {
     const { machine, render } = clearedFixture();
     machine.render(0, 16);
@@ -647,6 +654,9 @@ describe('SceneMachine — Results, interim banner (meta/05-state-scenes, F-2a)'
 });
 
 describe('SceneMachine — the boss HUD (meta/05-state-scenes, F-2b)', () => {
+  /** Steps from the start of a run that land in the first, visible half-blink of the warning. */
+  const IN_FIRST_BLINK = 310;
+
   /** A run whose boss warns at 5 s (the director's minimum is above 4 s): the WARNING lasts about
    * 180 steps from step 300, then the entry about 180 more. */
   function warningFixture(blink = true): ReturnType<typeof setup> {
@@ -672,7 +682,7 @@ describe('SceneMachine — the boss HUD (meta/05-state-scenes, F-2b)', () => {
 
   it('shows WARNING during the warning, blinking, and no HP bar yet', () => {
     const fixture = warningFixture();
-    advance(fixture, 310); // 10 steps into the warning: the first, visible half of the first blink
+    advance(fixture, IN_FIRST_BLINK); // 10 steps into the warning: the first, visible half-blink
     fixture.machine.render(0, 16);
     expect(titleTexts(fixture.render)).toEqual(['WARNING']);
     expect(fixture.render.drew(Palette.bossBarFrame)).toBe(false);
@@ -688,14 +698,41 @@ describe('SceneMachine — the boss HUD (meta/05-state-scenes, F-2b)', () => {
     expect(titleTexts(fixture.render)).toEqual(['WARNING']);
   });
 
-  it('freezes the banner with the pause, under the veil', () => {
+  it('hides the banner under the pause, so it never sits under the pause icon', () => {
     const fixture = warningFixture();
-    advance(fixture, 310);
+    advance(fixture, IN_FIRST_BLINK);
     fixture.machine.step(DT, pressed(Button.Pause));
     expect(fixture.machine.scene).toBe(Scene.Paused);
     fixture.machine.render(0, 16);
-    expect(titleTexts(fixture.render)).toEqual(['WARNING']);
+    expect(titleTexts(fixture.render)).toEqual([]);
     expect(fixture.render.drew(Palette.veil)).toBe(true);
+  });
+
+  it('shows only GAME OVER when the run ends during the warning, never the banner under it', () => {
+    // A real run, advanced into the first, visible half-blink of its warning, behind a stub that
+    // reports Game over on the next step: the scene machine must not draw both at the same centre.
+    const real = new Run({ script: testScript([], { warningAt: 5, boss: STUB_BOSS }) });
+    for (let i = 0; i < IN_FIRST_BLINK; i += 1) real.step(DT, createIntentFrame());
+    expect(real.snapshot().boss.state).toBe(BossState.Warning);
+    const ending = {
+      step: (): void => undefined,
+      outcome: (): RunOutcome => RunOutcome.GameOver,
+      snapshot: () => real.snapshot(),
+      events: () => real.events(),
+    };
+    const render = new RecordingRender();
+    const machine = new SceneMachine(
+      render,
+      new Starfield(() => 0.5),
+      { blink: true, hitFlash: true, explosions: true, shake: true, bombFlash: true },
+      () => ending,
+    );
+    machine.step(DT, createIntentFrame());
+    machine.step(DT, pressed(Button.Confirm));
+    machine.step(DT, createIntentFrame()); // the run's first step reports Game over
+    expect(machine.scene).toBe(Scene.GameOver);
+    machine.render(0, 16);
+    expect(titleTexts(render)).toEqual(['GAME OVER']);
   });
 
   it('swaps the banner for the HP bar and the seconds when the boss enters', () => {
@@ -704,6 +741,9 @@ describe('SceneMachine — the boss HUD (meta/05-state-scenes, F-2b)', () => {
     fixture.machine.render(0, 16);
     expect(titleTexts(fixture.render)).toEqual([]);
     expect(fixture.render.drew(Palette.bossBarFrame)).toBe(true);
-    expect(fixture.render.texts.filter((text) => text.y === 12)).toHaveLength(2);
+    const seconds = fixture.render.texts
+      .filter((text) => text.y === 12 && text.font === 'hud')
+      .sort((a, b) => a.x - b.x);
+    expect(seconds.map((text) => `${text.text}@${String(text.x)}`)).toEqual(['9@218', '0@226']);
   });
 });

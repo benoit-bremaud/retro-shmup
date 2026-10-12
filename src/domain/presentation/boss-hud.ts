@@ -28,7 +28,8 @@ export function drawBossBar(render: RenderPort, boss: BossSnapshot): void {
   if (boss.state === BossState.Idle || boss.state === BossState.Warning) return;
   render.setRegion('field');
   render.drawRect(BAR_X + 1, BAR_Y + 1, INSIDE_WIDTH, INSIDE_HEIGHT, Palette.bossBarTrack);
-  const fill = Math.round(INSIDE_WIDTH * boss.hpRatio);
+  // Rounded up, so the bar is empty only at 0 HP, and capped at the frame.
+  const fill = Math.min(Math.ceil(INSIDE_WIDTH * boss.hpRatio), INSIDE_WIDTH);
   if (fill > 0) render.drawRect(BAR_X + 1, BAR_Y + 1, fill, INSIDE_HEIGHT, Palette.bossBarFill);
   const tickX = BAR_X + 1 + Math.round(INSIDE_WIDTH * BossHudTuning.barTickRatio);
   render.drawRect(tickX, BAR_Y, 1, BAR_HEIGHT, Palette.bossBarTick);

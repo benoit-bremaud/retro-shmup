@@ -266,8 +266,11 @@ export class SceneMachine {
     if (traits.drawsRun && this.run !== undefined && this.presenter !== undefined) {
       const snapshot = this.run.snapshot();
       this.presenter.draw(snapshot, frameAlpha, effectMs);
-      // The WARNING banner reads the boss state, so the pause freezes it; the overlays go over it.
-      drawWarning(r, snapshot.boss, this.effects.blink, this.language);
+      // The WARNING banner reads the boss state, so the pause freezes it; it shows in Playing only,
+      // so it never sits under GAME OVER, the pause icon or the count-in digit, which share its centre.
+      if (this.current === Scene.Playing) {
+        drawWarning(r, snapshot.boss, this.effects.blink, this.language);
+      }
     }
     if (traits.pauseButton) drawPauseButton(r);
     this.drawOverlays();
