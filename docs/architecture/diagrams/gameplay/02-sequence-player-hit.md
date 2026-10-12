@@ -31,7 +31,7 @@ sequenceDiagram
   participant SK as ScoreKeeper
   participant P as RunPresenter
 
-  Run->>CR: resolve(world, run as HitRules)
+  Run->>CR: resolve(world, run.rules as HitRules)
   Note over CR: enemy bullet or body overlaps the player hitbox
   CR->>Pl: hit()
   alt [Entering, Invulnerable or Dead]

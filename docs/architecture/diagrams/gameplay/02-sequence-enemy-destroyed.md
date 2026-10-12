@@ -36,7 +36,7 @@ sequenceDiagram
   participant SK as ScoreKeeper
   participant P as RunPresenter
 
-  Run->>CR: resolve(world, run as HitRules)
+  Run->>CR: resolve(world, run.rules as HitRules)
   Note over CR: bullet B overlaps enemy E, neither spent
   CR->>B: canHit(E.serial)
   B-->>CR: true
@@ -114,7 +114,7 @@ sequenceDiagram
     W->>K: age += 1, position from origin, age and motion
     Note over K: FALL — y = origin.y + 40 px/s × age, x = x0 + 8 × sin(2π × age / 2 s), x0 clamped to 16–224
   end
-  Run->>CR: resolve(world, run as HitRules)
+  Run->>CR: resolve(world, run.rules as HitRules)
   Note over CR: pass 4, after the hazards — K live, its 16 × 16 box overlaps the ship's 32 × 32 box
   CR->>Pl: canCollect()
   Pl-->>CR: true in Entering, Invulnerable or Vulnerable

@@ -36,7 +36,7 @@ sequenceDiagram
   participant P as RunPresenter
 
   Note over LD: the step that reaches warningAt (120 s in level 1)
-  Run->>LD: tick(run as EnemySpawner)
+  Run->>LD: tick(run.rules as EnemySpawner)
   LD->>Run: startBoss(LevelScript.boss)
   Run->>Bo: start(definition) — state WARNING
   Run->>Bus: publish BOSS_WARNING
@@ -46,7 +46,7 @@ sequenceDiagram
 
   loop each step while FIGHTING
     Run->>W: moveEnemies(dt) — the boss phase movement and attack act
-    Run->>CR: resolve(world, run as HitRules)
+    Run->>CR: resolve(world, run.rules as HitRules)
     Note over CR: pass 1 — a player bullet meets the boss, nearest along its path
     CR->>Run: damageBoss(bullet damage)
     Run->>Bo: applyDamage
