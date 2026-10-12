@@ -8,6 +8,52 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-12
 
+### Design revision after the brick-E playtest (branch `docs/brainstorm-design`) — GDD v0.9, ADR-0020, ADR-0021
+
+- Owner playtest after brick E: every device works (keyboard, touch, mouse, gamepad); two
+  complaints — the always-on fire of touch and mouse gives no control, and the enemy bullets get
+  lost in the player's own fire (shot proportions, judged on side-by-side captures).
+- Brainstorm with scored options, each decision validated by the owner:
+  - **Difficulty ramp by script** (GDD §7.1, §10): each level adds roles or patterns, denser and
+    more aggressive; level 1 becomes a real ~120 s script up to the Heavy and the boss (brick F).
+    A rank system and a harder second loop are left to after the playtests (1.x); "only more
+    enemies" rejected.
+  - **Named top 10** (§8, §9.1): up to 8 characters (A–Z, 0–9, space) with an arcade letter picker
+    on every device, optional ("skip" stores `???`); replaces the three initials. Rejected: three
+    initials, a system-keyboard text field.
+  - **Country** (§9.1, §9.8): optional, preselected from the browser language's region, no
+    network (PRIV-1); ISO code in the bitmap font, pixel flag with the sprites; stored for the v2
+    board. Rejected: IP geolocation, the Geolocation API, no preselection, ~200 flags in 1.0,
+    postponing to v2.
+  - **Pointer fire** (§4.2, §9.3, ADR-0020): mouse fires while the left button is held, touch
+    while a finger steers, an autofire option for touchpads and accessibility. Scores: O5 46
+    (chosen), O4 44, O3 41, O1 38, O7 38, O2 35, O6 30.
+  - **Shot proportions** (§3.2): enemy bullets drawn 6 × 6 with a 2 × 2 white core, Spread drawn
+    2 × 6, Laser at 60 % opacity, player shots translucent; hitboxes unchanged. Rejected: waiting
+    for the sprites, enemy bullets only, maximal contrast, smaller player hitboxes, a 24 × 24 ship.
+- ADR-0020 partially supersedes ADR-0009 (decision 1), ADR-0015 (decisions 5 and 8) and ADR-0018
+  (decision 2). Also folded in: the C2-P review N1 wording fix (GDD §4.2 mouse row, "a left press
+  on the field", ADR-0018 decision 4).
+- Scene machine (design revision v0.9, build order), traceability matrix, UC3 / UC4 text,
+  architecture index and README updated. Delivery: pointer fire and shot proportions before or in
+  F's first PR; the ramp in F; the name entry, country and autofire option in the screens brick G.
+- ADR-0021 (owner choice, same PR) resolves the conflict with ADR-0006: partially supersedes
+  decisions 3 and 7 and the review item on `initials` — `name` 1–8 characters or `???`, optional
+  `country` against an ISO 3166-1 alpha-2 allowlist, preselection stored only on confirmation,
+  failing entries dropped; first schema `version: 1`, no migration (no document shipped); fonts
+  gain 0–9 and `?` in brick G. ADR-0020's rule "a held left press outside the field is a tap only
+  and never fires" confirmed by the owner.
+- Design review of the v0.9 docs: no Must; 6 Should and 4 Nice fixed (the Devices-together row,
+  the ADR index cross-references, the mouse and keyboard fire wording, the autofire option name,
+  pointer fire across scenes, focus loss and the bomb finger, the empty name, the country
+  allowlist and the first-language preselection, the blank country in UC4). Owner choice: a
+  held pointer fire resumes at once after the count-in, like a held key.
+
+### PR #30 merged (`5b7d81a`) — documentation pass
+
+- One Codex finding (the bomb protection timing in the `Player` doc) fixed in `4177ca2` by owner
+  choice A.
+
 ### Documentation pass after brick E (branch `docs/brick-e`)
 
 - Owner request 2026-10-12: keep the READMEs and the code documentation current at the end of

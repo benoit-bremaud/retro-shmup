@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Vertical slice — v0.8 (2026-10-11): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot); v0.6 adds the initial values of the enemies brick; v0.7 settles the devices brick (portrait HUD strip, touch pause button, resuming and leaving Game over by tap or Start, mouse takeover, rotation pause); v0.8 settles the player kit (Spread and Laser tables, the death release hop, bomb, shield and pickup rules, P colours, the Carrier, HUD icons) |
+| **Status** | Vertical slice — v0.9 (2026-10-12): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot); v0.6 adds the initial values of the enemies brick; v0.7 settles the devices brick (portrait HUD strip, touch pause button, resuming and leaving Game over by tap or Start, mouse takeover, rotation pause); v0.8 settles the player kit (Spread and Laser tables, the death release hop, bomb, shield and pickup rules, P colours, the Carrier, HUD icons); v0.9 follows the brick-E playtest (difficulty ramp by script, a named top 10 with an optional country, pointer fire held by the left button or a steering finger with an autofire option, shot proportions for readability) |
 | **Working title** | *retro-shmup* (codename; the commercial title is still open) |
 | **Genre** | Retro vertical-scrolling shoot'em up (shmup), 16-bit aesthetic |
 | **Platform** | Web browser (desktop first, mobile playable), TypeScript + native Canvas 2D |
@@ -94,6 +94,18 @@ A full run is three levels, about 15–20 minutes.
 - **Per-level palette swaps** give each level its own enemy colour scheme at zero drawing cost.
 - Identity twist (deferred to the custom-asset phase): an unusual palette and a recognisable hero
   ship, so the game does not read as a stock asset pack.
+- **Shot readability** *(v0.9)*: the enemy bullets are the most visible element on the field
+  (the shmup readability rule); player shots are drawn translucent and slimmer so they never
+  bury them. Drawn sizes are presentation only — every hitbox stays as specified (§4.1, §4.3,
+  §5.2.1) and is revisited only if playtests ask:
+
+  | Shot | Drawn | Hitbox (unchanged) |
+  |---|---|---|
+  | Enemy bullet | 6 × 6 with a 2 × 2 white core | 4 × 4 |
+  | Spread bullet | 2 × 6 | 2 × 8 |
+  | Laser bolt | its §4.3 size, at 60 % opacity | its §4.3 size |
+
+  The sprites of the assets brick keep these proportions.
 
 ### 3.3 Universe
 
@@ -144,19 +156,26 @@ Minimal, arcade style: one intro card (two sentences), one title card per level,
 
 | Priority | Input | Model |
 |---|---|---|
-| P0 | Keyboard | Move: arrows (primary), `W A S D` physical keys (secondary — the same keys read Z Q S D on AZERTY); opposite directions held together cancel. Fire `Space` / `Z` (hold = autofire); bomb `X` / left `Shift`; pause `P`; `Enter` (main or keypad) confirm; `Esc` pauses in play and goes back in menus (fixed). Remappable. |
-| P1 | Touch | The first finger on the play field drives the ship, which follows it **32 px above** *(initial)* so the thumb never hides it; lifting the finger leaves the ship where it is. Autofire always on; bomb = on-screen button or second-finger tap *(v0.8: the second-finger tap only, for now — no bomb button is drawn; the portrait strip is full and its right end is far from the thumb; revisited with the options and screens)*; pause = on-screen button. A touch that starts outside the play field is a tap on the HUD, never a move *(v0.5)*. The **pause button** sits in the top-right corner of the screen in both orientations — 48 × 32 at the right end of the portrait HUD strip, 48 × 48 at the top of the right landscape band — and is drawn in play, in the pause and during the count-in, never on the title or in Game over *(v0.7)*. |
-| P1 | Gamepad | Left stick (radial dead zone *(initial: 0.2)*) or d-pad move, the d-pad winning when pressed; `A` fire (hold = autofire); `B` bomb; `Start` pause (Gamepad API, standard mapping). The last pad used is the active one *(v0.5)*. Remappable. `Start` is also a fixed `confirm` *(v0.7)*: it starts from the title, resumes from the pause and leaves Game over, as `Esc` both pauses and goes back on the keyboard. |
-| P2 | Mouse | Ship follows the cursor; autofire; right click bomb *(v0.5: `Space` stays the keyboard fire)*. The cursor is a crosshair over the game, centred on the ship's hitbox *(v0.7)*. The mouse takes the ship only when it moves to another play-field pixel or presses a button on the field; a click outside the field (HUD, pause button) is a tap only, as for a finger *(v0.7)*. |
+| P0 | Keyboard | Move: arrows (primary), `W A S D` physical keys (secondary — the same keys read Z Q S D on AZERTY); opposite directions held together cancel. Fire `Space` / `Z` (held = continuous fire); bomb `X` / left `Shift`; pause `P`; `Enter` (main or keypad) confirm; `Esc` pauses in play and goes back in menus (fixed). Remappable. |
+| P1 | Touch | The first finger on the play field drives the ship, which follows it **32 px above** *(initial)* so the thumb never hides it; lifting the finger leaves the ship where it is. Fires while a finger steers: lifting it stops firing *(v0.9; v0.8: autofire always on)*; bomb = on-screen button or second-finger tap *(v0.8: the second-finger tap only, for now — no bomb button is drawn; the portrait strip is full and its right end is far from the thumb; revisited with the options and screens)*; pause = on-screen button. A touch that starts outside the play field is a tap on the HUD, never a move *(v0.5)*. The **pause button** sits in the top-right corner of the screen in both orientations — 48 × 32 at the right end of the portrait HUD strip, 48 × 48 at the top of the right landscape band — and is drawn in play, in the pause and during the count-in, never on the title or in Game over *(v0.7)*. |
+| P1 | Gamepad | Left stick (radial dead zone *(initial: 0.2)*) or d-pad move, the d-pad winning when pressed; `A` fire (held = continuous fire); `B` bomb; `Start` pause (Gamepad API, standard mapping). The last pad used is the active one *(v0.5)*. Remappable. `Start` is also a fixed `confirm` *(v0.7)*: it starts from the title, resumes from the pause and leaves Game over, as `Esc` both pauses and goes back on the keyboard. |
+| P2 | Mouse | Ship follows the cursor; fires while the left button is held after a press on the field — a press outside the field never fires, even held; releasing the button anywhere stops it *(v0.9, ADR-0020; v0.8: autofire)*; right click bomb *(v0.5: `Space` stays the keyboard fire)*. The cursor is a crosshair over the game, centred on the ship's hitbox *(v0.7)*. The mouse takes the ship only when it moves to another play-field pixel or on a left press on the field *(v0.9 wording: the right button bombs and never takes the ship, ADR-0018 decision 4)*; a click outside the field (HUD, pause button) is a tap only, as for a finger *(v0.7)*. |
 
 Inputs are translated to **intents** (`move`, `fire`, `bomb`, `pause`, `confirm`, `back`) so no
 outcome ever depends on the device that produced them (one plain intent frame per step, ADR-0009;
 the active device only chooses prompts and key labels).
 
 **Several devices at once** *(v0.5, ADR-0015)*: the ship follows the last device that started
-moving it; the buttons of every device combine; the always-on autofire of touch and mouse applies
-only while one of them owns the movement, so a keyboard player who brushes the mouse gets
-autofire only until a key or the stick moves the ship again.
+moving it; the buttons of every device combine *(v0.9)*: keyboard and gamepad fire is held by
+their fire button as before, the mouse fires while its left button is held and touch while a
+finger steers, so, with the autofire option off, no device fires without a player action. **Autofire option** *(v0.9, options screen)*: fire
+always on, the v0.8 behaviour, for touchpad users and accessibility; it applies only while touch
+or the mouse owns the movement, so a keyboard player who brushes the mouse gets autofire only until
+a key or the stick moves the ship again (ADR-0020). A held pointer fire is sampled in every
+scene; only Playing acts on it: a finger or left button still held when the count-in ends fires
+at once, like a held keyboard key. Lost focus clears the steering finger and the mouse buttons
+(ADR-0015 decision 5), so pointer fire stops. A second finger bombs without stopping or
+restarting the first finger's fire.
 
 **Bindings** *(v0.2)*: keyboard keys are bound by **physical key** (`KeyboardEvent.code`), so a
 layout change (QWERTY, AZERTY) never breaks them; labels shown to the player use the active
@@ -443,6 +462,13 @@ foundation for the headless simulation tests (ADR-0002) and for replays in v2.
 
 Length *(initial)*: ~120 s of waves + ≤ 90 s of boss per level.
 
+**Difficulty ramp** *(v0.9)*: the challenge rises **by script**, level after level and within a
+level. Each level introduces new roles or patterns and grows denser and more aggressive. Level 1
+becomes a real ~120 s script that builds up to the Heavy, then the boss (level brick), replacing
+the 45 s interim loop; levels 2 and 3 reuse the roles with more HP, more shots and new
+combinations. No hidden system adjusts the difficulty in 1.0: a rank that follows the player's
+power and a harder second loop are left to after the playtests (1.x candidates, §10).
+
 ### 7.2 Level 1, first 60 seconds (pacing example and implicit tutorial)
 
 | t (s) | Event | Teaches |
@@ -502,8 +528,9 @@ until then they are an interim deviation recorded in the scene machine.
   and a shrinking chain timer bar.
 - **End-of-level tally** *(initial)*: full formations destroyed × 500; **no-bomb** 5 000;
   **no-miss** (no life lost) 10 000; remaining bombs × 1 000.
-- **Local top 10** with three-letter initials (arcade name entry), stored in `localStorage`
-  (ADR-0006). No online leaderboard in 1.0 (v2).
+- **Local top 10** *(v0.9)* with a name of up to 8 characters and an optional country (arcade name
+  entry, §9.1), stored in `localStorage` (ADR-0006, ADR-0021, §9.8). No online leaderboard in 1.0 (v2); the
+  country is stored so the v2 board can use it.
 
 ---
 
@@ -534,8 +561,15 @@ and `back`: it pauses in play and resumes from the pause menu. *(v0.7)* A change
 (a phone turned between portrait and landscape) is an automatic trigger too, and the gamepad
 `Start` resumes from the pause (§4.2).
 
-**Name entry** *(v0.2)*: three characters from A–Z, 0–9, space and `.`, starting at `AAA`; no
-timer. On touch, an on-screen letter grid.
+**Name entry** *(v0.9; v0.2: three initials)*: a name of **up to 8 characters** from A–Z, 0–9
+and space, entered with an arcade **letter picker** usable on keyboard, gamepad, touch and mouse
+(no system keyboard, no HTML field); no timer. The entry is optional: **skip** stores the name
+`???`. Then an optional **country**, preselected from the region of the browser language (for
+example `fr-FR` → `FR`; none when the language has no region), changeable or clearable; no
+network call, no geolocation, nothing inferred beyond the language setting (privacy, PRIV-1). The
+country is shown as its 2-letter ISO 3166-1 code in the bitmap font, and as a pixel flag once the
+sprites land (assets brick). Confirming an empty name stores `???` like skip; the picker
+controls per device are specified with the screens brick (G) in its UML study.
 
 ### 9.2 HUD (outside the 240 × 320 play field)
 
@@ -577,6 +611,9 @@ non-flashing form *(v0.5)*, and the bomb flash *(v0.8)*. Browsers refuse fullscr
 made with a click, tap or key applies at once; otherwise the preference is applied at the next
 click, tap or key press, including during a run *(v0.4, ADR-0009)*.
 
+**Autofire (touch and mouse)** *(v0.9)*: off by default; when on, touch and the mouse fire all the time, as in v0.8,
+for touchpad users and accessibility (§4.2, ADR-0020). Keyboard and gamepad are unchanged.
+
 ### 9.4 Game feel (all effects individually toggleable in §9.3)
 
 Hit flash (white, about 33 ms *(v0.6)*), hit-stop on large kills (2–3 frames), screen shake on bombs and boss
@@ -610,8 +647,13 @@ and shape), reduced-motion respected.
 
 ### 9.8 Save data
 
-`localStorage`, versioned schema *(key `retro-shmup.v1`)*: options and the top-10 table (initials,
-score, level reached, date). No account, no personal data beyond three letters.
+`localStorage`, versioned schema *(key `retro-shmup.v1`)*: options (the autofire switch included, off by default)
+and the top-10 table *(v0.9)*: name, country (optional), score, level reached, date. No account;
+the only personal data are a name of 8 characters at most from the picker's alphabet and a
+country the player chose. The document is untrusted input, validated by allowlist and parsed
+without ever throwing (ADR-0006): the name matches A–Z, 0–9 and space with a length of 1 to 8, or
+is exactly `???`; the country is absent or one code of the ISO 3166-1 alpha-2 allowlist kept in the
+code; an entry failing either check is dropped (ADR-0021).
 
 ---
 
@@ -625,6 +667,10 @@ instance, no selection UI, in 1.0. *(v0.8)* The profile grows with the bricks th
 the player-kit brick brings lives, bombs per life and the drop-rate multiplier (ADR-0019); the
 death penalty stays a later knob, the rule being one level; the caps (power 5, bombs 5, lives 9, the 1 000-point bonus) are rules,
 not knobs.
+
+*(v0.9)* The difficulty **within** the Normal profile rises by script (§7.1, difficulty ramp), not
+by a runtime system. A rank that follows the player's power (Battle Garegga style) and a harder
+second loop after level 3 (DoDonPachi style) are decided after the playtests, for 1.x.
 
 ---
 
@@ -688,7 +734,7 @@ playable.
 | Delivery | Cloudflare Pages (PR preview = staging, `main` = prod), itch.io via butler on tagged releases | ADR-0004 |
 | Licensing | MIT for the code; assets under their own licences in `public/assets/` with `CREDITS.md` | ADR-0005 |
 | Public hosting | `<game>.benoitbremaud.fr` (Cloudflare Pages custom domain, one project per game), attached once the title is final; `pages.dev` URLs before; catalogue in the portfolio's projects page, `benoitbremaud.fr/projets/#jeux` | ADR-0008, ADR-0016, ADR-0017 |
-| Player data | `localStorage` only, versioned key, no personal data beyond three initials; no backend in 1.0 | ADR-0006 |
+| Player data | `localStorage` only, versioned key; *(v0.9)* the top-10 entry holds a name of up to 8 characters and an optional country (§9.8) instead of three initials; no backend in 1.0 | ADR-0006, ADR-0021 |
 | Performance | 60 fps on a 2019 mid-range phone; ≤ 4 ms of logic per frame; no allocation inside the game loop (pools) | ADR-0002 |
 | Tests | Unit tests on the domain (TDD), headless level simulation with scripted inputs and seeded RNG, one browser smoke test; render and audio mocked at their ports | ADR-0003 |
 | Quality gate | Local-first: husky hooks run gitleaks, lint, typecheck, tests with coverage, the dependency audit and the local SonarQube quality gate before every push; CI runs a light lint/typecheck/test job and the security scans | ADR-0007, ADR-0013 |
@@ -757,7 +803,7 @@ fully playable at release quality, used to validate the design before producing 
 | Public hosting | One first-level subdomain per game on benoitbremaud.fr (ADR-0008); catalogue as the "Jeux" category of the portfolio's projects page, `/projets/#jeux` (ADR-0017) | Arcade subdomain with paths (routing Worker, shared storage); one repository for all games; the portfolio's own path; nested subdomains (viable, longer, inconsistent with the existing `bulle-de-je`); attaching the domain before the title is final (a rename strands saves) |
 | Portrait screen *(v0.5)* | Portrait screen with a top HUD strip (§3.1), used when it fits with the larger integer scale (ADR-0015) | See ADR-0015, Alternatives considered |
 | Base shot *(v0.5)* | Spread L1: one stream, 10 shots/s, 360 px/s | 15 shots/s at 480 px/s (less headroom to feel the power levels); no shot before enemies exist (no "move & shoot" in the first playable) |
-| Devices together *(v0.5)* | The ship follows the device that owns the movement; buttons combine; touch and mouse autofire only while they own it (ADR-0015) | See ADR-0015, Alternatives considered |
+| Devices together *(v0.5)* | The ship follows the device that owns the movement; buttons combine; *(v0.9)* the held pointer fire (left button, steering finger) combines like any button, and only the autofire option's always-on fire is limited to while touch or the mouse owns the movement (ADR-0015, ADR-0020) | See ADR-0015 and ADR-0020, Alternatives considered |
 | Mouse bomb *(v0.5)* | Right click | See ADR-0015, Alternatives considered |
 | Touch target *(v0.5)* | Absolute, 32 px above the first finger on the field; lifting keeps the ship in place | See ADR-0015, Alternatives considered |
 | Stick *(v0.5)* | Radial dead zone, speed proportional to tilt up to the maximum, d-pad wins | See ADR-0015, Alternatives considered |
@@ -787,3 +833,8 @@ fully playable at release quality, used to validate the design before producing 
 | Shield *(v0.8)* | One charge, a 36 × 36 ring outline in its own colour; absorbs a bullet or a body (the body survives), 0.5 s of invulnerability with the blink restarted; kept until used; none at the start | A ring in the hull's cyan (reads as part of the ship) |
 | HUD icons *(v0.8)* | Lives, bombs, shield, weapon badge and power pips told apart by shape (§9.2) | Icons told apart by colour only (§9.7) |
 | Pickup rules *(v0.8)* | 16 × 16 box against the ship's 32 × 32 box; sway as a pure function of age; collected while `Entering`, `Invulnerable` or `Vulnerable`, after the hazards of the step; several in one step in the order of the active pickup list; a pool of 8; the cap bonus flat, outside the chain | A random sway (a cosmetic consuming gameplay draws); collection while dead (a dead ship would still power up); the cap bonus multiplied by the chain |
+| Difficulty ramp *(v0.9)* | By script: each level adds roles or patterns, denser and more aggressive; level 1 a real ~120 s script up to the Heavy and the boss; levels 2–3 reuse roles with more HP, more shots, new combinations (§7.1) | Only more enemies on screen (density without new reading); decided after playtest, 1.x: a rank following the player's power (Battle Garegga: opaque, a new system), a harder second loop after level 3 (DoDonPachi) |
+| Top-10 name *(v0.9)* | Up to 8 characters (A–Z, 0–9, space) with an arcade letter picker on every device; optional, "skip" stores `???` (§9.1, ADR-0021) | Three initials (less personal); free text with the system keyboard (an HTML field in a pixel game, poor on gamepad, free input to validate) |
+| Top-10 country *(v0.9)* | Optional, preselected from the browser language's region, no network; the ISO 3166-1 code in the bitmap font, then a pixel flag with the sprites; stored for the v2 board (§9.1, §9.8, ADR-0021) | IP geolocation (a network call, forbidden in 1.0, privacy); the Geolocation API (permission prompt, disproportionate); no preselection (more friction); pixel flags for ~200 countries in 1.0 (asset cost); postponing to v2 |
+| Pointer fire *(v0.9)* | Mouse fires while the left button is held; touch fires while a finger steers; an autofire option (the v0.8 behaviour) in the options; keyboard and gamepad unchanged (ADR-0020). Scored 46 | Always-on autofire kept (38: little control); mouse hold + touch always-on (35: touchpad and accessibility worse); a click toggling fire (41: state invisible without an indicator); fire only while moving (30); an option only (38) |
+| Shot proportions *(v0.9)* | Enemy bullets drawn 6 × 6 with a 2 × 2 white core; Spread drawn 2 × 6, Laser at 60 % opacity; player shots translucent and slimmer; hitboxes unchanged; the sprites keep the proportions (§3.2) | Waiting for the sprites (enemy bullets lost in player fire); enemy bullets only; maximal contrast (player shots nearly invisible, firing feedback lost); smaller player hitboxes (balance risk); a 24 × 24 ship (balance) |

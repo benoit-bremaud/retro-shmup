@@ -104,6 +104,10 @@ Roadmap (GDD section 11):
     after the enemies brick: pause button, taps, takeover and rounding
   - [ADR-0019](docs/decisions/ADR-0019-player-kit-seeded-randomness-tenths-weapons-as-data.md) —
     Player kit: seeded randomness per run, damage in tenths, weapons as data
+  - [ADR-0020](docs/decisions/ADR-0020-pointer-fire-held-button-and-steering-finger.md) — Pointer
+    fire: held button and steering finger, autofire as an option
+  - [ADR-0021](docs/decisions/ADR-0021-hall-of-fame-entry-name-and-optional-country.md) — Hall of
+    fame entry: an 8-character name and an optional country
 - [Architecture and UML study](docs/architecture/README.md) — C4 context and containers, then
   the UML diagrams (Mermaid, PlantUML for use cases and components) and the traceability matrix.
 - [PROJECT_LOG.md](PROJECT_LOG.md) — operational logbook (what was done, why, by which PR).
@@ -123,7 +127,7 @@ Roadmap (GDD section 11):
 | Enemies | 5 roles (Popcorn, Diver, Gunner, Carrier, Heavy) on 3 size tiers, defined as data, not classes |
 | Bosses | One per level, HP-threshold phases that break parts off the sprite, 90 s timer |
 | Levels | 3 declarative, typed, deterministic scripts; about 2 min of waves plus a boss each |
-| Scoring | Base points, chain multiplier ×1 to ×8, end-of-level tally, local top 10 with initials |
+| Scoring | Base points, chain multiplier ×1 to ×8, end-of-level tally, local top 10 with a name of up to 8 characters and an optional country |
 | Inputs | Keyboard (P0), touch and gamepad (P1), mouse (P2), all translated to device-agnostic intents |
 | Tech | TypeScript strict, native Canvas 2D behind a `RenderPort`, fixed 60 Hz timestep, object pools, no framework |
 

@@ -51,7 +51,7 @@ flowchart LR
 |---|---|---|---|
 | Game bundle | TypeScript strict, Vite, Canvas 2D, Web Audio, Gamepad API | Simulation, rendering, audio, input, screens | ADR-0001, 0002, 0003 |
 | Static files | JS bundle, PNG sprite sheets, audio files, JSON catalogues | Code and content, assets credited per ADR-0005 | ADR-0004, 0005, 0008 |
-| localStorage | Browser key-value store, per origin | Options and local top 10, nothing personal beyond initials | ADR-0006 |
+| localStorage | Browser key-value store, per origin | Options and local top 10, nothing personal beyond a name of up to 8 characters and an optional country (GDD v0.9 §9.8) | ADR-0006, ADR-0021 |
 
 ## 3. UML study — index
 
@@ -78,7 +78,7 @@ Status: complete for 1.0 (2026-10-08); the bomb sequence added with the player-k
 |---|---|
 | Class diagram of the ports | Signatures owned by ADR-0001, 0002, 0003, 0006, 0009, 0010, 0012, 0014 and 0015; the ports appear as interfaces in 03 component |
 | Sequence — save high score | UC3's text (one write, one failure branch) |
-| Data-flow diagram | ADR-0006 (three initials, browser only, nothing transmitted) |
+| Data-flow diagram | ADR-0006, ADR-0021 (a short name and an optional country since GDD v0.9, browser only, nothing transmitted) |
 | Sequence — options | UC5's text (plain read and write) |
 | State machines of pickups and ordinary enemies | Trivial lifecycle: spawn, move, leave or die |
 | Chain multiplier | A calculation rule, specified in GDD §8 and covered by unit tests |
