@@ -10,8 +10,8 @@ import type { World } from './world';
 
 /**
  * What the collision pass asks of the run (class diagram, `HitRules`): declared here and realized
- * by `Run`, so the resolver never imports the run and never sees the bus. `shieldBroken` and
- * `damageBoss` join with their bricks.
+ * by `Run`, so the resolver never imports the run and never sees the bus. `damageBoss` joins with
+ * the level brick.
  */
 export interface HitRules {
   enemyHit(enemy: Enemy): void;

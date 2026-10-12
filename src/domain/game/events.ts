@@ -41,6 +41,7 @@ export interface RunEvents {
   subscribe(kind: GameEventKind, handler: GameEventHandler): void;
 }
 
+/** The one event object of `kind` a run reuses for every publish (ADR-0010: no allocation). */
 export function createGameEvent(kind: GameEventKind): GameEvent {
   return { kind, position: { x: 0, y: 0 }, value: 0, subject: 0, detail: 0 };
 }

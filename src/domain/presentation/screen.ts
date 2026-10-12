@@ -19,6 +19,7 @@ export const HUD_BAND_WIDTH = 120;
 /** Height of the portrait HUD strip above the field (GDD §3.1, v0.7 §9.2). */
 export const HUD_STRIP_HEIGHT = 32;
 
+/** 480 × 320: the field between the two HUD bands. */
 export const LANDSCAPE: ScreenLayout = {
   kind: 'landscape',
   width: FIELD_WIDTH + 2 * HUD_BAND_WIDTH,
@@ -27,6 +28,7 @@ export const LANDSCAPE: ScreenLayout = {
   fieldY: 0,
 };
 
+/** 240 × 352: the HUD strip above the field. */
 export const PORTRAIT: ScreenLayout = {
   kind: 'portrait',
   width: FIELD_WIDTH,

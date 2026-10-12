@@ -8,6 +8,29 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-12
 
+### Documentation pass after brick E (branch `docs/brick-e`)
+
+- Owner request 2026-10-12: keep the READMEs and the code documentation current at the end of
+  each brick.
+- README: the build status rewritten for the player kit (enemies with the Carriers, Spread and
+  Laser on five levels, drops, pickups, bombs, shield, death rule) and every device's bomb input;
+  next brick F; the quality-gate bullet aligned with ADR-0007 / ADR-0013 (audit, `ci.yml`, the
+  security workflows).
+- CONTRIBUTING: the garbled hooks sentence, the PR checks list (`ci.yml`, Gitleaks, CodeQL,
+  Dependency Review; Scorecard non-blocking), `nvm use`, the open scopes, a hypothetical ADR in the
+  commit examples, a new *Tests* section (Vitest scripts, `tests/support/` helpers, the single
+  Playwright smoke test).
+- CHANGELOG `[Unreleased]`: #26 to #29. Makefile: the `--no-verify` message cites ADR-0013.
+  Architecture index: the status line notes the bomb sequence of #24.
+- Source JSDoc, wording only: stale notes refreshed (`HitRules`, `drawHud`, `powerUp`,
+  `spawnPickup`, `LevelScript`, `HUD_LAYOUTS`, the presenter's effect switches and pickups, the
+  `main.ts` header) and missing docs added (`RunView`, `protectionSteps`, `NORMAL`,
+  `createGameEvent`, `message`, the overlays, the logical screens); long lines rewrapped.
+
+### PR #29 merged (`1bd7f17`) — E-4 bombs, shield and death rule
+
+- Codex reviewed with no finding; CI green. Issue #25 closed: brick E is complete.
+
 ### PR #28 merged (`bceda86`) — E-3 Carrier and the other pickups
 
 - Codex reviewed with no finding; CI green.

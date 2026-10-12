@@ -10,12 +10,14 @@ and pull requests.
 
 - **Git** 2.30 or newer, **Node.js 22 LTS** (≥ 22.22.1 — lint-staged 17's floor; see `.nvmrc`),
   **pnpm 10**.
-- **gitleaks** ≥ 8.25 (`.gitleaks.toml` uses `[[allowlists]]`) and **sonar-scanner** on the `PATH`, and the local **SonarQube** at
-  `http://localhost:9000` — the git hooks use them (ADR-0007, ADR-0011).
+- **gitleaks** ≥ 8.25 (`.gitleaks.toml` uses `[[allowlists]]`) and **sonar-scanner** on the
+  `PATH`, and the local **SonarQube** at `http://localhost:9000` — the git hooks use them
+  (ADR-0007, ADR-0011).
 
 ```bash
 git clone git@github.com:benoit-bremaud/retro-shmup.git
 cd retro-shmup
+nvm use               # Node 22 from .nvmrc
 pnpm install          # also installs the git hooks (husky)
 pnpm dev              # dev server
 make verify           # the full local gate, as run by the pre-push hook
@@ -89,12 +91,12 @@ git checkout -b docs/adr-0007
 | `tests` | Test infrastructure and shared fixtures |
 
 The scopes from `engine` onwards exist for the code phase; use them only once the matching code
-exists.
+exists. `audio` and `assets` wait for their first code; every other scope is open.
 
 Examples:
 
 ```
-docs(adr): ADR-0008 choose the sprite atlas format
+docs(adr): ADR-0020 choose the sprite atlas format
 feat(uml): add class diagram for the enemy composition model
 fix(design): correct the chain multiplier step table
 chore(repo): add .editorconfig
@@ -135,8 +137,8 @@ Extra labels are allowed but never replace the triptych.
 ## Quality gate — local first
 
 The blocking checks run on the developer's machine, before the push, as decided in
-[ADR-0007](docs/decisions/ADR-0007-local-first-quality-gate-minimal-ci.md). Once application code
-`pnpm install` installs the git hooks (husky):
+[ADR-0007](docs/decisions/ADR-0007-local-first-quality-gate-minimal-ci.md). `pnpm install`
+installs the git hooks (husky):
 
 | Hook | Runs | Budget |
 |---|---|---|
@@ -166,6 +168,21 @@ The SonarQube analysis token lives in `~/.config/sonar-tokens/retro-shmup` (mode
 never committed. Never run the scanner in debug mode (`-X`, `sonar.verbose`, `sonar.log.level=DEBUG`):
 it prints every property, the token included.
 
+## Tests
+
+[Vitest](https://vitest.dev/), with `tests/` mirroring `src/`: `pnpm test` runs the suite once,
+`pnpm test:watch` watches, `pnpm test:coverage` adds the coverage report (as `make verify` does).
+
+- **Domain test-first** (Red/Green/Refactor), with headless level simulations on a fixed seed and
+  scripted inputs: a level script replays identically.
+- **Render and audio are mocked at their ports, never the domain** (ADR-0003).
+- **Shared helpers** in `tests/support/`: `shots(n)` writes HP and damage in level-1 shots, as the
+  GDD does — the code holds tenths (ADR-0019) and tests never write raw tenths; `RecordingRender`
+  is the `RenderPort` double that records rectangles and texts per region, counts presented
+  frames and keeps the last camera offset.
+- **Exactly one browser smoke test**, `tests/smoke/first-playable.spec.ts` (Playwright), run by
+  hand with `make smoke` (`pnpm test:smoke`); it is part of neither `make verify` nor CI.
+
 ## Pull request process
 
 1. Branch from `main` as above; keep the PR focused on one change.
@@ -173,8 +190,8 @@ it prints every property, the token included.
    blocking finding is resolved.
 3. Open the PR with the repository template filled in, the labels triptych applied, and a
    Conventional Commit title.
-4. All checks must be green: Gitleaks now; the light `ci.yml` once code exists; CodeQL and
-   Dependency review once the repository is public.
+4. All checks must be green: `ci.yml`, Gitleaks, CodeQL and Dependency Review (OSSF Scorecard
+   runs weekly and is non-blocking, ADR-0013).
 5. Address every review comment, including automated ones, with an inline reply.
 6. The owner merges. Squash or merge is the owner's call; the resulting commit message must stay a
    valid Conventional Commit.

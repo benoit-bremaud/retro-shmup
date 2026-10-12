@@ -17,7 +17,11 @@ import { drawHollowSquare, drawPlusIcon, drawShipIcon } from './icons';
 import { Palette } from './palette';
 import type { PaletteColour } from './palette';
 
-/** Game-feel switches the presenter honours (GDD §9.4); the options screen sets them later. */
+/**
+ * Game-feel switches the presenter honours (GDD §9.3, §9.4); the options screen sets them later.
+ * The composition root turns the hit flash, the bomb flash and the shake off under
+ * `prefers-reduced-motion`.
+ */
 export interface EffectSettings {
   blink: boolean;
   hitFlash: boolean;
@@ -138,9 +142,10 @@ export class RunPresenter {
   };
 
   /**
-   * Placeholder P capsules (meta/05-state-scenes, player-kit additions): a 16 × 16 capsule in the
-   * pickup's colour carrying the weapon badge's mark — three dots for P-red, a bar for P-blue — so
-   * the two never differ by colour only (GDD §9.7).
+   * Placeholder pickups, 16 × 16 (meta/05-state-scenes, player-kit additions): the P capsules in
+   * the pickup's colour carry the weapon badge's mark — three dots for P-red, a bar for P-blue — so
+   * the two never differ by colour only (GDD §9.7); Shield, Bomb and 1-UP use the `icons.ts` shapes
+   * (hollow square, plus, ship).
    */
   private drawPickups(pickups: ReadonlyActiveList<Pickup>, alpha: number): void {
     for (let i = 0; i < pickups.count; i += 1) {

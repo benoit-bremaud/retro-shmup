@@ -41,9 +41,9 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /**
- * The player's ship (class diagram, view A). `Run.step` calls `update` at step 2 (move) and
- * `advanceTimers` at step 7, so a state change takes effect from the next step, after the
- * collisions of step 5.
+ * The player's ship (class diagram, view A). `Run.step` calls `update` at step 2 (move),
+ * `useBomb` at step slot 3 and `advanceTimers` at step 7, so a state change takes effect from the
+ * next step, after the collisions of step 5.
  */
 export class Player {
   readonly position: Vec2 = { x: PlayerTuning.spawnX, y: PlayerTuning.spawnY };
@@ -62,6 +62,10 @@ export class Player {
     return this.currentState;
   }
 
+  /**
+   * Steps since the protection began: the blink phase. Restarted only by a new protection (the
+   * fly-in, a shield absorption, a bomb from `Vulnerable`), never by the state timer.
+   */
   get protectionSteps(): number {
     return this.protection;
   }

@@ -34,10 +34,11 @@ export interface HudLayout {
 }
 
 /**
- * The HUD positions per logical screen (GDD §9.2, v0.7; meta/05-state-scenes, devices brick
- * additions): one record per layout kind, so drawing reads a table and never branches on the
- * screen. Landscape: the left band, top to bottom, 8 px margins. Portrait: the 240 × 32 strip in
- * two rows, 4 px margins, the chain bar ending under the score's last digit.
+ * The HUD positions per logical screen (GDD v0.8 §9.2; meta/05-state-scenes, devices and
+ * player-kit additions): one record per layout kind, so drawing reads a table and never branches
+ * on the screen. Landscape: score, chain, lives and bombs down the left band, the weapon and the
+ * shield in the right band, 8 px margins. Portrait: the 240 × 32 strip in two rows, 4 px margins,
+ * the chain bar ending under the score's last digit.
  */
 export const HUD_LAYOUTS: Readonly<Record<ScreenLayout['kind'], HudLayout>> = {
   landscape: {

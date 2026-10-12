@@ -93,8 +93,9 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, EnemySpawner,
   }
 
   /**
-   * A pickup at (x, y), falling from there; false when the pool is full and the spawn is dropped
-   * (ADR-0019), so the caller publishes `PICKUP_SPAWNED` only for a pickup that exists.
+   * A pickup at (x, y) with `motion`: a falling drop by default, or the death release's hop. False
+   * when the pool is full and the spawn is dropped (ADR-0019), so the caller publishes
+   * `PICKUP_SPAWNED` only for a pickup that exists.
    */
   spawnPickup(
     kind: PickupKind,

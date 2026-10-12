@@ -11,6 +11,7 @@ export interface DifficultyProfile {
   readonly dropRateScale: number;
 }
 
+/** The Normal profile, the only one in 1.0 (GDD §10); Easy and Hard are a 1.x data line each. */
 export const NORMAL: DifficultyProfile = {
   lives: 3,
   bombsPerLife: 2,

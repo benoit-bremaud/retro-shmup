@@ -11,6 +11,7 @@ const MESSAGES = {
 
 export type MessageKey = keyof typeof MESSAGES;
 
+/** The catalogue text of `key` in `language`; every player-facing string goes through it. */
 export function message(key: MessageKey, language: Language): string {
   return MESSAGES[key][language];
 }
