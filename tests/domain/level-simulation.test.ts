@@ -145,19 +145,36 @@ describe('Level simulation — level 1, headless', () => {
 
   it('meets every Heavy of level 1 and the 1-UP Carrier in one pass', () => {
     const run = new Run();
-    const seen = new Set<string>();
+    const archetypes = new Set<string>();
+    const cargos = new Set<PickupKind>();
     for (let i = 0; i < ONE_PASS; i += 1) {
       run.step(DT, pacifist(i));
       const enemies = run.snapshot().enemies;
       for (let e = 0; e < enemies.count; e += 1) {
         const enemy = enemies.at(e);
-        seen.add(`${enemy.archetype.id}:${String(enemy.cargo)}`);
+        archetypes.add(enemy.archetype.id);
+        if (enemy.archetype.id === 'carrier' && enemy.cargo !== undefined) cargos.add(enemy.cargo);
       }
     }
-    expect(seen).toContain('heavy-ring:undefined');
-    expect(seen).toContain('heavy-fan:undefined');
-    expect(seen).toContain(`carrier:${String(PickupKind.OneUp)}`);
-    expect(seen).not.toContain(`carrier:${String(PickupKind.Bomb)}`);
+    expect(archetypes).toContain('heavy-ring');
+    expect(archetypes).toContain('heavy-fan');
+    expect(cargos).toContain(PickupKind.OneUp);
+    expect(cargos).not.toContain(PickupKind.Bomb);
+  });
+
+  it('keeps room in the bullet pool when the ring and the fan fire together at 102 s', () => {
+    for (let seed = 1; seed <= 6; seed += 1) {
+      const run = new Run({ seed });
+      let peak = 0;
+      for (let i = 0; i < ONE_PASS; i += 1) {
+        run.step(DT, pacifist(i));
+        if (i >= 102 * 60 && i < 116 * 60) peak = Math.max(peak, run.snapshot().enemyBullets.count);
+      }
+      // A ring (12) and a fan (5) in the air at once, yet 12 slots to spare: a full pool would
+      // drop bullets silently and cut a ring short.
+      expect(peak).toBeGreaterThanOrEqual(24);
+      expect(peak).toBeLessThanOrEqual(ENEMY_BULLET_POOL_SIZE - 12);
+    }
   });
 
   it('scores nothing for enemies that leave the field alive', () => {

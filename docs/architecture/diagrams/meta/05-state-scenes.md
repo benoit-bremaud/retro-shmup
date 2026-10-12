@@ -168,16 +168,16 @@ The enemies brick adds `Paused`, `Count-in` and `Game over`, and removes the pau
   (`LevelScript.loopAt`; 45 s before F-1, the slot of the then-absent Heavy); enemies of the
   previous pass stay alive. It loops until the level brick adds the rest of level 1, the
   warning and the boss: no `LEVEL_CLEARED`, no `BossDefinition` and no `warningAt` before then.
-  **Lifted by the level brick**: F-1 replaces the rows with the 120 s script (still wrapping at 120 s), F-2 removes
-  `loopAt` (level brick additions below).
+  **Lifted by the level brick**: F-1 (done) replaced the rows with the 120 s script, still
+  wrapping at 120 s; F-2 removes `loopAt` (level brick additions below).
 - ~~**Interim deviation, drops and formations**: no `DropTable` roll, no full-formation P, no
   `Formation` count, no death release of the weapon and no bombs until the pickups and rules
   brick, so `Run` holds no `Random` yet and the determinism test compares (script, inputs) only.~~
   Removed by the player-kit brick (E-1 brings the seed, the drops and the formations; E-4 the
   release and the bombs; player-kit brick additions below).
 - **Strategies of the enemies brick**: it builds `PathMovement`, `DiveMovement`,
-  `EnterHoldLeave`, `NoAttack` and `AimedAttack`; `RingAttack` and `FanAttack` wait for the Heavy; only the event kinds the brick
-  publishes are added.
+  `EnterHoldLeave`, `NoAttack` and `AimedAttack`; `RingAttack` and `FanAttack` were added with the Heavy by F-1; only the event kinds the
+  brick publishes are added.
 - **Brick subset, enemies**: `Body` keeps only what the three roles need — `age` replaces
   `pathProgress` (the S curve is a closed form of the age), and `origin`, `hover`, `velocity`,
   `width` and `height` carry the spawn and hover points, the dive or leave heading and the

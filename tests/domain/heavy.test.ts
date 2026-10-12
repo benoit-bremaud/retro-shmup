@@ -161,7 +161,10 @@ describe('ringAttack — 12 bullets 30° apart at 60 px/s (GDD v0.10 §5.2.1)', 
     const volleys = volleysOf(HEAVY_RING, shipAt(10, 300));
     expect(volleys).toHaveLength(5);
     // The ring's orientation: its first bullet's angle modulo the 30° spacing.
-    const firstAngles = volleys.map((v) => angleOf(v[0]?.vx ?? 0, v[0]?.vy ?? 0) % 30);
+    const firstAngles = volleys.map((v) => {
+      const turn = angleOf(v[0]?.vx ?? 0, v[0]?.vy ?? 0) % 30;
+      return Math.min(turn, 30 - turn); // a bullet at 359.9999° counts as 0°, not 29.9999°
+    });
     expect(firstAngles[0]).toBeCloseTo(0, 9);
     expect(firstAngles[1]).toBeCloseTo(15, 9);
     expect(firstAngles[2]).toBeCloseTo(0, 9);
@@ -190,6 +193,22 @@ describe('fanAttack — 5 bullets 15° apart, centred on the aim, at 75 px/s', (
       expect(shot).toMatchObject({ x: 120, y: 72 });
     }
   });
+
+  it.each([50, -50])(
+    'aims the fan at a ship %d px to the side, below and not on a diagonal',
+    (dx) => {
+      const [first] = volleysOf(HEAVY_FAN, shipAt(120 + dx, 72 + 80));
+      const aim = (Math.atan2(dx, 80) * 180) / Math.PI;
+      const angles = (first ?? []).map((s) => {
+        const a = angleOf(s.vx, s.vy);
+        return (a > 180 ? a - 360 : a) - aim;
+      });
+      angles.sort((x, y) => x - y);
+      [-30, -15, 0, 15, 30].forEach((offset, i) => {
+        expect(angles[i]).toBeCloseTo(offset, 9);
+      });
+    },
+  );
 
   it('fires the fan straight down when the ship is exactly on it', () => {
     const [first] = volleysOf(HEAVY_FAN, shipAt(120, 72));

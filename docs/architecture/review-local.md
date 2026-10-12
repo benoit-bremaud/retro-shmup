@@ -1,53 +1,55 @@
-# Local review — retro-shmup (branch `refactor/engine`)
+# Local review — retro-shmup (branch `feat/level-heavy`)
 
 - Date: 2026-10-12
-- Commit: `2d24831`
-- Scope: branch diff `main...HEAD` — trim of speculative seams found by the whole-repo audit
-  (`World` no longer an `EnemySpawner`, `SceneMachine` takes `createRun`, `Run.publishAt` takes a
-  `subject`, `Starfield` index loop); the class diagram now shows `Run` as the `EnemySpawner`
+- Commit: `eb0bd4c` + the Should fixes of this review
+- Scope: branch diff `origin/main...HEAD` — F-1 of the level brick: strategy factories, the Heavy
+  (ring and fan), the 120 s level-1 script, `Body.volleys`
 - Checks run: design · docs · tests · security · correctness
-- Verdict: **ship** · Must 0 (2 found, both resolved in `2d24831`) · Should 2 · Nice 3
+- Verdict: **ship** · Must 0 · Should 4 groups (all fixed) · Nice 5
 
 ## 🔴 Must Have
 
-_None open._ Two were found and resolved before the push:
-
-- `src/domain/pool/fixed-pool.ts` `[design]` · removing `Pool<T>` drifted from ADR-0002, whose
-  minimal interfaces are the contract for ADR-0003 · resolved: the interface is restored; its
-  removal moves to the design ADR of brick F-0 (partial supersede of ADR-0002).
-- `docs/architecture/diagrams/gameplay/04-class-domain.md:291` `[design][docs]` ·
-  `EnemySpawner <|.. World` no longer matched the code · resolved: now `EnemySpawner <|.. Run`.
-  The `Pool~T~` block and the traceability row stay valid with the restored interface.
+_None._
 
 ## 🟡 Should Have
 
-- `src/domain/game/run.ts:255` `[design]` · `publishAt` has six positional numeric parameters ·
-  acceptable: private, allocation-free, replaces a third copy of the same code; a parameter object
-  would allocate in the loop. Revisit when `RunRules` is extracted before the boss work.
-- `docs/decisions/ADR-0002-…md:67` `[docs]` · `Pool<T>` stays the contract until the F-0 ADR
-  retires it · action: fold the retirement into that ADR.
+- `tests/domain/heavy.test.ts` `[tests]` · the ring-rotation test compared `angle % 30`, which
+  breaks around 0° (359.9999° gives 29.9999) · fixed: the orientation is the distance to the
+  nearest multiple of 30°.
+- `tests/domain/heavy.test.ts`, `tests/domain/pickups.test.ts` `[tests]` · the Heavy's death path
+  (1 000 points, Large tier, Bomb or Shield at 60 %, nothing at 60 % or more) and a fan aimed at an
+  off-axis ship were untested · fixed: tests added.
+- `tests/domain/level-simulation.test.ts` `[tests][correctness]` · only a peak of 40 enemy bullets
+  was asserted against a pool of 48 · fixed: a dedicated 102–116 s window test pins the real peak
+  (30 observed, between 24 and 36 allowed, the pair of a ring and a fan overlapping); the string
+  keys `'heavy-ring:undefined'` are replaced by two sets.
+- `docs/architecture/diagrams/meta/05-state-scenes.md` `[docs]` · "lifted by the level brick" and
+  "wait for the Heavy" were stale · fixed.
+- Also fixed from the first design pass: a stacked JSDoc in `tuning.ts`, and `aimedAttack` now
+  counts its volleys like every pattern (ADR-0022 §2), with a test.
 
 ## 🔵 Nice to Have
 
-- `CHANGELOG.md` `[docs]` · optional "Changed (internal)" entry; nothing player-visible changed.
-- `src/domain/presentation/starfield.ts:32` `[correctness]` · the index loop only runs in the
-  constructor; kept for consistency with the index-loop rule.
-- Whole-repo audit follow-ups not in this diff (test parity of EN/FR keys, weak
-  `toBeDefined()` assertions, TSDoc on `arbitration.ts` and the enemy archetypes, README ADR-0022
-  entry) are tracked for a docs and tests pass.
+- `StrategyFactories` of the class diagram shows positional parameters; the code takes one config
+  object.
+- `Body.volleys[1]` is not used yet (reserved by ADR-0022 for `parallelAttack`); `volleys[0]` is
+  unbounded (about 6 per Heavy).
+- A test of the shared bullet-pool margin for the Cruiser boss belongs to F-2.
 
 ## ⚪ Disagree / Intentional
 
-- `src/domain/presentation/starfield.ts` `?? 0` · needed by `noUncheckedIndexedAccess` · no behaviour
-  change.
-- `World` is no longer an `EnemySpawner` · only `Run` is injected into the `LevelDirector`
-  (`02-sequence-boss-fight.md:39`) · ADR-0022.
+- `tests/domain/heavy.test.ts` "is a frozen object built once" · the reviewer called it a test of
+  `Object.freeze`, but ADR-0022 requires the shared strategies to be immutable · kept.
+- Old role names in the class diagram and traceability matrix name the strategy roles, not the
+  exported symbols · ADR-0022.
 
 ## Per-dimension summary
 
-- Design: no regression in the code; the two Must were ADR and UML alignment, resolved.
-- Docs: TSDoc accurate after the refactor; UML and traceability aligned.
-- Tests: the single test change passes `createRun` explicitly; 541 tests pass, assertions untouched.
-- Security: nothing relevant in the diff (no secrets, no untrusted input, no new sinks).
-- Correctness: `publishAt` sets the same fields in the same order; the `Starfield` total and
-  `FixedPool` are unchanged; every `SceneMachine` call site passes `createRun`.
+- Design: numbers and strategies conform to GDD v0.10 and ADR-0022; no allocation in the loop, no
+  nondeterminism, no new player-facing string.
+- Docs: TSDoc complete on the new surface; README, CHANGELOG and PROJECT_LOG match the code.
+- Tests: no false confidence, nothing from the domain mocked; the death path and the bullet-pool
+  margin are now pinned (579 tests).
+- Security: nothing untrusted introduced.
+- Correctness: 36 script rows match the GDD, angle signs are right, volley counters reset on
+  spawn, no NaN when the ship is on the Heavy.
