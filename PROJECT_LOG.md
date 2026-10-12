@@ -8,6 +8,13 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-12
 
+### PR #27 merged (`dcb736b`) — E-2 weapons L1 to L5
+
+- One Codex finding (Laser hits in active-list order) fixed in `38089ad` by owner choice A. That
+  push used `--no-verify` (ADR-0013): `pnpm audit` timed out on the npm registry in the hook;
+  check and gitleaks had passed in it, the SonarQube gate passed and the audit passed on retry by
+  hand, no dependency changed.
+
 ### Carrier and the other pickups E-3 (branch `feat/carrier`) — Refs #25
 
 - `CrossMovement` (a horizontal crossing at 60 px/s, a closed form of the age, rightwards from a
