@@ -6,6 +6,21 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ---
 
+## 2026-10-13
+
+### Level-1 balance applied to the code — set 18 (branch `feat/rebalance-set18`, #45)
+
+- Applies the GDD v0.11 values chosen by the headless balance study (set 18): Gunner P 30 → 10 %,
+  Heavy Bomb or Shield 60 → 30 %, Gunner fire every 1.5 → 1 s, Popcorn rows at 0 s and 50 s
+  ×6 → ×8, the 92 s formation → two Divers (92 s at x 60, 93 s at x 180), Cruiser 3 000 → 5 000
+  tenths with phase 2 at 3 300.
+- Tests re-derived from the rules (drop draws on both sides of the new rates, 3 Gunner bullets per
+  hover, 1 700 tenths to the 66 % threshold, 52 Popcorn and 12 Divers per pass); the seeded replay
+  moves to seed 3, the first seed whose 8 Heavies still roll a Bomb at 30 %.
+- The study harness re-run on the applied code gives the study's set 18 exactly: zigzag + bombs
+  15 % game over, 85 % boss kills, 2.3 deaths, power 5 at 120 s, about 8 P-red + 0.8 P-blue.
+- Docs: README, CHANGELOG, class and boss-state diagrams, traceability matrix.
+
 ## 2026-10-12
 
 ### The end-of-level tally and the Results screen — F-3 (branch `feat/level-tally`)

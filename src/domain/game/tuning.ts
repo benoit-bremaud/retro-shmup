@@ -104,12 +104,12 @@ export const DiverTuning = {
   diveSpeed: 180,
 } as const;
 
-/** Gunner (GDD v0.6 §5.2.1). */
+/** Gunner (GDD v0.6 §5.2.1; one aimed bullet every 1 s, GDD v0.11). */
 export const GunnerTuning = {
   travelSeconds: 1,
   holdSeconds: 3.5,
   leaveSpeed: 60,
-  firePeriodSeconds: 1.5,
+  firePeriodSeconds: 1,
 } as const;
 
 /** Heavy (GDD v0.10 §5.2.1): the Gunner's movement with its own values, a ring or a fan. */
@@ -229,8 +229,8 @@ export const BossHudTuning = {
 export const CruiserTuning = {
   width: 112,
   height: 48,
-  /** 300 level-1 shots, in tenths (ADR-0019). */
-  hp: 3000,
+  /** 500 level-1 shots, in tenths (GDD v0.11 §6.1, ADR-0019). */
+  hp: 5000,
   timeLimitSeconds: 90,
   warningSeconds: 3,
   entryFromY: -24,
@@ -238,8 +238,8 @@ export const CruiserTuning = {
   entrySeconds: 3,
   fleeSpeed: 60,
   destroyedSeconds: 2,
-  /** Phase 2 starts at 66 % HP: 1 980 tenths. */
-  phase2HpThreshold: 1980,
+  /** Phase 2 starts at 66 % HP: 3 300 tenths (GDD v0.11). */
+  phase2HpThreshold: 3300,
   phase1: {
     swayAmplitude: 56,
     swayPeriodSeconds: 8,

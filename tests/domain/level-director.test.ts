@@ -43,9 +43,9 @@ function play(script: LevelScript, ticks: number): Recorder {
   return recorder;
 }
 
-/** The rows of GDD v0.10 §7.2.1 (Bomb Carrier removed) and §7.2.2, as the GDD writes them. */
+/** The rows of GDD v0.11 §7.2.1 (Bomb Carrier removed) and §7.2.2, as the GDD writes them. */
 const GDD_ROWS: readonly (readonly [number, string, number, number, number, string])[] = [
-  [0, 'popcorn', 6, 80, -8, 'S'],
+  [0, 'popcorn', 8, 80, -8, 'S'],
   [8, 'popcorn', 6, 160, -8, 'S mirrored'],
   [8, 'diver', 1, 80, -8, ''],
   [8, 'diver', 1, 160, -8, ''],
@@ -57,7 +57,7 @@ const GDD_ROWS: readonly (readonly [number, string, number, number, number, stri
   [40, 'diver', 1, 80, -8, ''],
   [40, 'diver', 1, 160, -8, ''],
   [45, 'heavy-ring', 1, 120, -24, '120,72'],
-  [50, 'popcorn', 6, 60, -8, 'S'],
+  [50, 'popcorn', 8, 60, -8, 'S'],
   [52, 'popcorn', 6, 180, -8, 'S mirrored'],
   [58, 'diver', 1, 60, -8, ''],
   [58, 'diver', 1, 180, -8, ''],
@@ -73,13 +73,14 @@ const GDD_ROWS: readonly (readonly [number, string, number, number, number, stri
   [82, 'gunner', 1, 256, 72, '192,72'],
   [82, 'gunner', 1, 120, -16, '120,56'],
   [90, 'heavy-fan', 1, 120, -24, '120,72'],
-  [92, 'popcorn', 6, 60, -8, 'S'],
+  [92, 'diver', 1, 60, -8, ''],
+  [93, 'diver', 1, 180, -8, ''],
   [102, 'heavy-ring', 1, 60, -24, '60,80'],
   [102, 'heavy-fan', 1, 180, -24, '180,80'],
   [110, 'popcorn', 8, 120, -8, 'S'],
 ];
 
-describe('LEVEL_1 — the 120 s script of GDD v0.10 §7.2.1 and §7.2.2', () => {
+describe('LEVEL_1 — the 120 s script of GDD v0.11 §7.2.1 and §7.2.2', () => {
   it('holds exactly the GDD rows, in order', () => {
     const rows = LEVEL_1.events.map((e) => {
       let path = '';
@@ -118,11 +119,32 @@ describe('LEVEL_1 — the 120 s script of GDD v0.10 §7.2.1 and §7.2.2', () => 
 });
 
 describe('LevelDirector — script walking (GDD v0.6 §7.2.1, class diagram)', () => {
-  it('spawns the 0 s row on the first step, one Popcorn every 1/3 s (20 steps)', () => {
-    const ticks = play(LEVEL_1, 120)
+  it('spawns the 0 s row on the first step: 8 Popcorn (GDD v0.11), one every 1/3 s (20 steps)', () => {
+    const ticks = play(LEVEL_1, 480)
       .spawns.filter((s) => s.id === 'popcorn')
       .map((s) => s.tick);
-    expect(ticks).toEqual([1, 21, 41, 61, 81, 101]);
+    expect(ticks).toEqual([1, 21, 41, 61, 81, 101, 121, 141]);
+  });
+
+  it('spawns the 50 s formation of 8 Popcorn (GDD v0.11) from step 3001, 20 steps apart', () => {
+    const ticks = play(LEVEL_1, 3120)
+      .spawns.filter((s) => s.tick > 3000 && s.id === 'popcorn')
+      .map((s) => s.tick);
+    expect(ticks).toEqual([3001, 3021, 3041, 3061, 3081, 3101]);
+    const all = play(LEVEL_1, 3180).spawns.filter((s) => s.tick > 3000 && s.tick <= 3180);
+    expect(all.filter((s) => s.id === 'popcorn' && s.x === 60)).toHaveLength(8);
+  });
+
+  it('spawns the two lone Divers of GDD v0.11 at 92 s (x 60) and 93 s (x 180), in no formation', () => {
+    const recorder = play(LEVEL_1, 5640);
+    const late = recorder.spawns
+      .map((s, i) => ({ ...s, member: recorder.members[i] }))
+      .filter((s) => s.tick > 5520 && s.tick <= 5640);
+    expect(late.map((s) => `${s.id}@${String(s.x)}:${String(s.tick)}`)).toEqual([
+      'diver@60:5521',
+      'diver@180:5581',
+    ]);
+    expect(late.every((s) => s.member === undefined)).toBe(true);
   });
 
   it('spawns the 8 s rows on step 481, in script order: Popcorn before the two Divers', () => {
@@ -149,11 +171,12 @@ describe('LevelDirector — script walking (GDD v0.6 §7.2.1, class diagram)', (
     expect(spawns.map((s) => s.tick).slice(-1)).toEqual([6741]);
   });
 
-  it('holds the rows of GDD v0.10 §7.2.1 and §7.2.2 per pass', () => {
+  // GDD v0.11: Popcorn 8 + 6 + 8 + 8 + 6 + 8 + 8 = 52; Divers 2 + 2 + 4 + 2 + 2 (92 s, 93 s) = 12.
+  it('holds the rows of GDD v0.11 §7.2.1 and §7.2.2 per pass', () => {
     const recorder = play(LEVEL_1, 7200);
     const count = (id: string): number => recorder.spawns.filter((s) => s.id === id).length;
     expect(['popcorn', 'diver', 'gunner', 'carrier', 'heavy-ring', 'heavy-fan'].map(count)).toEqual(
-      [54, 10, 8, 2, 2, 2],
+      [52, 12, 8, 2, 2, 2],
     );
   });
 

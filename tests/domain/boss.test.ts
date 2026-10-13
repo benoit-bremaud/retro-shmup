@@ -67,7 +67,7 @@ describe('Boss — warning and entry (GDD v0.10 §6, 05-state-boss)', () => {
     const { boss } = started();
     expect(boss.state).toBe(BossState.Warning);
     expect(boss.serial).toBe(7);
-    expect(boss.hp).toBe(3000);
+    expect(boss.hp).toBe(5000); // 500 level-1 shots in tenths (GDD v0.11 §6.1)
     expect(boss.width).toBe(112);
     expect(boss.height).toBe(48);
     expect(overlapsField(boss.position.x, boss.position.y, boss.width, boss.height)).toBe(false);
@@ -167,7 +167,7 @@ describe('Boss — the fight timer (GDD v0.10 §6)', () => {
     // Step 5 of the last step: the kill; step 7 then finds a destroyed boss, not a fighting one.
     world.step += 1;
     boss.move(world, DT);
-    expect(applyDamage(boss, 3000)).toBe(true);
+    expect(applyDamage(boss, 5000)).toBe(true);
     boss.destroy();
     expect(boss.advance(world)).toBe(BossAdvance.None);
     expect(boss.state).toBe(BossState.Destroyed);
@@ -198,7 +198,8 @@ describe('Boss — phases (ADR-0023 decision 3)', () => {
     ticks(boss, world, 30);
     const before = world.bullets.length;
     expect(before).toBe(0);
-    applyDamage(boss, 1020);
+    // GDD v0.11 §6.1: 5 000 − 3 300 = 1 700 tenths bring the Cruiser to its 66 % threshold.
+    applyDamage(boss, 1700);
     expect(boss.hpRatio()).toBeCloseTo(0.66, 9);
     expect(boss.advancePhase(world)).toBe(true);
     expect(boss.phaseIndex).toBe(1);
@@ -214,7 +215,7 @@ describe('Boss — phases (ADR-0023 decision 3)', () => {
 
   it('does not enter phase 2 one tenth above its threshold', () => {
     const { boss, world } = fighting();
-    applyDamage(boss, 1019);
+    applyDamage(boss, 1699);
     expect(boss.advancePhase(world)).toBe(false);
     expect(boss.phaseIndex).toBe(0);
   });
@@ -237,7 +238,7 @@ describe('Boss — phases (ADR-0023 decision 3)', () => {
     (_label, hitAt, expectMirror) => {
       const { boss, world } = fighting();
       ticks(boss, world, hitAt);
-      applyDamage(boss, 1100);
+      applyDamage(boss, 1700);
       expect(boss.advancePhase(world)).toBe(true);
       let previousX = boss.position.x;
       let swapped = false;
@@ -265,7 +266,7 @@ describe('Boss — phases (ADR-0023 decision 3)', () => {
   it('keeps counting the movement age at the threshold: only the swap restarts it', () => {
     const { boss, world } = fighting();
     ticks(boss, world, 100);
-    applyDamage(boss, 1100);
+    applyDamage(boss, 1700);
     boss.advancePhase(world);
     expect(boss.age).toBe(100);
   });

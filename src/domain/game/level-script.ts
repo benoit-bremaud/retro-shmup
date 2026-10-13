@@ -48,7 +48,7 @@ export const LEVEL_1: LevelScript = {
   dominantColour: PickupKind.PRed,
   events: [
     // The opening (§7.2.1).
-    { at: 0, archetype: POPCORN, count: 6, interval: POPCORN_INTERVAL, spawn: { x: 80, y: -8 } },
+    { at: 0, archetype: POPCORN, count: 8, interval: POPCORN_INTERVAL, spawn: { x: 80, y: -8 } },
     {
       at: 8,
       archetype: POPCORN,
@@ -74,7 +74,7 @@ export const LEVEL_1: LevelScript = {
       spawn: { x: 120, y: -24 },
       hover: { x: 120, y: 72 },
     },
-    { at: 50, archetype: POPCORN, count: 6, interval: POPCORN_INTERVAL, spawn: { x: 60, y: -8 } },
+    { at: 50, archetype: POPCORN, count: 8, interval: POPCORN_INTERVAL, spawn: { x: 60, y: -8 } },
     {
       at: 52,
       archetype: POPCORN,
@@ -97,7 +97,8 @@ export const LEVEL_1: LevelScript = {
     { at: 82, archetype: GUNNER, count: 1, spawn: { x: 256, y: 72 }, hover: { x: 192, y: 72 } },
     { at: 82, archetype: GUNNER, count: 1, spawn: { x: 120, y: -16 }, hover: { x: 120, y: 56 } },
     { at: 90, archetype: HEAVY_FAN, count: 1, spawn: { x: 120, y: -24 }, hover: { x: 120, y: 72 } },
-    { at: 92, archetype: POPCORN, count: 6, interval: POPCORN_INTERVAL, spawn: { x: 60, y: -8 } },
+    { at: 92, archetype: DIVER, count: 1, spawn: { x: 60, y: -8 } },
+    { at: 93, archetype: DIVER, count: 1, spawn: { x: 180, y: -8 } },
     { at: 102, archetype: HEAVY_RING, count: 1, spawn: { x: 60, y: -24 }, hover: { x: 60, y: 80 } },
     {
       at: 102,
