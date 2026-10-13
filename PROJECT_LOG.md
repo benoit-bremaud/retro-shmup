@@ -20,6 +20,8 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 - The study harness re-run on the applied code gives the study's set 18 exactly: zigzag + bombs
   15 % game over, 85 % boss kills, 2.3 deaths, power 5 at 120 s, about 8 P-red + 0.8 P-blue.
 - Docs: README, CHANGELOG, class and boss-state diagrams, traceability matrix.
+- Review (`review-local`): no Must; every changed test re-derived from the rules, none weakened.
+
 ### PR #47 merged (`f1a39b0`) — GDD v0.11, the level-1 rebalance design
 
 - Green checks, a Codex review without comment; the tuning branch then took `main` in by a merge.
