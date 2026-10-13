@@ -31,6 +31,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm lint
+      - run: pnpm knip
       - run: pnpm format:check
       - run: pnpm test
       - run: pnpm exec vite build

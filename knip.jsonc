@@ -1,0 +1,11 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
+  // Entry points come from the Vite (index.html → src/app/main.ts), Vitest and Playwright plugins.
+  "project": ["src/**/*.ts", "tests/**/*.ts"],
+  // Ports required by ADR-0006 and ADR-0009, declared ahead of their adapters (audio and save
+  // bricks): intentional, not dead code. Remove an entry here when its adapter lands.
+  "ignore": ["src/domain/ports/audio-port.ts", "src/domain/ports/storage-port.ts"],
+  // A type or interface used by an exported member of its own file (e.g. `DropTable` in
+  // `EnemyArchetype`) is part of that public data shape, not an unused export.
+  "ignoreExportsUsedInFile": { "interface": true, "type": true },
+}
