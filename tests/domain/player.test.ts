@@ -279,3 +279,57 @@ describe('Player — hits, lives and respawn (GDD §4.4, 05-state-player)', () =
     expect(player.state).toBe(PlayerState.Dead);
   });
 });
+
+describe('Player — a pointer target moves at most one step of reach (GDD v0.5 §4.1, ADR-0009)', () => {
+  const REACH = 2.5; // 150 px/s at 60 Hz
+
+  it('moves exactly the reach toward a target farther away, in its direction (3-4-5)', () => {
+    const player = controllable();
+    step(player, target(120 + 30, 272 - 40)); // 50 px away: 3/5 right, 4/5 up
+    expect(player.position.x).toBeCloseTo(120 + 0.6 * REACH, 9);
+    expect(player.position.y).toBeCloseTo(272 - 0.8 * REACH, 9);
+    expect(Math.hypot(player.position.x - 120, player.position.y - 272)).toBeCloseTo(REACH, 9);
+  });
+
+  it.each([
+    [-1, 1],
+    [1, -1],
+    [-1, -1],
+  ])('keeps the sign of each axis toward a target at (%i, %i) quadrant', (sx, sy) => {
+    const player = controllable();
+    step(player, target(120 + sx * 30, 272 + sy * 40));
+    expect(Math.sign(player.position.x - 120)).toBe(sx);
+    expect(Math.sign(player.position.y - 272)).toBe(sy);
+    expect(Math.hypot(player.position.x - 120, player.position.y - 272)).toBeCloseTo(REACH, 9);
+  });
+
+  it('lands exactly on a target within the reach, on both axes', () => {
+    const player = controllable();
+    step(player, target(120 + 1.5, 272 - 2)); // exactly 2.5 px away: the reach itself
+    expect(player.position).toEqual({ x: 121.5, y: 270 });
+  });
+
+  it('moves the reach, not onto the target, when it is just beyond the reach', () => {
+    const player = controllable();
+    step(player, target(120 + 1.5, 272 - 2.1)); // about 2.58 px away
+    expect(player.position.x).toBeLessThan(121.5);
+    expect(player.position.y).toBeGreaterThan(272 - 2.1);
+    expect(Math.hypot(player.position.x - 120, player.position.y - 272)).toBeCloseTo(REACH, 9);
+  });
+});
+
+describe('Player — isOut (05-state-player)', () => {
+  it('is false for a ship in play and through a death sequence while a life is left', () => {
+    const player = vulnerable();
+    expect(player.isOut).toBe(false);
+    player.hit();
+    expect(player.state).toBe(PlayerState.Dead);
+    expect(player.lives).toBe(2);
+    for (let i = 0; i < RESPAWN_STEPS; i += 1) {
+      expect(player.isOut).toBe(false);
+      player.advanceTimers();
+    }
+    expect(player.state).toBe(PlayerState.Entering);
+    expect(player.isOut).toBe(false);
+  });
+});

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { BossDefinition } from '../../src/domain/game/boss';
 import { CRUISER } from '../../src/domain/game/cruiser';
-import { DIVER, GUNNER, POPCORN } from '../../src/domain/game/enemy';
+import { CARRIER, DIVER, GUNNER, POPCORN } from '../../src/domain/game/enemy';
 import { Formation } from '../../src/domain/game/formation';
 import { LevelDirector } from '../../src/domain/game/level-director';
 import type { EnemySpawner } from '../../src/domain/game/level-director';
@@ -239,5 +239,161 @@ describe('LevelDirector — script walking (GDD v0.6 §7.2.1, class diagram)', (
           testScript([{ at: 0, archetype: POPCORN, count: 1, spawn: { x: 0, y: 0 } }]),
         ),
     ).not.toThrow();
+  });
+});
+
+describe('LevelDirector — load checks name their rule (class diagram rule table)', () => {
+  const SPAWN = { x: 0, y: 0 };
+  const load = (event: ScriptEvent, overrides: Partial<LevelScript> = {}): LevelDirector =>
+    new LevelDirector(testScript([event], overrides));
+
+  it.each([
+    ['a negative time', -1],
+    ['a time that is not a number', Number.NaN],
+    ['an infinite time', Number.POSITIVE_INFINITY],
+  ])('rejects %s with the time rule', (_label, at) => {
+    expect(() => load({ at, archetype: DIVER, count: 1, spawn: SPAWN })).toThrow(
+      /needs a time of 0 s or more/,
+    );
+  });
+
+  it('accepts a row at exactly 0 s: the time rule is "0 s or more"', () => {
+    expect(() => load({ at: 0, archetype: DIVER, count: 1, spawn: SPAWN })).not.toThrow();
+  });
+
+  it.each([
+    ['0', 0],
+    ['a negative count', -1],
+    ['a fractional count', 1.5],
+    ['a count that is not a number', Number.NaN],
+  ])('rejects a count of %s with the positive-whole-count rule', (_label, count) => {
+    expect(() => load({ at: 0, archetype: DIVER, count, spawn: SPAWN })).toThrow(
+      /needs a positive whole count/,
+    );
+  });
+
+  it('rejects one enemy with an interval, naming the rule', () => {
+    expect(() => load({ at: 0, archetype: GUNNER, count: 1, interval: 1, spawn: SPAWN })).toThrow(
+      /is one enemy, it takes no interval/,
+    );
+  });
+
+  it.each([
+    ['an interval that is not a number', Number.NaN],
+    ['an infinite interval', Number.POSITIVE_INFINITY],
+    ['an interval that rounds to 0 steps', 0.001],
+    ['a 0 interval', 0],
+  ])('rejects a group with %s, naming the interval rule', (_label, interval) => {
+    expect(() => load({ at: 0, archetype: GUNNER, count: 2, interval, spawn: SPAWN })).toThrow(
+      /is a group, it needs an interval/,
+    );
+  });
+
+  it('rejects a group with no interval, naming the interval rule', () => {
+    expect(() => load({ at: 0, archetype: GUNNER, count: 2, spawn: SPAWN })).toThrow(
+      /is a group, it needs an interval/,
+    );
+  });
+
+  it('accepts a group whose interval is exactly one step (1/60 s)', () => {
+    expect(() =>
+      load({ at: 0, archetype: GUNNER, count: 2, interval: 1 / 60, spawn: SPAWN }),
+    ).not.toThrow();
+  });
+
+  it.each([
+    [4, 'not 4'],
+    [9, 'not 9'],
+  ])('rejects a Popcorn formation of %d, naming the 5 to 8 rule', (count, tail) => {
+    expect(() => load({ at: 0, archetype: POPCORN, count, interval: 1, spawn: SPAWN })).toThrow(
+      new RegExp(`forms a formation of 5 to 8, ${tail}`),
+    );
+  });
+
+  it.each([5, 8])('accepts a Popcorn formation of %d, the bounds of the 5 to 8 rule', (count) => {
+    expect(() =>
+      load({ at: 0, archetype: POPCORN, count, interval: 1, spawn: SPAWN }),
+    ).not.toThrow();
+  });
+
+  it('applies the formation size to formation roles only: nine Gunners are a plain group', () => {
+    expect(() =>
+      load({ at: 0, archetype: GUNNER, count: 9, interval: 1, spawn: SPAWN }),
+    ).not.toThrow();
+  });
+
+  // warningAt 120 s: the last spawn must be before step 7200 − 240 = 6960.
+  it.each([
+    ['a lone row at 116 s', { at: 116, archetype: DIVER, count: 1, spawn: SPAWN }, false],
+    ['a lone row at 115.98 s', { at: 115.98, archetype: DIVER, count: 1, spawn: SPAWN }, true],
+    // The last member is at + (count − 1) × interval: 112 s + 4 × 1 s = 116 s.
+    [
+      'five members from 112 s, the last at 116 s',
+      { at: 112, archetype: POPCORN, count: 5, interval: 1, spawn: SPAWN },
+      false,
+    ],
+    [
+      'five members from 111.98 s, the last just before 116 s',
+      { at: 111.98, archetype: POPCORN, count: 5, interval: 1, spawn: SPAWN },
+      true,
+    ],
+  ])('judges the last spawn against warningAt − 4 s: %s', (_label, event, accepted) => {
+    const build = (): LevelDirector => load(event, { warningAt: 120 });
+    if (accepted) expect(build).not.toThrow();
+    else expect(build).toThrow(/spawns at or after warningAt/);
+  });
+
+  it.each([
+    ['4 s', 4],
+    ['not a number', Number.NaN],
+    ['infinite', Number.POSITIVE_INFINITY],
+  ])('rejects a warningAt of %s with the drain rule', (_label, warningAt) => {
+    expect(() => new LevelDirector(testScript([], { warningAt }))).toThrow(
+      /warningAt must be later than 4 s/,
+    );
+  });
+
+  it('accepts a warningAt just after the 4 s drain', () => {
+    expect(() => new LevelDirector(testScript([], { warningAt: 4.5 }))).not.toThrow();
+  });
+
+  it('rejects a Carrier row without a cargo, and a cargo on any other role', () => {
+    expect(() => load({ at: 0, archetype: CARRIER, count: 1, spawn: { x: -16, y: 64 } })).toThrow(
+      /is a Carrier, it needs a cargo/,
+    );
+    expect(() =>
+      load({ at: 0, archetype: DIVER, count: 1, spawn: SPAWN, cargo: PickupKind.Bomb }),
+    ).toThrow(/cannot carry a cargo/);
+  });
+
+  it('rejects a Carrier that starts on the field or never crosses it', () => {
+    const cargo = PickupKind.Bomb;
+    expect(() =>
+      load({ at: 0, archetype: CARRIER, count: 1, spawn: { x: 120, y: 64 }, cargo }),
+    ).toThrow(/must spawn outside the field/);
+    expect(() =>
+      load({ at: 0, archetype: CARRIER, count: 1, spawn: { x: -16, y: -40 }, cargo }),
+    ).toThrow(/must cross the field/);
+  });
+});
+
+describe('LevelDirector — which rows form a formation (class diagram)', () => {
+  it('gives a lone Popcorn and a group of Gunners no formation', () => {
+    const script = testScript([
+      { at: 0, archetype: POPCORN, count: 1, spawn: { x: 0, y: 0 } },
+      { at: 0, archetype: GUNNER, count: 2, interval: 1, spawn: { x: 0, y: 0 } },
+    ]);
+    const recorder = play(script, 100);
+    expect(recorder.formations).toHaveLength(0);
+    expect(recorder.members).toEqual([undefined, undefined, undefined]);
+  });
+
+  it('gives a Popcorn group of 2 or more the formation of its pass', () => {
+    const script = testScript([
+      { at: 0, archetype: POPCORN, count: 5, interval: 1 / 3, spawn: { x: 0, y: 0 } },
+    ]);
+    const recorder = play(script, 100);
+    expect(recorder.formations).toHaveLength(1);
+    expect(recorder.members.every((member) => member === recorder.formations[0])).toBe(true);
   });
 });
