@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Vertical slice — v0.10 (2026-10-12): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot); v0.6 adds the initial values of the enemies brick; v0.7 settles the devices brick (portrait HUD strip, touch pause button, resuming and leaving Game over by tap or Start, mouse takeover, rotation pause); v0.8 settles the player kit (Spread and Laser tables, the death release hop, bomb, shield and pickup rules, P colours, the Carrier, HUD icons); v0.9 follows the brick-E playtest (difficulty ramp by script, a named top 10 with an optional country, pointer fire held by the left button or a steering finger with an autofire option, shot proportions for readability); v0.10 settles the level brick (the 120 s level-1 script, the Heavy, the Cruiser, the WARNING, the boss HP bar and timer, the end-of-level tally and the Results screen, a vertical slice ending after level 1) |
+| **Status** | Vertical slice — v0.11 (2026-10-13): v0.11 rebalances level 1 after the friends' playtest (harder, fewer drops, the ship slightly weaker than the attack; #45); earlier, v0.10 (2026-10-12): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot); v0.6 adds the initial values of the enemies brick; v0.7 settles the devices brick (portrait HUD strip, touch pause button, resuming and leaving Game over by tap or Start, mouse takeover, rotation pause); v0.8 settles the player kit (Spread and Laser tables, the death release hop, bomb, shield and pickup rules, P colours, the Carrier, HUD icons); v0.9 follows the brick-E playtest (difficulty ramp by script, a named top 10 with an optional country, pointer fire held by the left button or a steering finger with an autofire option, shot proportions for readability); v0.10 settles the level brick (the 120 s level-1 script, the Heavy, the Cruiser, the WARNING, the boss HP bar and timer, the end-of-level tally and the Results screen, a vertical slice ending after level 1) |
 | **Working title** | *retro-shmup* (codename; the commercial title is still open) |
 | **Genre** | Retro vertical-scrolling shoot'em up (shmup), 16-bit aesthetic |
 | **Platform** | Web browser (desktop first, mobile playable), TypeScript + native Canvas 2D |
@@ -345,7 +345,7 @@ multiplied by the chain; catching a pickup neither extends nor breaks the chain.
   the script's own drops).
 - **P colours**: a full Popcorn formation gives a P of the **level's dominant colour** — red
   (Spread) in level 1 — at the position of the last member destroyed, even above the field; each
-  pass of a looping script row is a new formation. A Gunner drops at 30 % a P-red or a P-blue,
+  pass of a looping script row is a new formation. A Gunner drops at 10 % *(v0.11; was 30 %)* a P-red or a P-blue,
   50 / 50, both decided by one random draw. The Carrier's cargo is chosen by the level script
   (§5.2.1).
 
@@ -371,9 +371,9 @@ roles on three size tiers cover every wave the three levels need.
 |---|---|---|---|---|---|---|---|
 | **Popcorn** | "Where do I place my fire to clear the whole formation?" | Small (16 px) | 1 | Scripted formations of 5–8 along curves (S, sine, loop) | None, or one slow bullet per formation (later levels; none in level 1 *(v0.10)*) | None individually; **full formation destroyed = guaranteed P** of the level's dominant colour | 100 |
 | **Diver** | "Where must I *not* be?" | Small (16 px) | 1 | Enters, then dives straight at the player's position at the moment of the dive | Contact only | None | 150 |
-| **Gunner** | "Kill first, or dodge first?" | Medium (32 px) | 8 | Enters from top or side, hovers 3–4 s, leaves | 1–3 aimed bullets per volley, every 1.5 s | P-red or P-blue (50 / 50 *(v0.8)*) at **30 %** | 300 |
+| **Gunner** | "Kill first, or dodge first?" | Medium (32 px) | 8 | Enters from top or side, hovers 3–4 s, leaves | 1–3 aimed bullets per volley, every 1 s *(v0.11; was 1.5 s)* | P-red or P-blue (50 / 50 *(v0.8)*) at **10 %** *(v0.11; was 30 %)* | 300 |
 | **Carrier** | "Do I catch it before it leaves?" | Medium (32 px) | 4 | Crosses the screen laterally, never stops | None | **100 %**: Shield, Bomb or 1-UP as chosen by the level script | 500 |
-| **Heavy** | "How do I handle the pressure while I wear it down?" | Large (48–64 px; 56 × 48 *(v0.10)*) | 40 | Slow entry from the top, holds position 8–12 s (10 s *(v0.10)*), leaves | Bullet patterns: ring (12 bullets) or fan (5 bullets), every 2 s | Bomb or Shield at **60 %** | 1 000 |
+| **Heavy** | "How do I handle the pressure while I wear it down?" | Large (48–64 px; 56 × 48 *(v0.10)*) | 40 | Slow entry from the top, holds position 8–12 s (10 s *(v0.10)*), leaves | Bullet patterns: ring (12 bullets) or fan (5 bullets), every 2 s | Bomb or Shield at **30 %** *(v0.11; was 60 %)* | 1 000 |
 
 - **Contact** *(v0.3)*: touching any enemy body, boss included, hits the player like a bullet; the
   enemy takes no damage from it.
@@ -397,8 +397,8 @@ rounding residue (ADR-0019).
 | Hitbox | 16 × 16 | 16 × 16 | 32 × 32 | 32 × 32 | 56 × 48 (size tier Large) |
 | HP | 1 | 1 | 8 | 4 | 40 |
 | Movement | one every 1/3 s along the S curve below, at **70 px/s** downward | enters from the top at 60 px/s for 1 s, then dives in a straight line at **180 px/s** toward where the ship was at that moment, and keeps that heading until it leaves the field | flies in a straight line from its spawn point to its hover point in 1 s, hovers **3.5 s**, then flies back the way it came at 60 px/s | crosses the field horizontally in a straight line at **60 px/s**, away from the side it spawned on (spawn x < 120 → moves right, otherwise left); never stops | the Gunner's movement with its own values: from its spawn point (y −24, straight above its hover point) to its hover point in **2 s**, hovers **10 s**, then flies back the way it came — upward — at **40 px/s** |
-| Attack | none | contact only | **1 aimed bullet** per volley: the first 1.5 s after it stops, then every 1.5 s while hovering (2 bullets per hover) | none (contact only) | set by the script row, every **2 s** while hovering, the first volley 2 s after it stops: **ring** — 12 bullets 30° apart at **60 px/s**, the whole ring turned by 15° every other volley; or **fan** — 5 bullets 15° apart centred on the aim at the ship, at **75 px/s** |
-| Drop | formation P (§4.6) | none | P-red or P-blue at 30 % (§4.6) | its cargo, always: Shield, Bomb or 1-UP, set by the script row; an escaped Carrier drops nothing; a bomb kill drops the cargo | Bomb or Shield at 60 %, 50 / 50, from its one drop draw (as the Gunner's P) |
+| Attack | none | contact only | **1 aimed bullet** per volley: the first 1 s after it stops, then every 1 s while hovering (3 bullets per hover) *(v0.11; was 1.5 s, 2 bullets)* | none (contact only) | set by the script row, every **2 s** while hovering, the first volley 2 s after it stops: **ring** — 12 bullets 30° apart at **60 px/s**, the whole ring turned by 15° every other volley; or **fan** — 5 bullets 15° apart centred on the aim at the ship, at **75 px/s** |
+| Drop | formation P (§4.6) | none | P-red or P-blue at 10 % *(v0.11)* (§4.6) | its cargo, always: Shield, Bomb or 1-UP, set by the script row; an escaped Carrier drops nothing; a bomb kill drops the cargo | Bomb or Shield at 30 % *(v0.11)*, 50 / 50, from its one drop draw (as the Gunner's P) |
 | Score | 100 | 150 | 300 | 500 | 1 000 |
 
 The script is checked at load: a Carrier row without a cargo, a cargo on any other role, or a
@@ -454,7 +454,7 @@ Ground targets (two collision layers, terrain per level) and mid-bosses are **ex
 - **End of the fight** *(v0.4)*: when the boss is destroyed or flees, every enemy bullet on screen is
   cancelled and the boss body becomes harmless, so the player cannot die during the boss's dying
   or fleeing sequence.
-- HP *(initial, L1 shots)*: Cruiser 300, Gantry turret 450, Mothership core 600.
+- HP *(initial, L1 shots)*: Cruiser 500 *(v0.11; was 300)*, Gantry turret 450, Mothership core 600 (the later bosses are rebalanced with their levels).
 - Score: **10 000 + 100 × seconds remaining** on the timer *(initial)*. *(v0.10)* The bonus is
   flat: never multiplied by the chain, and it neither extends nor breaks the chain; hits on the
   boss score 0. The seconds remaining are the whole seconds the HUD shows (the steps left rounded
@@ -490,7 +490,7 @@ failure, the bonus being the reward for growing the weapon.
 | | Cruiser |
 |---|---|
 | Hitbox | 112 × 48 (its box never goes below y 80) |
-| HP | 300 level-1 shots (3 000 tenths); phase 2 at 66 % |
+| HP | 500 level-1 shots (5 000 tenths) *(v0.11; was 300)*; phase 2 at 66 % (3 300 tenths) |
 | Timer and bonus | 90 s; 10 000 + 100 × seconds left |
 | Entry | slides from y −24 to y 56 over **3 s**, at x 120 |
 | Phase 1 | sways x = 120 ± 56 · sin(2π · t / 8 s); alternates a **fan** of 5 bullets 15° apart aimed at the ship at 75 px/s and a **ring** of 12 at 60 px/s, one volley every second (the first, a fan, 1 s into the fight), each pattern every 2 s |
@@ -535,7 +535,7 @@ power and a harder second loop are left to after the playtests (1.x candidates, 
 
 | t (s) | Event | Teaches |
 |---|---|---|
-| 0 | Popcorn ×6 on an S curve | Aim; full-formation reward (P drops) |
+| 0 | Popcorn ×8 *(v0.11; was ×6)* on an S curve | Aim; full-formation reward (P drops) |
 | 8 | Popcorn ×6 mirrored + Diver ×2 | Move; something aims at *you* |
 | 18 | Gunner ×2 from the sides | Prioritise targets; dodge aimed bullets |
 | 28 | Carrier crosses left → right with a Shield | Catch things before they leave |
@@ -552,7 +552,7 @@ never is.
 
 | t (s) | Archetype | Count | Interval | Spawn | Hover / path |
 |---|---|---|---|---|---|
-| 0 | Popcorn | 6 | 1/3 s | x0 80, y −8 | S curve |
+| 0 | Popcorn | 8 *(v0.11)* | 1/3 s | x0 80, y −8 | S curve |
 | 8 | Popcorn | 6 | 1/3 s | x0 160, y −8 | S curve, mirrored |
 | 8 | Diver | 1 | — | x 80, y −8 | dive |
 | 8 | Diver | 1 | — | x 160, y −8 | dive |
@@ -581,7 +581,7 @@ bullets** at once.
 | 40 | Diver | 1 | — | x 80, y −8 | dive |
 | 40 | Diver | 1 | — | x 160, y −8 | dive |
 | 45 | Heavy (ring) | 1 | — | (120, −24) | (120, 72) |
-| 50 | Popcorn | 6 | 1/3 s | x0 60, y −8 | S curve |
+| 50 | Popcorn | 8 *(v0.11)* | 1/3 s | x0 60, y −8 | S curve |
 | 52 | Popcorn | 6 | 1/3 s | x0 180, y −8 | S curve, mirrored |
 | 58 | Diver | 1 | — | x 60, y −8 | dive |
 | 58 | Diver | 1 | — | x 180, y −8 | dive |
@@ -597,7 +597,8 @@ bullets** at once.
 | 82 | Gunner | 1 | — | (256, 72) | (192, 72) |
 | 82 | Gunner | 1 | — | (120, −16) | (120, 56) |
 | 90 | Heavy (fan) | 1 | — | (120, −24) | (120, 72) |
-| 92 | Popcorn | 6 | 1/3 s | x0 60, y −8 | S curve |
+| 92 | Diver *(v0.11; was a Popcorn formation ×6)* | 1 | — | x 60, y −8 | dive |
+| 93 | Diver *(v0.11)* | 1 | — | x 180, y −8 | dive |
 | 102 | Heavy (ring) | 1 | — | (60, −24) | (60, 80) |
 | 102 | Heavy (fan) | 1 | — | (180, −24) | (180, 80) |
 | 110 | Popcorn | 8 | 1/3 s | x0 120, y −8 | S curve — the last formation P |
@@ -988,3 +989,4 @@ fully playable at release quality, used to validate the design before producing 
 | After level 1 *(v0.10)* | The slice has one level: `RUN_CLEARED` → Results → Title; the Ending and the name entry with brick G (interim deviation); a data-driven level list. Scored 34/35 | Loop level 1 harder (15/35: contradicts the second loop deferred to 1.x, §10); straight to Game over (11/35: a cleared run read as a failure) |
 | Results *(v0.10)* | §8: lines one every 0.5 s, a missed bonus shown with 0, leave by confirm or tap after a 1 s lock or after 8 s; only a life lost breaks the no-miss; bomb-completed formations count; the boss bonus flat, outside the tally and the chain; boss hits score 0. Scored 34/35 | All lines at once with zeros hidden (23/35: the player never learns the missed bonuses); a counting-up score with a skip (29/35: better with the tally tick of the audio brick, revisited then) |
 | Boss staging *(v0.10)* | Waves stop at `warningAt`, enemies on the field live on; WARNING / ATTENTION for 3 s in two blinks; silence a no-op until audio; HP bar at the top of the field with a 66 % tick and the seconds left; bomb on the boss only while it fights, a crossed threshold advancing the phase; contact kills in the entry and the fight; the boss box above y 80; slow motion 0.5 s on its own switch; the ship keeps control during the 2 s explosion; one 1-UP Carrier; Popcorn bullets out of level 1; pause, timer and results pause as elsewhere | Validated by the owner as one batch with the technical decisions of ADR-0022, each the recommended option of the conception study; no alternative was scored separately |
+| Level 1 balance *(v0.11)* | After the friends' playtest (owner, 2026-10-13: "harder, more enemies, fewer power-ups, the ship always slightly weaker than the attack so the player plays strategically"), target "tense" (scored 90 against moderate 80 and hard 73). A headless study of 22 value sets with four scripted players picked set 18: Gunner P 30 → 10 %, Heavy drop 60 → 30 %, Gunner fire every 1.5 → 1 s, Popcorn rows at 0 s and 50 s ×6 → ×8, the 92 s formation → 2 Divers, Cruiser 300 → 500 shots. Measured: P per run about 11 → 8, power 5 reached near 120 s instead of 60–90 s, an average player dies about twice (once in the waves) with 15 % game over and 85 % boss kills. Not met by values alone: a skilled player still kills the Cruiser in about 10 s (target 40–70 s); the next iteration uses a more realistic scripted player and the testers' feedback (#45). Scored 83 | Ship set 18 and wait (71); better bots first (67); soften the Cruiser's phase 1 with HP ×3 (61); Cruiser HP 12 000 (an average player always loses) |
