@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Vertical slice — v0.11 (2026-10-13): v0.11 rebalances level 1 after the friends' playtest (harder, fewer drops, the ship slightly weaker than the attack; #45); earlier, v0.10 (2026-10-12): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot); v0.6 adds the initial values of the enemies brick; v0.7 settles the devices brick (portrait HUD strip, touch pause button, resuming and leaving Game over by tap or Start, mouse takeover, rotation pause); v0.8 settles the player kit (Spread and Laser tables, the death release hop, bomb, shield and pickup rules, P colours, the Carrier, HUD icons); v0.9 follows the brick-E playtest (difficulty ramp by script, a named top 10 with an optional country, pointer fire held by the left button or a steering finger with an autofire option, shot proportions for readability); v0.10 settles the level brick (the 120 s level-1 script, the Heavy, the Cruiser, the WARNING, the boss HP bar and timer, the end-of-level tally and the Results screen, a vertical slice ending after level 1) |
+| **Status** | Vertical slice — v0.11 (2026-10-13): v0.11 rebalances level 1 after the friends' playtest (harder, fewer drops, the ship slightly weaker than the attack; #45). v0.10 (2026-10-12): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot); v0.6 adds the initial values of the enemies brick; v0.7 settles the devices brick (portrait HUD strip, touch pause button, resuming and leaving Game over by tap or Start, mouse takeover, rotation pause); v0.8 settles the player kit (Spread and Laser tables, the death release hop, bomb, shield and pickup rules, P colours, the Carrier, HUD icons); v0.9 follows the brick-E playtest (difficulty ramp by script, a named top 10 with an optional country, pointer fire held by the left button or a steering finger with an autofire option, shot proportions for readability); v0.10 settles the level brick (the 120 s level-1 script, the Heavy, the Cruiser, the WARNING, the boss HP bar and timer, the end-of-level tally and the Results screen, a vertical slice ending after level 1) |
 | **Working title** | *retro-shmup* (codename; the commercial title is still open) |
 | **Genre** | Retro vertical-scrolling shoot'em up (shmup), 16-bit aesthetic |
 | **Platform** | Web browser (desktop first, mobile playable), TypeScript + native Canvas 2D |
@@ -597,7 +597,7 @@ bullets** at once.
 | 82 | Gunner | 1 | — | (256, 72) | (192, 72) |
 | 82 | Gunner | 1 | — | (120, −16) | (120, 56) |
 | 90 | Heavy (fan) | 1 | — | (120, −24) | (120, 72) |
-| 92 | Diver *(v0.11; was a Popcorn formation ×6)* | 1 | — | x 60, y −8 | dive |
+| 92 | Diver | 1 *(v0.11; was a Popcorn formation ×6)* | — | x 60, y −8 | dive |
 | 93 | Diver *(v0.11)* | 1 | — | x 180, y −8 | dive |
 | 102 | Heavy (ring) | 1 | — | (60, −24) | (60, 80) |
 | 102 | Heavy (fan) | 1 | — | (180, −24) | (180, 80) |
@@ -605,7 +605,7 @@ bullets** at once.
 | 116–120 | — | — | — | — | calm: the field drains |
 | 120 | WARNING | — | — | — | `warningAt`; the Cruiser (§6.1) |
 
-The 102 s pair is the peak of the level. The one 1-UP of level 1 crosses high (y 48) at 78 s;
+The 102 s pair is the peak of the level. *(v0.11)* The 92 s formation became two Divers on purpose: one formation P fewer, so the ship reaches its full power only near the boss, and only without dying. The one 1-UP of level 1 crosses high (y 48) at 78 s;
 the Shield Carrier at 28 s stays; the Heavies are the Bomb and Shield sources (§5.2.1). The last
 spawn is the 110 s formation's eighth member, at 112.3 s.
 
