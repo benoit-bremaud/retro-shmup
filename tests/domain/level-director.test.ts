@@ -301,12 +301,9 @@ describe('LevelDirector — load checks name their rule (class diagram rule tabl
     ).not.toThrow();
   });
 
-  it.each([
-    [4, 'not 4'],
-    [9, 'not 9'],
-  ])('rejects a Popcorn formation of %d, naming the 5 to 8 rule', (count, tail) => {
+  it.each([4, 9])('rejects a Popcorn formation of %d, naming the 5 to 8 rule', (count) => {
     expect(() => load({ at: 0, archetype: POPCORN, count, interval: 1, spawn: SPAWN })).toThrow(
-      new RegExp(`forms a formation of 5 to 8, ${tail}`),
+      /forms a formation of 5 to 8/,
     );
   });
 

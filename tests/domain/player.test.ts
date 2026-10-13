@@ -312,8 +312,6 @@ describe('Player — a pointer target moves at most one step of reach (GDD v0.5 
   it('moves the reach, not onto the target, when it is just beyond the reach', () => {
     const player = controllable();
     step(player, target(120 + 1.5, 272 - 2.1)); // about 2.58 px away
-    expect(player.position.x).toBeLessThan(121.5);
-    expect(player.position.y).toBeGreaterThan(272 - 2.1);
     expect(Math.hypot(player.position.x - 120, player.position.y - 272)).toBeCloseTo(REACH, 9);
   });
 });

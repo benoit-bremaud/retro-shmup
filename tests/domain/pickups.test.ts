@@ -335,12 +335,24 @@ describe('Run — drops, formation P and collection (GDD v0.8 §4.6, §5.2; ADR-
   });
 
   describe('the drop roll boundaries (ADR-0019: a drop when r < rate × dropRateScale)', () => {
+    /** A Random that always returns `value` and records each draw. */
+    const countingRandom = (value: number): { random: Random; draws: number[] } => {
+      const draws: number[] = [];
+      const random: Random = {
+        next: (): number => {
+          draws.push(value);
+          return value;
+        },
+        seed: (): void => undefined,
+      };
+      return { random, draws };
+    };
     const roll = (archetype: EnemyArchetype, draws: readonly number[]): Run => {
       const run = new Run({ createRandom: () => scripted(draws) });
       run.rules.destroyEnemy(enemyAt(archetype, 60, 80));
       return run;
     };
-    /** A Gunner with its own table, and a counter of the draws it costs. */
+    /** A Gunner with its own drop table. */
     const withDrops = (rate: number, kinds: readonly PickupKind[]): EnemyArchetype => ({
       ...GUNNER,
       drops: { rate, kinds },
@@ -350,14 +362,7 @@ describe('Run — drops, formation P and collection (GDD v0.8 §4.6, §5.2; ADR-
       ['a rate of 0 with kinds', withDrops(0, [PickupKind.PRed, PickupKind.PBlue])],
       ['kinds that are empty at a rate of 1', withDrops(1, [])],
     ])('draws nothing and drops nothing for %s', (_label, archetype) => {
-      const draws: number[] = [];
-      const random: Random = {
-        next: (): number => {
-          draws.push(0);
-          return 0; // would drop on any rule that rolled
-        },
-        seed: (): void => undefined,
-      };
+      const { random, draws } = countingRandom(0); // 0 would drop on any rule that rolled
       const run = new Run({ createRandom: () => random });
       run.rules.destroyEnemy(enemyAt(archetype, 60, 80));
       expect(draws).toHaveLength(0);
@@ -369,29 +374,22 @@ describe('Run — drops, formation P and collection (GDD v0.8 §4.6, §5.2; ADR-
       [0.2499, PickupKind.PRed],
       [0.25, PickupKind.PBlue],
       [0.4999, PickupKind.PBlue],
-    ])('drops on a draw of %d below a rate of 0.5, the kind from the same draw', (r, kind) => {
+    ])('drops on a draw of %s below a rate of 0.5, the kind from the same draw', (r, kind) => {
       const run = roll(withDrops(0.5, [PickupKind.PRed, PickupKind.PBlue]), [r]);
       expect(run.snapshot().pickups.count).toBe(1);
       expect(run.snapshot().pickups.at(0).kind).toBe(kind);
     });
 
     it.each([0.5, 0.5001, 0.99])(
-      'drops nothing on a draw of %d, at or above a rate of 0.5',
+      'drops nothing on a draw of %s, at or above a rate of 0.5',
       (r) => {
         const run = roll(withDrops(0.5, [PickupKind.PRed, PickupKind.PBlue]), [r]);
         expect(run.snapshot().pickups.count).toBe(0);
       },
     );
 
-    it('draws once per kill that can drop', () => {
-      const draws: number[] = [];
-      const random: Random = {
-        next: (): number => {
-          draws.push(0.9);
-          return 0.9;
-        },
-        seed: (): void => undefined,
-      };
+    it('costs exactly one random draw per kill that can drop, so a seeded replay stays stable', () => {
+      const { random, draws } = countingRandom(0.9);
       const run = new Run({ createRandom: () => random });
       run.rules.destroyEnemy(enemyAt(withDrops(0.5, [PickupKind.PRed]), 60, 80));
       expect(draws).toHaveLength(1);

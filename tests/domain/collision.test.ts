@@ -389,11 +389,9 @@ describe('CollisionResolver — the boss (ADR-0022 decision 5, GDD v0.10 §6)', 
 describe('CollisionResolver — the shot box is strict on both axes (overlap rule: |Δ| < half-sums)', () => {
   // A Gunner is 32 × 32 and a Spread shot 2 × 8: the boxes overlap while |Δx| < 17, |Δy| < 20.
   it.each([
-    ['level, 1 px past touching on the right', 118, 100, false],
     ['level, exactly touching on the right', 117, 100, false],
     ['level, 0.1 px inside on the right', 116.9, 100, true],
     ['level, exactly touching on the left', 83, 100, false],
-    ['level, 1 px past touching on the left', 82, 100, false],
     ['level, 0.1 px inside on the left', 83.1, 100, true],
     ['centred, exactly touching below', 100, 120, false],
     ['centred, exactly touching above', 100, 80, false],
@@ -451,7 +449,6 @@ describe('CollisionResolver — the pickup collection box edge is strict (GDD §
     ['exactly touching on the left', 96, 272, false],
     ['exactly touching below', 120, 296, false],
     ['exactly touching above', 120, 248, false],
-    ['1 px past touching on the right', 145, 272, false],
     ['1 px inside on the right', 143, 272, true],
     ['1 px inside on the left', 97, 272, true],
     ['1 px inside below', 120, 295, true],

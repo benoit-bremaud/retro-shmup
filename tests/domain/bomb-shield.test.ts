@@ -232,7 +232,11 @@ describe('Run — the bomb in step slot 3 (02-sequence-bomb)', () => {
         },
       ]),
     });
-    for (let i = 0; i < 150; i += 1) run.step(DT, idle());
+    // Let it fly in and settle on its hover point (y 72) before the bomb.
+    const heavy = (): { position: { y: number } } => run.snapshot().enemies.at(0);
+    run.step(DT, idle());
+    for (let i = 0; i < 600 && heavy().position.y < 72; i += 1) run.step(DT, idle());
+    expect(heavy().position.y).toBeCloseTo(72, 6);
     expect(run.snapshot().enemies.at(0).hp).toBe(shots(40));
     const log = logOf(run, [GameEventKind.EnemyHit, GameEventKind.EnemyDestroyed]);
     run.step(DT, pressing(Button.Bomb));

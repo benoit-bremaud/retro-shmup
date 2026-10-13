@@ -338,27 +338,33 @@ describe('Boss — the movement swap on the axis itself (ADR-0023 decision 3)', 
     const { boss, world } = pending([...xs]);
     // The fight starts on the axis: the first step leaves it, with no sign change yet.
     tick(boss, world);
-    expect([boss.age, boss.position.x]).toEqual([1, xs[0]]);
+    expect([boss.position.x, boss.mirror]).toEqual([xs[0], false]);
     tick(boss, world);
-    expect([boss.age, boss.position.x, boss.mirror]).toEqual([0, 120, mirror]);
+    expect([boss.position.x, boss.mirror]).toEqual([120, mirror]);
+    // The phase-2 sway now runs, leftwards when mirrored: it left the axis in the swapped direction.
+    tick(boss, world);
+    expect(boss.position.x < 120).toBe(mirror);
+    expect(boss.position.x).not.toBe(120);
   });
 
   it('does not swap while the sway leaves the axis or stays on it, only when it later crosses', () => {
     const { boss, world } = pending([120, 130, 110]);
     tick(boss, world); // 120 → 120: on the axis, no sign change
-    expect([boss.age, boss.position.x]).toEqual([1, 120]);
+    expect([boss.position.x, boss.mirror]).toEqual([120, false]);
     tick(boss, world); // 120 → 130: leaves the axis, still no sign change
-    expect([boss.age, boss.position.x]).toEqual([2, 130]);
+    expect([boss.position.x, boss.mirror]).toEqual([130, false]);
     tick(boss, world); // 130 → 110: crosses
-    expect([boss.age, boss.position.x, boss.mirror]).toEqual([0, 120, true]);
+    expect([boss.position.x, boss.mirror]).toEqual([120, true]);
   });
 
   it('swaps once: after the swap the phase-2 sway runs, with no second restart', () => {
     const { boss, world } = pending([110, 130]);
     ticks(boss, world, 2);
-    expect(boss.age).toBe(0);
+    expect(boss.position.x).toBe(120);
     ticks(boss, world, 30);
-    expect(boss.age).toBe(30);
+    // 30 steps of a 360-step sway, rightwards: a second restart would land elsewhere.
+    expect(boss.position.x).toBeCloseTo(120 + 72 * Math.sin((2 * Math.PI * 30) / 360), 6);
+    expect(boss.mirror).toBe(false);
   });
 });
 
