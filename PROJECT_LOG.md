@@ -19,8 +19,8 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   non-provider secret patterns (78, a repository security setting the owner switches on).
   Rejected as overlap or disproportionate here: Semgrep, Trivy, an SBOM.
 - Knip 6 runs in `make verify` and CI (`pnpm knip`); its first run found a dead re-export
-  (`STEP_SECONDS` in `frame-loop.ts`, removed) and the `Pool<T>` interface (ADR-0024, removed by
-  the refactor PR); the two ADR-required ports declared ahead of their adapters are ignored with
+  (`STEP_SECONDS` in `frame-loop.ts`, removed) and, before its rule was set, the `Pool<T>` interface (its removal is pending: ADR-0024 in
+  PR #49, then the refactor PR); the two ADR-required ports declared ahead of their adapters are ignored with
   a reason in `knip.jsonc`, and types used by an exported member of their own file are not
   flagged.
 - CodeQL now runs the `security-extended` query suite on both languages.

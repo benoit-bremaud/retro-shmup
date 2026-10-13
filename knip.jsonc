@@ -5,7 +5,8 @@
   // Ports required by ADR-0006 and ADR-0009, declared ahead of their adapters (audio and save
   // bricks): intentional, not dead code. Remove an entry here when its adapter lands.
   "ignore": ["src/domain/ports/audio-port.ts", "src/domain/ports/storage-port.ts"],
-  // A type or interface used by an exported member of its own file (e.g. `DropTable` in
-  // `EnemyArchetype`) is part of that public data shape, not an unused export.
+  // A type or interface used in its own file is not flagged: it covers public data shapes such as
+  // `DropTable` in `EnemyArchetype`, but also hides an interface implemented only in its own file
+  // (`Pool<T>`, retired by ADR-0024) — review such interfaces by hand.
   "ignoreExportsUsedInFile": { "interface": true, "type": true },
 }
