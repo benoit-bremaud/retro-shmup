@@ -1,7 +1,7 @@
 # Traceability matrix — UML study (1.0)
 
 > **Scope**: the UML study of [docs/architecture](README.md) against the
-> [Game Design Document](../design/game-design-document.md) v0.10, ADR-0001 to ADR-0010,
+> [Game Design Document](../design/game-design-document.md) v0.11, ADR-0001 to ADR-0010,
 > ADR-0014, ADR-0015, ADR-0018, ADR-0019 to ADR-0023 (ADR-0011 to ADR-0013 are tooling decisions, and ADR-0016 and ADR-0017 deployment and catalogue decisions, with no UML realization).
 > **Purpose**: prove coverage — every use case is realized, every class and component is used,
 > nothing is orphaned. Update this file in the same change as any diagram.

@@ -20,6 +20,30 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 - The study harness re-run on the applied code gives the study's set 18 exactly: zigzag + bombs
   15 % game over, 85 % boss kills, 2.3 deaths, power 5 at 120 s, about 8 P-red + 0.8 P-blue.
 - Docs: README, CHANGELOG, class and boss-state diagrams, traceability matrix.
+### PR #47 merged (`f1a39b0`) — GDD v0.11, the level-1 rebalance design
+
+- Green checks, a Codex review without comment; the tuning branch then took `main` in by a merge.
+
+### Rebalance design, GDD v0.11 (branch `docs/rebalance-v011`) — Refs #45
+
+- Owner playtest direction (friends already testing the deployed level 1): harder, more enemies,
+  fewer power-ups, the ship always slightly weaker than the enemies' attack so the player plays
+  strategically; the hall of fame matters (#46).
+- Baseline measured headless (four scripted players, 20 seeds each): power 5 reached at 60–90 s,
+  about 11 P per run, the Cruiser killed in 4–26 s of 90, deaths only during the boss.
+- Owner decisions (scored): target "tense" (90); then option D (83): ship set 18 to the testers
+  and build a more realistic scripted player for the next iteration. Set 18 (22 sets tried):
+  Gunner P 30 → 10 %, Heavy drop 60 → 30 %, Gunner fire 1.5 → 1 s, Popcorn rows at 0 s and 50 s
+  ×6 → ×8, the 92 s formation → 2 Divers, Cruiser 300 → 500 shots. Measured: about 8 P per run,
+  power 5 near 120 s, an average player dies about twice (once in the waves), 15 % game over,
+  85 % boss kills; a skilled player still kills the Cruiser in about 10 s (not met).
+- The tuning PR follows (values, the 28 test assertions that pin them, stale comments).
+- Owner ideas noted for later (brick G or game-feel PRs): nicer, more menacing enemy ships; a
+  small victory animation after the boss; very rare, very discreet far-background objects
+  (satellites, a distant planet) and, as a wink, the hall-of-fame number 1's name drifting far
+  away; the player hitbox size after the playtest.
+
+### PR #44 merged (`14aa215`) — F-3, the tally and the Results screen; brick F done (closed #33)
 
 ## 2026-10-12
 
