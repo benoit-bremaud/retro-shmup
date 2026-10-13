@@ -144,7 +144,7 @@ installs the git hooks (husky):
 |---|---|---|
 | `pre-commit` | `gitleaks git --pre-commit --staged`, then lint-staged: ESLint and `prettier --check` on the staged files | under 3 s |
 | `commit-msg` | commitlint: Conventional Commits with a scope from the project list | instant |
-| `pre-push` (`make verify`) | typecheck (app, node, smoke and domain projects), lint, format check, Vitest with coverage, `gitleaks git` on the full history, `pnpm audit --audit-level high`, `sonar-scanner` against the local SonarQube (`localhost:9000`) with quality-gate wait | under 90 s |
+| `pre-push` (`make verify`) | typecheck (app, node, smoke and domain projects), lint, `knip` (unused files, exports and dependencies; config and justified exceptions in `knip.jsonc`), format check, Vitest with coverage, `gitleaks git` on the full history, `pnpm audit --audit-level high`, `sonar-scanner` against the local SonarQube (`localhost:9000`) with quality-gate wait | under 90 s |
 
 `make verify` checks the working tree: push from a clean tree, so what is verified is what is
 pushed.
