@@ -8,6 +8,26 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-13
 
+### PR #50 merged (`7a2f2a8`) — Knip and CodeQL security-extended
+
+- Green checks, no Codex comment. A Stryker trial on the core modules scored 89.7 % (about 93–94 % without equivalent mutants) after patching its Vitest runner locally (it ran 0 tests per mutant with Vitest 5); 15 real test gaps listed for a follow-up.
+
+### Quality tooling — Knip and CodeQL security-extended (branch `chore/quality-tools`)
+
+- Owner question: other tools for quality and above all security. Inventory first (already in
+  place: strict TypeScript and ESLint with project rules, Prettier, commitlint, Vitest coverage,
+  the browser smoke test, gitleaks, `pnpm audit`, Dependabot, Dependency Review, CodeQL,
+  SonarQube, OSSF Scorecard, SHA-pinned actions, a strict CSP; pnpm 10 already blocks dependency
+  install scripts; secret scanning and push protection on). Scored candidates; the owner chose
+  Knip (88), CodeQL `security-extended` (84), a Stryker trial on demand (83), and GitHub's
+  non-provider secret patterns (78, a repository security setting the owner switches on).
+  Rejected as overlap or disproportionate here: Semgrep, Trivy, an SBOM.
+- Knip 6 runs in `make verify` and CI (`pnpm knip`); its first run found a dead re-export
+  (`STEP_SECONDS` in `frame-loop.ts`, removed) and, before its rule was set, the `Pool<T>` interface (its removal is pending: ADR-0024 in
+  PR #49, then the refactor PR); the two ADR-required ports declared ahead of their adapters are ignored with
+  a reason in `knip.jsonc`, and types used by an exported member of their own file are not
+  flagged.
+- CodeQL now runs the `security-extended` query suite on both languages.
 ### ADR-0024, retire the `Pool<T>` interface (branch `docs/adr-0024-pool`)
 
 - Owner request: quality code without over-engineering. SonarQube on main `d486309`: quality gate

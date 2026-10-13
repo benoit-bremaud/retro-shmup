@@ -9,6 +9,7 @@ verify: check secrets audit sonar-scan
 check:
 	pnpm typecheck
 	pnpm lint
+	pnpm knip
 	pnpm format:check
 	pnpm test:coverage
 
