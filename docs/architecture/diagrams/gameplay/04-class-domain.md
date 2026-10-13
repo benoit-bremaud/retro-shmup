@@ -1,7 +1,7 @@
 # Class diagram — gameplay — domain model of a run (1.0)
 
 > **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.10 §4–§8 (with §5.2.1, §6.1, §7.2.1 and §7.2.2), §9.2, §10
-> **Related ADRs**: ADR-0002 (Simulation, Random, Pool), ADR-0003 (composition, patterns),
+> **Related ADRs**: ADR-0002 (Simulation, Random, pools), ADR-0024 (`FixedPool<T>` is the pool contract), ADR-0003 (composition, patterns),
 > ADR-0009 (IntentFrame), ADR-0010 (event bus per run, `DropTable` as data,
 > presentation outside the outcome), ADR-0019 (run seed, damage in tenths, weapons as data,
 > pickups, formations), ADR-0022 and ADR-0023 (strategy factories, the boss outside the enemy pool,
@@ -24,7 +24,7 @@ Attributes shown are the ones the GDD rules need, not an exhaustive field list.
 
 **Stereotype legend**: «interface» and «enumeration» are standard UML; «data» marks an
 immutable record loaded from the level scripts (shared by every instance using it); «pooled»
-marks a class whose instances come from a `Pool<T>` (ADR-0002) and are recycled, never
+marks a class whose instances come from a `FixedPool<T>` (ADR-0002, ADR-0024) and are recycled, never
 allocated in the loop; «utility» marks a stateless function module.
 
 ## Diagram A — run, world, player, scoring
@@ -111,11 +111,11 @@ classDiagram
     +dropRateScale: number
   }
   class World {
-    -playerBullets: Pool~Bullet~
-    -enemyBullets: Pool~Bullet~
-    -pickups: Pool~Pickup~
-    -enemies: Pool~Enemy~
-    -formations: Pool~Formation~
+    -playerBullets: FixedPool~Bullet~
+    -enemyBullets: FixedPool~Bullet~
+    -pickups: FixedPool~Pickup~
+    -enemies: FixedPool~Enemy~
+    -formations: FixedPool~Formation~
     -boss: Boss
     +spawnPickup(kind: PickupKind, x, y, motion: PickupMotion) boolean
     +cancelEnemyBullets() void
@@ -234,8 +234,7 @@ classDiagram
     BOMB
     ONE_UP
   }
-  class Pool~T~ {
-    <<interface>>
+  class FixedPool~T~ {
     +acquire() T | undefined
     +release(item: T) void
     +size: number

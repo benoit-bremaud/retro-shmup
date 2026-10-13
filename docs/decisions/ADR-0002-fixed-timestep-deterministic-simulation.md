@@ -1,6 +1,7 @@
 # ADR-0002: Fixed 60 Hz timestep, deterministic simulation, performance budget
 
-**Status:** Accepted — 2026-10-07
+**Status:** Accepted — 2026-10-07. **Partially superseded by ADR-0019** (decision 6, the pickup
+pool log) **and ADR-0024** (the `Pool<T>` interface: `FixedPool<T>` is the pool contract).
 
 ## Context
 

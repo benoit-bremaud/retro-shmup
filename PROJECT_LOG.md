@@ -8,6 +8,22 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-13
 
+### ADR-0024, retire the `Pool<T>` interface (branch `docs/adr-0024-pool`)
+
+- Owner request: quality code without over-engineering. SonarQube on main `d486309`: quality gate
+  passed, 0 bugs, 0 vulnerabilities, 0 hotspots, 0 code smells, A/A/A, coverage 97.6 % (lines
+  99.7 %, branches 92.9 %), duplication 0.5 % (2 blocks, 34 lines), 0 min of debt. An
+  over-engineering audit found no Must and four leftovers: `Body.volleys[1]`, `Pool<T>`,
+  `RunConfig.script`, `LevelTally.reset()`; `RunPresenter` (351 lines) to watch.
+- Owner decisions (scored): A (93) — one refactor PR plus this ADR for `Pool<T>`, since ADR-0002
+  names it as a contract; and a Stryker mutation-testing trial, measured before any adoption.
+- ADR-0024 partially supersedes ADR-0002: `FixedPool<T>` is the pool contract; an interface
+  returns only with a second implementation. ADR-0002's Status now names ADR-0019 and ADR-0024;
+  the class diagram, the decision index and the traceability matrix follow.
+
+### PR #48 merged (`d486309`) — the set 18 balance applied; deployed to the testers
+
+
 ### Level-1 balance applied to the code — set 18 (branch `feat/rebalance-set18`, #45)
 
 - Applies the GDD v0.11 values chosen by the headless balance study (set 18): Gunner P 30 → 10 %,

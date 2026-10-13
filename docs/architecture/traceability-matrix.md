@@ -47,7 +47,7 @@ SD-boss (added with the level brick) uses `Run`, `RunRules`, `World`, `LevelDire
 | `Weapon`, `WeaponKind`, `WeaponLevel`, `ShotSpec` | | | ✓ (`powerDown`) | | | §4.3 |
 | `Bullet` | | ✓ (`canHit`, `recordHit`) | ✓ (released) | ✓ (cancelled) | | §4.3 |
 | `Pickup`, `PickupKind`, `PickupMotion` | | ✓ (spawned, moved, collected) | ✓ (death release spawned) | ✓ (drops of bomb kills) | STM-player (collection guard) | §4.4, §4.6 |
-| `Pool<T>` | | ✓ (releases) | ✓ | ✓ | | ADR-0002 |
+| `FixedPool<T>` | | ✓ (releases) | ✓ | ✓ | | ADR-0002, ADR-0024 |
 | `ScoreKeeper`, `LevelTally`, `TallyTuning` | | ✓ (`formationsCleared`) | ✓ (`lifeLost`) | ✓ (`bombUsed`) | STM-boss (bonuses), STM-scenes (`Results`), SD-boss | §8 |
 | `CollisionResolver` | | ✓ (passes 1 and 4) | ✓ (passes 2 and 3) | | | §4.1, §4.6, §5.2 |
 | `LevelDirector`, `LevelScript` | | ✓ (`dominantColour`, a formation per pass) | | | STM-boss (`warningAt`, `startBoss`), SD-boss | §7.1, §7.2.2 |
