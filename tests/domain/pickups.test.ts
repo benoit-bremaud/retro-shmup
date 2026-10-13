@@ -280,9 +280,10 @@ describe('Run — drops, formation P and collection (GDD v0.8 §4.6, §5.2; ADR-
   });
 
   it.each([
-    [0.1, PickupKind.PRed],
-    [0.2, PickupKind.PBlue],
-  ])('drops a Gunner P on a draw of %d below 30 %, its colour from the same draw', (r, kind) => {
+    // GDD v0.11 §5.2: rate 10 %, the colour from r / rate — red below 0.05, blue from 0.05.
+    [0.02, PickupKind.PRed],
+    [0.07, PickupKind.PBlue],
+  ])('drops a Gunner P on a draw of %d below 10 %, its colour from the same draw', (r, kind) => {
     const run = new Run({ createRandom: () => scripted([r]) });
     const log = logOf(run, [SPAWNED]);
     run.rules.destroyEnemy(enemyAt(GUNNER, 60, 80));
@@ -291,17 +292,18 @@ describe('Run — drops, formation P and collection (GDD v0.8 §4.6, §5.2; ADR-
   });
 
   it.each([
+    // GDD v0.11 §5.2.1: rate 30 %, a Bomb below 0.15, a Shield from 0.15.
     [0.1, PickupKind.Bomb],
-    [0.4, PickupKind.Shield],
-  ])('drops a Heavy %d below 60 % as a Bomb or a Shield picked by the same draw', (r, kind) => {
+    [0.2, PickupKind.Shield],
+  ])('drops a Heavy %d below 30 % as a Bomb or a Shield picked by the same draw', (r, kind) => {
     const run = new Run({ createRandom: () => scripted([r]) });
     const log = logOf(run, [SPAWNED]);
     run.rules.destroyEnemy(enemyAt(HEAVY_RING, 60, 80));
     expect(log).toEqual([`${String(SPAWNED)}:${String(kind)}:0@60,80`]);
   });
 
-  it('drops nothing from a Heavy on a draw of 60 % or more', () => {
-    const run = new Run({ createRandom: () => scripted([0.6]) });
+  it('drops nothing from a Heavy on a draw of 30 % or more', () => {
+    const run = new Run({ createRandom: () => scripted([0.3]) });
     run.rules.destroyEnemy(enemyAt(HEAVY_RING, 60, 80));
     expect(run.snapshot().pickups.count).toBe(0);
   });
@@ -315,12 +317,12 @@ describe('Run — drops, formation P and collection (GDD v0.8 §4.6, §5.2; ADR-
     ]);
   });
 
-  it('drops nothing on a draw of 30 % or more, and draws nothing for a Popcorn', () => {
+  it('drops nothing on a draw of 10 % or more, and draws nothing for a Popcorn', () => {
     const draws: number[] = [];
     const random: Random = {
       next: (): number => {
-        draws.push(0.3);
-        return 0.3;
+        draws.push(0.1);
+        return 0.1;
       },
       seed: (): void => undefined,
     };
@@ -352,7 +354,7 @@ describe('Run — drops, formation P and collection (GDD v0.8 §4.6, §5.2; ADR-
   });
 
   it('publishes no PICKUP_SPAWNED for a drop refused by a full pool', () => {
-    const run = new Run({ createRandom: () => scripted(Array.from({ length: 9 }, () => 0.1)) });
+    const run = new Run({ createRandom: () => scripted(Array.from({ length: 9 }, () => 0.02)) });
     const log = logOf(run, [SPAWNED]);
     for (let i = 0; i < PICKUP_POOL_SIZE + 1; i += 1)
       run.rules.destroyEnemy(enemyAt(GUNNER, 60, 80));

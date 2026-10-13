@@ -39,7 +39,7 @@ function tallyRun(): Run {
           ...CRUISER,
           phases: [
             {
-              hpThreshold: 3000,
+              hpThreshold: CRUISER.stats.hp,
               movement: swayMovement({ amplitude: 0, periodS: 8 }),
               attack: NoAttack,
             },
@@ -77,7 +77,7 @@ describe('Run — the tally through a level (GDD v0.10 §8, ADR-0022 decision 7)
       run.step(DT, frame());
     }
     const beforeKill = run.snapshot().score;
-    run.rules.damageBoss(3000);
+    run.rules.damageBoss(5000); // the Cruiser's 500 shots (GDD v0.11 §6.1)
     const withBossBonus = run.snapshot().score;
     expect(withBossBonus - beforeKill).toBeGreaterThanOrEqual(10000);
     run.events().subscribe(GameEventKind.LevelCleared, () => {

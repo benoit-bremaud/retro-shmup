@@ -103,8 +103,8 @@ describe('Heavy archetypes (GDD v0.10 §5.2, §5.2.1)', () => {
     expect(heavy.carriesCargo).toBe(false);
   });
 
-  it.each([HEAVY_RING, HEAVY_FAN])('$id drops a Bomb or a Shield at 60 %', (heavy) => {
-    expect(heavy.drops.rate).toBe(0.6);
+  it.each([HEAVY_RING, HEAVY_FAN])('$id drops a Bomb or a Shield at 30 % (GDD v0.11)', (heavy) => {
+    expect(heavy.drops.rate).toBe(0.3);
     expect(heavy.drops.kinds).toEqual([PickupKind.Bomb, PickupKind.Shield]);
   });
 

@@ -23,10 +23,12 @@ What the current build plays:
 - **Enemies**: the 120 s script of level 1 — Popcorn formations, Divers, Gunners, Heavies firing
   turning rings or aimed fans, and two Carriers crossing the field, one with a Shield, one with a
   1-UP; the script loops every 120 s until the boss arrives; aimed bullets, contact hits.
+  Level 1 is rebalanced after the first playtest (GDD v0.11, #45): fewer drops, Gunners firing
+  every second, two more Popcorn per opening formation and a 500-shot Cruiser.
 - **Player kit**: the Spread (red) and the Laser (blue) on five shared power levels, the weapon
   chosen by the colour of the last P caught; Laser bolts pass through up to three enemies. A P
-  drops from Gunners (30 %) and from every fully destroyed Popcorn formation. Shield, Bomb and
-  1-UP pickups, with a 1 000-point bonus at the cap; Heavies drop a Bomb or a Shield at 60 %.
+  drops from Gunners (10 %) and from every fully destroyed Popcorn formation. Shield, Bomb and
+  1-UP pickups, with a 1 000-point bonus at the cap; Heavies drop a Bomb or a Shield at 30 %.
   Bombs, 2 per life up to 5, cancel every enemy bullet and hit every enemy on the field; the
   shield absorbs one hit; a death costs a power level, released as a P to catch back, and resets
   the bombs to 2.

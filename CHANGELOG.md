@@ -61,6 +61,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Level 1 is harder after the friends' playtest (GDD v0.11, #45): Gunners drop a P at 10 % (was
+  30 %) and fire every 1 s (was 1.5 s), Heavies drop a Bomb or a Shield at 30 % (was 60 %), the
+  0 s and 50 s Popcorn formations have 8 members (was 6), the 92 s formation becomes two Divers,
+  and the Cruiser takes 500 level-1 shots (was 300), its phase 2 from 3 300 tenths.
 - The ship's bright cockpit is now exactly its 4 × 4 hitbox, at the centre, so a bullet that
   visibly crosses the hull or a wing without hitting is no longer confusing: the yellow square
   shows where a bullet counts (playtest of 2026-10-12; the hitbox itself is unchanged).

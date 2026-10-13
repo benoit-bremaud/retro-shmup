@@ -83,8 +83,8 @@ export const GUNNER: EnemyArchetype = {
   }),
   attack: aimedAttack({ periodS: GunnerTuning.firePeriodSeconds, speed: EnemyBulletTuning.speed }),
   formation: false,
-  // GDD v0.8 §5.2: a P at 30 %, red or blue 50 / 50.
-  drops: { rate: 0.3, kinds: [PickupKind.PRed, PickupKind.PBlue] },
+  // GDD v0.11 §5.2: a P at 10 %, red or blue 50 / 50.
+  drops: { rate: 0.1, kinds: [PickupKind.PRed, PickupKind.PBlue] },
   carriesCargo: false,
 };
 
@@ -115,8 +115,8 @@ const HEAVY_MOVEMENT = enterHoldLeave({
   leaveSpeed: HeavyTuning.leaveSpeed,
 });
 
-// GDD v0.10 §5.2.1: a Bomb or a Shield at 60 %, 50 / 50, from its one drop draw.
-const HEAVY_DROPS: DropTable = { rate: 0.6, kinds: [PickupKind.Bomb, PickupKind.Shield] };
+// GDD v0.11 §5.2.1: a Bomb or a Shield at 30 %, 50 / 50, from its one drop draw.
+const HEAVY_DROPS: DropTable = { rate: 0.3, kinds: [PickupKind.Bomb, PickupKind.Shield] };
 
 /** The Heavy with the ring (GDD v0.10 §5.2.1): the script row picks ring or fan, never a draw. */
 export const HEAVY_RING: EnemyArchetype = {

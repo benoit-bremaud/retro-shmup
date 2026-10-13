@@ -147,7 +147,9 @@ describe('EnterHoldLeave and AimedAttack — Gunner (GDD v0.6 §5.2.1)', () => {
     expect(gunner.velocity.y).toBeCloseTo(0, 9);
   });
 
-  it('fires 2 aimed bullets per hold: 1.5 s and 3 s after it stops', () => {
+  // GDD v0.11 §5.2.1: it stops at 1 s (frame 60) and holds 3.5 s (to frame 270); one bullet
+  // every 1 s from the stop gives frames 120, 180 and 240 — the next (300) falls after the hold.
+  it('fires 3 aimed bullets per hold: 1 s, 2 s and 3 s after it stops', () => {
     const gunner = spawned(GUNNER, { spawn: { x: 120, y: -16 }, hover: { x: 120, y: 80 } });
     const shots = new RecordingShots();
     const firedAt: number[] = [];
@@ -156,7 +158,7 @@ describe('EnterHoldLeave and AimedAttack — Gunner (GDD v0.6 §5.2.1)', () => {
       run(gunner, shipAt(120, 272), 1, shots);
       if (shots.shots.length > before) firedAt.push(gunner.age);
     }
-    expect(firedAt).toEqual([150, 240]);
+    expect(firedAt).toEqual([120, 180, 240]);
   });
 
   it('aims at the ship at 75 px/s, slower than the ship (150 px/s)', () => {

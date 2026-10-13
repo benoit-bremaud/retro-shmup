@@ -106,8 +106,10 @@ function replay(steps: number, seed = 1): string {
 
 describe('Level simulation — level 1, headless', () => {
   it('replays identically from the same seed and scripted inputs over two passes', () => {
-    const first = replay(2 * ONE_PASS);
-    expect(first).toBe(replay(2 * ONE_PASS));
+    // Seed 3: with the GDD v0.11 Heavy drop at 30 %, seed 1 no longer rolls a Bomb from any of
+    // the 8 Heavies of two passes; seed 3 does, so the replay still covers a Bomb drop.
+    const first = replay(2 * ONE_PASS, 3);
+    expect(first).toBe(replay(2 * ONE_PASS, 3));
     const { log } = JSON.parse(first) as { log: string[] };
     const has = (prefix: string): boolean => log.some((entry) => entry.startsWith(prefix));
     expect(has(`${String(GameEventKind.EnemyDestroyed)}:`)).toBe(true);
