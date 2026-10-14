@@ -71,7 +71,11 @@ classDiagram
   }
   class ButtonNames {
     <<table>>
-    standard-mapping index to A, B, X, Y, LB, RB, LT, RT, SELECT, START, L3, R3, arrows
+    standard-mapping index 0 to 15 to A, B, X, Y, LB, RB, LT, RT, SELECT, START, L3, R3, arrows
+  }
+  class Bindings {
+    <<interface>>
+    keyboard and gamepad slots per remappable intent, ADR-0012
   }
   class KeyLabels {
     adapter: learned code to character, layout map, fixed names
@@ -200,15 +204,20 @@ classDiagram
   screen (seven intent rows with two slot cells, then *Restore defaults* and *Back*): up and
   down change the row, left and right the column, `confirm` or a tap on a cell starts the
   capture; it shares `Menu`'s press, release and opening-guard rules. `BindingsEditor` is pure
-  domain: `bind` puts the captured input in the slot and swaps it with the slot that held it on
-  the same device, so no intent is left unbound; `restore` resets one device. The scene machine
+  domain: `bind` puts the captured input in the slot and exchanges it with the slot that held it
+  on the same device; when that would empty another intent's primary, its secondary moves up,
+  and when it has none `bind` refuses (the capture goes on), so no intent is left unbound;
+  `restore` resets one device. The scene machine
   asks the input port to `startCapture`, polls `captureNext` each step until `key`, `button` or
-  `cancelled` (the keyboard's `Esc`, the gamepad's 5 s), and cancels on a tap or on leaving.
+  `cancelled` (the keyboard's `Escape`, the gamepad's 5 s), and cancels on a tap, on leaving or
+  on an automatic pause trigger; the answering step reads no menu action. The capture answers
+  only the edited device and only the capturable set of GDD v0.15 §4.2 (a closed list; refused
+  keys leave it waiting), and the adapter prevents every key's default meanwhile but `Escape`'s.
   Gamepad labels come from the domain's `ButtonNames` table; keyboard labels from
   `InputPort.label`, which the `KeyLabels` part of the adapter answers from the characters learned
   from the session's key events, then the layout map, then US, with fixed names for the other
   keys — always a string the menu font can draw.
 - **Save version 2**: `Options` gains `bindings`; version 1 migrates by adding the defaults
-  (ADR-0006 decision 4); the bindings are parsed by allowlist (key code shape, index range,
-  primary present, no duplicate, never `Enter`, `NumpadEnter` or `Esc`), a failing device getting
-  its defaults back.
+  (ADR-0006 decision 4); the bindings are parsed by allowlist (every key code from the capturable
+  set, every index from 0 to 15, primary present, no duplicate), a failing device getting its
+  defaults back.

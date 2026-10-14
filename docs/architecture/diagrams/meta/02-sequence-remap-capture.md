@@ -33,7 +33,7 @@ sequenceDiagram
     Input-->>Scenes: waiting
   end
   Player->>Input: keydown KeyC (character c)
-  Note over Input: Esc cancels, Enter and NumpadEnter are refused, the character is learned
+  Note over Input: Escape cancels, a key outside the capturable set is refused, the character is learned
   Scenes->>Input: captureNext()
   Input-->>Scenes: key KeyC
   Scenes->>Editor: bind(bindings, keyboard, bomb, secondary, KeyC)
@@ -49,8 +49,11 @@ sequenceDiagram
 
 - The press that starts the capture is not the captured input: the input port only answers a
   key or button pressed after `startCapture`.
-- While waiting, the scene machine reads no menu action from the frame (`back` and `Pause` are
-  not acted on), so a gamepad `B` or `Start` can be bound; the keyboard's `Esc` cancels through
-  `captureNext`, and a tap or leaving the scene calls `cancelCapture`.
+- While waiting, and in the step that receives the answer, the scene machine reads no menu action
+  from the frame (`back` and `Pause` are not acted on), so a gamepad `B` or `Start` can be bound
+  and `Escape` never also leaves the screen; the keyboard's `Escape` cancels through
+  `captureNext`, and a tap, leaving the scene or an automatic pause trigger calls `cancelCapture`.
+- When `bind` refuses (the exchange would leave an intent without a key), the scene machine
+  calls `startCapture` again: the wait goes on.
 - `label` is read at each draw, never stored: a character learned later corrects the label at
   once.

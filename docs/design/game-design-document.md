@@ -195,35 +195,51 @@ remappable.
 
 **The controls screen** *(v0.15, G1b)*: *Controls* (FR *COMMANDES*) joins the options. It
 edits the device of the two that was used last, keyboard or gamepad (the keyboard before
-either), named under the header (*KEYBOARD* / *CLAVIER*, *GAMEPAD* / *MANETTE*); the row is
-hidden only when the last device used is touch (a mouse player on a computer still sees it and
-edits the keyboard).
-- **Layout**: one row per remappable intent, in the order up, down, left, right, fire, bomb,
-  pause, with its label and its two slots in two columns (an empty secondary slot shows `-`);
-  then *RESTORE DEFAULTS* / *PAR DEFAUT* and *BACK*. One cell is highlighted at a time: up and
-  down change the row, left and right the column; on the last two rows left and right do
-  nothing. `confirm`, or a tap or click on a cell, starts the capture of that slot.
-- **Capture**: the cell shows *PRESS* / *APPUIE* (steady, no blink). The next key or button
-  binds that slot; one already bound elsewhere on the same device swaps with it; `Esc` cancels
-  on keyboard, and on gamepad the wait cancels itself after 5 s. `Enter`, `NumpadEnter` and
-  `Esc` are refused (the wait goes on). A tap or click during the capture cancels it.
-- **Restore defaults** asks first (*RESTORE DEFAULTS* question, *NO* first), like *Quit*, and
-  resets the bindings of the device edited only.
-- **Key labels** in the menu font, which gains the digits and four arrow glyphs: a letter or
-  digit key shows the character the player's keyboard prints for it, learned from the key events
-  of the session (each key press pairs a physical key with its character), else from the
-  browser's layout map where it exists, else the US character; the arrows show an arrow glyph;
-  the other keys a fixed name (*SPACE* / *ESPACE*, *ENTER*, *SHIFT L* / *MAJ G*, *CTRL L* /
-  *CTRL G*, *ALT L*, *TAB*, …); a key whose character the font cannot draw shows its physical
-  name. Gamepad buttons show their standard names (*A*, *B*, *X*, *Y*, *LB*, *RB*, *LT*, *RT*,
-  *SELECT*, *START*, *L3*, *R3* and the d-pad arrows). The learned characters stay in memory:
-  nothing is saved or sent (PRIV-1).
+either), named under the header (*KEYBOARD* / *CLAVIER*, *GAMEPAD* / *MANETTE*). While a cell is
+being chosen the edited device follows the last keyboard or gamepad input, the name updating;
+during a capture it is fixed, and the capture answers only an input of that device, whatever
+device started it. The row is hidden only when the last device used is touch (a mouse player on
+a computer still sees it and edits the keyboard).
+- **Layout**: one row per remappable intent, in the order *UP* / *HAUT*, *DOWN* / *BAS*, *LEFT* /
+  *GAUCHE*, *RIGHT* / *DROITE*, *FIRE* / *TIR*, *BOMB* / *BOMBE*, *PAUSE* / *PAUSE*, with its
+  label (6 characters at most) and its two slots in two columns of 10 characters (an empty slot
+  is blank); then *RESTORE DEFAULTS* / *PAR DEFAUT* and *BACK* / *RETOUR*. One cell is
+  highlighted at a time: up and down change the row, left and right the column; on the last two
+  rows left and right do nothing. `confirm`, or a tap or click on a cell, starts the capture of
+  that slot.
+- **Capture**: the cell shows *PRESS* / *APPUIE* (steady, no blink). Every key's browser default
+  is prevented while waiting, except `Escape`'s. The next capturable key or button of the edited
+  device binds that slot; `Escape` cancels on keyboard, and on gamepad the wait cancels itself
+  after 5 s; a key outside the capturable set below is refused and the wait goes on. A tap or
+  click, leaving the scene, or an automatic pause trigger (tab hidden, focus lost, the active
+  gamepad lost) cancels the capture, and the screen stays on the cell. The step that receives the
+  answer (a key, a button or a cancel) reads no menu action from its frame either, so `Escape`
+  (which also sends `back` and `pause`), `B` or `Start` never act twice.
+- **Swap**: an input already bound to another slot of the same device moves to the captured slot
+  and the two slots exchange. When the exchange would empty another intent's primary slot, that
+  intent's secondary input moves up to primary; when it has none, the input is refused (the wait
+  goes on), so no intent is ever left unbound.
+- **Restore defaults** asks first (question *RESTORE DEFAULTS* / *PAR DEFAUT*, *NO* / *NON* first,
+  then *YES* / *OUI*), like *Quit*, and resets the bindings of the device edited only.
+- **Capturable keys and labels** (a closed set, each label 10 characters at most, in the menu
+  font, which gains the digits 0–9 and four arrow glyphs): the letters `KeyA`–`KeyZ` and digits
+  `Digit0`–`Digit9` show the character the player's keyboard prints for them — learned from the
+  session's key events (each press pairs a physical key with its character), else from the
+  browser's layout map where it exists, else the US character; a learned character the font
+  cannot draw (an accent, `&`) falls back to the US character. The arrows show their glyph;
+  `Space` *SPACE* / *ESPACE*; `ShiftLeft`, `ShiftRight` *SHIFT L*, *SHIFT R* / *MAJ G*, *MAJ D*;
+  `ControlLeft`, `ControlRight` *CTRL L*, *CTRL R* / *CTRL G*, *CTRL D*; `AltLeft`, `AltRight`
+  *ALT L*, *ALT R* / *ALT G*, *ALT D*; `Backspace` *BACKSPACE* / *EFFACER*; `Numpad0`–`Numpad9`
+  *NUM 0*–*NUM 9*. Every other key (`Tab`, `F1`–`F12`, `MetaLeft`, `ContextMenu`, `Enter`,
+  `NumpadEnter`, …) is refused. Gamepad buttons 0 to 15 are capturable, with their standard
+  names (*A*, *B*, *X*, *Y*, *LB*, *RB*, *LT*, *RT*, *SELECT*, *START*, *L3*, *R3* and the d-pad
+  arrows); button 16 (the home button, often the system's) is refused. The learned characters
+  stay in memory: nothing is saved or sent (PRIV-1).
 - **Saved** at once, in the save document's version 2: the options gain the bindings of both
   devices; version 1 migrates by adding the default bindings (ADR-0006 decision 4). The stored
-  bindings are untrusted input, read by allowlist: a key code of letters and digits up to 20
-  characters, a button index from 0 to 16, a primary slot always present, no input bound twice on
-  a device, and never `Enter`, `NumpadEnter` or `Esc`; a device whose bindings fail any check gets
-  its defaults back.
+  bindings are untrusted input, read by allowlist: every key code from the capturable set above,
+  every button index from 0 to 15, a primary slot always present, no input bound twice on a
+  device; a device whose bindings fail any check gets its defaults back.
 
 **Activation** *(v0.2)*: browsers unlock audio and fullscreen only after a click, tap or key
 press — a gamepad button does not count. If "Press Start" comes from a gamepad before any such
@@ -1088,4 +1104,4 @@ fully playable at release quality, used to validate the design before producing 
 | Level 1 balance *(v0.12)* | Second iteration of #45, superseding the v0.11 row for these values only (owner, 2026-10-14, after a measurement study with an "average player" bot swept over reaction times of 0.15 / 0.25 / 0.40 s, 100 to 300 seeds). (1) Cruiser 500 → **1 450 level-1 shots** (14 500 tenths), phase 2 at 66 % = 9 570 tenths; (2) the formations at **8 s, 50 s and 52 s no longer pay the formation P** (a per-row *pays P* property, default true; F1 0 s, F3 32 s, F6 70 s and F7 110 s keep it); no enemy or formation removed; Gunner 10 %, Heavy 30 %, Carrier, `dropRateScale` and the P-blue weighting unchanged. Measured, 300 seeds, bots good / average / beginner (0.15 / 0.25 / 0.40 s): Cruiser fight 42 / 42 / 44 s (target 40–70 s); the average bot dies 1.45 times per run (target 1–2); game over 10 % / 19 % / 32 %; boss killed 90 / 81 / 69 %, never fled; power 5 first reached at about 119 s, just before the boss (v0.11: 60 s in the same model). Limits, stated plainly: the bots are models, not humans (they collect P by drifting into drops and do not chase the rest); the step from power 4 to 5 rests on the 7th formation's P, so a player who misses it fights the boss at power 4, longer and harder, a cliff to watch in the playtest; the waves cannot be judged by bots and wait for the testers. | Cruiser HP 13 500 tenths (fight 36–38 s, too easy), 14 000 (fight at the edge of the band, average-bot deaths 1.12 but an unexplained 100 % game over of the dodger bot), 15 000 (average-bot deaths 0.87, just under the target; the fallback if the average game over must stay under 15 %: 11 % / 21 %), 15 500 (no better than 15 000), 16 000 (too hard, 25 % game over for the good bot); Gunner P 10 → 5 % (no measurable effect); fewer formations or every second formation without P (the average bot never reaches power 5, 23–45 % game over); removing formations (contrary to the owner's "more enemies") |
 | Menus and options *(v0.13)* | G1a of the screens brick (owner, 2026-10-14): G split into G1 save, menus and options → G2 hall of fame → G3 audio → G4 art; G1 split into G1a (menus, simple options) and G1b (remap). Touch and mouse activate a menu row on release (slide-off cancels, 150 ms re-press guard, a visible *Back* row, hover highlights); options as sub-screens (*Visual effects* with *All on / All off*); rows appear only with their screen (no volume before audio, no controls before G1b) | Two taps (select then activate: 41/50, heavy on a phone for every switch); on-screen arrows (30/50); one scrolling list (30/50); one "reduced effects" switch instead of ten (contrary to §9.3, one switch per effect, needed for photosensitivity); everything in one G1 PR (32/50); for the G order, screens as one block (42/50), art first (35/50), audio first (32/50) against the chosen order (47/50) |
 | Options screens *(v0.14)* | G1a-3 (owner, 2026-10-14): a row with a value shows label left, value right; any activation (confirm, tap, left or right) flips it, the two-value language choice included; the title becomes a menu (*Play* first) and a stray tap no longer starts a run; leaving a menu for play drops a mouse or touch owner of the movement (keyboard and gamepad owners kept), so a mouse click on *Resume* never hands the ship to the mouse (scored 46/50 against keeping the ADR-0018 jump, 33/50: a keyboard player clicking *Resume* would see the ship fly to the menu's place and could die without acting) | Left and right stepping a choice and confirm opening a list (no third value exists); the jump to the cursor kept |
-| Controls screen *(v0.15)* | G1b (owner, 2026-10-14): one row per intent with two slot columns, one cell highlighted, the capture shown as *PRESS* (45→46/50); key labels learned from the session's key events, then the browser layout map, then US, with fixed names and arrow glyphs (46/50); the device edited is the last of keyboard and gamepad, the row hidden on touch only; restore defaults asks first; save version 2 with a v1 migration and allowlist parsing of the bindings | One row per slot on two pages (31/50, no scrolling rule); a sub-screen per intent (34/50, two screens per capture); the layout map then US only (38/50: wrong on Firefox and Safari with AZERTY); US names always (30/50, contrary to "labels use the active layout"); a full font now (30/50, part of G4) |
+| Controls screen *(v0.15)* | G1b (owner, 2026-10-14): one row per intent with two slot columns, one cell highlighted, the capture shown as *PRESS* (45→46/50); key labels learned from the session's key events, then the browser layout map, then US, with fixed names and arrow glyphs (46/50); the device edited is the last of keyboard and gamepad, followed live while choosing and fixed during a capture, the row hidden on touch only; restore defaults asks first; a closed set of capturable keys (labels of 10 characters at most, the rest refused) and buttons 0–15; an exchange that would empty a primary promotes the secondary or is refused; the answering step reads no menu action; save version 2 with a v1 migration and allowlist parsing of the bindings | One row per slot on two pages (31/50, no scrolling rule); a sub-screen per intent (34/50, two screens per capture); the layout map then US only (38/50: wrong on Firefox and Safari with AZERTY); US names always (30/50, contrary to "labels use the active layout"); a full font now (30/50, part of G4) |

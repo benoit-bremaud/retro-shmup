@@ -197,7 +197,8 @@ step depends on them.
   - 2a. Player chooses "restore defaults" and confirms: every binding of the device is reset.
   - 3a. The key is already bound to another slot: the two slots swap their keys.
   - 3b. Player presses `Esc` (keyboard) or waits 5 s (gamepad): the slot is unchanged.
-  - 3c. Player presses `Enter` or `NumpadEnter`: refused, the wait goes on (GDD v0.15).
+  - 3c. Player presses a key outside the capturable set (`Enter`, `Tab`, `F1`…), or one whose
+    exchange would leave an intent without a key: refused, the wait goes on (GDD v0.15).
 
 ### UC7 — Read the credits
 

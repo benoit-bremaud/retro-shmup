@@ -19,6 +19,12 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   hidden on touch only (a mouse player edits the keyboard; refines UC6 1a); restore defaults asks
   first; `Enter` and `NumpadEnter` refused during a capture; save version 2 with a v1 migration
   and allowlist parsing of the bindings.
+- Doc review: 3 Must fixed (`Escape` both cancelling and refused; an exchange into an empty slot
+  could leave an intent unbound — now the secondary moves up or the input is refused; labels the
+  font cannot draw or that overflow — now a closed capturable set with labels of 10 characters at
+  most and blank empty slots), 6 Should (row texts, live device then frozen during a capture, the
+  answering step reads no menu action, the named pause triggers, browser defaults prevented and
+  the refused keys, button 16 refused) and 3 Nice applied.
 - Docs only: GDD v0.15 (§4.2 controls screen, §9.3, decision record), CD-menus (`ControlsGrid`,
   `BindingsEditor`, `ButtonNames`, `KeyLabels`, `InputPort` capture methods, save v2),
   STM-scenes (G1b states), new SD-remap sequence, UC6, matrix, architecture README.
