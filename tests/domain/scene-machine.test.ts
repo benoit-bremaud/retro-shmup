@@ -10,6 +10,7 @@ import { BossState } from '../../src/domain/game/boss';
 import type { BossDefinition } from '../../src/domain/game/boss';
 import { swayMovement } from '../../src/domain/game/movements';
 import { Run, RunOutcome } from '../../src/domain/game/run';
+import { MENU_ROW_HEIGHT } from '../../src/domain/presentation/menu-layout';
 import { Scene, SceneMachine } from '../../src/domain/scenes/scene-machine';
 import { PORTRAIT } from '../../src/domain/presentation/screen';
 import { RecordingRender } from '../support/recording-render';
@@ -255,19 +256,19 @@ describe('SceneMachine — Paused and Count-in (meta/05-state-scenes, pause rule
     expect(fixture.machine.timeScale()).toBe(1);
   });
 
-  it('draws the veil and the pause icon in Paused, the digits in Count-in', () => {
+  it('draws the veil and the pause menu in Paused, the digits in Count-in', () => {
     const fixture = playing();
     fixture.machine.step(DT, frame(Button.Pause));
     fixture.machine.render(1, 16);
     expect(fixture.render.drew(Palette.veil)).toBe(true);
-    expect(fixture.render.drew(Palette.pauseIcon)).toBe(true);
+    expect(fixture.render.drew(Palette.menuHighlight)).toBe(true);
     const fieldTexts = (): string[] =>
       fixture.render.texts.filter((text) => text.region === 'field').map((text) => text.text);
-    expect(fieldTexts()).toEqual([]);
+    expect(fieldTexts()).toEqual(['PAUSE', 'RESUME', 'QUIT']);
     fixture.machine.step(DT, frame(Button.Confirm));
     fixture.machine.render(1, 16);
     expect(fieldTexts()).toEqual(['3']);
-    expect(fixture.render.drew(Palette.pauseIcon)).toBe(false);
+    expect(fixture.render.drew(Palette.menuHighlight)).toBe(false);
   });
 });
 
@@ -535,15 +536,21 @@ describe('SceneMachine — taps and the pause button (devices brick additions)',
     expect(fixture.machine.scene).toBe(Scene.Playing);
   });
 
+  it('starts the count-in on a pause-button tap in Paused', () => {
+    const fixture = playing();
+    fixture.machine.step(DT, frame(Button.Pause));
+    fixture.machine.step(DT, PAUSE_TAP);
+    expect(fixture.machine.scene).toBe(Scene.CountIn);
+  });
+
   it.each([
-    ['the pause button', PAUSE_TAP],
     ['another HUD tap', OTHER_HUD_TAP],
-    ['a field tap', tapped()],
-  ])('starts the count-in on a tap on %s in Paused (interim tap resume)', (_label, tap) => {
+    ['a field tap off the menu', tapped()],
+  ])('stays in Paused on %s: the tap resume is gone (G1a)', (_label, tap) => {
     const fixture = playing();
     fixture.machine.step(DT, frame(Button.Pause));
     fixture.machine.step(DT, tap);
-    expect(fixture.machine.scene).toBe(Scene.CountIn);
+    expect(fixture.machine.scene).toBe(Scene.Paused);
   });
 
   it('returns to Paused on a pause-button tap during the count-in, and ignores other taps', () => {
@@ -746,13 +753,14 @@ describe('SceneMachine — the boss HUD (meta/05-state-scenes, F-2b)', () => {
     expect(titleTexts(fixture.render)).toEqual(['WARNING']);
   });
 
-  it('hides the banner under the pause, so it never sits under the pause icon', () => {
+  it('hides the banner under the pause, so it never sits under the pause menu', () => {
     const fixture = warningFixture();
     advance(fixture, IN_FIRST_BLINK);
     fixture.machine.step(DT, pressed(Button.Pause));
     expect(fixture.machine.scene).toBe(Scene.Paused);
     fixture.machine.render(0, 16);
-    expect(titleTexts(fixture.render)).toEqual([]);
+    // The title font shows only the PAUSE header of the menu, never WARNING.
+    expect(titleTexts(fixture.render)).toEqual(['PAUSE']);
     expect(fixture.render.drew(Palette.veil)).toBe(true);
   });
 
@@ -801,5 +809,122 @@ describe('SceneMachine — the boss HUD (meta/05-state-scenes, F-2b)', () => {
       .filter((text) => text.y === 12 && text.font === 'hud')
       .sort((a, b) => a.x - b.x);
     expect(seconds.map((text) => `${text.text}@${String(text.x)}`)).toEqual(['9@218', '0@226']);
+  });
+});
+
+/** A tap pressed and released on row `row` of a two-row menu, in one step. */
+function rowTap(row: number): IntentFrame {
+  const y = (320 - 2 * MENU_ROW_HEIGHT) / 2 + row * MENU_ROW_HEIGHT + 8;
+  const tap = createIntentFrame();
+  tap.tapRegion = 'field';
+  tap.tapX = 120;
+  tap.tapY = y;
+  tap.releaseRegion = 'field';
+  tap.releaseX = 120;
+  tap.releaseY = y;
+  return tap;
+}
+
+/** Past a menu's opening guard (150 ms), with no input. */
+function wait(fixture: ReturnType<typeof setup>): void {
+  for (let i = 0; i < 10; i += 1) fixture.machine.step(DT, createIntentFrame());
+}
+
+function down(): IntentFrame {
+  const step = createIntentFrame();
+  step.moveKind = 'direction';
+  step.moveY = 1;
+  return step;
+}
+
+describe('SceneMachine — the pause menu and Confirm quit (GDD v0.13 §9.1, G1a)', () => {
+  it('resumes by the Resume row, tapped once the menu is open', () => {
+    const fixture = playing();
+    fixture.machine.step(DT, frame(Button.Pause));
+    wait(fixture);
+    fixture.machine.step(DT, rowTap(0));
+    expect(fixture.machine.scene).toBe(Scene.CountIn);
+  });
+
+  it('opens Confirm quit from the Quit row, with No highlighted first', () => {
+    const fixture = playing();
+    fixture.machine.step(DT, frame(Button.Pause));
+    fixture.machine.step(DT, down());
+    fixture.machine.step(DT, frame(Button.Confirm));
+    expect(fixture.machine.scene).toBe(Scene.ConfirmQuit);
+    fixture.machine.step(DT, frame(Button.Confirm));
+    expect(fixture.machine.scene).toBe(Scene.Paused);
+  });
+
+  it.each([
+    ['Back', frame(Button.Back)],
+    ['the No row', rowTap(0)],
+  ])('returns to Paused from Confirm quit on %s, the run kept', (_label, input) => {
+    const fixture = playing();
+    fixture.machine.step(DT, frame(Button.Pause));
+    wait(fixture);
+    fixture.machine.step(DT, rowTap(1));
+    wait(fixture);
+    fixture.machine.step(DT, input);
+    expect(fixture.machine.scene).toBe(Scene.Paused);
+    fixture.machine.step(DT, frame(Button.Confirm));
+    expect(fixture.machine.scene).toBe(Scene.CountIn);
+  });
+
+  it('never lets a doubled tap on Quit land on Yes, the row now in its place', () => {
+    const fixture = playing();
+    fixture.machine.step(DT, frame(Button.Pause));
+    for (let i = 0; i < 10; i += 1) fixture.machine.step(DT, createIntentFrame());
+    fixture.machine.step(DT, rowTap(1)); // Quit
+    fixture.machine.step(DT, rowTap(1)); // the bounce, where Yes now is
+    expect(fixture.machine.scene).toBe(Scene.ConfirmQuit);
+  });
+
+  it('ignores Pause in Confirm quit', () => {
+    const fixture = playing();
+    fixture.machine.step(DT, frame(Button.Pause));
+    wait(fixture);
+    fixture.machine.step(DT, rowTap(1));
+    fixture.machine.step(DT, frame(Button.Pause));
+    expect(fixture.machine.scene).toBe(Scene.ConfirmQuit);
+  });
+
+  it('discards the run on Yes and locks the title for 1 s', () => {
+    const fixture = playing();
+    fixture.machine.step(DT, frame(Button.Pause));
+    wait(fixture);
+    fixture.machine.step(DT, rowTap(1));
+    wait(fixture);
+    fixture.machine.step(DT, rowTap(1));
+    expect(fixture.machine.scene).toBe(Scene.Title);
+    fixture.machine.render(1, 16);
+    expect(fixture.render.drew(Palette.shipHull)).toBe(false);
+    for (let i = 0; i < 60; i += 1) fixture.machine.step(DT, frame(Button.Confirm));
+    expect(fixture.machine.scene).toBe(Scene.Title);
+    fixture.machine.step(DT, frame(Button.Confirm));
+    expect(fixture.machine.scene).toBe(Scene.Playing);
+  });
+
+  it('opens the pause menu on Resume each time', () => {
+    const fixture = playing();
+    fixture.machine.step(DT, frame(Button.Pause));
+    fixture.machine.step(DT, down());
+    fixture.machine.step(DT, frame(Button.Back)); // resume, the highlight on Quit
+    fixture.machine.step(DT, frame(Button.Pause)); // back to Paused from the count-in
+    fixture.machine.step(DT, frame(Button.Confirm));
+    expect(fixture.machine.scene).toBe(Scene.CountIn);
+  });
+
+  it('draws the question and the No and Yes rows in Confirm quit, without the pause button', () => {
+    const fixture = playing();
+    fixture.machine.step(DT, frame(Button.Pause));
+    wait(fixture);
+    fixture.machine.step(DT, rowTap(1));
+    fixture.machine.render(1, 16);
+    const fieldTexts = fixture.render.texts
+      .filter((text) => text.region === 'field')
+      .map((text) => text.text);
+    expect(fieldTexts).toEqual(['QUIT THE RUN', 'NO', 'YES']);
+    expect(fixture.render.drew(Palette.pauseButton)).toBe(false);
   });
 });

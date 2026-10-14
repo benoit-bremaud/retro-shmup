@@ -6,10 +6,11 @@ export type SpriteId = string;
 /**
  * Bitmap fonts; no system text is ever drawn (ADR-0001). A font draws only its glyph set and
  * throws on any other character: `hud` is `0`–`9`, `×` (U+00D7) and the
- * space (an empty cell, ADR-0022 decision 8), `title` is `A`–`Z` and the
- * space, until the bitmap fonts of the screens brick.
+ * space (an empty cell, ADR-0022 decision 8), `title` and `menu` are `A`–`Z` and
+ * the space (French text is written in capitals without accents, arcade style), until the bitmap
+ * fonts of the screens brick.
  */
-export type FontId = 'hud' | 'title';
+export type FontId = 'hud' | 'title' | 'menu';
 
 /**
  * Cell of the `hud` font in logical pixels: 3 × 5 glyphs drawn 2× (`glyphWidth` × 10) plus a 2 px
@@ -17,6 +18,12 @@ export type FontId = 'hud' | 'title';
  * The domain uses it to align and centre text; every `RenderPort` honours it.
  */
 export const HUD_FONT_CELL = { width: 8, height: 10, glyphWidth: 6 } as const;
+
+/**
+ * Cell of the `menu` font: the `title` glyphs drawn 2×, in the `hud` cell, so a menu row of 28
+ * characters fits the 240 px field (GDD v0.13 §9.1).
+ */
+export const MENU_FONT_CELL = { width: 8, height: 10, glyphWidth: 6 } as const;
 
 /** Cell of the `title` font: the same 3 × 5 glyphs drawn 4× (12 × 20) plus a 4 px advance. */
 export const TITLE_FONT_CELL = { width: 16, height: 20, glyphWidth: 12 } as const;

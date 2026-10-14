@@ -33,6 +33,19 @@ export interface IntentFrame {
   /** In the region's coordinates (play field or HUD band), not screen pixels. */
   tapX: number;
   tapY: number;
+  /**
+   * Where a finger or the left mouse button was released since the previous read, in the
+   * coordinates of a tap; `none` when nothing was, or the finger was cancelled. Menus activate a
+   * row on release (GDD v0.13 §9.1).
+   */
+  releaseRegion: TapRegion;
+  releaseX: number;
+  releaseY: number;
+  /** The mouse moved to a new play-field point since the previous read (menu highlight). */
+  hovered: boolean;
+  /** Play-field pixels; meaningful when `hovered`. */
+  hoverX: number;
+  hoverY: number;
   /** Current fullscreen state, as reported by the browser. */
   fullscreen: boolean;
 }
@@ -85,6 +98,12 @@ export function createIntentFrame(): IntentFrame {
     tapRegion: 'none',
     tapX: 0,
     tapY: 0,
+    releaseRegion: 'none',
+    releaseX: 0,
+    releaseY: 0,
+    hovered: false,
+    hoverX: 0,
+    hoverY: 0,
     fullscreen: false,
   };
 }

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { HUD_FONT_CELL } from '../../src/domain/ports/render-port';
-import { drawCountIn, drawPauseIcon, drawVeil } from '../../src/domain/presentation/overlays';
+import { drawCountIn, drawMenu, drawVeil } from '../../src/domain/presentation/overlays';
+import { MENU_ROW_HEIGHT } from '../../src/domain/presentation/menu-layout';
+import { Menu } from '../../src/domain/scenes/menu';
 import { Palette } from '../../src/domain/presentation/palette';
 import { FIELD_HEIGHT, FIELD_WIDTH } from '../../src/domain/presentation/screen';
 import { RecordingRender } from '../support/recording-render';
@@ -14,17 +16,28 @@ describe('overlays of the frozen scenes (meta/05-state-scenes, enemies brick add
     ]);
   });
 
-  it('draws the pause icon as two bars centred on the field', () => {
+  it('draws a menu: each row centred in the menu font, the highlighted one on a bar', () => {
     const render = new RecordingRender();
-    drawPauseIcon(render);
-    const bars = render.rectsOf(Palette.pauseIcon);
-    expect(bars).toHaveLength(2);
-    const left = Math.min(...bars.map((bar) => bar.x));
-    const right = Math.max(...bars.map((bar) => bar.x + bar.w));
-    expect((left + right) / 2).toBe(FIELD_WIDTH / 2);
-    expect(
-      bars.every((bar) => bar.region === 'field' && bar.y + bar.h / 2 === FIELD_HEIGHT / 2),
-    ).toBe(true);
+    const menu = new Menu(['resume', 'quit'] as const);
+    menu.highlighted = 1;
+    drawMenu(render, menu, 'fr');
+    expect(render.texts.map((text) => [text.text, text.font, text.y])).toEqual([
+      ['REPRENDRE', 'menu', menu.top + 3],
+      ['QUITTER', 'menu', menu.top + MENU_ROW_HEIGHT + 3],
+    ]);
+    const quitter = render.texts[1];
+    expect(quitter?.x).toBe(Math.round((FIELD_WIDTH - (6 * 8 + 6)) / 2));
+    const bars = render.rectsOf(Palette.menuHighlight);
+    expect(bars).toEqual([
+      {
+        region: 'field',
+        x: Math.round((FIELD_WIDTH - (54 + 16)) / 2),
+        y: menu.top + MENU_ROW_HEIGHT,
+        w: 54 + 16,
+        h: MENU_ROW_HEIGHT,
+        colour: Palette.menuHighlight,
+      },
+    ]);
   });
 
   it.each([

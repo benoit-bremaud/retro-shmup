@@ -25,25 +25,9 @@ import {
 import { drawBossBar } from './boss-hud';
 import { drawHud } from './hud';
 import { drawHollowSquare, drawPlusIcon, drawShipIcon } from './icons';
+import type { EffectSettings } from '../options';
 import { Palette } from './palette';
 import type { PaletteColour } from './palette';
-
-/**
- * Game-feel switches the presenter honours (GDD §9.3, §9.4); the options screen sets them later.
- * The composition root turns the hit flash, the bomb flash, the shake and slow motion off under
- * `prefers-reduced-motion`.
- */
-export interface EffectSettings {
-  blink: boolean;
-  hitFlash: boolean;
-  explosions: boolean;
-  /** The bomb's field shake (GDD v0.8 §9.3, §9.4). */
-  shake: boolean;
-  /** The bomb's tint of the field. */
-  bombFlash: boolean;
-  /** Half speed for 0.5 s after the boss's death (GDD v0.10 §9.3, §9.4): its own switch. */
-  slowMotion: boolean;
-}
 
 // Drawn sizes, not hitboxes (GDD v0.9 §3.2): enemy bullets read first, player shots stay back.
 const ENEMY_SHOT_DRAWN = 6;

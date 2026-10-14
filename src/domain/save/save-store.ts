@@ -1,20 +1,11 @@
 import type { Language } from '../i18n/messages';
+import type { EffectSettings, Options } from '../options';
 import type { StoragePort } from '../ports/storage-port';
-import type { EffectSettings } from '../presentation/run-presenter';
 
 /** The one key of the save document (ADR-0006 decision 2, GDD §9.8). */
 export const SAVE_KEY = 'retro-shmup.v1';
 
 const VERSION = 1;
-
-/** The player's options (GDD v0.13 §9.3); the remap (G1b) and the volumes (G3) come later. */
-export interface Options {
-  readonly effects: Readonly<EffectSettings>;
-  /** Touch and mouse fire all the time (ADR-0020 decision 4). */
-  readonly autofire: boolean;
-  readonly language: Language;
-  readonly fullscreen: boolean;
-}
 
 const LANGUAGES: readonly Language[] = ['en', 'fr'];
 

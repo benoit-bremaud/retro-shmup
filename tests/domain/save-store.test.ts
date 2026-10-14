@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import type { Options } from '../../src/domain/options';
 import { defaultOptions, SAVE_KEY, SaveStore } from '../../src/domain/save/save-store';
-import type { Options } from '../../src/domain/save/save-store';
 import type { StoragePort } from '../../src/domain/ports/storage-port';
 
 /** An in-memory storage; `available: false` behaves like a browser that refuses storage. */

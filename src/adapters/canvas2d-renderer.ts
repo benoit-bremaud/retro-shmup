@@ -1,4 +1,4 @@
-import { HUD_FONT_CELL, TITLE_FONT_CELL } from '../domain/ports/render-port';
+import { HUD_FONT_CELL, MENU_FONT_CELL, TITLE_FONT_CELL } from '../domain/ports/render-port';
 import type { FontId, RenderPort, RenderRegion, SpriteId } from '../domain/ports/render-port';
 import { Palette } from '../domain/presentation/palette';
 import { FIELD_HEIGHT, FIELD_WIDTH, LANDSCAPE } from '../domain/presentation/screen';
@@ -9,6 +9,20 @@ import type { Viewport } from './viewport';
 // Logical pixels per glyph pixel: HUD_FONT_CELL and TITLE_FONT_CELL are built on them.
 const HUD_SCALE = 2;
 const TITLE_SCALE = 4;
+/**
+ * Each font's cell, scale, glyph set and colour (RenderPort contract), read per draw without
+ * building anything: the menu font is the title letters at the hud scale.
+ */
+const FONTS = {
+  hud: { cell: HUD_FONT_CELL, scale: HUD_SCALE, glyph: hudGlyph, colour: Palette.hudText },
+  title: {
+    cell: TITLE_FONT_CELL,
+    scale: TITLE_SCALE,
+    glyph: titleGlyph,
+    colour: Palette.titleText,
+  },
+  menu: { cell: MENU_FONT_CELL, scale: HUD_SCALE, glyph: titleGlyph, colour: Palette.titleText },
+} as const;
 
 /**
  * The part of `CanvasRenderingContext2D` the renderer uses; a real context satisfies it, and tests
@@ -34,7 +48,7 @@ export interface RenderSurface {
  *
  * @remarks The camera offset (screen shake) moves field-region draws only, at draw time: the HUD
  * never shakes (ADR-0014). `drawSprite` fails closed until the asset brick loads a sprite sheet;
- * `drawText` draws the placeholder `hud` and `title` glyphs and fails closed on anything else.
+ * `drawText` draws the placeholder `hud`, `title` and `menu` glyphs and fails closed on anything else.
  */
 export class Canvas2DRenderer implements RenderPort {
   private region: RenderRegion = 'hud';
@@ -101,18 +115,15 @@ export class Canvas2DRenderer implements RenderPort {
   }
 
   drawText(text: string, x: number, y: number, font: FontId): void {
-    const title = font === 'title';
-    const scale = title ? TITLE_SCALE : HUD_SCALE;
-    const advance = title ? TITLE_FONT_CELL.width : HUD_FONT_CELL.width;
-    this.offscreen.fillStyle = title ? Palette.titleText : Palette.hudText;
-    const glyphOf = title ? titleGlyph : hudGlyph;
+    const { cell, scale, glyph, colour } = FONTS[font];
+    this.offscreen.fillStyle = colour;
     for (let i = 0; i < text.length; i += 1) {
       const code = text.codePointAt(i);
-      const rows = code === undefined ? undefined : glyphOf(code);
+      const rows = code === undefined ? undefined : glyph(code);
       if (rows === undefined) {
         throw new Error(`Canvas2DRenderer: no ${font} glyph for "${text.charAt(i)}" in "${text}"`);
       }
-      this.drawGlyph(rows, x + i * advance, y, scale);
+      this.drawGlyph(rows, x + i * cell.width, y, scale);
     }
   }
 

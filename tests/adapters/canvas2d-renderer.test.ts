@@ -207,6 +207,24 @@ describe('Canvas2DRenderer — hud font (RenderPort contract, HUD_FONT_CELL)', (
       renderer.drawText(text, 0, 0, 'title');
     }).toThrow(/glyph/);
   });
+
+  it('draws the menu font: the title letters at 2×, one 8 px cell each, in the title colour', () => {
+    const { renderer, offscreen } = setup();
+    renderer.drawText('LI', 0, 0, 'menu');
+    const blocks = offscreen.calls.filter((call) =>
+      call.startsWith(`fillRect ${Palette.titleText} `),
+    );
+    expect(blocks).toHaveLength(7 + 9);
+    expect(blocks[0]).toBe(`fillRect ${Palette.titleText} 0,0,2,2`);
+    expect(blocks).toContain(`fillRect ${Palette.titleText} 8,0,2,2`);
+  });
+
+  it.each(['1', 'É'])('throws on %j in the menu font (fail closed)', (text) => {
+    const { renderer } = setup();
+    expect(() => {
+      renderer.drawText(text, 0, 0, 'menu');
+    }).toThrow(/glyph/);
+  });
 });
 
 describe('Canvas2DRenderer — portrait screen (ADR-0015 decisions 1–3, ADR-0018 decision 6)', () => {
