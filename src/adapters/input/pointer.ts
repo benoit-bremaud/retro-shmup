@@ -186,7 +186,8 @@ export class PointerModule {
     into.moveX = this.touchX;
     into.moveY = this.touchY;
     into.held = this.steering === undefined && !this.autofire ? 0 : Button.Fire;
-    into.autofire = this.autofire;
+    // Only a `Fire` the option alone holds is the autofire's: a steering finger fires for real.
+    into.autofire = this.autofire && this.steering === undefined;
     into.pressed = this.touchPressed;
     into.startSeq = this.touchStart;
     into.inputSeq = this.touchInput;
@@ -204,7 +205,8 @@ export class PointerModule {
     into.moveX = this.mouseX - field.fieldX;
     into.moveY = this.mouseY - field.fieldY;
     into.held = this.mouseFiring || this.autofire ? Button.Fire : 0;
-    into.autofire = this.autofire;
+    // Only a `Fire` the option alone holds is the autofire's: a pressed button fires for real.
+    into.autofire = this.autofire && !this.mouseFiring;
     into.pressed = this.mousePressed;
     into.startSeq = this.mouseStart;
     into.inputSeq = this.mouseInput;

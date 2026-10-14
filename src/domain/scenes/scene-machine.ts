@@ -152,6 +152,7 @@ export class SceneMachine {
   private readonly titleMenu = new Menu(['play', 'options'] as const);
   private readonly pauseMenu = new Menu(['resume', 'options', 'quit'] as const);
   private readonly quitMenu = new Menu(['no', 'yes'] as const);
+  // Called only after the constructor has set `options` (field initialisers run first).
   // Left and right flip exactly the rows that show a value (GDD v0.14 §9.1).
   private readonly hasValue = (row: MessageKey): boolean => this.options.value(row) !== undefined;
   /** The value each options row shows, read at each draw; built once. */
@@ -220,10 +221,8 @@ export class SceneMachine {
   step(dt: number, frame: Readonly<IntentFrame>): void {
     const traits = SCENE_TRAITS[this.current];
     if (traits.frozen) this.frozenStepSinceRender = true;
-    // The menus over the title scroll the background; the scenes with a run count it themselves.
-    if (traits.scrolls && !traits.drawsRun && this.current !== Scene.Title) {
-      this.backgroundSteps += 1;
-    }
+    // The title and its menus scroll the background; the scenes with a run count it themselves.
+    if (traits.scrolls && !traits.drawsRun) this.backgroundSteps += 1;
     this.steps += 1;
     switch (this.current) {
       case Scene.Boot:
@@ -267,7 +266,6 @@ export class SceneMachine {
   // Pause is ignored on the title, as in every scene but play (pause rules). The lock ignores
   // the whole menu; Play starts a run, Options opens the options (GDD v0.14 §9.1).
   private stepTitle(frame: Readonly<IntentFrame>): void {
-    this.backgroundSteps += 1;
     if (this.locked()) {
       // The lock ignores the whole menu: what is held now counts as held when it ends.
       this.titleMenu.ignore(frame);

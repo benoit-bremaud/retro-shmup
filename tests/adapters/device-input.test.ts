@@ -485,6 +485,19 @@ describe('DeviceInput — options and menus (GDD v0.14 §9.1, ADR-0020 decision 
     expect(frame.held & Button.Fire).toBe(0);
   });
 
+  it('keeps a held mouse button firing with autofire on once the keyboard takes the ship', () => {
+    const { env, input, frame } = pointerSetup();
+    input.setAutofire(true);
+    env.point('down', 'mouse', 200, 250, 1); // the button stays down
+    env.down('ArrowLeft'); // the keyboard takes the ship back
+    input.read(frame);
+    expect(frame.moveKind).toBe('direction');
+    expect(frame.held & Button.Fire).toBe(Button.Fire);
+    env.point('up', 'mouse', 200, 250, 0);
+    input.read(frame);
+    expect(frame.held & Button.Fire).toBe(0); // the option alone, masked while the keyboard steers
+  });
+
   it('applies a fullscreen change at the next key or pointer press, once', () => {
     const { env, input, frame } = pointerSetup();
     input.setFullscreenWanted(true);
