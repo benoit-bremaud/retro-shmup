@@ -58,6 +58,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   left × 1 000, and the total, added to the score when the level ends; a missed bonus shows as 0.
   Confirm, a tap or a click leaves after 1 s, or the title comes back after 8 s. It replaces the
   3 s "LEVEL CLEAR" banner.
+- An options screen, from the title and from the pause: visual effects one by one or all at once,
+  autofire for touch and mouse, English or French, fullscreen; every change applies at once and
+  is saved. The title is a menu (PLAY, OPTIONS), and clicking a menu with the mouse no longer
+  makes the ship jump to the cursor.
 - A pause menu: RESUME and QUIT, by keyboard, gamepad, touch or mouse (a tap acts when the
   finger lifts on the same row); QUIT asks first, NO highlighted, and YES returns to the title.
   Tapping anywhere no longer resumes; the pause button and Esc still do.

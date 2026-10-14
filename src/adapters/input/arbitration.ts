@@ -82,7 +82,17 @@ function latest(
 }
 
 const startOf = (sample: DeviceSample): number => sample.startSeq;
+
 const inputOf = (sample: DeviceSample): number => sample.inputSeq;
+
+/**
+ * Drops the movement owner when it is touch or the mouse (GDD v0.14 §9.1): from `seq` on, a
+ * device owns the ship only by starting to move it again. A keyboard or gamepad owner is kept.
+ */
+export function releasePointerOwner(state: Arbitration, samples: DeviceSamples, seq: number): void {
+  const owner = latest(samples, startOf, state.clearedAt);
+  if (owner === 'touch' || owner === 'mouse') state.clearedAt = seq;
+}
 
 /**
  * Combines the device samples into one intent frame (ADR-0015 decision 5, ADR-0018 decision 9):

@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
 // The single browser smoke test (ADR-0003; 05-state-scenes; ADR-0018 Consequences): a phone in
-// portrait, then a rotation. A tap on the HUD strip starts a run, the ship reaches its resting
+// portrait, then a rotation. A tap on the PLAY row starts a run, the ship reaches its resting
 // point, the pause button pauses, the RESUME row resumes; a landscape window pauses without restarting the
 // run, `Esc` resumes, and enemies appear.
 
@@ -74,11 +74,13 @@ async function hullAtRest(page: Page): Promise<boolean> {
 const MENU_HIGHLIGHT = { r: 0x3b, g: 0x4a, b: 0x8a };
 /**
  * A pixel of the bar behind RESUME, the first row highlighted on entry, left of its text, in
- * play-field pixels: the two-row menu starts at y 144 and the bar at x 89 (overlays.ts, menu.ts).
+ * play-field pixels: the three-row menu starts at y 136 and the bar at x 89 (overlays.ts, menu-layout.ts).
  */
-const PAUSE_PIXEL = { x: 90, y: 145 };
-/** The middle of the RESUME row, in play-field pixels. */
-const RESUME_ROW = { x: 120, y: 152 };
+const PAUSE_PIXEL = { x: 90, y: 137 };
+/** The middle of the PLAY row of the title menu (two rows from y 144), in play-field pixels. */
+const PLAY_ROW = { x: 120, y: 152 };
+/** The middle of the RESUME row (three rows from y 136), in play-field pixels. */
+const RESUME_ROW = { x: 120, y: 144 };
 
 /** True when the pause menu shows with RESUME highlighted, so the scene is `Paused`. */
 async function paused(page: Page): Promise<boolean> {
@@ -185,10 +187,13 @@ test('a phone starts, pauses and resumes by touch; a rotation pauses without res
   expect((await geometry(page)).portrait).toBe(true);
   expect(await hullAtRest(page)).toBe(false);
 
-  // A tap on the HUD strip, left of the pause button, starts a run. Fly-in then invulnerability
+  // A tap on the PLAY row of the title menu starts a run (GDD v0.14). Fly-in then invulnerability
   // blink: once vulnerable, the ship is always drawn. The first Popcorn wave crosses y 272 near
   // field x 42 and the Divers dive from 9 s, so nothing covers the hull at rest during the checks.
-  await tapScreen(page, 20, 10);
+  // The menu ignores presses for 150 ms after it opens: wait like a player would.
+  await page.waitForTimeout(300);
+  const start = await geometry(page);
+  await tapScreen(page, start.fieldX + PLAY_ROW.x, start.fieldY + PLAY_ROW.y);
   await expect.poll(() => hullAtRest(page), { timeout: 5000 }).toBe(true);
   // Past the 2 s fly-in and invulnerability blink, the ship is always drawn: the single checks
   // below never catch an "off" blink frame.

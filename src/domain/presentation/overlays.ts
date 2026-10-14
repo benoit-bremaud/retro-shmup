@@ -5,10 +5,10 @@ import { BossState } from '../game/boss';
 import type { BossSnapshot } from '../game/run';
 import { BossHudTuning, SceneTuning, toSteps } from '../game/tuning';
 import { message } from '../i18n/messages';
-import type { Language } from '../i18n/messages';
+import type { Language, MessageKey } from '../i18n/messages';
 import { HUD_FONT_CELL, MENU_FONT_CELL, TITLE_FONT_CELL } from '../ports/render-port';
 import type { RenderPort } from '../ports/render-port';
-import { MENU_HEADER_GAP, MENU_ROW_HEIGHT } from './menu-layout';
+import { MENU_HEADER_GAP, MENU_ROW_HEIGHT, MENU_VALUE_MARGIN } from './menu-layout';
 import type { MenuScreen, MenuView } from './menu-layout';
 import { Palette } from './palette';
 import { FIELD_HEIGHT, FIELD_WIDTH } from './screen';
@@ -38,23 +38,44 @@ function drawMenuLine(render: RenderPort, text: string, y: number): void {
 }
 
 /**
- * A menu (GDD v0.13 §9.1): each row's catalogue text centred in its 16 px row, the highlighted one
- * on a bar. Draws from the catalogue each frame and builds no string.
+ * A menu (GDD v0.13 and v0.14 §9.1): each row's catalogue text centred in its 16 px row, or, for a
+ * row with a value, the label on the left and the value on the right; the highlighted row on a
+ * bar. Draws from the catalogue each frame and builds no string.
  */
-export function drawMenu(render: RenderPort, menu: MenuView, language: Language): void {
+export function drawMenu(
+  render: RenderPort,
+  menu: MenuView,
+  language: Language,
+  value?: (row: MessageKey) => MessageKey | undefined,
+): void {
   render.setRegion('field');
   const textTop = (MENU_ROW_HEIGHT - MENU_FONT_CELL.height) / 2;
   for (let i = 0; i < menu.rows.length; i += 1) {
     const key = menu.rows[i];
     if (key === undefined) continue;
     const text = message(key, language);
+    const valueKey = value?.(key);
     const y = menu.top + i * MENU_ROW_HEIGHT;
     if (i === menu.highlighted) {
-      const width = menuTextWidth(text) + 2 * HIGHLIGHT_PAD;
+      const width =
+        valueKey === undefined
+          ? menuTextWidth(text) + 2 * HIGHLIGHT_PAD
+          : FIELD_WIDTH - 2 * (MENU_VALUE_MARGIN - HIGHLIGHT_PAD);
       const x = Math.round((FIELD_WIDTH - width) / 2);
       render.drawRect(x, y, width, MENU_ROW_HEIGHT, Palette.menuHighlight);
     }
-    drawMenuLine(render, text, y + textTop);
+    if (valueKey === undefined) {
+      drawMenuLine(render, text, y + textTop);
+      continue;
+    }
+    const shown = message(valueKey, language);
+    render.drawText(text, MENU_VALUE_MARGIN, y + textTop, 'menu');
+    render.drawText(
+      shown,
+      FIELD_WIDTH - MENU_VALUE_MARGIN - menuTextWidth(shown),
+      y + textTop,
+      'menu',
+    );
   }
 }
 
@@ -106,9 +127,12 @@ export function drawWarning(
 /** A whole menu screen over the veil: its header, then its rows (GDD v0.13 §9.1). */
 export function drawMenuScreen(render: RenderPort, screen: MenuScreen, language: Language): void {
   drawVeil(render);
-  const headerY = screen.menu.top - MENU_HEADER_GAP[screen.headerFont];
-  const header = message(screen.header, language);
-  if (screen.headerFont === 'title') drawBanner(render, header, headerY);
-  else drawMenuLine(render, header, headerY);
-  drawMenu(render, screen.menu, language);
+  const header = screen.header;
+  if (header !== undefined) {
+    const headerY = screen.menu.top - MENU_HEADER_GAP[header.font];
+    const text = message(header.key, language);
+    if (header.font === 'title') drawBanner(render, text, headerY);
+    else drawMenuLine(render, text, headerY);
+  }
+  drawMenu(render, screen.menu, language, screen.value);
 }

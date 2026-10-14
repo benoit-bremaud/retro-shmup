@@ -54,9 +54,13 @@ classDiagram
     +releaseMovement() void
   }
   class SceneMachine {
-    -options: mutable Options
+    -options: LiveOptions
     -menuScreens: table of menu scenes
-    -openMenu(scene) void
+    -openMenu(scene, frame) void
+  }
+  class LiveOptions {
+    +value(row: MessageKey) MessageKey | undefined
+    +apply(row: MessageKey) boolean
   }
   class IntentFrame {
     <<interface>>
@@ -96,7 +100,8 @@ classDiagram
 
   SceneMachine *-- "5" Menu
   SceneMachine --> SceneHost : each change, leaving for play
-  SceneMachine *-- Options
+  SceneMachine *-- LiveOptions
+  LiveOptions ..|> Options
   Menu ..> IntentFrame : tap, release, hover
   Menu ..|> MenuView
   MenuScreen --> MenuView
@@ -119,9 +124,11 @@ classDiagram
   *ENGLISH* / *FRANCAIS*), and the scene machine knows what activating it does. A new left or
   right direction on a highlighted row activates it like `Confirm`, detected on the edge like up
   and down (GDD v0.14 §9.1): every value has two states.
-- **Runtime options and `SceneHost`** (G1a-3): the scene machine owns the live `Options` (the
-  presenter reads the same `EffectSettings` object, so a switch applies at the next frame; the
-  language is read at each draw). After each change it calls `SceneHost.optionsChanged`, and on
+- **Runtime options and `SceneHost`** (G1a-3): `LiveOptions` (`src/domain/options.ts`) holds the
+  options while the game runs and knows what each row shows (`value`) and what activating it
+  changes (`apply`); the scene machine only routes (G1a-3 anti-pattern review: it no longer owns
+  the option rules). The presenter reads the same `EffectSettings` object, so a switch applies at
+  the next frame; the language is read at each draw. After each change it calls `SceneHost.optionsChanged`, and on
   every exit from a menu towards play (*Play*, *Resume*, `back` and the pause button in the
   pause) `SceneHost.releaseMovement` (GDD v0.14 §9.1). The composition root implements the host: it saves through `SaveStore` and forwards
   autofire, fullscreen and the movement release to the `InputPort` — so the domain never sees

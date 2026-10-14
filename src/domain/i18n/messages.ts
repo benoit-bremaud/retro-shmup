@@ -27,6 +27,27 @@ export const MESSAGES = {
   quitQuestion: { en: 'QUIT THE RUN', fr: 'QUITTER LA PARTIE' },
   no: { en: 'NO', fr: 'NON' },
   yes: { en: 'YES', fr: 'OUI' },
+  /** The title menu and the options screens (GDD v0.14 §9.3). */
+  play: { en: 'PLAY', fr: 'JOUER' },
+  options: { en: 'OPTIONS', fr: 'OPTIONS' },
+  visualEffects: { en: 'VISUAL EFFECTS', fr: 'EFFETS VISUELS' },
+  autofire: { en: 'AUTOFIRE', fr: 'TIR AUTO' },
+  language: { en: 'LANGUAGE', fr: 'LANGUE' },
+  fullscreen: { en: 'FULLSCREEN', fr: 'PLEIN ECRAN' },
+  back: { en: 'BACK', fr: 'RETOUR' },
+  allOn: { en: 'ALL ON', fr: 'TOUT ACTIVER' },
+  allOff: { en: 'ALL OFF', fr: 'TOUT COUPER' },
+  blink: { en: 'BLINK', fr: 'CLIGNOTEMENT' },
+  hitFlash: { en: 'HIT FLASH', fr: 'FLASH IMPACT' },
+  explosions: { en: 'EXPLOSIONS', fr: 'EXPLOSIONS' },
+  shake: { en: 'SHAKE', fr: 'SECOUSSE' },
+  bombFlash: { en: 'BOMB FLASH', fr: 'FLASH BOMBE' },
+  slowMotion: { en: 'SLOW MOTION', fr: 'RALENTI' },
+  on: { en: 'ON', fr: 'OUI' },
+  off: { en: 'OFF', fr: 'NON' },
+  /** A language is always named in itself (GDD v0.14 §9.1). */
+  english: { en: 'ENGLISH', fr: 'ENGLISH' },
+  francais: { en: 'FRANCAIS', fr: 'FRANCAIS' },
 } as const;
 
 export type MessageKey = keyof typeof MESSAGES;

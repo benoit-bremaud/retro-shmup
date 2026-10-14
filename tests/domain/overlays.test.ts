@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { HUD_FONT_CELL } from '../../src/domain/ports/render-port';
 import { drawCountIn, drawMenu, drawVeil } from '../../src/domain/presentation/overlays';
-import { MENU_ROW_HEIGHT } from '../../src/domain/presentation/menu-layout';
+import { MENU_ROW_HEIGHT, MENU_VALUE_MARGIN } from '../../src/domain/presentation/menu-layout';
 import { Menu } from '../../src/domain/scenes/menu';
 import { Palette } from '../../src/domain/presentation/palette';
 import { FIELD_HEIGHT, FIELD_WIDTH } from '../../src/domain/presentation/screen';
@@ -38,6 +38,18 @@ describe('overlays of the frozen scenes (meta/05-state-scenes, enemies brick add
         colour: Palette.menuHighlight,
       },
     ]);
+  });
+
+  it('draws a row with a value: the label on the left, the value on the right, a wide bar', () => {
+    const render = new RecordingRender();
+    const menu = new Menu(['autofire', 'back'] as const);
+    drawMenu(render, menu, 'en', (row) => (row === 'autofire' ? 'off' : undefined));
+    expect(render.texts.map((text) => [text.text, text.x])).toEqual([
+      ['AUTOFIRE', MENU_VALUE_MARGIN],
+      ['OFF', FIELD_WIDTH - MENU_VALUE_MARGIN - (2 * 8 + 6)],
+      ['BACK', Math.round((FIELD_WIDTH - (3 * 8 + 6)) / 2)],
+    ]);
+    expect(render.rectsOf(Palette.menuHighlight)[0]).toMatchObject({ x: 16, w: FIELD_WIDTH - 32 });
   });
 
   it.each([

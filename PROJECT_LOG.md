@@ -8,6 +8,31 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-14
 
+### G1a-3: the options screens and the title menu (branch `feat/g1a-options`) — Refs #46
+
+- Title menu (*Play*, *Options*; a stray tap no longer starts a run); Options and Visual
+  effects from the title and from the pause (the pause menu gains *Options*); switches and the
+  language flip on confirm, a tap, or a new left or right direction, and only rows with a value
+  flip; every change applies at once (the presenter reads the live `EffectSettings`) and reaches
+  a `SceneHost` that saves it and forwards autofire and fullscreen to the input port.
+- Input port: `setAutofire` (ADR-0020 decision 4), `releaseMovement` (drops a mouse or touch
+  owner only, GDD v0.14 §9.1), fullscreen applied once at the next key or pointer press and
+  reported in the frame; `InputEnvironment.fullscreen` in `main.ts`.
+- Bugs found by the old tests and fixed: a direction held when a menu opens counted as new (a
+  pause while holding right would resume at once) — `Menu.reset(now, opening)` records it, and
+  the title lock uses `Menu.ignore`; left and right activated any row, *Resume* included.
+- Anti-pattern review (architecture-guardian): no Must; Shoulds fixed — `LiveOptions` in
+  `domain/options.ts` owns the option values and changes (the scene machine only routes), one
+  `backTo` helper, scrolling read from the scene traits, a named `OpenableMenu`, the header as one
+  optional object. Pre-push review: no Must; Should fixed — with autofire on, a real mouse button
+  or steering finger was masked once the keyboard took the ship (test proven against the old
+  code); Should kept by design — the *FULLSCREEN* row is a preference applied at the next
+  gesture (GDD §9.3 since v0.4), not the browser's live state.
+- Chrome check on the local build: title, Options, French, Visual effects, autofire, *Reprendre*
+  by mouse with the ship staying put. Found on the way: a capture by the Chrome extension hides
+  and shows the page, which the game reads as a lost focus and so drops a click not yet read —
+  a tool artifact, not a game bug.
+
 ### G1a-3 design: the options screens, GDD v0.14 (branch `docs/g1a3-options-design`) — Refs #46
 
 - Owner decision after a Chrome check of G1a-2: leaving a menu for play frees the ship's movement

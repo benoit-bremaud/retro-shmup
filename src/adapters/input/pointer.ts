@@ -84,6 +84,8 @@ export class PointerModule {
   private mousePressed = 0;
   private mouseStart = 0;
   private mouseInput = 0;
+  /** The autofire option: touch and the mouse hold `Fire` in every sample (ADR-0020). */
+  private autofire = false;
 
   /**
    * Takes the new screen and canvas rectangle. Returns true when the layout kind changed after the
@@ -170,17 +172,22 @@ export class PointerModule {
     this.lift(event);
   }
 
+  setAutofire(on: boolean): void {
+    this.autofire = on;
+  }
+
   /**
    * Fills the touch sample: a target while a finger steers, and `Fire` held while it steers —
-   * lifting it stops firing (ADR-0020). The autofire option arrives with the options screen.
+   * lifting it stops firing (ADR-0020) — or always with the autofire option (decision 4).
    */
   sampleTouch(into: DeviceSample): void {
     into.moving = this.steering !== undefined;
     into.moveKind = 'target';
     into.moveX = this.touchX;
     into.moveY = this.touchY;
-    into.held = this.steering === undefined ? 0 : Button.Fire;
-    into.autofire = false;
+    into.held = this.steering === undefined && !this.autofire ? 0 : Button.Fire;
+    // Only a `Fire` the option alone holds is the autofire's: a steering finger fires for real.
+    into.autofire = this.autofire && this.steering === undefined;
     into.pressed = this.touchPressed;
     into.startSeq = this.touchStart;
     into.inputSeq = this.touchInput;
@@ -197,8 +204,9 @@ export class PointerModule {
     into.moveKind = 'target';
     into.moveX = this.mouseX - field.fieldX;
     into.moveY = this.mouseY - field.fieldY;
-    into.held = this.mouseFiring ? Button.Fire : 0;
-    into.autofire = false;
+    into.held = this.mouseFiring || this.autofire ? Button.Fire : 0;
+    // Only a `Fire` the option alone holds is the autofire's: a pressed button fires for real.
+    into.autofire = this.autofire && !this.mouseFiring;
     into.pressed = this.mousePressed;
     into.startSeq = this.mouseStart;
     into.inputSeq = this.mouseInput;

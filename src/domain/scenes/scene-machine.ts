@@ -5,7 +5,7 @@ import { Button } from '../ports/input-port';
 import type { IntentFrame } from '../ports/input-port';
 import type { RenderPort } from '../ports/render-port';
 import { message } from '../i18n/messages';
-import type { Language, MessageKey } from '../i18n/messages';
+import type { MessageKey } from '../i18n/messages';
 import { drawHudFrame, drawPauseButton } from '../presentation/hud';
 import { isPauseTap } from '../presentation/hud-layout';
 import {
@@ -17,10 +17,12 @@ import {
 } from '../presentation/overlays';
 import { drawResults, formatTallyValues } from '../presentation/results';
 import { RunPresenter } from '../presentation/run-presenter';
-import type { EffectSettings } from '../options';
+import { EFFECT_ROWS, LiveOptions } from '../options';
+import type { Options } from '../options';
 import type { Starfield } from '../presentation/starfield';
 import type { MenuScreen } from '../presentation/menu-layout';
 import { Menu } from './menu';
+import type { OpenableMenu } from './menu';
 
 /** The scenes built so far (meta/05-state-scenes, build order). */
 export const Scene = {
@@ -32,6 +34,11 @@ export const Scene = {
   GameOver: 'GAME_OVER',
   Results: 'RESULTS',
   ConfirmQuit: 'CONFIRM_QUIT',
+  /** Options and Visual effects, from the title and from the pause (two menus, four scenes). */
+  TitleOptions: 'TITLE_OPTIONS',
+  TitleEffects: 'TITLE_EFFECTS',
+  PauseOptions: 'PAUSE_OPTIONS',
+  PauseEffects: 'PAUSE_EFFECTS',
 } as const;
 export type Scene = (typeof Scene)[keyof typeof Scene];
 
@@ -57,6 +64,37 @@ const SCENE_TRAITS: Readonly<Record<Scene, SceneTraits>> = {
   // The run stands still behind the tally while the starfield keeps moving (05-state-scenes).
   [Scene.Results]: { frozen: true, scrolls: true, drawsRun: true, pauseButton: false },
   [Scene.ConfirmQuit]: { frozen: true, scrolls: false, drawsRun: true, pauseButton: false },
+  [Scene.TitleOptions]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
+  [Scene.TitleEffects]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
+  [Scene.PauseOptions]: { frozen: true, scrolls: false, drawsRun: true, pauseButton: false },
+  [Scene.PauseEffects]: { frozen: true, scrolls: false, drawsRun: true, pauseButton: false },
+};
+
+/** Where each options scene's Back and sub-screen lead (meta/05-state-scenes). */
+const OPTIONS_ROUTES = {
+  [Scene.TitleOptions]: { parent: Scene.Title, effects: Scene.TitleEffects },
+  [Scene.PauseOptions]: { parent: Scene.Paused, effects: Scene.PauseEffects },
+} as const;
+const EFFECTS_PARENT = {
+  [Scene.TitleEffects]: Scene.TitleOptions,
+  [Scene.PauseEffects]: Scene.PauseOptions,
+} as const;
+
+/**
+ * What the scene machine tells the outside (meta/04-class-menus): the composition root saves the
+ * options and forwards autofire, fullscreen and the movement release to the input port, so the
+ * domain never sees storage or the browser.
+ */
+export interface SceneHost {
+  /** After each change of an option: the live options, to read at once and never keep. */
+  optionsChanged(options: Readonly<Options>): void;
+  /** On each exit from a menu towards play: a mouse or touch owner lets the ship go (§9.1). */
+  releaseMovement(): void;
+}
+
+const NO_HOST: SceneHost = {
+  optionsChanged: () => undefined,
+  releaseMovement: () => undefined,
 };
 
 const COUNT_IN_STEPS = toSteps(SceneTuning.countInSeconds);
@@ -69,9 +107,9 @@ function isConfirmOrTap(frame: Readonly<IntentFrame>): boolean {
   return (frame.pressed & Button.Confirm) !== 0 || frame.tapRegion !== 'none';
 }
 
-/** A menu scene: the presentation's screen description, holding the scene's live menu. */
+/** A menu scene: the presentation's screen description, holding a menu the scene can open. */
 interface MenuScene extends MenuScreen {
-  readonly menu: Menu<MessageKey>;
+  readonly menu: OpenableMenu;
 }
 
 /** What the scene machine holds of a run: it steps it and reads it, nothing more. */
@@ -99,41 +137,76 @@ export class SceneMachine {
    * title reached from it, so hammering never skips GAME OVER nor starts a new run (GDD v0.7 §4.4).
    */
   private lockLeft = 0;
-  /** English until the options screen chooses (GDD §9.6). */
-  private readonly language: Language = 'en';
+  private readonly options: LiveOptions;
+  private readonly host: SceneHost;
   private readonly createRun: () => InRun;
   private readonly renderer: RenderPort;
   private readonly starfield: Starfield;
-  private readonly effects: Readonly<EffectSettings>;
   /** Built with each run, so no effect or listener outlives its run (ADR-0010). */
   private presenter: RunPresenter | undefined;
   /** A frozen step ran since the last render: that frame ages no effect (count-in handoff). */
   private frozenStepSinceRender = false;
   /** Every step since Boot: the menus' clock (the re-press guard), never wall time. */
   private steps = 0;
-  /** The pause menu and its quit confirmation (GDD v0.13 §9.1), built once. */
-  private readonly pauseMenu = new Menu(['resume', 'quit'] as const);
+  /** The five menus (GDD v0.13 and v0.14 §9.1), built once. */
+  private readonly titleMenu = new Menu(['play', 'options'] as const);
+  private readonly pauseMenu = new Menu(['resume', 'options', 'quit'] as const);
   private readonly quitMenu = new Menu(['no', 'yes'] as const);
+  // Called only after the constructor has set `options` (field initialisers run first).
+  // Left and right flip exactly the rows that show a value (GDD v0.14 §9.1).
+  private readonly hasValue = (row: MessageKey): boolean => this.options.value(row) !== undefined;
+  /** The value each options row shows, read at each draw; built once. */
+  private readonly value = (row: MessageKey): MessageKey | undefined => this.options.value(row);
+  private readonly optionsMenu = new Menu(
+    ['visualEffects', 'autofire', 'language', 'fullscreen', 'back'] as const,
+    this.hasValue,
+  );
+  private readonly effectsMenu = new Menu(
+    ['allOn', 'allOff', ...EFFECT_ROWS, 'back'] as const,
+    this.hasValue,
+  );
   /**
    * Every menu scene: its menu and header. Drawing and opening read this one table, so a new menu
    * screen is one entry here plus its step method.
    */
   private readonly menuScreens: Partial<Record<Scene, MenuScene>> = {
-    [Scene.Paused]: { menu: this.pauseMenu, header: 'pause', headerFont: 'title' },
-    [Scene.ConfirmQuit]: { menu: this.quitMenu, header: 'quitQuestion', headerFont: 'menu' },
+    [Scene.Title]: { menu: this.titleMenu },
+    [Scene.Paused]: { menu: this.pauseMenu, header: { key: 'pause', font: 'title' } },
+    [Scene.ConfirmQuit]: { menu: this.quitMenu, header: { key: 'quitQuestion', font: 'menu' } },
+    [Scene.TitleOptions]: this.optionsScreen(),
+    [Scene.PauseOptions]: this.optionsScreen(),
+    [Scene.TitleEffects]: this.effectsScreen(),
+    [Scene.PauseEffects]: this.effectsScreen(),
   };
 
-  /** `createRun` builds each new run; tests pass a short level script, the game a seeded one. */
+  /**
+   * `options` are the saved ones, copied into the live options; `createRun` builds each new run
+   * (tests pass a short level script, the game a seeded one); `host` hears every change.
+   */
   constructor(
     render: RenderPort,
     starfield: Starfield,
-    effects: Readonly<EffectSettings>,
+    options: Readonly<Options>,
     createRun: () => InRun,
+    host: SceneHost = NO_HOST,
   ) {
     this.renderer = render;
     this.starfield = starfield;
     this.createRun = createRun;
-    this.effects = effects;
+    this.host = host;
+    this.options = new LiveOptions(options);
+  }
+
+  private optionsScreen(): MenuScene {
+    return { menu: this.optionsMenu, header: { key: 'options', font: 'title' }, value: this.value };
+  }
+
+  private effectsScreen(): MenuScene {
+    return {
+      menu: this.effectsMenu,
+      header: { key: 'visualEffects', font: 'menu' },
+      value: this.value,
+    };
   }
 
   get scene(): Scene {
@@ -146,13 +219,16 @@ export class SceneMachine {
   }
 
   step(dt: number, frame: Readonly<IntentFrame>): void {
-    if (SCENE_TRAITS[this.current].frozen) this.frozenStepSinceRender = true;
+    const traits = SCENE_TRAITS[this.current];
+    if (traits.frozen) this.frozenStepSinceRender = true;
+    // The title and its menus scroll the background; the scenes with a run count it themselves.
+    if (traits.scrolls && !traits.drawsRun) this.backgroundSteps += 1;
     this.steps += 1;
     switch (this.current) {
       case Scene.Boot:
         // Nothing to load yet (no assets, no save document). The title takes this step's frame,
         // so a press latched before the first step is not lost.
-        this.current = Scene.Title;
+        this.openMenu(Scene.Title, frame);
         this.stepTitle(frame);
         return;
       case Scene.Title:
@@ -176,25 +252,71 @@ export class SceneMachine {
       case Scene.ConfirmQuit:
         this.stepConfirmQuit(frame);
         return;
+      case Scene.TitleOptions:
+      case Scene.PauseOptions:
+        this.stepOptions(frame, this.current);
+        return;
+      case Scene.TitleEffects:
+      case Scene.PauseEffects:
+        this.stepEffects(frame, this.current);
+        return;
     }
   }
 
-  // Pause is ignored on the title, as in every scene but play (pause rules); any tap starts.
+  // Pause is ignored on the title, as in every scene but play (pause rules). The lock ignores
+  // the whole menu; Play starts a run, Options opens the options (GDD v0.14 §9.1).
   private stepTitle(frame: Readonly<IntentFrame>): void {
-    this.backgroundSteps += 1;
-    if (this.locked()) return;
-    if (isConfirmOrTap(frame)) {
+    if (this.locked()) {
+      // The lock ignores the whole menu: what is held now counts as held when it ends.
+      this.titleMenu.ignore(frame);
+      return;
+    }
+    const row = this.titleMenu.step(frame, this.steps);
+    if (row === 'options') {
+      this.openMenu(Scene.TitleOptions, frame);
+    } else if (row === 'play') {
       const run = this.createRun(); // InRun entry creates the run and its presenter.
       this.run = run;
-      this.presenter = new RunPresenter(this.renderer, this.effects, run.events());
+      this.presenter = new RunPresenter(this.renderer, this.options.effects, run.events());
       this.current = Scene.Playing;
+      this.host.releaseMovement();
     }
+  }
+
+  // Each change applies at once and reaches the host; Back and the Back row return to the
+  // parent, Visual effects opens its sub-screen (GDD v0.14 §9.1, §9.3).
+  private stepOptions(frame: Readonly<IntentFrame>, scene: keyof typeof OPTIONS_ROUTES): void {
+    const row = this.optionsMenu.step(frame, this.steps);
+    if (this.backTo(row, frame, OPTIONS_ROUTES[scene].parent)) return;
+    if (row === 'visualEffects') this.openMenu(OPTIONS_ROUTES[scene].effects, frame);
+    else this.change(row);
+  }
+
+  private stepEffects(frame: Readonly<IntentFrame>, scene: keyof typeof EFFECTS_PARENT): void {
+    const row = this.effectsMenu.step(frame, this.steps);
+    if (this.backTo(row, frame, EFFECTS_PARENT[scene])) return;
+    this.change(row);
+  }
+
+  /** The Back row or `back` opens `parent`; returns whether it did. */
+  private backTo(
+    row: MessageKey | undefined,
+    frame: Readonly<IntentFrame>,
+    parent: Scene,
+  ): boolean {
+    if (row !== 'back' && (row !== undefined || !this.backed(frame))) return false;
+    this.openMenu(parent, frame);
+    return true;
+  }
+
+  private change(row: MessageKey | undefined): void {
+    if (row !== undefined && this.options.apply(row)) this.host.optionsChanged(this.options);
   }
 
   // Pause or the pause button enters the pause, before the run steps; Back is ignored in play.
   private stepPlaying(dt: number, frame: Readonly<IntentFrame>): void {
     if (this.pauses(frame)) {
-      this.openMenu(Scene.Paused);
+      this.openMenu(Scene.Paused, frame);
       return;
     }
     this.backgroundSteps += 1;
@@ -215,9 +337,9 @@ export class SceneMachine {
   }
 
   /** Enters a menu scene and opens its menu: the one place a menu is reset (first row, guard). */
-  private openMenu(scene: Scene): void {
+  private openMenu(scene: Scene, frame: Readonly<IntentFrame>): void {
     this.current = scene;
-    this.menuScreens[scene]?.menu.reset(this.steps);
+    this.menuScreens[scene]?.menu.reset(this.steps, frame);
   }
 
   // Pause does nothing here: an automatic trigger can only enter the pause, never leave it. Back
@@ -225,10 +347,13 @@ export class SceneMachine {
   private stepPaused(frame: Readonly<IntentFrame>): void {
     const row = this.pauseMenu.step(frame, this.steps);
     if (row === 'quit') {
-      this.openMenu(Scene.ConfirmQuit);
+      this.openMenu(Scene.ConfirmQuit, frame);
+    } else if (row === 'options') {
+      this.openMenu(Scene.PauseOptions, frame);
     } else if (row === 'resume' || this.pauseButtonTapped(frame) || this.backed(frame)) {
       this.current = Scene.CountIn;
       this.countInLeft = COUNT_IN_STEPS;
+      this.host.releaseMovement();
     }
   }
 
@@ -237,9 +362,9 @@ export class SceneMachine {
   private stepConfirmQuit(frame: Readonly<IntentFrame>): void {
     const row = this.quitMenu.step(frame, this.steps);
     if (row === 'yes') {
-      this.toTitle();
+      this.toTitle(frame);
     } else if (row === 'no' || this.backed(frame)) {
-      this.openMenu(Scene.Paused);
+      this.openMenu(Scene.Paused, frame);
     }
   }
 
@@ -247,7 +372,7 @@ export class SceneMachine {
   // frame interpolates forward from the frozen picture.
   private stepCountIn(dt: number, frame: Readonly<IntentFrame>): void {
     if (this.pauses(frame)) {
-      this.openMenu(Scene.Paused);
+      this.openMenu(Scene.Paused, frame);
       return;
     }
     this.countInLeft -= 1;
@@ -264,7 +389,7 @@ export class SceneMachine {
     this.gameOverLeft -= 1;
     const confirmed = !this.locked() && isConfirmOrTap(frame);
     if (!confirmed && this.gameOverLeft > 0) return;
-    this.toTitle();
+    this.toTitle(frame);
   }
 
   // Confirm or a tap after the 1 s lock, or the 8 s timer, returns to the title (the slice end,
@@ -276,14 +401,14 @@ export class SceneMachine {
     const confirmed = !this.locked() && isConfirmOrTap(frame);
     if (!confirmed && this.resultsSteps < RESULTS_STEPS) return;
     this.resultsValues = [];
-    this.toTitle();
+    this.toTitle(frame);
   }
 
   /** The run is released at the title, locked for 1 s so hammering never starts a new run. */
-  private toTitle(): void {
+  private toTitle(frame: Readonly<IntentFrame>): void {
     this.run = undefined;
     this.presenter = undefined;
-    this.current = Scene.Title;
+    this.openMenu(Scene.Title, frame);
     this.lockLeft = LOCK_STEPS;
   }
 
@@ -334,7 +459,7 @@ export class SceneMachine {
       // The WARNING banner reads the boss state, so the pause freezes it; it shows in Playing only,
       // so it never sits under GAME OVER, the pause icon or the count-in digit, which share its centre.
       if (this.current === Scene.Playing) {
-        drawWarning(r, snapshot.boss, this.effects.blink, this.language);
+        drawWarning(r, snapshot.boss, this.options.effects.blink, this.options.language);
       }
     }
     if (traits.pauseButton) drawPauseButton(r);
@@ -345,12 +470,12 @@ export class SceneMachine {
   private drawOverlays(): void {
     const menuScreen = this.menuScreens[this.current];
     if (menuScreen !== undefined) {
-      drawMenuScreen(this.renderer, menuScreen, this.language);
+      drawMenuScreen(this.renderer, menuScreen, this.options.language);
     } else if (this.current === Scene.GameOver) {
       drawVeil(this.renderer);
-      drawBanner(this.renderer, message('gameOver', this.language));
+      drawBanner(this.renderer, message('gameOver', this.options.language));
     } else if (this.current === Scene.Results) {
-      drawResults(this.renderer, this.resultsValues, this.resultsSteps, this.language);
+      drawResults(this.renderer, this.resultsValues, this.resultsSteps, this.options.language);
     } else if (this.current === Scene.CountIn) {
       drawCountIn(this.renderer, this.countInLeft);
     }
