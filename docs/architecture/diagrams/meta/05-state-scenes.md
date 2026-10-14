@@ -248,7 +248,7 @@ The devices brick makes the game playable on a phone, with a gamepad and with a 
 
 | Scene | Pause-button tap | Other tap or click | `Confirm` (Enter, A, Start) | `Pause` (P, Esc, Start) | `Back` (Esc, B) |
 |---|---|---|---|---|---|
-| `Title` | starts a run (after the lock) | starts a run (after the lock) | starts a run (after the lock) | ignored | ignored |
+| `Title` | (not drawn) | activates the menu row under it, on release, after the lock (G1a-3; before: starts a run) | activates the highlighted row (*Play* first), after the lock | ignored | ignored |
 | `Playing` | `Paused`, before the run steps | field: steering finger; HUD: nothing | ignored | `Paused`, before the run steps | ignored |
 | `Paused` | `Count-in` | activates the menu row under it, on release (G1a; before: `Count-in`, interim) | activates the highlighted row | ignored | `Count-in` |
 | `Options`, `Visual effects` (title) | (not drawn) | activates the row under it, on release | activates the highlighted row | ignored | parent screen |
@@ -416,6 +416,12 @@ unchanged.
   locks the title for 1 s like Game over); the `menu` font (the title letters at 2×); the
   pointer release and hover in the intent frame. The *Options* row joins the pause menu with
   the options screen (G1a-3).
+- **G1a-3 (design, GDD v0.14)**: `Title` becomes a menu (*Play*, *Options*; a stray tap no longer
+  starts a run, the 60-step lock after Game over and Results stays); `Options` and `Visual
+  effects` from the title (scrolling) and from the pause (frozen, the pause menu gains
+  *Options*); every change applies at once and reaches `SceneHost.optionsChanged`; every exit
+  from a menu towards play (*Play*, *Resume*, `back` and the pause button in the pause) calls
+  `SceneHost.releaseMovement`. The title lock ignores the whole menu, highlight moves included.
 - **Not yet**: `High scores`, `Name entry`, `Ending`, `Credits`, the gesture prompt's audio part,
   the controls and audio sub-screens (G1b, G2, G3, G4).
 

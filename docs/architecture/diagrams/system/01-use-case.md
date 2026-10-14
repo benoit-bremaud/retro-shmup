@@ -175,6 +175,7 @@ step depends on them.
     sliding off the row cancels; the *Back* row returns to the previous screen (GDD v0.13 §9.1).
   - 2c. A row's screen does not exist yet (volumes before the audio brick, controls before the
     remap brick): the row is not shown.
+  - 2d. Player uses left or right on a switch or a choice: it flips like a confirm (GDD v0.14).
   - 3a. Fullscreen is enabled without a click, tap or key press (gamepad): the preference is
     saved and applied at the next click, tap or key press (GDD v0.4 §9.3, ADR-0009).
   - 3b. Storage is unavailable: changes apply for the session only.
