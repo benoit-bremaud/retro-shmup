@@ -96,7 +96,8 @@ export interface InputPort {
   startCapture(device: keyof Bindings): void;
   /**
    * Polls the capture: `waiting`, then once a `key`, a `button` or `cancelled` (`Escape`, the
-   * gamepad's 5 s, a lost focus); `cancelled` too when no capture is pending.
+   * gamepad's `InputTuning.captureTimeoutSeconds`, a lost focus or pad); `cancelled` too when no
+   * capture is pending. A key that answers latches no intent.
    */
   captureNext(): BindingCapture;
   /** Stops the capture: a tap, leaving the screen or an automatic pause (GDD v0.15 §4.2). */

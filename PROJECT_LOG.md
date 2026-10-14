@@ -23,6 +23,15 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   depend on the language). Nothing learned is saved or sent.
 - The menu font gains the digits and the arrows ← ↑ → ↓ (`menuGlyph`); the renderer, the test
   double and the contract tests follow.
+- Reviews (code-reviewer, architecture-guardian). Must fixed: Ctrl and Alt could never be
+  captured (their own keydown carries their flag, read as a shortcut — `isShortcut` now ignores a
+  modifier's own flag); the lost active pad did not cancel a capture; `label` built a string per
+  call, in the draw path (now the code's last character, cached). Should fixed: while a keyboard
+  capture waits a key only answers it and latches no intent (so `Escape` or a bound key never
+  acts twice); the labels move to their own `KeyLabels` class (`adapters/input/key-labels.ts`)
+  that keeps only drawable characters; the button scan loops over the 17 standard buttons and
+  filters by the allowlist; the Numpad contract (`label` gives `''`, the domain names them) is
+  written down.
 
 ### G1b-1: bindings in the domain and save version 2 (branch `feat/g1b-bindings`) — Refs #46
 

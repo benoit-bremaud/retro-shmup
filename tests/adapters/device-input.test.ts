@@ -615,6 +615,57 @@ describe('DeviceInput — capturing a new binding (GDD v0.15 §4.2, SD-remap)', 
     expect(input.captureNext()).toEqual({ kind: 'cancelled' });
   });
 
+  it.each([
+    ['ControlLeft', 'ctrl'],
+    ['AltLeft', 'alt'],
+  ] as const)('captures %s, sent with its own modifier flag as browsers do', (code, flag) => {
+    const { env, input } = waitingFor('keyboard');
+    env.down(code, false, flag);
+    expect(input.captureNext()).toEqual({ kind: 'key', code });
+  });
+
+  it('still ignores a shortcut: a letter with Ctrl held', () => {
+    const { env, input } = waitingFor('keyboard');
+    env.down('KeyC', false, 'ctrl');
+    expect(input.captureNext()).toEqual({ kind: 'waiting' });
+  });
+
+  it('latches no intent with the key that answers, nor with Escape', () => {
+    const { env, input, frame } = waitingFor('keyboard');
+    env.down('Space'); // bound to fire
+    input.read(frame);
+    expect(frame.pressed).toBe(0);
+    expect(input.captureNext()).toEqual({ kind: 'key', code: 'Space' });
+    input.startCapture('keyboard');
+    env.down('Escape');
+    input.read(frame);
+    expect(frame.pressed).toBe(0);
+    expect(input.captureNext()).toEqual({ kind: 'cancelled' });
+  });
+
+  it('cancels a gamepad wait when the active pad is lost', () => {
+    const fixture = setup();
+    fixture.env.pads = [pad([0])];
+    fixture.input.read(fixture.frame); // the pad becomes active
+    fixture.input.startCapture('gamepad');
+    fixture.env.pads = [];
+    fixture.input.read(fixture.frame);
+    expect(fixture.input.captureNext()).toEqual({ kind: 'cancelled' });
+  });
+
+  it('times out a gamepad wait with no pad at all', () => {
+    const { input, frame } = waitingFor('gamepad');
+    for (let i = 0; i < 300; i += 1) input.read(frame);
+    expect(input.captureNext()).toEqual({ kind: 'cancelled' });
+  });
+
+  it('answers once: the poll after an answer finds no capture', () => {
+    const { env, input } = waitingFor('keyboard');
+    env.type('KeyC', 'c');
+    input.captureNext();
+    expect(input.captureNext()).toEqual({ kind: 'cancelled' });
+  });
+
   it('cancels on a lost focus and on cancelCapture', () => {
     const { env, input } = waitingFor('keyboard');
     env.loseFocus();
@@ -653,6 +704,13 @@ describe('DeviceInput — key labels (GDD v0.15 §4.2)', () => {
     expect(input.label('KeyW')).toBe('Z');
     env.type('KeyW', 'w');
     expect(input.label('KeyW')).toBe('W');
+  });
+
+  it('keeps a learned character when the same key later prints one the font cannot draw', () => {
+    const { env, input } = setup();
+    env.type('KeyE', 'e');
+    env.type('KeyE', '\u20ac'); // AltGr+E prints €
+    expect(input.label('KeyE')).toBe('E');
   });
 
   it('gives no character for a key that has none to show', () => {
