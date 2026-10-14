@@ -41,6 +41,46 @@ function pacifist(i: number): IntentFrame {
   return frame;
 }
 
+/**
+ * The ship in the boss fight (GDD v0.12 §6.1: 1 450 shots, so about 45 to 70 s at power 3 to 5):
+ * a blind weave dies four times in that time, so from the WARNING the scripted ship steps away
+ * from the nearest enemy bullet above it, else follows the boss, and fires without pause.
+ */
+function dodging(run: Run): IntentFrame {
+  const snapshot = run.snapshot();
+  const me = snapshot.player.position;
+  let away = 0;
+  let nearest = Infinity;
+  for (let k = 0; k < snapshot.enemyBullets.count; k += 1) {
+    const bullet = snapshot.enemyBullets.at(k).position;
+    const below = me.y - bullet.y;
+    const across = me.x - bullet.x;
+    if (below > -10 && below < 70 && Math.abs(across) < 22 && Math.abs(across) + below < nearest) {
+      nearest = Math.abs(across) + below;
+      away = across >= 0 ? 1 : -1;
+    }
+  }
+  const towardBoss = snapshot.boss.position.x - me.x;
+  let move = away;
+  if (away === 0 && Math.abs(towardBoss) > 4) move = towardBoss > 0 ? 0.6 : -0.6;
+  if (me.x < 30 && move < 0) move = 1;
+  if (me.x > 210 && move > 0) move = -1;
+  frame.moveKind = 'direction';
+  frame.moveX = move;
+  // Stay low on the field, between y 250 and 290.
+  frame.moveY = 0;
+  if (me.y < 250) frame.moveY = 0.4;
+  else if (me.y > 290) frame.moveY = -0.4;
+  frame.held = Button.Fire;
+  frame.pressed = 0;
+  return frame;
+}
+
+/** The weave for the waves, then the dodging ship once the WARNING has started the boss. */
+function fighter(run: Run, i: number): IntentFrame {
+  return i < ONE_PASS ? scripted(i) : dodging(run);
+}
+
 function idle(): IntentFrame {
   frame.moveKind = 'none';
   frame.moveX = 0;
@@ -59,7 +99,7 @@ const BOSS_KINDS = [
 ] as const;
 
 /** Plays a run from `seed` and returns its event log and final state as JSON (ADR-0019). */
-function replay(steps: number, seed = 1): string {
+function replay(steps: number, seed = 1, fightsBoss = false): string {
   const run = new Run({ seed });
   const log: string[] = [];
   const record = (event: Readonly<GameEvent>): void => {
@@ -82,7 +122,7 @@ function replay(steps: number, seed = 1): string {
     );
   };
   for (const kind of BOSS_KINDS) events.subscribe(kind, recordBoss);
-  for (let i = 0; i < steps; i += 1) run.step(DT, scripted(i));
+  for (let i = 0; i < steps; i += 1) run.step(DT, fightsBoss ? fighter(run, i) : scripted(i));
   const snapshot = run.snapshot();
   const boss = snapshot.boss;
   return JSON.stringify({
@@ -106,10 +146,10 @@ function replay(steps: number, seed = 1): string {
 
 describe('Level simulation — level 1, headless', () => {
   it('replays identically from the same seed and scripted inputs over two passes', () => {
-    // Seed 3: with the GDD v0.11 Heavy drop at 30 %, seed 1 no longer rolls a Bomb from any of
-    // the 8 Heavies of two passes; seed 3 does, so the replay still covers a Bomb drop.
-    const first = replay(2 * ONE_PASS, 3);
-    expect(first).toBe(replay(2 * ONE_PASS, 3));
+    // Seed 1 still rolls a Bomb drop under GDD v0.12 (at step 5630 of the first pass; seed 3, used
+    // for v0.11, no longer does: the ship's life, the P chain and so the draws changed).
+    const first = replay(2 * ONE_PASS);
+    expect(first).toBe(replay(2 * ONE_PASS));
     const { log } = JSON.parse(first) as { log: string[] };
     const has = (prefix: string): boolean => log.some((entry) => entry.startsWith(prefix));
     expect(has(`${String(GameEventKind.EnemyDestroyed)}:`)).toBe(true);
@@ -121,7 +161,7 @@ describe('Level simulation — level 1, headless', () => {
   });
 
   it('replays identically through the whole boss fight: warning, phase, destruction, level end', () => {
-    const { log } = JSON.parse(replay(ONE_PASS + 3000)) as { log: string[] };
+    const { log } = JSON.parse(replay(ONE_PASS + 6000, 1, true)) as { log: string[] };
     const kinds = log.map((entry) => entry.split(':')[0]);
     // The scripted ship destroys the boss: every boss event but its escape is in the log.
     for (const kind of BOSS_KINDS) {
@@ -129,7 +169,7 @@ describe('Level simulation — level 1, headless', () => {
       expect(kinds, String(kind)).toContain(String(kind));
     }
     expect(kinds).not.toContain(String(GameEventKind.BossFled));
-    expect(replay(ONE_PASS + 3000)).toBe(replay(ONE_PASS + 3000));
+    expect(replay(ONE_PASS + 6000, 1, true)).toBe(replay(ONE_PASS + 6000, 1, true));
   });
 
   it('lets the seed change the drops (ADR-0019)', () => {
@@ -275,7 +315,7 @@ describe('Level simulation — the Cruiser, headless (GDD v0.10 §6, §6.1)', ()
       cleared += 1;
     });
     for (let i = 0; i < ONE_PASS + 6000 && run.outcome() === RunOutcome.Playing; i += 1) {
-      run.step(DT, scripted(i));
+      run.step(DT, fighter(run, i));
     }
     expect(run.outcome()).toBe(RunOutcome.RunCleared);
     expect(cleared).toBe(1);

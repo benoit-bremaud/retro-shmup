@@ -25,7 +25,7 @@ What the current build plays:
   1-UP; the script loops every 120 s until the boss arrives; aimed bullets, contact hits.
   Level 1 is rebalanced after the first playtest (GDD v0.11 and v0.12, #45): fewer drops, Gunners
   firing every second, two more Popcorn per opening formation, three of the seven formations
-  paying no P, and a Cruiser of 1 450 shots (v0.12 is designed; the game follows in the tuning PR).
+  paying no P, and a Cruiser of 1 450 shots.
 - **Player kit**: the Spread (red) and the Laser (blue) on five shared power levels, the weapon
   chosen by the colour of the last P caught; Laser bolts pass through up to three enemies. A P
   drops from Gunners (10 %) and from every fully destroyed Popcorn formation that pays it (four of the seven in level 1, GDD v0.12). Shield, Bomb and

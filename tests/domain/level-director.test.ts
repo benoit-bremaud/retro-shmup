@@ -17,9 +17,9 @@ class Recorder implements EnemySpawner {
   readonly bosses: { tick: number; definition: BossDefinition }[] = [];
   readonly formations: Formation[] = [];
   readonly members: (Formation | undefined)[] = [];
-  startFormation(size: number): Formation {
+  startFormation(size: number, paysP: boolean): Formation {
     const formation = new Formation();
-    formation.start(size);
+    formation.start(size, paysP);
     this.formations.push(formation);
     return formation;
   }
@@ -43,7 +43,7 @@ function play(script: LevelScript, ticks: number): Recorder {
   return recorder;
 }
 
-/** The rows of GDD v0.11 §7.2.1 (Bomb Carrier removed) and §7.2.2, as the GDD writes them. */
+/** The rows of GDD v0.12 §7.2.1 (Bomb Carrier removed) and §7.2.2, as the GDD writes them. */
 const GDD_ROWS: readonly (readonly [number, string, number, number, number, string])[] = [
   [0, 'popcorn', 8, 80, -8, 'S'],
   [8, 'popcorn', 6, 160, -8, 'S mirrored'],
@@ -80,7 +80,7 @@ const GDD_ROWS: readonly (readonly [number, string, number, number, number, stri
   [110, 'popcorn', 8, 120, -8, 'S'],
 ];
 
-describe('LEVEL_1 — the 120 s script of GDD v0.11 §7.2.1 and §7.2.2', () => {
+describe('LEVEL_1 — the 120 s script of GDD v0.12 §7.2.1 and §7.2.2', () => {
   it('holds exactly the GDD rows, in order', () => {
     const rows = LEVEL_1.events.map((e) => {
       let path = '';
@@ -90,6 +90,36 @@ describe('LEVEL_1 — the 120 s script of GDD v0.11 §7.2.1 and §7.2.2', () => 
       return [e.at, e.archetype.id, e.count, e.spawn.x, e.spawn.y, path];
     });
     expect(rows).toEqual(GDD_ROWS);
+  });
+
+  it('pins the P of each of the seven formations: only 8, 50 and 52 s pay none (GDD v0.12)', () => {
+    const formations = LEVEL_1.events.filter((e) => e.archetype.formation && e.count > 1);
+    expect(formations.map((e) => [e.at, e.paysP !== false])).toEqual([
+      [0, true],
+      [8, false],
+      [32, true],
+      [50, false],
+      [52, false],
+      [70, true],
+      [110, true],
+    ]);
+    // The flag lives on formation rows only (a load check), so no other row carries one.
+    expect(LEVEL_1.events.filter((e) => e.paysP !== undefined).map((e) => e.at)).toEqual([
+      8, 50, 52,
+    ]);
+  });
+
+  it('hands each formation of a pass its row flag when the director starts it', () => {
+    const recorder = play(LEVEL_1, 7200);
+    expect(recorder.formations.map((formation) => formation.paysP)).toEqual([
+      true,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+    ]);
   });
 
   it('spaces every group member 1/3 s apart', () => {
@@ -171,8 +201,8 @@ describe('LevelDirector — script walking (GDD v0.6 §7.2.1, class diagram)', (
     expect(spawns.map((s) => s.tick).slice(-1)).toEqual([6741]);
   });
 
-  // GDD v0.11: Popcorn 8 + 6 + 8 + 8 + 6 + 8 + 8 = 52; Divers 2 + 2 + 4 + 2 + 2 (92 s, 93 s) = 12.
-  it('holds the rows of GDD v0.11 §7.2.1 and §7.2.2 per pass', () => {
+  // GDD v0.11–v0.12 (unchanged): Popcorn 8 + 6 + 8 + 8 + 6 + 8 + 8 = 52; Divers 2 + 2 + 4 + 2 + 2 (92 s, 93 s) = 12.
+  it('holds the rows of GDD v0.12 §7.2.1 and §7.2.2 per pass', () => {
     const recorder = play(LEVEL_1, 7200);
     const count = (id: string): number => recorder.spawns.filter((s) => s.id === id).length;
     expect(['popcorn', 'diver', 'gunner', 'carrier', 'heavy-ring', 'heavy-fan'].map(count)).toEqual(
@@ -354,6 +384,26 @@ describe('LevelDirector — load checks name their rule (class diagram rule tabl
     expect(() => new LevelDirector(testScript([], { warningAt: 4.5 }))).not.toThrow();
   });
 
+  it('accepts paysP on a formation row, true or false, and a row without it', () => {
+    const row = { at: 0, archetype: POPCORN, count: 5, interval: 1 / 3, spawn: SPAWN };
+    expect(() => load({ ...row, paysP: false })).not.toThrow();
+    expect(() => load({ ...row, paysP: true })).not.toThrow();
+    expect(() => load(row)).not.toThrow();
+  });
+
+  it('rejects a paysP that is not a boolean, and one on a row that is no formation', () => {
+    const row = { at: 0, archetype: POPCORN, count: 5, interval: 1 / 3, spawn: SPAWN };
+    expect(() => load({ ...row, paysP: 0 as unknown as boolean })).toThrow(
+      /needs a true or false paysP/,
+    );
+    expect(() => load({ at: 0, archetype: DIVER, count: 1, spawn: SPAWN, paysP: false })).toThrow(
+      /is not a formation, it has no P to pay/,
+    );
+    expect(() => load({ at: 0, archetype: POPCORN, count: 1, spawn: SPAWN, paysP: false })).toThrow(
+      /is not a formation/,
+    );
+  });
+
   it('rejects a Carrier row without a cargo, and a cargo on any other role', () => {
     expect(() => load({ at: 0, archetype: CARRIER, count: 1, spawn: { x: -16, y: 64 } })).toThrow(
       /is a Carrier, it needs a cargo/,
@@ -383,6 +433,16 @@ describe('LevelDirector — which rows form a formation (class diagram)', () => 
     const recorder = play(script, 100);
     expect(recorder.formations).toHaveLength(0);
     expect(recorder.members).toEqual([undefined, undefined, undefined]);
+  });
+
+  it('starts a formation that pays its P unless the row sets paysP to false', () => {
+    const script = testScript([
+      { at: 0, archetype: POPCORN, count: 5, interval: 1 / 3, spawn: { x: 0, y: 0 } },
+      { at: 1, archetype: POPCORN, count: 5, interval: 1 / 3, spawn: { x: 0, y: 0 }, paysP: false },
+      { at: 2, archetype: POPCORN, count: 5, interval: 1 / 3, spawn: { x: 0, y: 0 }, paysP: true },
+    ]);
+    const recorder = play(script, 300);
+    expect(recorder.formations.map((formation) => formation.paysP)).toEqual([true, false, true]);
   });
 
   it('gives a Popcorn group of 2 or more the formation of its pass', () => {

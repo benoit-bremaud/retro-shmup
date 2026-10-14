@@ -8,6 +8,22 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-14
 
+### The GDD v0.12 level-1 balance applied (branch `feat/apply-v012`) — Refs #45
+
+- The tuning PR of the second rebalance (GDD v0.12, #53): the Cruiser takes 1 450 level-1 shots
+  (14 500 tenths; phase 2 from 9 570); `ScriptEvent.paysP` (optional, absent = true, checked at
+  load: a boolean, on a formation row only), copied by the director onto the `Formation`; a
+  formation with `paysP` false still publishes `FORMATION_CLEARED`, scores and counts in the
+  tally, only its P is skipped; the 8 s, 50 s and 52 s formations set it to false.
+- Tests re-derived from the GDD with `shots(n)`; the seeded replay goes back to seed 1 (it rolls a
+  Bomb again); the boss-fight replay uses a scripted dodging, firing test ship, since a blind
+  weave can no longer kill a 1 450-shot Cruiser; the limits (≤ 16 enemies, ≤ 40 enemy bullets,
+  phase 2 included) stay asserted.
+- Resumed in this checkout from an interrupted session's uncommitted worktree
+  (`.claude/worktrees/audit-acdeff`), after an audit: the code matched GDD v0.12 with no drift;
+  fixed a typecheck error (`exactOptionalPropertyTypes` in `tally-run.test.ts`), rewrapped three
+  comments, and moved the docs from "designed" to "applied".
+
 ### Versioning policy decided (branch `docs/versioning`, ADR-0025)
 
 - Owner decision after scored options: SemVer 2.0.0; public surface = the save document

@@ -94,9 +94,9 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, WorldView {
    * A formation pass of `total` members; `undefined` on a full pool, and the director then drops
    * the whole group, so no visible group ever lacks its reward (class diagram).
    */
-  startFormation(total: number): Formation | undefined {
+  startFormation(total: number, paysP: boolean): Formation | undefined {
     const formation = this.formations.add();
-    formation?.start(total);
+    formation?.start(total, paysP);
     return formation;
   }
 

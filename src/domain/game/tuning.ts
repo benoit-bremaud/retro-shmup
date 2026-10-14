@@ -229,8 +229,8 @@ export const BossHudTuning = {
 export const CruiserTuning = {
   width: 112,
   height: 48,
-  /** 500 level-1 shots, in tenths (GDD v0.11 §6.1, ADR-0019). */
-  hp: 5000,
+  /** 1 450 level-1 shots, in tenths (GDD v0.12 §6.1, ADR-0019). */
+  hp: 14_500,
   timeLimitSeconds: 90,
   warningSeconds: 3,
   entryFromY: -24,
@@ -238,8 +238,8 @@ export const CruiserTuning = {
   entrySeconds: 3,
   fleeSpeed: 60,
   destroyedSeconds: 2,
-  /** Phase 2 starts at 66 % HP: 3 300 tenths (GDD v0.11). */
-  phase2HpThreshold: 3300,
+  /** Phase 2 starts at 66 % HP: 9 570 tenths (GDD v0.12). */
+  phase2HpThreshold: 9570,
   phase1: {
     swayAmplitude: 56,
     swayPeriodSeconds: 8,
