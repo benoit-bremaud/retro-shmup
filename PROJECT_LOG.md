@@ -8,7 +8,23 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-14
 
-### The GDD v0.12 level-1 balance applied (branch `feat/apply-v012`) — Refs #45
+### Screens brick G1a designed: menus and options, GDD v0.13 (branch `docs/g1a-menus-options`)
+
+- After v0.12 merged (#55), the owner was reminded that the #45 "average player" bot study had
+  already been done for v0.12 (code never committed); chose not to redo it: the friends'
+  playtest of v0.12 answers the open human questions (wave feel, hitbox, the power 4 → 5 cliff),
+  and the bot returns as a balance guard only for a later level-1 rebalance or level 2 (#56).
+- Brick G order chosen (scored 47/50; screens as one block 42, art first 35, audio first 32): G1 save, menus and options → G2 hall of fame → G3 audio →
+  G4 art; G1 split into G1a (menus, simple options) and G1b (remap, already specified in §4.2).
+- G1a decisions: touch and mouse activate a menu row on release over the pressed row (150 ms
+  re-press guard, a visible *Back* row, hover highlights; two taps 41/50, on-screen arrows 30/50);
+  options as sub-screens with *Visual effects* and *All on / All off* (scrolling list 30/50, one
+  "reduced effects" switch rejected, contrary to §9.3); rows appear only with their screen.
+- Docs only: GDD v0.13 (§9.1 menus, §9.3 layout, decision record), STM-scenes (`Visual effects`
+  states, G1a section, build order), new CD-menus class diagram, UC5 extensions, matrix,
+  architecture README. The G1a code PR follows.
+
+### The GDD v0.12 level-1 balance applied (#55) — Refs #45
 
 - The tuning PR of the second rebalance (GDD v0.12, #53): the Cruiser takes 1 450 level-1 shots
   (14 500 tenths; phase 2 from 9 570); `ScriptEvent.paysP` (optional, absent = true, checked at
