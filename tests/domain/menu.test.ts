@@ -74,6 +74,17 @@ describe('Menu — keyboard and gamepad (GDD v0.13 §9.1)', () => {
     expect(subject.highlighted).toBe(0);
   });
 
+  it('ignore() records what is held and drops a press, without moving anything', () => {
+    const subject = menu();
+    subject.step(frame({ tapRegion: 'field', tapY: rowY(subject, 1) }), 20);
+    subject.ignore(frame({ moveKind: 'direction', moveY: 1 }));
+    expect(subject.step(frame({ moveKind: 'direction', moveY: 1 }), 21)).toBeUndefined();
+    expect(subject.highlighted).toBe(0);
+    expect(
+      subject.step(frame({ releaseRegion: 'field', releaseY: rowY(subject, 1) }), 22),
+    ).toBeUndefined();
+  });
+
   it('moves rather than flips on a diagonal that is mostly vertical', () => {
     const subject = new Menu(ROWS, () => true);
     expect(

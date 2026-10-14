@@ -26,9 +26,8 @@ export interface MenuView {
 /** A menu screen: its rows and the header drawn above them (GDD v0.13 §9.1). */
 export interface MenuScreen {
   readonly menu: MenuView;
-  /** The title menu has none. */
-  readonly header?: MessageKey;
-  readonly headerFont?: Extract<FontId, 'title' | 'menu'>;
+  /** The line above the rows, in its font; the title menu has none. */
+  readonly header?: { readonly key: MessageKey; readonly font: Extract<FontId, 'title' | 'menu'> };
   /** The value a row shows on its right (a switch or a choice), if any; built once. */
   readonly value?: (row: MessageKey) => MessageKey | undefined;
 }

@@ -1,7 +1,9 @@
 import { toSteps } from '../game/tuning';
 import { Button } from '../ports/input-port';
 import type { IntentFrame } from '../ports/input-port';
+import type { MessageKey } from '../i18n/messages';
 import { MENU_ROW_HEIGHT, menuTop } from '../presentation/menu-layout';
+import type { MenuView } from '../presentation/menu-layout';
 
 /** Menu timing and input thresholds (GDD v0.13 §9.1); the geometry is the presentation's. */
 export const MenuTuning = {
@@ -13,6 +15,11 @@ export const MenuTuning = {
 
 /** `rowAt` returns it when no row is under the point. */
 export const NO_ROW = -1;
+
+/** What a scene needs of a menu it opens and draws, whatever its row ids. */
+export interface OpenableMenu extends MenuView {
+  reset(now: number, opening: Readonly<IntentFrame>): void;
+}
 
 const GUARD_STEPS = toSteps(MenuTuning.rePressGuardSeconds);
 
@@ -36,7 +43,7 @@ function axis(frame: Readonly<IntentFrame>, value: number): number {
  * too; a press on the row just activated is ignored for the guard; the hovering mouse highlights.
  * Rows are ids the scene maps to actions; time is counted in the scene's steps, never wall time.
  */
-export class Menu<Id extends string> {
+export class Menu<Id extends MessageKey> implements OpenableMenu {
   readonly rows: readonly Id[];
   /** The field y of the first row's top edge. */
   readonly top: number;
@@ -74,6 +81,16 @@ export class Menu<Id extends string> {
     this.sideways = sidewaysOf(opening);
     this.pressedRow = NO_ROW;
     this.openedAt = now;
+  }
+
+  /**
+   * A step the scene does not let the menu act on (the title lock): what is held counts as held
+   * afterwards, and a press started now never activates.
+   */
+  ignore(frame: Readonly<IntentFrame>): void {
+    this.direction = axis(frame, frame.moveY);
+    this.sideways = sidewaysOf(frame);
+    this.pressedRow = NO_ROW;
   }
 
   /** The row under the field y, or `NO_ROW`. */

@@ -127,12 +127,12 @@ export function drawWarning(
 /** A whole menu screen over the veil: its header, then its rows (GDD v0.13 §9.1). */
 export function drawMenuScreen(render: RenderPort, screen: MenuScreen, language: Language): void {
   drawVeil(render);
-  if (screen.header !== undefined) {
-    const font = screen.headerFont ?? 'menu';
-    const headerY = screen.menu.top - MENU_HEADER_GAP[font];
-    const header = message(screen.header, language);
-    if (font === 'title') drawBanner(render, header, headerY);
-    else drawMenuLine(render, header, headerY);
+  const header = screen.header;
+  if (header !== undefined) {
+    const headerY = screen.menu.top - MENU_HEADER_GAP[header.font];
+    const text = message(header.key, language);
+    if (header.font === 'title') drawBanner(render, text, headerY);
+    else drawMenuLine(render, text, headerY);
   }
   drawMenu(render, screen.menu, language, screen.value);
 }

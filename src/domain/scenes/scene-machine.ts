@@ -5,7 +5,7 @@ import { Button } from '../ports/input-port';
 import type { IntentFrame } from '../ports/input-port';
 import type { RenderPort } from '../ports/render-port';
 import { message } from '../i18n/messages';
-import type { Language, MessageKey } from '../i18n/messages';
+import type { MessageKey } from '../i18n/messages';
 import { drawHudFrame, drawPauseButton } from '../presentation/hud';
 import { isPauseTap } from '../presentation/hud-layout';
 import {
@@ -17,10 +17,12 @@ import {
 } from '../presentation/overlays';
 import { drawResults, formatTallyValues } from '../presentation/results';
 import { RunPresenter } from '../presentation/run-presenter';
-import type { EffectSettings, Options } from '../options';
+import { EFFECT_ROWS, LiveOptions } from '../options';
+import type { Options } from '../options';
 import type { Starfield } from '../presentation/starfield';
-import type { MenuScreen, MenuView } from '../presentation/menu-layout';
+import type { MenuScreen } from '../presentation/menu-layout';
 import { Menu } from './menu';
+import type { OpenableMenu } from './menu';
 
 /** The scenes built so far (meta/05-state-scenes, build order). */
 export const Scene = {
@@ -78,32 +80,13 @@ const EFFECTS_PARENT = {
   [Scene.PauseEffects]: Scene.PauseOptions,
 } as const;
 
-/** The effect switches, in screen order; each row's message key is its `EffectSettings` key. */
-const EFFECT_ROWS = [
-  'blink',
-  'hitFlash',
-  'explosions',
-  'shake',
-  'bombFlash',
-  'slowMotion',
-] as const satisfies readonly (keyof EffectSettings & MessageKey)[];
-type EffectRow = (typeof EFFECT_ROWS)[number];
-
-function isEffectRow(row: MessageKey): row is EffectRow {
-  return (EFFECT_ROWS as readonly MessageKey[]).includes(row);
-}
-
-function onOff(on: boolean): MessageKey {
-  return on ? 'on' : 'off';
-}
-
 /**
  * What the scene machine tells the outside (meta/04-class-menus): the composition root saves the
  * options and forwards autofire, fullscreen and the movement release to the input port, so the
  * domain never sees storage or the browser.
  */
 export interface SceneHost {
-  /** After each change of an option; the options are the live ones, read at once. */
+  /** After each change of an option: the live options, to read at once and never keep. */
   optionsChanged(options: Readonly<Options>): void;
   /** On each exit from a menu towards play: a mouse or touch owner lets the ship go (§9.1). */
   releaseMovement(): void;
@@ -126,7 +109,7 @@ function isConfirmOrTap(frame: Readonly<IntentFrame>): boolean {
 
 /** A menu scene: the presentation's screen description, holding a menu the scene can open. */
 interface MenuScene extends MenuScreen {
-  readonly menu: MenuView & { reset(now: number, opening: Readonly<IntentFrame>): void };
+  readonly menu: OpenableMenu;
 }
 
 /** What the scene machine holds of a run: it steps it and reads it, nothing more. */
@@ -154,13 +137,7 @@ export class SceneMachine {
    * title reached from it, so hammering never skips GAME OVER nor starts a new run (GDD v0.7 §4.4).
    */
   private lockLeft = 0;
-  /** The live options: the presenter reads `effects` itself, so a switch applies at once. */
-  private readonly options: {
-    effects: EffectSettings;
-    autofire: boolean;
-    language: Language;
-    fullscreen: boolean;
-  };
+  private readonly options: LiveOptions;
   private readonly host: SceneHost;
   private readonly createRun: () => InRun;
   private readonly renderer: RenderPort;
@@ -175,31 +152,26 @@ export class SceneMachine {
   private readonly titleMenu = new Menu(['play', 'options'] as const);
   private readonly pauseMenu = new Menu(['resume', 'options', 'quit'] as const);
   private readonly quitMenu = new Menu(['no', 'yes'] as const);
+  // Left and right flip exactly the rows that show a value (GDD v0.14 §9.1).
+  private readonly hasValue = (row: MessageKey): boolean => this.options.value(row) !== undefined;
+  /** The value each options row shows, read at each draw; built once. */
+  private readonly value = (row: MessageKey): MessageKey | undefined => this.options.value(row);
   private readonly optionsMenu = new Menu(
     ['visualEffects', 'autofire', 'language', 'fullscreen', 'back'] as const,
-    (row) => this.optionsValue(row) !== undefined,
+    this.hasValue,
   );
   private readonly effectsMenu = new Menu(
     ['allOn', 'allOff', ...EFFECT_ROWS, 'back'] as const,
-    (row) => isEffectRow(row),
+    this.hasValue,
   );
-  /** The values the options rows show, read at each draw; built once. */
-  private readonly optionsValue = (row: MessageKey): MessageKey | undefined => {
-    if (row === 'autofire') return onOff(this.options.autofire);
-    if (row === 'fullscreen') return onOff(this.options.fullscreen);
-    if (row === 'language') return this.options.language === 'en' ? 'english' : 'francais';
-    return undefined;
-  };
-  private readonly effectsValue = (row: MessageKey): MessageKey | undefined =>
-    isEffectRow(row) ? onOff(this.options.effects[row]) : undefined;
   /**
    * Every menu scene: its menu and header. Drawing and opening read this one table, so a new menu
    * screen is one entry here plus its step method.
    */
   private readonly menuScreens: Partial<Record<Scene, MenuScene>> = {
     [Scene.Title]: { menu: this.titleMenu },
-    [Scene.Paused]: { menu: this.pauseMenu, header: 'pause', headerFont: 'title' },
-    [Scene.ConfirmQuit]: { menu: this.quitMenu, header: 'quitQuestion', headerFont: 'menu' },
+    [Scene.Paused]: { menu: this.pauseMenu, header: { key: 'pause', font: 'title' } },
+    [Scene.ConfirmQuit]: { menu: this.quitMenu, header: { key: 'quitQuestion', font: 'menu' } },
     [Scene.TitleOptions]: this.optionsScreen(),
     [Scene.PauseOptions]: this.optionsScreen(),
     [Scene.TitleEffects]: this.effectsScreen(),
@@ -221,29 +193,18 @@ export class SceneMachine {
     this.starfield = starfield;
     this.createRun = createRun;
     this.host = host;
-    this.options = {
-      effects: { ...options.effects },
-      autofire: options.autofire,
-      language: options.language,
-      fullscreen: options.fullscreen,
-    };
+    this.options = new LiveOptions(options);
   }
 
   private optionsScreen(): MenuScene {
-    return {
-      menu: this.optionsMenu,
-      header: 'options',
-      headerFont: 'title',
-      value: this.optionsValue,
-    };
+    return { menu: this.optionsMenu, header: { key: 'options', font: 'title' }, value: this.value };
   }
 
   private effectsScreen(): MenuScene {
     return {
       menu: this.effectsMenu,
-      header: 'visualEffects',
-      headerFont: 'menu',
-      value: this.effectsValue,
+      header: { key: 'visualEffects', font: 'menu' },
+      value: this.value,
     };
   }
 
@@ -257,7 +218,12 @@ export class SceneMachine {
   }
 
   step(dt: number, frame: Readonly<IntentFrame>): void {
-    if (SCENE_TRAITS[this.current].frozen) this.frozenStepSinceRender = true;
+    const traits = SCENE_TRAITS[this.current];
+    if (traits.frozen) this.frozenStepSinceRender = true;
+    // The menus over the title scroll the background; the scenes with a run count it themselves.
+    if (traits.scrolls && !traits.drawsRun && this.current !== Scene.Title) {
+      this.backgroundSteps += 1;
+    }
     this.steps += 1;
     switch (this.current) {
       case Scene.Boot:
@@ -302,7 +268,11 @@ export class SceneMachine {
   // the whole menu; Play starts a run, Options opens the options (GDD v0.14 §9.1).
   private stepTitle(frame: Readonly<IntentFrame>): void {
     this.backgroundSteps += 1;
-    if (this.locked()) return;
+    if (this.locked()) {
+      // The lock ignores the whole menu: what is held now counts as held when it ends.
+      this.titleMenu.ignore(frame);
+      return;
+    }
     const row = this.titleMenu.step(frame, this.steps);
     if (row === 'options') {
       this.openMenu(Scene.TitleOptions, frame);
@@ -318,41 +288,31 @@ export class SceneMachine {
   // Each change applies at once and reaches the host; Back and the Back row return to the
   // parent, Visual effects opens its sub-screen (GDD v0.14 §9.1, §9.3).
   private stepOptions(frame: Readonly<IntentFrame>, scene: keyof typeof OPTIONS_ROUTES): void {
-    if (OPTIONS_ROUTES[scene].parent === Scene.Title) this.backgroundSteps += 1;
     const row = this.optionsMenu.step(frame, this.steps);
-    if (row === 'back' || (row === undefined && this.backed(frame))) {
-      this.openMenu(OPTIONS_ROUTES[scene].parent, frame);
-      return;
-    }
-    if (row === 'visualEffects') {
-      this.openMenu(OPTIONS_ROUTES[scene].effects, frame);
-      return;
-    }
-    if (row === 'autofire') this.options.autofire = !this.options.autofire;
-    else if (row === 'fullscreen') this.options.fullscreen = !this.options.fullscreen;
-    else if (row === 'language')
-      this.options.language = this.options.language === 'en' ? 'fr' : 'en';
-    if (row !== undefined) this.host.optionsChanged(this.options);
+    if (this.backTo(row, frame, OPTIONS_ROUTES[scene].parent)) return;
+    if (row === 'visualEffects') this.openMenu(OPTIONS_ROUTES[scene].effects, frame);
+    else this.change(row);
   }
 
   private stepEffects(frame: Readonly<IntentFrame>, scene: keyof typeof EFFECTS_PARENT): void {
-    if (scene === Scene.TitleEffects) this.backgroundSteps += 1;
     const row = this.effectsMenu.step(frame, this.steps);
-    if (row === 'back' || (row === undefined && this.backed(frame))) {
-      this.openMenu(EFFECTS_PARENT[scene], frame);
-      return;
-    }
-    if (row === undefined) return;
-    const effects = this.options.effects;
-    if (row === 'allOn' || row === 'allOff') {
-      for (let i = 0; i < EFFECT_ROWS.length; i += 1) {
-        const key = EFFECT_ROWS[i];
-        if (key !== undefined) effects[key] = row === 'allOn';
-      }
-    } else {
-      effects[row] = !effects[row];
-    }
-    this.host.optionsChanged(this.options);
+    if (this.backTo(row, frame, EFFECTS_PARENT[scene])) return;
+    this.change(row);
+  }
+
+  /** The Back row or `back` opens `parent`; returns whether it did. */
+  private backTo(
+    row: MessageKey | undefined,
+    frame: Readonly<IntentFrame>,
+    parent: Scene,
+  ): boolean {
+    if (row !== 'back' && (row !== undefined || !this.backed(frame))) return false;
+    this.openMenu(parent, frame);
+    return true;
+  }
+
+  private change(row: MessageKey | undefined): void {
+    if (row !== undefined && this.options.apply(row)) this.host.optionsChanged(this.options);
   }
 
   // Pause or the pause button enters the pause, before the run steps; Back is ignored in play.
