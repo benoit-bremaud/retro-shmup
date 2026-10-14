@@ -15,7 +15,7 @@ export interface EnemyShotSpawner {
  * Fires for a body (ADR-0003: stateless strategy, ADR-0023: `fire` and `tick`). `fire` is one
  * volley for the given volley `count`, with no timing and no read of `Body.volleys`, so a
  * `sequenceAttack` can call it on its own timer. `tick` is the timed wrapper: it waits for
- * `fireTimer`, calls `fire` with `volleys[0]` and counts the volley.
+ * `fireTimer`, calls `fire` with `volleys` and counts the volley.
  */
 export interface AttackPattern {
   fire(self: Body, world: WorldView, spawn: EnemyShotSpawner, count: number): void;
@@ -36,15 +36,15 @@ type VolleyFire = AttackPattern['fire'];
 
 /**
  * Wraps a `fire` in the timed `tick` of a single-period attack: the volley count handed to `fire`
- * is the body's `volleys[0]`, counted from 0. Built at load.
+ * is the body's `volleys`, counted from 0. Built at load.
  */
 function timedAttack(period: number, fire: VolleyFire): AttackPattern {
   return Object.freeze({
     fire,
     tick(self: Body, world: WorldView, spawn: EnemyShotSpawner): void {
       if (!volleyDue(self, period)) return;
-      const count = self.volleys[0];
-      self.volleys[0] += 1;
+      const count = self.volleys;
+      self.volleys += 1;
       fire(self, world, spawn, count);
     },
   });
@@ -96,7 +96,7 @@ export interface RingAttackConfig {
   readonly periodS: number;
   /** Pixels per second. */
   readonly speed: number;
-  /** The whole ring turns by this many degrees per volley fired (`Body.volleys[0]`). */
+  /** The whole ring turns by this many degrees per volley fired (`Body.volleys`). */
   readonly rotateDeg: number;
 }
 
@@ -171,7 +171,7 @@ export function fanAttack(config: Readonly<FanAttackConfig>): AttackPattern {
 /**
  * Alternates attack groups on one timer (ADR-0023): one volley every `periodS` while armed, the
  * first `periodS` into the hold. Volley *i* fires every pattern of group *i* mod *n* through its
- * `fire`, all with the count *i* (`Body.volleys[0]`, from 0); the inner patterns' own `periodS`
+ * `fire`, all with the count *i* (`Body.volleys`, from 0); the inner patterns' own `periodS`
  * is ignored. The Cruiser's phase 1 is `[[fan], [ring]]` and its phase 2 `[[ring], [ring, triple]]`.
  * Built once at load; a pattern that needs a period of its own would need `parallelAttack`.
  */
@@ -180,10 +180,8 @@ export function sequenceAttack(
   periodS: number,
 ): AttackPattern {
   if (groups.length === 0) throw new RangeError('sequenceAttack: needs at least one group');
-  const frozen: (readonly AttackPattern[])[] = [];
-  for (let i = 0; i < groups.length; i += 1) frozen.push(Object.freeze((groups[i] ?? []).slice()));
   return timedAttack(toSteps(periodS), (self, world, spawn, count) => {
-    const group = frozen[count % frozen.length] ?? [];
+    const group = groups[count % groups.length] ?? [];
     for (let i = 0; i < group.length; i += 1) group[i]?.fire(self, world, spawn, count);
   });
 }

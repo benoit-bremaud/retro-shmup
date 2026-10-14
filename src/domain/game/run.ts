@@ -24,11 +24,9 @@ import { World } from './world';
 /**
  * How a run is built (class diagram, ADR-0019). The composition root draws `seed`; tests give a
  * short script, a fixed seed, or a scripted `Random` through `createRandom`, called once per level.
- * `levels` is the run's level list (the vertical slice holds level 1 only); `script` is a single
- * level, a shorthand for a list of one, and `levels` wins when both are given.
+ * `levels` is the run's level list (the vertical slice holds level 1 only).
  */
 export interface RunConfig {
-  readonly script?: LevelScript;
   readonly levels?: readonly LevelScript[];
   readonly seed?: number;
   readonly createRandom?: (levelSeed: number) => Random;
@@ -145,7 +143,7 @@ export class Run implements Simulation, RunView {
   readonly rules: RunRules;
 
   constructor(config: RunConfig = {}) {
-    this.levels = config.levels ?? [config.script ?? LEVEL_1];
+    this.levels = config.levels ?? [LEVEL_1];
     const first = this.levels[0];
     if (first === undefined) throw new RangeError('Run: needs at least one level');
     this.director = new LevelDirector(first);

@@ -65,14 +65,6 @@ export class LevelTally implements TallyView {
     );
   }
 
-  /** A new level starts its tally from nothing (the next-level flow of the screens brick calls it). */
-  reset(): void {
-    this.formations = 0;
-    this.bombed = false;
-    this.died = false;
-    this.bombsAtEnd = 0;
-  }
-
   private readonly onFormationCleared = (): void => {
     this.formations += 1;
   };

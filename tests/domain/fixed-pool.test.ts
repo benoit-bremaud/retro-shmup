@@ -25,10 +25,6 @@ describe('FixedPool', () => {
     expect(created()).toBe(4);
   });
 
-  it('exposes its capacity as size', () => {
-    expect(makePool(3).pool.size).toBe(3);
-  });
-
   it('returns undefined when exhausted instead of allocating', () => {
     const { pool } = makePool(2);
     expect(pool.acquire()).toBeDefined();

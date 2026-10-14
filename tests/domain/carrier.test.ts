@@ -200,9 +200,9 @@ describe('Carrier — crossing and escaping in a run (GDD v0.8 §5.2)', () => {
     ['right to left', { x: 256, y: 64 }],
   ])('crosses %s and leaves, dropping nothing when it escapes', (_label, spawn) => {
     const run = new Run({
-      script: testScript([
-        { at: 0, archetype: CARRIER, count: 1, spawn, cargo: PickupKind.Shield },
-      ]),
+      levels: [
+        testScript([{ at: 0, archetype: CARRIER, count: 1, spawn, cargo: PickupKind.Shield }]),
+      ],
     });
     const log: number[] = [];
     run.events().subscribe(GameEventKind.PickupSpawned, (e) => log.push(e.kind));

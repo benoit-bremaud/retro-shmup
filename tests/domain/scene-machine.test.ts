@@ -296,7 +296,7 @@ function gameOverFixture(): ReturnType<typeof setup> {
       bombFlash: true,
       slowMotion: true,
     },
-    () => new Run({ script: KILLER }),
+    () => new Run({ levels: [KILLER] }),
   );
   machine.step(DT, createIntentFrame());
   machine.step(DT, pressed(Button.Confirm));
@@ -403,7 +403,7 @@ describe('SceneMachine — effects per run (ADR-0010, 02-sequence-fixed-step-tic
         bombFlash: true,
         slowMotion: true,
       },
-      () => new Run({ script: TARGET }),
+      () => new Run({ levels: [TARGET] }),
     );
     machine.step(DT, createIntentFrame());
     machine.step(DT, pressed(Button.Confirm));
@@ -453,7 +453,7 @@ describe('SceneMachine — effects per run (ADR-0010, 02-sequence-fixed-step-tic
         bombFlash: true,
         slowMotion: true,
       },
-      () => new Run({ script: script }),
+      () => new Run({ levels: [script] }),
     );
     machine.step(DT, createIntentFrame());
     machine.step(DT, pressed(Button.Confirm));
@@ -621,7 +621,7 @@ describe('SceneMachine — Results (meta/05-state-scenes, GDD v0.10 §8, F-3)', 
         bombFlash: true,
         slowMotion: true,
       },
-      () => new Run({ script: testScript([], { warningAt: 5, boss: GLASS }) }),
+      () => new Run({ levels: [testScript([], { warningAt: 5, boss: GLASS })] }),
     );
     machine.step(DT, createIntentFrame());
     machine.step(DT, pressed(Button.Confirm));
@@ -713,7 +713,7 @@ describe('SceneMachine — the boss HUD (meta/05-state-scenes, F-2b)', () => {
       render,
       new Starfield(() => 0.5),
       { blink, hitFlash: true, explosions: true, shake: true, bombFlash: true, slowMotion: true },
-      () => new Run({ script: testScript([], { warningAt: 5, boss: STUB_BOSS }) }),
+      () => new Run({ levels: [testScript([], { warningAt: 5, boss: STUB_BOSS })] }),
     );
     machine.step(DT, createIntentFrame());
     machine.step(DT, pressed(Button.Confirm));
@@ -759,7 +759,7 @@ describe('SceneMachine — the boss HUD (meta/05-state-scenes, F-2b)', () => {
   it('shows only GAME OVER when the run ends during the warning, never the banner under it', () => {
     // A real run, advanced into the first, visible half-blink of its warning, behind a stub that
     // reports Game over on the next step: the scene machine must not draw both at the same centre.
-    const real = new Run({ script: testScript([], { warningAt: 5, boss: STUB_BOSS }) });
+    const real = new Run({ levels: [testScript([], { warningAt: 5, boss: STUB_BOSS })] });
     for (let i = 0; i < IN_FIRST_BLINK; i += 1) real.step(DT, createIntentFrame());
     expect(real.snapshot().boss.state).toBe(BossState.Warning);
     const ending = {

@@ -1,18 +1,10 @@
-/** Object pool contract (ADR-0002): the loop only acquires and releases, never allocates. */
-export interface Pool<T> {
-  /** `undefined` when every item is in use: the caller drops the request. */
-  acquire(): T | undefined;
-  release(item: T): void;
-  /** Capacity of the pool. */
-  readonly size: number;
-}
-
 /**
- * Pool filled once at construction (ADR-0002). Releasing an item that is not in use — a double
- * release or a foreign object — throws: it would corrupt the free list silently (fail closed).
+ * Object pool filled once at construction (ADR-0002, ADR-0024): the loop only acquires and releases,
+ * never allocates. `acquire` returns `undefined` when every item is in use (the caller drops the
+ * request). Releasing an item that is not in use — a double release or a foreign object — throws:
+ * it would corrupt the free list silently (fail closed).
  */
-export class FixedPool<T extends object> implements Pool<T> {
-  readonly size: number;
+export class FixedPool<T extends object> {
   private readonly free: T[];
   private freeCount: number;
   private readonly inUse = new Map<T, boolean>();
@@ -22,7 +14,6 @@ export class FixedPool<T extends object> implements Pool<T> {
     if (!Number.isInteger(capacity) || capacity < 1) {
       throw new RangeError(`Pool capacity must be a positive integer, got ${String(capacity)}`);
     }
-    this.size = capacity;
     this.free = [];
     for (let i = 0; i < capacity; i += 1) {
       const item = create();

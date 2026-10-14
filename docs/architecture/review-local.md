@@ -1,12 +1,13 @@
-# Local review — retro-shmup (branch `feat/level-tally`)
+# Local review — retro-shmup (branch `refactor/leftovers`)
 
-- Date: 2026-10-12
-- Commit: the F-3 commits + the review fixes
-- Scope: branch diff `origin/main...HEAD` — F-3, the end of brick F: `LevelTally` and
-  `TallyTuning`, the tally added flat at `LEVEL_CLEARED`, `RunView.tally()`, the hud font's space
-  glyph, the Results screen (header, five lines every 0.5 s, 1 s lock, 8 s exit), the doc pass
-- Checks run: design · docs · tests · security · correctness
-- Verdict: **ship** · Must 0 · Should 2 (fixed) · Nice 3 (2 fixed)
+- Date: 2026-10-14
+- Commit: fde5162
+- Scope: branch diff `origin/main...HEAD` — behaviour-preserving removal of the over-engineering
+  leftovers: `Pool<T>` and `FixedPool.size` (ADR-0024), `RunConfig.script`, `LevelTally.reset()`,
+  the second slot of `Body.volleys`, the copy in `sequenceAttack`
+- Checks run: design · docs · tests · security · correctness (one reconciled pass over a small
+  diff: 23 files, +123 / −145; no sub-agents)
+- Verdict: **ship** · Must 0 · Should 0 · Nice 1
 
 ## 🔴 Must Have
 
@@ -14,28 +15,27 @@ _None._
 
 ## 🟡 Should Have
 
-- `tests/domain/results.test.ts` `[tests]` · the 100 000 grouping case was not pinned · fixed.
-- `tests/domain/score-keeper.test.ts` `[tests]` · nothing proved the tally is added exactly once
-  and never multiplied · fixed: with a chain at ×3, `LEVEL_CLEARED` adds exactly 17 000 and leaves
-  the multiplier unchanged.
+_None._
 
 ## 🔵 Nice to Have
 
-- Fixed: the `ScoreKeeper` TSDoc is rewrapped; an unreachable guard in `results.ts` reads
-  `continue`.
-- Left: two commits share a subject; the PR is squash-merged.
+- `docs/architecture/review-local.md` `[docs]` · the previous report (F-3) is replaced by this
+  one; history keeps it in git.
 
 ## ⚪ Disagree / Intentional
 
-- The first tally line shows as Results starts, then one every 0.5 s (TOTAL at 2 s).
-- Pause and Back are ignored during Results, which leads to the title in the one-level slice;
-  recorded as an interim deviation in `05-state-scenes`.
-- `LevelTally.reset()` waits for level 2's flow (brick G).
+- `docs/architecture/diagrams/gameplay/04-class-domain.md` (~l.561) `[docs]` · still says
+  `LevelTally` is "reset at each level": it describes the planned level-2 flow (`startNextLevel`,
+  brick G), not shipped code; `reset()` returns with that flow.
+- `src/domain/game/attacks.ts:183` `[design]` · `sequenceAttack` no longer copies its groups:
+  `readonly` types block mutation and the only caller (`cruiser.ts`) passes load-time literals.
 
 ## Per-dimension summary
 
-- Design: the tally is a subscriber owned by `ScoreKeeper`, read-only through `TallyView`.
-- Docs: GDD §8 header sentence, diagrams, matrix, CHANGELOG, README and log match the code.
-- Tests: 767 pass; checked in headless Chromium, landscape and portrait (total 11 000 added).
-- Security: nothing untrusted introduced.
-- Correctness: subscription order records the bombs left before the total; formatted once.
+- Design: dead abstractions removed, no new structure; ADR-0024 realised.
+- Docs: TSDoc, class diagram, CHANGELOG and PROJECT_LOG match the code; no stale `volleys[0]`,
+  `Pool<T>` or `script:` left in src, tests or non-ADR docs.
+- Tests: 863 pass; only tests of removed API deleted (`size`, `reset`), call sites migrated
+  (`script: X` → `levels: [X]`), no expectation changed to pass.
+- Security: nothing untrusted touched.
+- Correctness: `volleys` reset on spawn and on phase restart is preserved; no allocation added.

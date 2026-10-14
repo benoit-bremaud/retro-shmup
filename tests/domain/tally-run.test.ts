@@ -23,30 +23,32 @@ function frame(pressed = 0): IntentFrame {
 /** A Popcorn formation of 5 down the centre, then a quiet Cruiser at 8 s. */
 function tallyRun(): Run {
   return new Run({
-    script: testScript(
-      [
+    levels: [
+      testScript(
+        [
+          {
+            at: 0,
+            archetype: POPCORN,
+            count: 5,
+            interval: 0.2,
+            spawn: { x: 120, y: -8 },
+          },
+        ],
         {
-          at: 0,
-          archetype: POPCORN,
-          count: 5,
-          interval: 0.2,
-          spawn: { x: 120, y: -8 },
+          warningAt: 8,
+          boss: {
+            ...CRUISER,
+            phases: [
+              {
+                hpThreshold: CRUISER.stats.hp,
+                movement: swayMovement({ amplitude: 0, periodS: 8 }),
+                attack: NoAttack,
+              },
+            ],
+          },
         },
-      ],
-      {
-        warningAt: 8,
-        boss: {
-          ...CRUISER,
-          phases: [
-            {
-              hpThreshold: CRUISER.stats.hp,
-              movement: swayMovement({ amplitude: 0, periodS: 8 }),
-              attack: NoAttack,
-            },
-          ],
-        },
-      },
-    ),
+      ),
+    ],
   });
 }
 

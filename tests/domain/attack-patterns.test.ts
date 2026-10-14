@@ -50,11 +50,11 @@ describe('fire — one volley for a given count, with no timing (ADR-0023)', () 
   it('turns a ring by rotateDeg times the count it is given, not by the body volleys', () => {
     const sink = new RecordingShots();
     const enemy = body();
-    enemy.volleys[0] = 99;
+    enemy.volleys = 99;
     ringAttack({ count: 16, periodS: 1, speed: 60, rotateDeg: 11.25 }).fire(enemy, world, sink, 3);
     expect(sink.shots).toHaveLength(16);
     expect(angleOf(sink.shots[0]?.vx ?? 0, sink.shots[0]?.vy ?? 0)).toBeCloseTo(33.75, 6);
-    expect(enemy.volleys[0]).toBe(99);
+    expect(enemy.volleys).toBe(99);
   });
 
   it('leaves the timer alone and the tick counts its own volleys', () => {
@@ -65,7 +65,7 @@ describe('fire — one volley for a given count, with no timing (ADR-0023)', () 
     ring.fire(enemy, world, sink, 0);
     expect(enemy.fireTimer).toBe(0);
     for (let i = 0; i < 120; i += 1) ring.tick(enemy, world, sink, DT);
-    expect(enemy.volleys[0]).toBe(2);
+    expect(enemy.volleys).toBe(2);
     expect(sink.shots).toHaveLength(4 + 8);
   });
 });

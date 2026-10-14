@@ -39,7 +39,7 @@ function bossRun(
   boss: BossDefinition = quiet(),
   extra: Partial<Parameters<typeof testScript>[1]> = {},
 ) {
-  return new Run({ script: testScript([], { warningAt: WARNING_AT, boss, ...extra }) });
+  return new Run({ levels: [testScript([], { warningAt: WARNING_AT, boss, ...extra })] });
 }
 
 function idle(): IntentFrame {
@@ -109,10 +109,12 @@ describe('Run — the boss starts at warningAt (02-sequence-boss-fight)', () => 
 
   it('draws the boss serial from the run counter, after the enemy spawned before it', () => {
     const run = new Run({
-      script: testScript([{ at: 0, archetype: DIVER, count: 1, spawn: { x: 20, y: -8 } }], {
-        warningAt: WARNING_AT,
-        boss: quiet(),
-      }),
+      levels: [
+        testScript([{ at: 0, archetype: DIVER, count: 1, spawn: { x: 20, y: -8 } }], {
+          warningAt: WARNING_AT,
+          boss: quiet(),
+        }),
+      ],
     });
     const log = logOf(run, [GameEventKind.BossWarning]);
     steps(run, WARNING_STEP);
@@ -388,7 +390,7 @@ describe('Run — config', () => {
   });
 
   it('keeps the stub boss out of the way of a short test script', () => {
-    const run = new Run({ script: testScript() });
+    const run = new Run({ levels: [testScript()] });
     steps(run, 600);
     expect(run.snapshot().boss.state).toBe(BossState.Idle);
   });

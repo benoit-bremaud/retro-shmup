@@ -99,7 +99,7 @@ export class Boss implements Body {
   hp = 0;
   age = 0;
   fireTimer = 0;
-  readonly volleys: [number, number] = [0, 0];
+  volleys = 0;
   mirror = false;
   entered = false;
   armed = false;
@@ -145,8 +145,7 @@ export class Boss implements Body {
     this.hover.y = definition.entryTo.y;
     this.age = 0;
     this.fireTimer = 0;
-    this.volleys[0] = 0;
-    this.volleys[1] = 0;
+    this.volleys = 0;
     this.mirror = false;
     this.entered = false;
     this.armed = false;
@@ -296,8 +295,7 @@ export class Boss implements Body {
    */
   private restartAttack(world: BossWorld): void {
     const attack = this.definition?.phases[this.phaseIndex]?.attack;
-    this.volleys[0] = 0;
-    this.volleys[1] = 0;
+    this.volleys = 0;
     if (attack === undefined) return;
     const wasArmed = this.armed;
     this.armed = false;
