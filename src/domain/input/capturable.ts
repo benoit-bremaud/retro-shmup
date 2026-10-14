@@ -20,7 +20,7 @@ const NAMED_KEYS: ReadonlySet<string> = new Set([
 ]);
 
 /** `KeyA`–`KeyZ`, `Digit0`–`Digit9`, `Numpad0`–`Numpad9`. */
-const CHARACTER_KEY = /^(Key[A-Z]|Digit[0-9]|Numpad[0-9])$/;
+const CHARACTER_KEY = /^(Key[A-Z]|Digit\d|Numpad\d)$/;
 
 /** The highest standard-mapping button a slot can hold; 16, the home button, is the system's. */
 const LAST_BUTTON = 15;
