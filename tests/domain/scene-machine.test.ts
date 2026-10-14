@@ -825,6 +825,11 @@ function rowTap(row: number): IntentFrame {
   return tap;
 }
 
+/** Past a menu's opening guard (150 ms), with no input. */
+function wait(fixture: ReturnType<typeof setup>): void {
+  for (let i = 0; i < 10; i += 1) fixture.machine.step(DT, createIntentFrame());
+}
+
 function down(): IntentFrame {
   const step = createIntentFrame();
   step.moveKind = 'direction';
@@ -833,9 +838,10 @@ function down(): IntentFrame {
 }
 
 describe('SceneMachine — the pause menu and Confirm quit (GDD v0.13 §9.1, G1a)', () => {
-  it('resumes by the Resume row, tapped or confirmed', () => {
+  it('resumes by the Resume row, tapped once the menu is open', () => {
     const fixture = playing();
     fixture.machine.step(DT, frame(Button.Pause));
+    wait(fixture);
     fixture.machine.step(DT, rowTap(0));
     expect(fixture.machine.scene).toBe(Scene.CountIn);
   });
@@ -856,16 +862,28 @@ describe('SceneMachine — the pause menu and Confirm quit (GDD v0.13 §9.1, G1a
   ])('returns to Paused from Confirm quit on %s, the run kept', (_label, input) => {
     const fixture = playing();
     fixture.machine.step(DT, frame(Button.Pause));
+    wait(fixture);
     fixture.machine.step(DT, rowTap(1));
+    wait(fixture);
     fixture.machine.step(DT, input);
     expect(fixture.machine.scene).toBe(Scene.Paused);
     fixture.machine.step(DT, frame(Button.Confirm));
     expect(fixture.machine.scene).toBe(Scene.CountIn);
   });
 
+  it('never lets a doubled tap on Quit land on Yes, the row now in its place', () => {
+    const fixture = playing();
+    fixture.machine.step(DT, frame(Button.Pause));
+    for (let i = 0; i < 10; i += 1) fixture.machine.step(DT, createIntentFrame());
+    fixture.machine.step(DT, rowTap(1)); // Quit
+    fixture.machine.step(DT, rowTap(1)); // the bounce, where Yes now is
+    expect(fixture.machine.scene).toBe(Scene.ConfirmQuit);
+  });
+
   it('ignores Pause in Confirm quit', () => {
     const fixture = playing();
     fixture.machine.step(DT, frame(Button.Pause));
+    wait(fixture);
     fixture.machine.step(DT, rowTap(1));
     fixture.machine.step(DT, frame(Button.Pause));
     expect(fixture.machine.scene).toBe(Scene.ConfirmQuit);
@@ -874,7 +892,9 @@ describe('SceneMachine — the pause menu and Confirm quit (GDD v0.13 §9.1, G1a
   it('discards the run on Yes and locks the title for 1 s', () => {
     const fixture = playing();
     fixture.machine.step(DT, frame(Button.Pause));
+    wait(fixture);
     fixture.machine.step(DT, rowTap(1));
+    wait(fixture);
     fixture.machine.step(DT, rowTap(1));
     expect(fixture.machine.scene).toBe(Scene.Title);
     fixture.machine.render(1, 16);
@@ -898,6 +918,7 @@ describe('SceneMachine — the pause menu and Confirm quit (GDD v0.13 §9.1, G1a
   it('draws the question and the No and Yes rows in Confirm quit, without the pause button', () => {
     const fixture = playing();
     fixture.machine.step(DT, frame(Button.Pause));
+    wait(fixture);
     fixture.machine.step(DT, rowTap(1));
     fixture.machine.render(1, 16);
     const fieldTexts = fixture.render.texts

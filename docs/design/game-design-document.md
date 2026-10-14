@@ -729,7 +729,9 @@ scrolling (at most 12 rows of at least 16 logical px: 192 px of the 320). One ro
 - **Touch and mouse**: a tap or click **activates the row it lands on**, on release, and only if
   the release is on the row that was pressed (sliding off cancels, like native buttons). A press
   within 150 ms of the last activation on the same row is ignored, so a bouncing or doubled
-  touch contact never flips a switch twice (checked when the press starts). The mouse
+  touch contact never flips a switch twice (checked when the press starts); a press within
+  150 ms of a menu opening is ignored too, so a doubled tap on *Quit* never lands on *Yes*, the
+  row then in its place. The mouse
   hover moves the highlight without activating. Every screen below the title shows a *Back* row,
   since touch has no `back` key. The highlight follows the last device used (ADR-0015).
 - No menu has a timer or a timing-critical input (§9.7).

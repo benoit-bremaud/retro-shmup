@@ -118,11 +118,20 @@ describe('Menu — touch and mouse (GDD v0.13 §9.1)', () => {
     const subject = menu();
     subject.step(frame({ moveKind: 'direction', moveY: 1 }), 0);
     subject.step(frame({ tapRegion: 'field', tapY: rowY(subject, 1) }), 1);
-    subject.reset();
+    subject.reset(2);
     expect(subject.highlighted).toBe(0);
-    expect(subject.step(frame({ releaseRegion: 'field', releaseY: rowY(subject, 1) }), 2)).toBe(
+    expect(subject.step(frame({ releaseRegion: 'field', releaseY: rowY(subject, 1) }), 30)).toBe(
       NO_ROW,
     );
+  });
+
+  it('ignores any press within the guard after opening, not after it', () => {
+    const subject = menu();
+    subject.reset(100);
+    const y = rowY(subject, 1);
+    const tap = frame({ tapRegion: 'field', tapY: y, releaseRegion: 'field', releaseY: y });
+    expect(subject.step(tap, 100 + GUARD - 1)).toBe(NO_ROW);
+    expect(subject.step(tap, 100 + GUARD)).toBe(1);
   });
 });
 

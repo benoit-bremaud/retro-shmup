@@ -26,6 +26,11 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   Paused, Pause ignored, no pause button) and *Yes* discards the run and locks the title 1 s. The
   interim tap resume is lifted. Smoke test: the pause oracle is the highlight bar
   (`Palette.menuHighlight`, distinct from every field colour) and the RESUME row resumes.
+- Pre-push review: no Must; Should applied — a menu ignores any press for 150 ms after it
+  opens, so a doubled tap on *Quit* never lands on *Yes*, the row then at the same height (GDD
+  v0.13 §9.1 sentence added, tests; the smoke test now waits 300 ms before tapping RESUME);
+  Nice applied: the renderer reads each font's own cell, the pause-button hit test runs only on
+  HUD taps.
 - Visual check: headless Playwright captures, portrait and landscape (Claude in Chrome was not
   connected). Found on the way: a key pressed and released inside one frame (a synthetic
   `keyboard.press`) moves nothing, since movement is read as held; a human key tap lasts several

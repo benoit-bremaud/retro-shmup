@@ -1,4 +1,4 @@
-import { HUD_FONT_CELL, TITLE_FONT_CELL } from '../domain/ports/render-port';
+import { HUD_FONT_CELL, MENU_FONT_CELL, TITLE_FONT_CELL } from '../domain/ports/render-port';
 import type { FontId, RenderPort, RenderRegion, SpriteId } from '../domain/ports/render-port';
 import { Palette } from '../domain/presentation/palette';
 import { FIELD_HEIGHT, FIELD_WIDTH, LANDSCAPE } from '../domain/presentation/screen';
@@ -9,6 +9,8 @@ import type { Viewport } from './viewport';
 // Logical pixels per glyph pixel: HUD_FONT_CELL and TITLE_FONT_CELL are built on them.
 const HUD_SCALE = 2;
 const TITLE_SCALE = 4;
+/** The cell of each font, read per draw without building anything. */
+const FONT_CELLS = { hud: HUD_FONT_CELL, title: TITLE_FONT_CELL, menu: MENU_FONT_CELL } as const;
 
 /**
  * The part of `CanvasRenderingContext2D` the renderer uses; a real context satisfies it, and tests
@@ -103,7 +105,7 @@ export class Canvas2DRenderer implements RenderPort {
   drawText(text: string, x: number, y: number, font: FontId): void {
     const title = font === 'title';
     const scale = title ? TITLE_SCALE : HUD_SCALE;
-    const advance = title ? TITLE_FONT_CELL.width : HUD_FONT_CELL.width;
+    const advance = FONT_CELLS[font].width;
     this.offscreen.fillStyle = font === 'hud' ? Palette.hudText : Palette.titleText;
     // The menu font draws the title letters at the hud scale (MENU_FONT_CELL).
     const glyphOf = font === 'hud' ? hudGlyph : titleGlyph;

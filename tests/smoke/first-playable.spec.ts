@@ -201,6 +201,8 @@ test('a phone starts, pauses and resumes by touch; a rotation pauses without res
 
   // A tap on the RESUME row resumes (GDD v0.13 §9.1). After the 1 s count-in the pause is gone;
   // the finger lifted before play, so it steers nothing and the ship is still at rest.
+  // A menu ignores presses for 150 ms after it opens (doubled-tap guard): wait like a player would.
+  await page.waitForTimeout(300);
   const g = await geometry(page);
   await tapScreen(page, g.fieldX + RESUME_ROW.x, g.fieldY + RESUME_ROW.y);
   await page.waitForTimeout(1200);

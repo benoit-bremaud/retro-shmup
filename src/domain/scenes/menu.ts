@@ -36,17 +36,24 @@ export class Menu<Id extends string> {
   private pressedRow = NO_ROW;
   private lastActivatedRow = NO_ROW;
   private lastActivationStep = 0;
+  /** The step the menu last opened at; no press counts during the guard after it. */
+  private openedAt = Number.NEGATIVE_INFINITY;
 
   constructor(rows: readonly Id[]) {
     this.rows = rows;
     this.top = (FIELD_HEIGHT - rows.length * MenuTuning.rowHeight) / 2;
   }
 
-  /** Back to the first row with no press pending, each time the menu opens. */
-  reset(): void {
+  /**
+   * Back to the first row with no press pending, each time the menu opens at step `now`. A press
+   * within the guard after opening is ignored too: a doubled contact on the row that opened this
+   * menu never lands on the row now in its place (Quit, then Yes at the same height).
+   */
+  reset(now: number): void {
     this.highlighted = 0;
     this.direction = 0;
     this.pressedRow = NO_ROW;
+    this.openedAt = now;
   }
 
   /** The row under the field y, or `NO_ROW`. */
@@ -84,7 +91,9 @@ export class Menu<Id extends string> {
   }
 
   private press(row: number, now: number): void {
-    const guarded = row === this.lastActivatedRow && now - this.lastActivationStep < GUARD_STEPS;
+    const justOpened = now - this.openedAt < GUARD_STEPS;
+    const repeated = row === this.lastActivatedRow && now - this.lastActivationStep < GUARD_STEPS;
+    const guarded = justOpened || repeated;
     this.pressedRow = guarded ? NO_ROW : row;
   }
 

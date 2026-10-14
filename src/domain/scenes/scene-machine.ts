@@ -205,17 +205,19 @@ export class SceneMachine {
 
   private enterPause(): void {
     this.current = Scene.Paused;
-    this.pauseMenu.reset();
+    this.pauseMenu.reset(this.steps);
   }
 
   // Pause does nothing here: an automatic trigger can only enter the pause, never leave it. Back
   // and the pause button resume like the Resume row; Quit asks first (GDD v0.13 §9.1).
   private stepPaused(frame: Readonly<IntentFrame>): void {
-    const button = isPauseTap(frame.tapRegion, frame.tapX, frame.tapY, this.renderer.layout());
+    const button =
+      frame.tapRegion === 'hud' &&
+      isPauseTap(frame.tapRegion, frame.tapX, frame.tapY, this.renderer.layout());
     const row = this.pauseMenu.rows[this.pauseMenu.step(frame, this.steps)];
     if (row === 'quit') {
       this.current = Scene.ConfirmQuit;
-      this.quitMenu.reset();
+      this.quitMenu.reset(this.steps);
     } else if (row === 'resume' || button || (frame.pressed & Button.Back) !== 0) {
       this.current = Scene.CountIn;
       this.countInLeft = COUNT_IN_STEPS;
