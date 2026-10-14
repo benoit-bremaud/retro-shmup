@@ -201,7 +201,7 @@ describe('LevelDirector — script walking (GDD v0.6 §7.2.1, class diagram)', (
     expect(spawns.map((s) => s.tick).slice(-1)).toEqual([6741]);
   });
 
-  // GDD v0.11: Popcorn 8 + 6 + 8 + 8 + 6 + 8 + 8 = 52; Divers 2 + 2 + 4 + 2 + 2 (92 s, 93 s) = 12.
+  // GDD v0.11–v0.12 (unchanged): Popcorn 8 + 6 + 8 + 8 + 6 + 8 + 8 = 52; Divers 2 + 2 + 4 + 2 + 2 (92 s, 93 s) = 12.
   it('holds the rows of GDD v0.12 §7.2.1 and §7.2.2 per pass', () => {
     const recorder = play(LEVEL_1, 7200);
     const count = (id: string): number => recorder.spawns.filter((s) => s.id === id).length;

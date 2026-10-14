@@ -67,7 +67,10 @@ function dodging(run: Run): IntentFrame {
   if (me.x > 210 && move > 0) move = -1;
   frame.moveKind = 'direction';
   frame.moveX = move;
-  frame.moveY = me.y < 250 ? 0.4 : me.y > 290 ? -0.4 : 0;
+  // Stay low on the field, between y 250 and 290.
+  frame.moveY = 0;
+  if (me.y < 250) frame.moveY = 0.4;
+  else if (me.y > 290) frame.moveY = -0.4;
   frame.held = Button.Fire;
   frame.pressed = 0;
   return frame;
