@@ -565,7 +565,7 @@ describe('mixSeed — the per-level seed (ADR-0019)', () => {
 
 describe('Run — the player bullet pool at Spread level 5 (GDD v0.8 §5.2.1)', () => {
   it('never fills the 80-bullet pool with fire held at level 5', () => {
-    const run = new Run({ script: testScript() });
+    const run = new Run({ levels: [testScript()] });
     const red = new Pickup();
     red.spawn(PickupKind.PRed, 0, 0, 1);
     for (let i = 0; i < 4; i += 1) run.rules.pickupCollected(red);

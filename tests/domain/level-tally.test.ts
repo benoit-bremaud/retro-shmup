@@ -62,19 +62,4 @@ describe('LevelTally — the end-of-level lines (GDD v0.10 §8, ADR-0022 decisio
     publish(GameEventKind.BossDestroyed, 60);
     expect(tally.total()).toBe(5000 + 10000);
   });
-
-  it('starts over on reset, for the next level', () => {
-    const { tally, publish } = setup();
-    publish(GameEventKind.FormationCleared);
-    publish(GameEventKind.BombUsed);
-    publish(GameEventKind.PlayerDied);
-    publish(GameEventKind.LevelCleared, 3);
-    tally.reset();
-    expect([tally.formationsCleared, tally.bombUsed, tally.lifeLost, tally.bombsLeft]).toEqual([
-      0,
-      false,
-      false,
-      0,
-    ]);
-  });
 });

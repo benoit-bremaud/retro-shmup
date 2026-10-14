@@ -136,10 +136,9 @@ describe('Heavy archetypes (GDD v0.10 §5.2, §5.2.1)', () => {
 
   it('resets its volley counters on spawn', () => {
     const heavy = spawned(HEAVY_RING);
-    heavy.volleys[0] = 7;
-    heavy.volleys[1] = 3;
+    heavy.volleys = 7;
     heavy.spawn(HEAVY_RING, HOVER, 2, undefined);
-    expect(heavy.volleys).toEqual([0, 0]);
+    expect(heavy.volleys).toBe(0);
   });
 });
 
@@ -234,6 +233,6 @@ describe('volley counting (ADR-0022)', () => {
     const sink = new RecordingShots();
     run(gunner, shipAt(10, 300), 900, sink);
     expect(sink.shots.length).toBeGreaterThan(0);
-    expect(gunner.volleys[0]).toBe(sink.shots.length);
+    expect(gunner.volleys).toBe(sink.shots.length);
   });
 });

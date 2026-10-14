@@ -43,7 +43,7 @@ function playerAfter(steps: number): Player {
 
 /** A run on an empty script, its ship vulnerable at rest (120, 272). */
 function vulnerableRun(): Run {
-  const run = new Run({ script: EMPTY });
+  const run = new Run({ levels: [EMPTY] });
   for (let i = 0; i < 120; i += 1) run.step(DT, idle());
   expect(run.snapshot().player.state).toBe(PlayerState.Vulnerable);
   return run;
@@ -177,10 +177,12 @@ describe('Run — the bomb in step slot 3 (02-sequence-bomb)', () => {
   it('publishes BOMB_USED first, cancels enemy bullets, and strikes on-field enemies once', () => {
     // A Popcorn due on the bomb's step is still above the field when the bomb goes off.
     const run = new Run({
-      script: testScript([
-        { ...GUNNER_ABOVE, spawn: { x: 60, y: -16 }, hover: { x: 60, y: 80 } },
-        { at: BOMB_STEP / 60, archetype: POPCORN, count: 1, spawn: { x: 200, y: -8 } },
-      ]),
+      levels: [
+        testScript([
+          { ...GUNNER_ABOVE, spawn: { x: 60, y: -16 }, hover: { x: 60, y: 80 } },
+          { at: BOMB_STEP / 60, archetype: POPCORN, count: 1, spawn: { x: 200, y: -8 } },
+        ]),
+      ],
     });
     for (let i = 0; i < BOMB_STEP; i += 1) run.step(DT, idle());
     expect(run.snapshot().player.state).toBe(PlayerState.Vulnerable);
@@ -208,9 +210,11 @@ describe('Run — the bomb in step slot 3 (02-sequence-bomb)', () => {
 
   it("drops a bombed Carrier's cargo and scores the kill", () => {
     const run = new Run({
-      script: testScript([
-        { at: 0, archetype: CARRIER, count: 1, spawn: { x: -16, y: 64 }, cargo: PickupKind.Bomb },
-      ]),
+      levels: [
+        testScript([
+          { at: 0, archetype: CARRIER, count: 1, spawn: { x: -16, y: 64 }, cargo: PickupKind.Bomb },
+        ]),
+      ],
     });
     for (let i = 0; i < 120; i += 1) run.step(DT, idle());
     const log = logOf(run, [GameEventKind.PickupSpawned]);
@@ -222,15 +226,17 @@ describe('Run — the bomb in step slot 3 (02-sequence-bomb)', () => {
   it('damages a Heavy that has more HP than the bomb deals, without destroying it', () => {
     // 40 shots of HP against the bomb's 30: 10 shots are left.
     const run = new Run({
-      script: testScript([
-        {
-          at: 0,
-          archetype: HEAVY_RING,
-          count: 1,
-          spawn: { x: 120, y: -24 },
-          hover: { x: 120, y: 72 },
-        },
-      ]),
+      levels: [
+        testScript([
+          {
+            at: 0,
+            archetype: HEAVY_RING,
+            count: 1,
+            spawn: { x: 120, y: -24 },
+            hover: { x: 120, y: 72 },
+          },
+        ]),
+      ],
     });
     // Let it fly in and settle on its hover point (y 72) before the bomb.
     const heavy = (): { position: { y: number } } => run.snapshot().enemies.at(0);
@@ -247,7 +253,7 @@ describe('Run — the bomb in step slot 3 (02-sequence-bomb)', () => {
   });
 
   it('does nothing while the ship flies in', () => {
-    const run = new Run({ script: EMPTY });
+    const run = new Run({ levels: [EMPTY] });
     run.step(DT, pressing(Button.Bomb));
     expect(run.snapshot().bombs).toBe(2);
   });
@@ -255,7 +261,7 @@ describe('Run — the bomb in step slot 3 (02-sequence-bomb)', () => {
 
 describe('Run — shield and death through the collisions (GDD v0.8 §4.4)', () => {
   it('lets the shield take the first aimed bullet: PLAYER_HIT, no life lost', () => {
-    const run = new Run({ script: testScript([GUNNER_ABOVE]) });
+    const run = new Run({ levels: [testScript([GUNNER_ABOVE])] });
     collect(run, PickupKind.Shield);
     const died = logOf(run, [GameEventKind.PlayerDied]);
     expect(stepUntil(run, GameEventKind.PlayerHit, 600)).toBe(true);
@@ -264,7 +270,7 @@ describe('Run — shield and death through the collisions (GDD v0.8 §4.4)', () 
   });
 
   it('releases the lost level as a P before PLAYER_DIED, and resets the bombs', () => {
-    const run = new Run({ script: testScript([GUNNER_ABOVE]) });
+    const run = new Run({ levels: [testScript([GUNNER_ABOVE])] });
     collect(run, PickupKind.PBlue);
     collect(run, PickupKind.Bomb);
     expect([run.snapshot().power, run.snapshot().bombs]).toEqual([2, 3]);
@@ -279,7 +285,7 @@ describe('Run — shield and death through the collisions (GDD v0.8 §4.4)', () 
   });
 
   it('releases a red P when the ship dies holding the Spread', () => {
-    const run = new Run({ script: testScript([GUNNER_ABOVE]) });
+    const run = new Run({ levels: [testScript([GUNNER_ABOVE])] });
     collect(run, PickupKind.PRed);
     expect([run.snapshot().power, run.snapshot().weaponKind]).toEqual([2, WeaponKind.Spread]);
     const log = logOf(run, [GameEventKind.PickupSpawned]);
@@ -289,7 +295,7 @@ describe('Run — shield and death through the collisions (GDD v0.8 §4.4)', () 
   });
 
   it('releases nothing at level 1', () => {
-    const run = new Run({ script: testScript([GUNNER_ABOVE]) });
+    const run = new Run({ levels: [testScript([GUNNER_ABOVE])] });
     expect(stepUntil(run, GameEventKind.PlayerDied, 600)).toBe(true);
     expect(run.snapshot().pickups.count).toBe(0);
   });

@@ -173,7 +173,7 @@ export class Enemy implements Body {
   hp = 0;
   age = 0;
   fireTimer = 0;
-  readonly volleys: [number, number] = [0, 0];
+  volleys = 0;
   mirror = false;
   entered = false;
   armed = false;
@@ -213,8 +213,7 @@ export class Enemy implements Body {
     this.hp = archetype.stats.hp;
     this.age = 0;
     this.fireTimer = 0;
-    this.volleys[0] = 0;
-    this.volleys[1] = 0;
+    this.volleys = 0;
     this.entered = false;
     this.armed = false;
     this.spent = false;

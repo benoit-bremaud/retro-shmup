@@ -234,7 +234,7 @@ describe('Boss — phases (ADR-0023 decision 3)', () => {
     expect(boss.advancePhase(world)).toBe(true);
     expect(boss.phaseIndex).toBe(1);
     expect(boss.advancePhase(world)).toBe(false);
-    expect(boss.volleys[0]).toBe(0);
+    expect(boss.volleys).toBe(0);
     const changedAt = world.step;
     ticks(boss, world, 89);
     expect(world.bullets).toHaveLength(0);

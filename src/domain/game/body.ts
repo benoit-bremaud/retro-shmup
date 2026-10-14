@@ -28,10 +28,9 @@ export interface Body {
   age: number;
   fireTimer: number;
   /**
-   * Volleys fired, one counter per pattern of the attack (ADR-0022): index 0 for a single pattern.
-   * A fixed pair, reset on spawn, so nothing is allocated per spawn.
+   * Volleys fired by the attack (ADR-0022), counted from 0 and reset on spawn.
    */
-  readonly volleys: [number, number];
+  volleys: number;
   mirror: boolean;
   /** Has overlapped the field once: only then does leaving it despawn the body. */
   entered: boolean;

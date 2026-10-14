@@ -75,7 +75,7 @@ describe('Run — events of the enemies brick (ADR-0010, enemy-destroyed sequenc
     const script: LevelScript = testScript([
       { at: 0, archetype: DIVER, count: 1, spawn: { x: 120, y: -8 } },
     ]);
-    const run = new Run({ script: script });
+    const run = new Run({ levels: [script] });
     const log: string[] = [];
     run.events().subscribe(GameEventKind.EnemyHit, (e) => log.push(`hit ${String(e.subject)}`));
     run
@@ -98,7 +98,7 @@ describe('Run — events of the enemies brick (ADR-0010, enemy-destroyed sequenc
       // Due after the Game over (about 15 s): it spawns only if the run plays on.
       { at: 20, archetype: POPCORN, count: 1, spawn: { x: 40, y: -8 } },
     ]);
-    const run = new Run({ script: script });
+    const run = new Run({ levels: [script] });
     for (let i = 0; i < 3000 && run.outcome() === RunOutcome.Playing; i += 1) {
       run.step(DT, frame(0));
     }
@@ -114,7 +114,7 @@ describe('Run — events of the enemies brick (ADR-0010, enemy-destroyed sequenc
     expect(run.outcome()).toBe(RunOutcome.GameOver);
     // The 20 s Popcorn spawns only if the run kept stepping after the Game over.
     let popcornSeen = false;
-    const run2 = new Run({ script: script });
+    const run2 = new Run({ levels: [script] });
     for (let i = 0; i < 1500; i += 1) {
       run2.step(DT, frame(0));
       const enemies = run2.snapshot().enemies;
@@ -132,7 +132,7 @@ describe('Run — scoring (GDD §8, ADR-0010 wording note)', () => {
     const script: LevelScript = testScript([
       { at: 0, archetype: DIVER, count: 1, spawn: { x: 120, y: -8 } },
     ]);
-    const run = new Run({ script: script });
+    const run = new Run({ levels: [script] });
     let seen = -1;
     run.events().subscribe(GameEventKind.EnemyDestroyed, () => {
       seen = run.snapshot().score;

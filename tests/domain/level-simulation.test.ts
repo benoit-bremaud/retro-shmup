@@ -302,7 +302,7 @@ describe('Level simulation — the Cruiser, headless (GDD v0.10 §6, §6.1)', ()
   ])(
     'keeps phase 2, held for its whole 90 s, at 40 enemy bullets or fewer, never filling the pool, for %s',
     (_label, inputs) => {
-      const run = new Run({ seed: 1, script: { ...LEVEL_1, boss: HELD_IN_PHASE_2 } });
+      const run = new Run({ seed: 1, levels: [{ ...LEVEL_1, boss: HELD_IN_PHASE_2 }] });
       let i = 0;
       while (run.snapshot().boss.state !== BossState.Fighting) run.step(DT, inputs(i++));
       run.rules.damageBoss(1);
