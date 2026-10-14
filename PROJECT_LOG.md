@@ -8,6 +8,20 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-14
 
+### G1a-1: the save document's options (branch `feat/g1a-save`) — Refs #46
+
+- First of the three G1a code PRs (owner choice A, 46/50: save → pause menu with the menu font and
+  the pointer release → options screens). No visible change.
+- `SaveStore` (`src/domain/save/save-store.ts`): `load()` reads `retro-shmup.v1` by allowlist
+  (invalid JSON, wrong shapes, unknown language or a non-boolean switch → defaults; never
+  throws), a newer `version` is read as defaults and never overwritten this session;
+  `saveOptions()` writes the whole document once. `defaultOptions(reducedMotion)` keeps today's
+  presets (the blink stays on until its non-flashing form exists).
+- `LocalStorageStore` adapter wraps every access, reaching `localStorage` included, in try/catch.
+- `main.ts` reads the options once at start; the effects follow them. `storage-port.ts` leaves the
+  Knip ignore list (its adapter landed). Security: INPUT-1 allowlist parsing, ERR-1 no swallowed
+  error beyond the documented "unavailable" outcome, no personal data (PRIV-1).
+
 ### Screens brick G1a designed: menus and options, GDD v0.13 (branch `docs/g1a-menus-options`)
 
 - After v0.12 merged (#55), the owner was reminded that the #45 "average player" bot study had

@@ -7,10 +7,12 @@ import { Canvas2DRenderer } from '../adapters/canvas2d-renderer';
 import { DeviceInput } from '../adapters/input/device-input';
 import type { InputEnvironment } from '../adapters/input/device-input';
 import { PerformanceClock } from '../adapters/performance-clock';
+import { LocalStorageStore } from '../adapters/local-storage-store';
 import { computeViewport } from '../adapters/viewport';
 import { DEFAULT_BINDINGS } from '../domain/input/default-bindings';
 import { Run } from '../domain/game/run';
 import { Starfield } from '../domain/presentation/starfield';
+import { SaveStore } from '../domain/save/save-store';
 import { SceneMachine } from '../domain/scenes/scene-machine';
 import { FrameLoop } from './frame-loop';
 import type { FrameTarget } from './frame-loop';
@@ -107,9 +109,10 @@ function watchPixelRatio(): void {
 }
 watchPixelRatio();
 
-// GDD §9.3: when the browser reports reduced motion, the shake and the white and bomb flashes
-// default to off (the non-flashing blink comes with the options; meta/05-state-scenes).
+// GDD §9.3: reduced motion presets the shake, the flashes and the slow motion off on a first
+// launch; afterwards the saved options win (ADR-0006, read once here, outside the loop).
 const calm = globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const options = new SaveStore(new LocalStorageStore(() => globalThis.localStorage), calm).load();
 
 // Presentation randomness is unseeded on purpose: it never touches the outcome (ADR-0010).
 // Each run draws its seed here, the only module allowed Math.random (ADR-0014, ADR-0019): the
@@ -117,14 +120,7 @@ const calm = globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const scenes: FrameTarget = new SceneMachine(
   renderer,
   new Starfield(Math.random),
-  {
-    blink: true,
-    hitFlash: !calm,
-    explosions: true,
-    shake: !calm,
-    bombFlash: !calm,
-    slowMotion: !calm,
-  },
+  options.effects,
   () => new Run({ seed: Math.floor(Math.random() * 2 ** 32) }),
 );
 const loop = new FrameLoop(new PerformanceClock(), input, scenes, (callback) => {
