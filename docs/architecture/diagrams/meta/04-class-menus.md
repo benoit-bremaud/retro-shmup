@@ -1,7 +1,7 @@
 # Class diagram — meta — menus, options and the save document (G1a)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.13 §9.1
-> (menus), §9.3 (options and their layout), §9.4, §9.8
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.13 and v0.14 §9.1
+> (menus), §4.2 (leaving a menu frees the movement), §9.3 (options and their layout), §9.4, §9.8
 > **Related ADRs**: ADR-0006 (save document, `StoragePort`), ADR-0009 (fullscreen at the next
 > gesture), ADR-0015 (the last device used), ADR-0020 decision 4 (the autofire option), ADR-0021
 > (the high-score entry)
@@ -40,24 +40,29 @@ classDiagram
     +menu: MenuView
     +header: MessageKey
     +headerFont: title | menu
+    +value(row: MessageKey) MessageKey | undefined
+  }
+  class SceneHost {
+    <<interface>>
+    +optionsChanged(options: Options) void
+    +releaseMovement() void
+  }
+  class InputPort {
+    <<interface>>
+    +setFullscreenWanted(wanted: boolean) void
+    +setAutofire(on: boolean) void
+    +releaseMovement() void
+  }
+  class SceneMachine {
+    -options: mutable Options
+    -menuScreens: table of menu scenes
+    -openMenu(scene) void
   }
   class IntentFrame {
     <<interface>>
     +tapRegion, tapX, tapY
     +releaseRegion, releaseX, releaseY
     +hovered, hoverX, hoverY
-  }
-  class MenuRow {
-    <<interface>>
-    +kind: RowKind
-    +label: MessageKey
-  }
-  class RowKind {
-    <<enumeration>>
-    ACTION
-    SWITCH
-    CHOICE
-    SUBMENU
   }
   class Options {
     <<interface>>
@@ -89,8 +94,9 @@ classDiagram
     adapter, try/catch on every call
   }
 
-  Menu *-- "1..12" MenuRow
-  MenuRow --> RowKind
+  SceneMachine *-- "6" Menu
+  SceneMachine --> SceneHost : each change, leaving for play
+  SceneMachine *-- Options
   Menu ..> IntentFrame : tap, release, hover
   Menu ..|> MenuView
   MenuScreen --> MenuView
@@ -99,15 +105,31 @@ classDiagram
   SaveStore ..> SaveDocument : load parses, never throws
   SaveStore --> StoragePort
   LocalStorageStore ..|> StoragePort
+  SceneHost ..> SaveStore : composition root
+  SceneHost ..> InputPort : composition root
 ```
 
 ## Notes
 
-- **One menu model** for the title, the pause, the options and the visual effects: the
-  `SceneMachine` builds each menu's rows from data, so a later row (high scores, controls,
-  audio) is a data addition. A row whose screen does not exist yet is not in the list. In G1a-2
-  the rows are plain action ids (message keys); `MenuRow` and its kinds (switch, choice,
-  sub-menu) arrive with the options screens (G1a-3), their first user.
+- **One menu model** for the title, the pause, Confirm quit, the options and the visual effects
+  (six menus, built once): the `SceneMachine` builds each menu's rows from data, so a later row
+  (high scores, controls, audio) is a data addition. A row whose screen does not exist yet is not
+  in the list. Rows are message keys; there is no row-kind class (G1a-3 design, KISS): a row is a
+  switch or a choice only because its screen's `value(row)` gives it a value (*ON* / *OFF*,
+  *ENGLISH* / *FRANCAIS*), and the scene machine knows what activating it does. Left and right on
+  a highlighted row activate it like `Confirm` (GDD v0.14 §9.1): every value has two states.
+- **Runtime options and `SceneHost`** (G1a-3): the scene machine owns the live `Options` (the
+  presenter reads the same `EffectSettings` object, so a switch applies at the next frame; the
+  language is read at each draw). After each change it calls `SceneHost.optionsChanged`, and
+  when it leaves a menu for play (*Play*, *Resume*) `SceneHost.releaseMovement` (GDD v0.14
+  §4.2). The composition root implements the host: it saves through `SaveStore` and forwards
+  autofire, fullscreen and the movement release to the `InputPort` — so the domain never sees
+  the browser and the scene machine never sees storage.
+- **`InputPort` gains `setAutofire` and `releaseMovement`** (ADR-0009 contract, G1a-3):
+  `setAutofire` is ADR-0020 decision 4's option; `releaseMovement` reuses the lost-focus clear of
+  the arbitration (ADR-0015 decision 5), so no device owns the ship until one starts moving it.
+- **Options and Visual effects are reached from the title and from the pause**: four scenes,
+  two menus (meta/05-state-scenes), so `back` returns to the right parent.
 - **The press and release rule lives in `Menu`** (built in G1a-2; the design's separate
   `PointerPress` was folded in, one caller only): a press within 150 ms of the last activation on
   the same row is ignored (a bouncing or doubled touch contact), and a release activates only over

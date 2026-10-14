@@ -416,6 +416,11 @@ unchanged.
   locks the title for 1 s like Game over); the `menu` font (the title letters at 2×); the
   pointer release and hover in the intent frame. The *Options* row joins the pause menu with
   the options screen (G1a-3).
+- **G1a-3 (design, GDD v0.14)**: `Title` becomes a menu (*Play*, *Options*; a stray tap no longer
+  starts a run, the 60-step lock after Game over and Results stays); `Options` and `Visual
+  effects` from the title (scrolling) and from the pause (frozen, the pause menu gains
+  *Options*); every change applies at once and reaches `SceneHost.optionsChanged`; *Play* and
+  *Resume* call `SceneHost.releaseMovement`.
 - **Not yet**: `High scores`, `Name entry`, `Ending`, `Credits`, the gesture prompt's audio part,
   the controls and audio sub-screens (G1b, G2, G3, G4).
 

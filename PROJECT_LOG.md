@@ -8,6 +8,20 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-14
 
+### G1a-3 design: the options screens, GDD v0.14 (branch `docs/g1a3-options-design`) — Refs #46
+
+- Owner decision after a Chrome check of G1a-2: leaving a menu for play frees the ship's movement
+  (option A, 46/50 vs 33/50 for keeping the jump): a mouse click on *Resume* no longer hands the
+  ship to the mouse, so a keyboard player never sees it fly to the menu's place. Refines ADR-0018
+  decision 4 through GDD v0.14 §9.1 (the ADR itself unchanged).
+- GDD v0.14: the title is a menu (*Play* first; a stray tap no longer starts a run); rows with a
+  value show label left, value right; any activation, left and right included, flips it; the
+  EN / FR row texts.
+- CD-menus: no row-kind class (a row has a value only through its screen's `value(row)`), the
+  scene machine owns the live `Options` and reports to a `SceneHost` (implemented by the
+  composition root: save, autofire, fullscreen, movement release); `InputPort` gains
+  `setAutofire` and `releaseMovement`. STM-scenes, UC5 (2d) and the matrix follow. Docs only.
+
 ### G1a-2: the pause menu and Confirm quit (branch `feat/g1a-pause-menu`) — Refs #46
 
 - `menu` font (`FontId`): the title letters A–Z and space at 2×, in the 8 px hud cell, so a 28-
