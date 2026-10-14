@@ -95,7 +95,10 @@ export class Menu<Id extends MessageKey> implements OpenableMenu {
     this.pressedRow = NO_ROW;
   }
 
-  /** −1 or 1 when the last step brought a new left or right direction, else 0. */
+  /**
+   * −1 or 1 when the last step brought a new left or right direction, else 0. Valid right after
+   * `step`, until the next one: the controls grid reads it there to choose its column.
+   */
   get lastSideways(): number {
     return this.turned;
   }

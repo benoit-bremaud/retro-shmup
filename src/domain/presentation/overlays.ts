@@ -14,7 +14,7 @@ import {
   MENU_ROW_HEIGHT,
   MENU_VALUE_MARGIN,
 } from './menu-layout';
-import type { ControlsView, MenuScreen, MenuView } from './menu-layout';
+import type { ControlsView, MenuScreen, MenuView, SlotColumn } from './menu-layout';
 import { Palette } from './palette';
 import { FIELD_HEIGHT, FIELD_WIDTH } from './screen';
 
@@ -61,17 +61,14 @@ export function drawMenu(
     const text = message(key, language);
     const valueKey = value?.(key);
     const y = menu.top + i * MENU_ROW_HEIGHT;
+    if (valueKey === undefined) {
+      drawActionRow(render, text, y, i === menu.highlighted);
+      continue;
+    }
     if (i === menu.highlighted) {
-      const width =
-        valueKey === undefined
-          ? menuTextWidth(text) + 2 * HIGHLIGHT_PAD
-          : FIELD_WIDTH - 2 * (MENU_VALUE_MARGIN - HIGHLIGHT_PAD);
+      const width = FIELD_WIDTH - 2 * (MENU_VALUE_MARGIN - HIGHLIGHT_PAD);
       const x = Math.round((FIELD_WIDTH - width) / 2);
       render.drawRect(x, y, width, MENU_ROW_HEIGHT, Palette.menuHighlight);
-    }
-    if (valueKey === undefined) {
-      drawMenuLine(render, text, y + textTop);
-      continue;
     }
     const shown = message(valueKey, language);
     render.drawText(text, MENU_VALUE_MARGIN, y + textTop, 'menu');
@@ -142,9 +139,6 @@ export function drawMenuScreen(render: RenderPort, screen: MenuScreen, language:
   drawMenu(render, screen.menu, language, screen.value);
 }
 
-/** The two action rows that close the controls screen: *Restore defaults* and *Back*. */
-const CONTROLS_ACTION_ROWS = 2;
-
 /**
  * The controls screen (GDD v0.15 §4.2): *CONTROLS* in the title font, the device edited, then one
  * row per intent — its label, then its two slot cells — and the two action rows, centred. One
@@ -164,7 +158,7 @@ export function drawControlsScreen(
   );
   drawMenuLine(render, message(view.deviceName, language), menu.top - MENU_ROW_HEIGHT);
   const textTop = (MENU_ROW_HEIGHT - MENU_FONT_CELL.height) / 2;
-  const intents = menu.rows.length - CONTROLS_ACTION_ROWS;
+  const intents = view.intentRows;
   for (let i = 0; i < menu.rows.length; i += 1) {
     const key = menu.rows[i];
     if (key === undefined) continue;
@@ -184,7 +178,7 @@ export function drawControlsScreen(
 }
 
 /** A slot's text centred in its cell; an empty slot draws nothing. */
-function drawCell(render: RenderPort, text: string, column: 0 | 1, y: number): void {
+function drawCell(render: RenderPort, text: string, column: SlotColumn, y: number): void {
   if (text === '') return;
   const x = CONTROLS_COLUMNS.slots[column] + (CONTROLS_COLUMNS.slotWidth - menuTextWidth(text)) / 2;
   render.drawText(text, Math.round(x), y, 'menu');

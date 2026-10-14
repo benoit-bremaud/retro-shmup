@@ -25,6 +25,15 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   arrows), strings built once. The catalogue gains the screen's texts EN / FR.
 - `drawControlsScreen`: the header, the device, one row per intent (label, two centred cells), the
   two action rows; one cell highlighted.
+- Reviews: no Must. Fixed (architecture-guardian) — no capture cancel on every menu opening (it
+  could never act); the options without *Controls* chosen once per opening, the scene table kept
+  immutable (`screenOf`); the grid rows derived from `REMAPPABLE_INTENTS` through a typed label
+  record (a reorder can no longer bind the wrong intent); the view says how many intent rows it
+  has; `drawMenu` and the controls screen share one highlighted-row drawing; `SlotColumn`.
+  Fixed (code-reviewer) — a tap in the same step no longer erases a capture's answer; left, right
+  and the hover change the column on the intent rows only; a tap on a label starts nothing; the
+  touch test uses a real tap and covers the row coming back after a key; the pause-side
+  automatic pause during a capture is tested.
 - Chrome check on the local build (an AZERTY keyboard): the US `W A S D` and `Z` show as **Z S Q D**
   and **W** through the layout map; capture of *PAUSE*'s secondary (*PRESS*, then `C`, saved);
   exchange (*FIRE* takes `X`, *BOMB* gets *SPACE*); *Restore defaults* with its confirmation; no

@@ -153,14 +153,6 @@ describe('ControlsScreen — the capture (GDD v0.15 §4.2, SD-remap)', () => {
     controls.step(frame({ device: 'gamepad' }), 2);
     expect(controls.device).toBe('keyboard');
   });
-
-  it('leave() cancels a pending capture', () => {
-    const { controls, host } = screen();
-    controls.step(CONFIRM(), 1);
-    controls.leave();
-    expect(host.cancelled).toBe(1);
-    expect(controls.capturing).toBe(false);
-  });
 });
 
 describe('ControlsScreen — Back and Restore defaults', () => {

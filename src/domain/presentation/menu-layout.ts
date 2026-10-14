@@ -41,12 +41,17 @@ export const MENU_VALUE_MARGIN = 24;
  */
 export const CONTROLS_COLUMNS = { label: 8, slots: [64, 152], slotWidth: 80 } as const;
 
+/** A slot column of the controls screen: 0 the primary slot, 1 the secondary. */
+export type SlotColumn = 0 | 1;
+
 /** What the controls screen shows: its rows, the highlighted cell and each slot's text. */
 export interface ControlsView {
   readonly menu: MenuView;
-  readonly column: 0 | 1;
+  /** Rows `0` to `intentRows - 1` carry slot cells; the rows after them are centred actions. */
+  readonly intentRows: number;
+  readonly column: SlotColumn;
   /** *KEYBOARD* or *GAMEPAD*, under the header. */
   readonly deviceName: MessageKey;
   /** A slot cell's text for intent row `row` (0 to 6), built by no draw. */
-  cell(row: number, column: 0 | 1): string;
+  cell(row: number, column: SlotColumn): string;
 }

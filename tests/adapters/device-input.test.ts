@@ -659,6 +659,13 @@ describe('DeviceInput — capturing a new binding (GDD v0.15 §4.2, SD-remap)', 
     expect(input.captureNext()).toEqual({ kind: 'cancelled' });
   });
 
+  it('keeps an answer already given when a cancel comes in the same step', () => {
+    const { env, input } = waitingFor('keyboard');
+    env.type('KeyC', 'c');
+    input.cancelCapture();
+    expect(input.captureNext()).toEqual({ kind: 'key', code: 'KeyC' });
+  });
+
   it('answers once: the poll after an answer finds no capture', () => {
     const { env, input } = waitingFor('keyboard');
     env.type('KeyC', 'c');

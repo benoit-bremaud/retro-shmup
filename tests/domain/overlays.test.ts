@@ -87,6 +87,7 @@ describe('overlays of the frozen scenes (meta/05-state-scenes, enemies brick add
 describe('drawControlsScreen (GDD v0.15 §4.2)', () => {
   const view: ControlsView = {
     menu: { rows: ['up', 'fire', 'restoreDefaults', 'back'], top: 100, highlighted: 1 },
+    intentRows: 2,
     column: 1,
     deviceName: 'keyboard',
     cell: (row, column) =>

@@ -1201,14 +1201,20 @@ describe('SceneMachine — the controls screen (GDD v0.15 §4.2, G1b-3)', () => 
     expect(machine.scene).toBe(Scene.TitleOptions);
   });
 
-  it('hides the Controls row when the last device used is touch', () => {
+  it('hides the Controls row after a touch, and shows it again after a key', () => {
     const { machine, render } = hosted();
-    downBy(machine, 1);
-    const touch = pressed(Button.Confirm);
+    idle(machine);
+    const touch = rowTap(1, 2); // the title's Options row, by a finger
     touch.device = 'touch';
     machine.step(DT, touch);
+    expect(machine.scene).toBe(Scene.TitleOptions);
     machine.render(0, 16);
     expect(fieldTextsOf(render)).not.toContain('CONTROLS');
+    machine.step(DT, pressed(Button.Back)); // a key: the keyboard is the last device now
+    downBy(machine, 1);
+    machine.step(DT, pressed(Button.Confirm));
+    machine.render(0, 16);
+    expect(fieldTextsOf(render)).toContain('CONTROLS');
   });
 
   it('asks before restoring the defaults, No first, and comes back to the controls', () => {
@@ -1226,6 +1232,22 @@ describe('SceneMachine — the controls screen (GDD v0.15 §4.2, G1b-3)', () => 
     machine.step(DT, pressed(Button.Confirm)); // Yes
     expect(machine.scene).toBe(Scene.TitleControls);
     expect(host.saved).toHaveLength(1);
+  });
+
+  it('stays on the cell when an automatic pause cancels a capture on the pause side', () => {
+    const { machine } = hosted();
+    machine.step(DT, pressed(Button.Confirm)); // Play
+    machine.step(DT, pressed(Button.Pause));
+    downBy(machine, 1);
+    machine.step(DT, pressed(Button.Confirm)); // Options
+    downBy(machine, 1);
+    machine.step(DT, pressed(Button.Confirm)); // Controls
+    downBy(machine, 4); // Fire
+    machine.step(DT, pressed(Button.Confirm)); // the capture starts; this host cancels it at once
+    machine.step(DT, pressed(Button.Pause)); // the automatic pause of a lost focus
+    expect(machine.scene).toBe(Scene.PauseControls);
+    machine.step(DT, pressed(Button.Confirm)); // still on Fire: a new capture, not another row
+    expect(machine.scene).toBe(Scene.PauseControls);
   });
 
   it('reaches the controls from the pause with the run frozen', () => {

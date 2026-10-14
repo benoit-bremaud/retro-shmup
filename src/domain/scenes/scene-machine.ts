@@ -180,10 +180,13 @@ export class SceneMachine {
     ['visualEffects', 'autofire', 'language', 'fullscreen', 'back'],
     this.hasValue,
   );
-  /** The options menu in use, chosen each time the options open. */
-  private optionsMenu = this.fullOptionsMenu;
+  /** Whether the options opened without *Controls* (touch used last), frozen until they reopen. */
+  private optionsTouch = false;
   private readonly restoreMenu = new Menu(['no', 'yes'] as const);
-  /** The device of the last input, whatever it was: touch hides the *Controls* row. */
+  /**
+   * The device of the last input, touch included (the controls screen's own device is the last
+   * of keyboard and gamepad): touch hides the *Controls* row.
+   */
   private lastDevice: IntentFrame['device'] = 'keyboard';
   private readonly effectsMenu = new Menu(
     ['allOn', 'allOff', ...EFFECT_ROWS, 'back'] as const,
@@ -193,7 +196,7 @@ export class SceneMachine {
    * Every menu scene: its menu and header. Drawing and opening read this one table, so a new menu
    * screen is one entry here plus its step method.
    */
-  private readonly menuScreens: Partial<Record<Scene, MenuScene>> = {
+  private readonly menuScreens: Readonly<Partial<Record<Scene, MenuScene>>> = {
     [Scene.Title]: { menu: this.titleMenu },
     [Scene.Paused]: { menu: this.pauseMenu, header: { key: 'pause', font: 'title' } },
     [Scene.ConfirmQuit]: { menu: this.quitMenu, header: { key: 'quitQuestion', font: 'menu' } },
@@ -204,6 +207,8 @@ export class SceneMachine {
     [Scene.TitleRestore]: this.restoreScreen(),
     [Scene.PauseRestore]: this.restoreScreen(),
   };
+  /** The options screen without *Controls*, used in place of the table's when `optionsTouch`. */
+  private readonly touchOptions: MenuScene = this.touchOptionsScreen();
   private readonly controls: ControlsScreen;
 
   /**
@@ -226,7 +231,19 @@ export class SceneMachine {
   }
 
   private optionsScreen(): MenuScene {
-    return { menu: this.optionsMenu, header: { key: 'options', font: 'title' }, value: this.value };
+    return {
+      menu: this.fullOptionsMenu,
+      header: { key: 'options', font: 'title' },
+      value: this.value,
+    };
+  }
+
+  private touchOptionsScreen(): MenuScene {
+    return {
+      menu: this.touchOptionsMenu,
+      header: { key: 'options', font: 'title' },
+      value: this.value,
+    };
   }
 
   private restoreScreen(): MenuScene {
@@ -327,7 +344,8 @@ export class SceneMachine {
   // Each change applies at once and reaches the host; Back and the Back row return to the
   // parent, Visual effects opens its sub-screen (GDD v0.14 §9.1, §9.3).
   private stepOptions(frame: Readonly<IntentFrame>, scene: keyof typeof OPTIONS_ROUTES): void {
-    const row = this.optionsMenu.step(frame, this.steps);
+    const menu = this.optionsTouch ? this.touchOptionsMenu : this.fullOptionsMenu;
+    const row = menu.step(frame, this.steps);
     if (this.backTo(row, frame, OPTIONS_ROUTES[scene].parent)) return;
     if (row === 'visualEffects') this.openMenu(OPTIONS_ROUTES[scene].effects, frame);
     else if (row === 'controls') this.openControls(OPTIONS_ROUTES[scene].controls, frame);
@@ -399,10 +417,13 @@ export class SceneMachine {
 
   /** Enters a menu scene and opens its menu: the one place a menu is reset (first row, guard). */
   private openMenu(scene: Scene, frame: Readonly<IntentFrame>): void {
-    if (scene === Scene.TitleOptions || scene === Scene.PauseOptions) this.chooseOptionsMenu(scene);
-    this.controls.leave();
+    // The options show *Controls* unless touch was used last (GDD v0.15 §4.2), fixed until they
+    // reopen: a touch on the open screen never swaps its rows.
+    if (scene === Scene.TitleOptions || scene === Scene.PauseOptions) {
+      this.optionsTouch = this.lastDevice === 'touch';
+    }
     this.current = scene;
-    this.menuScreens[scene]?.menu.reset(this.steps, frame);
+    this.screenOf(scene)?.menu.reset(this.steps, frame);
   }
 
   // Pause does nothing here: an automatic trigger can only enter the pause, never leave it. Back
@@ -475,10 +496,10 @@ export class SceneMachine {
     this.lockLeft = LOCK_STEPS;
   }
 
-  /** The options with *Controls*, unless the last device used is touch (GDD v0.15 §4.2). */
-  private chooseOptionsMenu(scene: typeof Scene.TitleOptions | typeof Scene.PauseOptions): void {
-    this.optionsMenu = this.lastDevice === 'touch' ? this.touchOptionsMenu : this.fullOptionsMenu;
-    this.menuScreens[scene] = this.optionsScreen();
+  /** The menu screen of a scene: the table's, or the options without *Controls* on touch. */
+  private screenOf(scene: Scene): MenuScene | undefined {
+    const touchOptions = scene === Scene.TitleOptions || scene === Scene.PauseOptions;
+    return touchOptions && this.optionsTouch ? this.touchOptions : this.menuScreens[scene];
   }
 
   /** Consumes one locked step; true while Confirm and taps are still ignored. */
@@ -537,7 +558,7 @@ export class SceneMachine {
   }
 
   private drawOverlays(): void {
-    const menuScreen = this.menuScreens[this.current];
+    const menuScreen = this.screenOf(this.current);
     if (this.current === Scene.TitleControls || this.current === Scene.PauseControls) {
       drawControlsScreen(this.renderer, this.controls, this.options.language);
     } else if (menuScreen !== undefined) {

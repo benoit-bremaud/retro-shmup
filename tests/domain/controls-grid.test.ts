@@ -101,6 +101,31 @@ describe('ControlsGrid (GDD v0.15 §4.2)', () => {
     expect(grid.step(frame({ pressed: Button.Confirm }), 22)).toEqual({ kind: 'back' });
   });
 
+  it('starts no capture from a tap on a label', () => {
+    const grid = opened();
+    const y = rowY(grid, 4);
+    const x = CONTROLS_COLUMNS.label + 4;
+    const tap = frame({
+      tapRegion: 'field',
+      tapX: x,
+      tapY: y,
+      releaseRegion: 'field',
+      releaseX: x,
+      releaseY: y,
+    });
+    expect(grid.step(tap, PAST_GUARD)).toBeUndefined();
+  });
+
+  it('keeps the column on the action rows, where left and right do nothing', () => {
+    const grid = opened();
+    for (let i = 0; i < 7; i += 1) {
+      grid.step(frame({ moveKind: 'direction', moveY: 1 }), 2 * i + 1);
+      grid.step(frame(), 2 * i + 2);
+    }
+    grid.step(frame({ moveKind: 'direction', moveX: 1 }), 20);
+    expect(grid.column).toBe(0);
+  });
+
   it('reset() comes back to the first cell, primary column', () => {
     const grid = opened();
     grid.step(frame({ moveKind: 'direction', moveX: 1 }), 1);

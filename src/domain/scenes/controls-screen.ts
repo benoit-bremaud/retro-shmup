@@ -6,8 +6,8 @@ import { buttonName, keyName } from '../input/input-names';
 import type { LiveOptions } from '../options';
 import { Button, REMAPPABLE_INTENTS } from '../ports/input-port';
 import type { IntentFrame, RemappableIntent } from '../ports/input-port';
-import type { ControlsView, MenuView } from '../presentation/menu-layout';
-import { ControlsGrid } from './controls-grid';
+import type { ControlsView, MenuView, SlotColumn } from '../presentation/menu-layout';
+import { ControlsGrid, INTENT_ROWS } from './controls-grid';
 import type { SceneHost } from './scene-host';
 
 /** The capture in progress: which slot waits for an input. */
@@ -46,7 +46,11 @@ export class ControlsScreen implements ControlsView {
     return this.grid.menu;
   }
 
-  get column(): 0 | 1 {
+  get intentRows(): number {
+    return INTENT_ROWS;
+  }
+
+  get column(): SlotColumn {
     return this.grid.column;
   }
 
@@ -58,13 +62,6 @@ export class ControlsScreen implements ControlsView {
   open(now: number, opening: Readonly<IntentFrame>): void {
     this.grid.reset(now, opening);
     this.follow(opening);
-  }
-
-  /** Leaving the screen cancels a pending capture. */
-  leave(): void {
-    if (this.pending === undefined) return;
-    this.pending = undefined;
-    this.host.cancelCapture();
   }
 
   /** One step: `back` or `restore` for the scene machine, else `undefined`. */
@@ -89,7 +86,7 @@ export class ControlsScreen implements ControlsView {
   }
 
   /** The text of a slot cell: the input's name, blank when empty, *PRESS* while it waits. */
-  cell(row: number, column: 0 | 1): string {
+  cell(row: number, column: SlotColumn): string {
     const intent = REMAPPABLE_INTENTS[row];
     if (intent === undefined) return '';
     const slot: Slot = column === 0 ? 'primary' : 'secondary';
