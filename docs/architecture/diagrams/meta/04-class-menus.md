@@ -140,7 +140,8 @@ classDiagram
     +step(frame, now) HighScoreEntry | undefined
   }
   class SaveStore {
-    +load() SaveDocument
+    +load() Options
+    +highScores: readonly HighScoreEntry[]
     +saveOptions(options: Options) boolean
     +saveHighScores(entries: readonly HighScoreEntry[]) boolean
   }

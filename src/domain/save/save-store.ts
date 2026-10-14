@@ -1,7 +1,6 @@
 import type { Language } from '../i18n/messages';
 import { isRecord } from '../guards';
-import { parseHighScores } from '../hall-of-fame/high-scores';
-import type { HighScoreEntry } from '../hall-of-fame/high-scores';
+import { parseHighScores, type HighScoreEntry } from '../hall-of-fame/high-scores';
 import { DEFAULT_BINDINGS } from '../input/default-bindings';
 import { parseBindings } from '../input/parse-bindings';
 import type { EffectSettings, Options } from '../options';
@@ -92,6 +91,8 @@ export class SaveStore {
   private readOnly = false;
   /** The stored top 10, read by allowlist (ADR-0021); saving an option writes it back. */
   private table: readonly HighScoreEntry[] = [];
+  /** False until `load`: nothing is written before the stored document has been read. */
+  private loaded = false;
   /** The options last loaded or saved, written with the table. */
   private options: Options;
 
@@ -103,8 +104,11 @@ export class SaveStore {
 
   /** The stored options, or the defaults of a first launch. */
   load(): Options {
-    const raw = this.storage.read(SAVE_KEY);
+    this.loaded = true;
     const fallback = defaultOptions(this.reducedMotion);
+    this.options = fallback;
+    this.table = [];
+    const raw = this.storage.read(SAVE_KEY);
     if (raw === null) return fallback;
     const document = parseJson(raw);
     if (!isRecord(document)) return fallback;
@@ -121,7 +125,7 @@ export class SaveStore {
 
   /**
    * Writes the whole document once; `false` when storage is unavailable or the stored document
-   * is newer: the session goes on without saving. The stored top 10 is written back unchanged.
+   * is newer: the session goes on without saving. The current top 10 is written with them.
    */
   saveOptions(options: Options): boolean {
     this.options = options;
@@ -140,7 +144,7 @@ export class SaveStore {
   }
 
   private write(): boolean {
-    if (this.readOnly) return false;
+    if (this.readOnly || !this.loaded) return false;
     const document = { version: VERSION, options: this.options, highScores: this.table };
     return this.storage.write(SAVE_KEY, JSON.stringify(document));
   }

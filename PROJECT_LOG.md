@@ -19,6 +19,14 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 - `SaveStore` reads the table by allowlist (`highScores`) and writes it with the options last
   loaded or saved (`saveHighScores`); an option change keeps it; a newer document stays unwritten.
 - The menu font gains `?` and `-`.
+- Reviews: code-reviewer no Must or Should (the 249 codes checked against the official list by
+  script); architecture-guardian 2 Must fixed — `HighScoreTable` now sorts and caps whatever it is
+  given (the guarantee lived in the parser only), and `SaveStore` writes nothing before `load`,
+  which also resets its cached options and table (a save before reading could have overwritten
+  the stored options with the defaults). Also: a stored score of 0 dropped, the class diagram's
+  `SaveStore` aligned (`load` returns the options, `highScores`), tests for ties, a full table and
+  `__proto__`. Not done: exporting `???` as a constant, no second use since skipping records
+  nothing.
 - Owner decision the same day: *SKIP*, or *OK* on an empty name, records nothing and returns to the
   title (the player is never made to appear) — GDD v0.16 amended, a second amendment note in
   ADR-0021 (status unchanged; `???` still parsed), UC3 2b, STM-scenes and CD-menus follow.

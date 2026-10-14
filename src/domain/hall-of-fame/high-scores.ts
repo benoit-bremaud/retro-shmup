@@ -23,7 +23,7 @@ const DATE = /^\d{4}-\d{2}-\d{2}$/;
 function isName(value: unknown): value is string {
   if (typeof value !== 'string') return false;
   if (value === '???') return true;
-  return NAME.test(value) && value.trim() === value && value !== '';
+  return NAME.test(value) && value.trim() === value;
 }
 
 function isLevel(value: unknown): value is 1 | 2 | 3 {
@@ -35,7 +35,8 @@ function parseEntry(value: unknown): HighScoreEntry | undefined {
   if (!isRecord(value)) return undefined;
   const { name, country, score, level, date } = value;
   if (!isName(name) || !isLevel(level)) return undefined;
-  if (typeof score !== 'number' || !Number.isSafeInteger(score) || score < 0) return undefined;
+  // A score of 0 never enters the table, so none is ever stored.
+  if (typeof score !== 'number' || !Number.isSafeInteger(score) || score < 1) return undefined;
   if (typeof date !== 'string' || !DATE.test(date)) return undefined;
   if (country === undefined) return { name, score, level, date };
   if (typeof country !== 'string' || !COUNTRY_CODES.has(country)) return undefined;
@@ -53,9 +54,7 @@ export function parseHighScores(value: unknown): HighScoreEntry[] {
     const entry = parseEntry(value[i]);
     if (entry !== undefined) entries.push(entry);
   }
-  // A stable sort keeps the stored order of equal scores: the older entry stays ahead.
-  entries.sort((a, b) => b.score - a.score);
-  return entries.slice(0, TABLE_SIZE);
+  return new HighScoreTable(entries).entries.slice();
 }
 
 /**
@@ -65,8 +64,9 @@ export function parseHighScores(value: unknown): HighScoreEntry[] {
 export class HighScoreTable {
   private list: HighScoreEntry[];
 
+  /** Best first and ten at most, whatever the order given; a stable sort keeps equal scores' order. */
   constructor(entries: readonly HighScoreEntry[]) {
-    this.list = [...entries];
+    this.list = [...entries].sort((a, b) => b.score - a.score).slice(0, TABLE_SIZE);
   }
 
   get entries(): readonly HighScoreEntry[] {
@@ -83,7 +83,7 @@ export class HighScoreTable {
   insert(entry: HighScoreEntry): number {
     if (!this.qualifies(entry.score)) return -1;
     let rank = 0;
-    while (rank < this.list.length && (this.list[rank]?.score ?? 0) >= entry.score) rank += 1;
+    while ((this.list[rank]?.score ?? -1) >= entry.score) rank += 1;
     this.list = [...this.list.slice(0, rank), entry, ...this.list.slice(rank)].slice(0, TABLE_SIZE);
     return rank;
   }

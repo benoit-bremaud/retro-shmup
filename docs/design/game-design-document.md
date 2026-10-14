@@ -764,7 +764,7 @@ and space, entered with an arcade **letter picker** usable on keyboard, gamepad,
 example `fr-FR` → `FR`; none when the language has no region), changeable or clearable; no
 network call, no geolocation, nothing inferred beyond the language setting (privacy, PRIV-1). The
 country is shown as its 2-letter ISO 3166-1 code in the bitmap font, and as a pixel flag once the
-sprites land (assets brick). Confirming an empty name stores `???` like skip *(v0.9; amended in v0.16: both record nothing)*; the picker
+sprites land (assets brick). *(Amended in v0.16: skipping, or confirming an empty name, records nothing; v0.9 stored `???`.)* the picker
 controls per device are specified with the screens brick (G) in its UML study.
 
 **The letter grid** *(v0.16, G2)*: the name is picked on a grid of cells 30 × 20 px, eight to a
