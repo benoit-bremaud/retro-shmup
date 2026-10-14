@@ -6,6 +6,17 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ---
 
+## 2026-10-14
+
+### Over-engineering leftovers removed (branch `refactor/leftovers`)
+
+- Behaviour-preserving refactor after the audit: `Pool<T>` interface and `FixedPool.size` deleted
+  (ADR-0024), `RunConfig.script` dropped for `levels` (tests migrated), `LevelTally.reset()`
+  deleted until level 2 needs it, `Body.volleys` reduced from a reserved pair to one counter,
+  `sequenceAttack` no longer copies and freezes its groups (callers pass load-time data).
+- Class diagram updated (`FixedPool~T~` without `size`, `volleys: number`). 865 → 863 tests (the
+  `size` and `reset` cases removed with their API).
+
 ## 2026-10-13
 
 ### Mutation-gap tests (branch `test/mutation-gaps`)

@@ -237,7 +237,6 @@ classDiagram
   class FixedPool~T~ {
     +acquire() T | undefined
     +release(item: T) void
-    +size: number
   }
   class ScoreKeeper {
     -chainKills: number
@@ -349,7 +348,7 @@ classDiagram
     +mirror: boolean
     +entered: boolean
     +armed: boolean
-    +volleys: number[2]
+    +volleys: number
     +spent: boolean
   }
   class Enemy {
@@ -560,8 +559,8 @@ classDiagram
 | Chain: 2 s window, step every 5 kills, ×8 cap, reset on death (§8) | `ScoreKeeper.chainKills`, `chainTimer`, `multiplier()` |
 | Tally: full formations, no bomb, no miss, bombs left (§8, v0.10) | `LevelTally`, owned by `ScoreKeeper` and reset at each level, subscribes to `FORMATION_CLEARED` (+1, bomb kills included), `BOMB_USED` (`bombUsed`), `PLAYER_DIED` (`lifeLost`; a shield absorb publishes `PLAYER_HIT` and leaves it) and `LEVEL_CLEARED` (`bombsLeft` = its `value`); then `ScoreKeeper` adds `total()` flat; values in `TallyTuning` (500, 5 000, 10 000, 1 000); `RunView.tally()` feeds the Results scene |
 | Bomb used (§4.5, §8) | `BOMB_USED` → `LevelTally.bombUsed` (no-bomb bonus lost) |
-| Heavy (v0.10 §5.2.1) | two archetypes, `HEAVY_RING` and `HEAVY_FAN`: 56 × 48, `SizeTier.LARGE`, 400 tenths, 1 000 points, `enterHoldLeave({ travelS: 2, holdS: 10, leaveSpeed: 40 })`, `ringAttack({ count: 12, periodS: 2, speed: 60, rotateDeg: 15 })` turning on every other volley (`Body.volleys[0]`) or `fanAttack({ count: 5, spreadDeg: 15, periodS: 2, speed: 75 })`, `DropTable` {Bomb, Shield, 30 % (GDD v0.11)} |
-| Strategies built from data (ADR-0022) | `StrategyFactories` run once at module load and return frozen strategy objects closed over their configuration in steps; the Gunner is `enterHoldLeave({ travelS: 1, holdS: 3.5, leaveSpeed: 60 })` + `aimedAttack({ periodS: 1, speed: 75 })` (every 1 s since GDD v0.11); `Body.volleys[0]` counts the volleys of the current attack and is the count every `fire` of the volley receives (ADR-0023; `[1]` reserved), reset on spawn and, for the boss, at the HP threshold of a phase change; `Body.age` = steps since the current movement began (since spawn for an enemy; for the boss since the start of the fight, then since each movement swap at the x 120 crossing, not at the threshold) |
+| Heavy (v0.10 §5.2.1) | two archetypes, `HEAVY_RING` and `HEAVY_FAN`: 56 × 48, `SizeTier.LARGE`, 400 tenths, 1 000 points, `enterHoldLeave({ travelS: 2, holdS: 10, leaveSpeed: 40 })`, `ringAttack({ count: 12, periodS: 2, speed: 60, rotateDeg: 15 })` turning on every other volley (`Body.volleys`) or `fanAttack({ count: 5, spreadDeg: 15, periodS: 2, speed: 75 })`, `DropTable` {Bomb, Shield, 30 % (GDD v0.11)} |
+| Strategies built from data (ADR-0022) | `StrategyFactories` run once at module load and return frozen strategy objects closed over their configuration in steps; the Gunner is `enterHoldLeave({ travelS: 1, holdS: 3.5, leaveSpeed: 60 })` + `aimedAttack({ periodS: 1, speed: 75 })` (every 1 s since GDD v0.11); `Body.volleys` counts the volleys of the current attack and is the count every `fire` of the volley receives (ADR-0023), reset on spawn and, for the boss, at the HP threshold of a phase change; `Body.age` = steps since the current movement began (since spawn for an enemy; for the boss since the start of the fight, then since each movement swap at the x 120 crossing, not at the threshold) |
 | Chain expiry, inclusive window (v0.6 §8) | `chainTimer` counts the steps left in the window: 120 on a kill, −1 when there is no chain (start, death). `ScoreKeeper.tick` (step 7, after the collisions) decrements it, and the chain breaks when it falls below 0, so a kill 120 steps after the previous one still extends it and one 121 steps after does not; `chainRatio` = (`chainTimer` + 1) / 120, full right after a kill and empty exactly when the chain breaks |
 | Difficulty knobs (§10) | `DifficultyProfile`; the caps (9 lives, 5 bombs, level 5, the 1 000 bonus) are constants, not knobs |
 | Clamp to the field, fly-in (v0.5 §4.1) | `Player.update`: clamp applied once `Entering` ends; fly-in path in 05-state-player |
@@ -590,9 +589,9 @@ classDiagram
   volley, the aimed triple on every second one) in phase 2. *(ADR-0023)* Every pattern has a
   `fire(count)` (one volley, no timing) and a `tick` (the timed wrapper); `sequenceAttack(groups,
   periodS)` fires one volley every `periodS`, volley i firing every pattern of group i mod n through
-  their `fire` with the count `volleys[0]` (the inner patterns' own `periodS` is ignored); a ring
-  turns by `rotateDeg` × that count. There is one `fireTimer`; `Body.volleys[1]` stays unused
-  until a boss needs `parallelAttack` with independent periods. `volleys` is reset on spawn and
+  their `fire` with the count `volleys` (the inner patterns' own `periodS` is ignored); a ring
+  turns by `rotateDeg` × that count. There is one `fireTimer` and one `Body.volleys` counter; a
+  boss that needs `parallelAttack` with independent periods would add its own. `volleys` is reset on spawn and
   at the HP threshold of a phase change (the movement and `age` follow at the later x 120 crossing, ADR-0023).
 - **Strategies are stateless**: they hold no per-enemy state, only immutable configuration
   (speeds, hold steps, fire period); per-enemy scratch state (path progress, fire timer, dive

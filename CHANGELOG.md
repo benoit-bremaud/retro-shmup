@@ -70,6 +70,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   shows where a bullet counts (playtest of 2026-10-12; the hitbox itself is unchanged).
 - The rules a run applies (kills, drops, the boss, the bomb) move from `Run` to a `RunRules` class,
   with no change in behaviour (ADR-0023 decision 7).
+- Leftovers removed with no change in behaviour: the `Pool<T>` interface and `FixedPool.size`
+  (ADR-0024), `RunConfig.script` (use `levels`), `LevelTally.reset()` until level 2 needs it, the
+  unused second slot of `Body.volleys` (now one counter) and the copy of `sequenceAttack` groups.
 - The mouse fires while the left button pressed on the field is held and touch while a finger
   steers, instead of always (ADR-0020); enemy bullets are drawn larger with a white core and
   player shots shorter and translucent, so the danger reads first (GDD v0.9).
