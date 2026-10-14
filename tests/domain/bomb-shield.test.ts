@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CARRIER, GUNNER, POPCORN } from '../../src/domain/game/enemy';
+import { CARRIER, GUNNER, HEAVY_RING, POPCORN } from '../../src/domain/game/enemy';
 import { GameEventKind } from '../../src/domain/game/events';
 import type { GameEvent } from '../../src/domain/game/events';
 import type { LevelScript, ScriptEvent } from '../../src/domain/game/level-script';
@@ -92,6 +92,20 @@ describe('Player — bombs (GDD v0.8 §4.5)', () => {
     const player = playerAfter(31); // 89 steps of respawn invulnerability left
     player.useBomb();
     for (let i = 0; i < 88; i += 1) player.advanceTimers();
+    expect(player.state).toBe(PlayerState.Invulnerable);
+    player.advanceTimers();
+    expect(player.state).toBe(PlayerState.Vulnerable);
+  });
+});
+
+describe('Player — a bomb while invulnerable (GDD v0.8 §4.5)', () => {
+  it('extends a shorter protection to the bomb duration, 1 s, without restarting the blink', () => {
+    const player = playerAfter(100); // 20 steps of respawn invulnerability left
+    expect(player.state).toBe(PlayerState.Invulnerable);
+    expect(player.protectionSteps).toBe(100);
+    player.useBomb();
+    expect(player.protectionSteps).toBe(100);
+    for (let i = 0; i < 59; i += 1) player.advanceTimers();
     expect(player.state).toBe(PlayerState.Invulnerable);
     player.advanceTimers();
     expect(player.state).toBe(PlayerState.Vulnerable);
@@ -205,6 +219,33 @@ describe('Run — the bomb in step slot 3 (02-sequence-bomb)', () => {
     expect(run.snapshot().score).toBe(500);
   });
 
+  it('damages a Heavy that has more HP than the bomb deals, without destroying it', () => {
+    // 40 shots of HP against the bomb's 30: 10 shots are left.
+    const run = new Run({
+      script: testScript([
+        {
+          at: 0,
+          archetype: HEAVY_RING,
+          count: 1,
+          spawn: { x: 120, y: -24 },
+          hover: { x: 120, y: 72 },
+        },
+      ]),
+    });
+    // Let it fly in and settle on its hover point (y 72) before the bomb.
+    const heavy = (): { position: { y: number } } => run.snapshot().enemies.at(0);
+    run.step(DT, idle());
+    for (let i = 0; i < 600 && heavy().position.y < 72; i += 1) run.step(DT, idle());
+    expect(heavy().position.y).toBeCloseTo(72, 6);
+    expect(run.snapshot().enemies.at(0).hp).toBe(shots(40));
+    const log = logOf(run, [GameEventKind.EnemyHit, GameEventKind.EnemyDestroyed]);
+    run.step(DT, pressing(Button.Bomb));
+    expect(log).toEqual([`${String(GameEventKind.EnemyHit)}:0`]);
+    expect(run.snapshot().enemies.count).toBe(1);
+    expect(run.snapshot().enemies.at(0).hp).toBe(shots(10));
+    expect(run.snapshot().score).toBe(0);
+  });
+
   it('does nothing while the ship flies in', () => {
     const run = new Run({ script: EMPTY });
     run.step(DT, pressing(Button.Bomb));
@@ -235,6 +276,16 @@ describe('Run — shield and death through the collisions (GDD v0.8 §4.4)', () 
     ]);
     expect([run.snapshot().power, run.snapshot().bombs]).toEqual([1, 2]);
     expect(run.snapshot().pickups.at(0).motion).toBe(PickupMotion.Release);
+  });
+
+  it('releases a red P when the ship dies holding the Spread', () => {
+    const run = new Run({ script: testScript([GUNNER_ABOVE]) });
+    collect(run, PickupKind.PRed);
+    expect([run.snapshot().power, run.snapshot().weaponKind]).toEqual([2, WeaponKind.Spread]);
+    const log = logOf(run, [GameEventKind.PickupSpawned]);
+    expect(stepUntil(run, GameEventKind.PlayerDied, 600)).toBe(true);
+    expect(log).toEqual([`${String(GameEventKind.PickupSpawned)}:${String(PickupKind.PRed)}`]);
+    expect(run.snapshot().pickups.at(0).kind).toBe(PickupKind.PRed);
   });
 
   it('releases nothing at level 1', () => {

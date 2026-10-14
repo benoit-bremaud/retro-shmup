@@ -385,3 +385,170 @@ describe('CollisionResolver — the boss (ADR-0022 decision 5, GDD v0.10 §6)', 
     },
   );
 });
+
+describe('CollisionResolver — the shot box is strict on both axes (overlap rule: |Δ| < half-sums)', () => {
+  // A Gunner is 32 × 32 and a Spread shot 2 × 8: the boxes overlap while |Δx| < 17, |Δy| < 20.
+  it.each([
+    ['level, exactly touching on the right', 117, 100, false],
+    ['level, 0.1 px inside on the right', 116.9, 100, true],
+    ['level, exactly touching on the left', 83, 100, false],
+    ['level, 0.1 px inside on the left', 83.1, 100, true],
+    ['centred, exactly touching below', 100, 120, false],
+    ['centred, exactly touching above', 100, 80, false],
+    ['centred, 0.1 px inside below', 100, 119.9, true],
+    ['centred, 0.1 px inside above', 100, 80.1, true],
+  ])('a shot %s hits: %s', (_label, x, y, hits) => {
+    const world = new World();
+    const gunner = enemyAt(world, GUNNER, 100, 100);
+    world.spawnPlayerBullet(x, y, SHOT);
+    const rules = new Rules();
+    CollisionResolver.resolve(world, rules);
+    expect(rules.hits).toBe(hits ? 1 : 0);
+    expect(gunner.hp).toBe(hits ? shots(7) : shots(8));
+    expect(world.playerBullets.at(0).spent).toBe(hits);
+  });
+});
+
+describe('CollisionResolver — the 4 × 4 hitbox edge is strict (GDD §4.1)', () => {
+  // The ship rests at (120, 272); an enemy bullet is 4 × 4: it kills while |Δ| < (4 + 4) / 2 = 4.
+  it.each([
+    ['exactly at the right edge', 124, 272, false],
+    ['exactly at the left edge', 116, 272, false],
+    ['exactly at the lower edge', 120, 276, false],
+    ['exactly at the upper edge', 120, 268, false],
+    ['one pixel inside on the right', 123, 272, true],
+    ['one pixel inside on the left', 117, 272, true],
+    ['one pixel inside below', 120, 275, true],
+    ['one pixel inside above', 120, 269, true],
+  ])('an enemy bullet %s: kills the ship = %s', (_label, x, y, kills) => {
+    const world = vulnerableWorld();
+    world.spawnEnemyBullet(x, y, 0, 0);
+    const rules = new Rules();
+    CollisionResolver.resolve(world, rules);
+    expect(world.player.state).toBe(kills ? PlayerState.Dead : PlayerState.Vulnerable);
+    expect(rules.deaths).toBe(kills ? 1 : 0);
+    expect(world.enemyBullets.at(0).spent).toBe(kills);
+  });
+
+  it('keeps the same strict edge for an enemy body: a Diver (16 wide) touching at 10 px passes', () => {
+    const touching = vulnerableWorld();
+    enemyAt(touching, DIVER, 120 + 10, 272); // (4 + 16) / 2 = 10
+    CollisionResolver.resolve(touching, new Rules());
+    expect(touching.player.state).toBe(PlayerState.Vulnerable);
+    const inside = vulnerableWorld();
+    enemyAt(inside, DIVER, 120 + 9, 272);
+    CollisionResolver.resolve(inside, new Rules());
+    expect(inside.player.state).toBe(PlayerState.Dead);
+  });
+});
+
+describe('CollisionResolver — the pickup collection box edge is strict (GDD §4.6)', () => {
+  // The 32 × 32 sprite box catches a 16 × 16 pickup while |Δ| < (32 + 16) / 2 = 24.
+  it.each([
+    ['exactly touching on the right', 144, 272, false],
+    ['exactly touching on the left', 96, 272, false],
+    ['exactly touching below', 120, 296, false],
+    ['exactly touching above', 120, 248, false],
+    ['1 px inside on the right', 143, 272, true],
+    ['1 px inside on the left', 97, 272, true],
+    ['1 px inside below', 120, 295, true],
+    ['1 px inside above', 120, 249, true],
+  ])('a pickup %s is caught = %s', (_label, x, y, caught) => {
+    const world = vulnerableWorld();
+    world.spawnPickup(PickupKind.PBlue, x, y);
+    const rules = new Rules();
+    CollisionResolver.resolve(world, rules);
+    expect(rules.collected).toEqual(caught ? [PickupKind.PBlue] : []);
+    expect(world.pickups.at(0).spent).toBe(caught);
+  });
+});
+
+describe('CollisionResolver — the boss and a Laser bolt (GDD v0.8 §4.3, ADR-0022 decision 5)', () => {
+  function fightingBoss(): World {
+    const world = vulnerableWorld();
+    world.boss.start(CRUISER, world.takeSerial());
+    world.boss.state = BossState.Fighting;
+    world.boss.position.x = 120;
+    world.boss.position.y = 100;
+    return world;
+  }
+  const BOLT: ShotSpec = { ...SHOT, height: 48, pierce: 2, weapon: WeaponKind.Laser };
+
+  it('spends one pass-through on the boss and remembers its serial', () => {
+    const world = fightingBoss();
+    world.spawnPlayerBullet(120, 100, BOLT);
+    CollisionResolver.resolve(world, new Rules());
+    const bolt = world.playerBullets.at(0);
+    expect(bolt.pierceLeft).toBe(1);
+    expect(bolt.canHit(world.boss.serial)).toBe(false);
+    expect(bolt.spent).toBe(false);
+  });
+
+  it('is spent by the boss when it has no pass-through left, and remembers nothing', () => {
+    const world = fightingBoss();
+    world.spawnPlayerBullet(120, 100, { ...BOLT, pierce: 0 });
+    CollisionResolver.resolve(world, new Rules());
+    const bolt = world.playerBullets.at(0);
+    expect([bolt.spent, bolt.pierceLeft, bolt.canHit(world.boss.serial)]).toEqual([true, 0, true]);
+  });
+
+  describe('one shot overlapping an enemy and the boss hits the nearer along its path', () => {
+    const WIDE: ShotSpec = { ...SHOT, height: 120, width: 120, pierce: 0 };
+    // [label, shot velocity, enemy x, enemy y, the enemy is hit (else the boss)]
+    it.each([
+      ['flying up, enemy below the boss', 0, -360, 120, 130, true],
+      ['flying up, enemy above the boss', 0, -360, 120, 70, false],
+      ['flying right, enemy left of the boss', 360, 0, 90, 100, true],
+      ['flying right, enemy right of the boss', 360, 0, 150, 100, false],
+      ['flying left, enemy right of the boss', -360, 0, 150, 100, true],
+      ['flying left, enemy left of the boss', -360, 0, 90, 100, false],
+    ])('%s', (_label, vx, vy, x, y, enemyFirst) => {
+      const world = fightingBoss();
+      const gunner = enemyAt(world, GUNNER, x, y);
+      world.spawnPlayerBullet(120, 100, { ...WIDE, vxPerSecond: vx, vyPerSecond: vy });
+      const rules = new Rules();
+      CollisionResolver.resolve(world, rules);
+      expect(rules.hits).toBe(enemyFirst ? 1 : 0);
+      expect(gunner.hp).toBe(enemyFirst ? shots(8) - SHOT.damage : shots(8));
+      expect(rules.bossDamage).toHaveLength(enemyFirst ? 0 : 1);
+      expect(world.playerBullets.at(0).spent).toBe(true);
+    });
+  });
+});
+
+describe('CollisionResolver — a death and an absorbed hit are reported apart (GDD v0.8 §4.4)', () => {
+  it('reports a death without a shield as a death only: the shield is not broken', () => {
+    const world = vulnerableWorld();
+    world.spawnEnemyBullet(120, 272, 0, 0);
+    const rules = new Rules();
+    CollisionResolver.resolve(world, rules);
+    expect([rules.deaths, rules.absorbed]).toEqual([1, 0]);
+  });
+
+  it('reports a body contact without a shield as a death only', () => {
+    const world = vulnerableWorld();
+    enemyAt(world, GUNNER, 120, 272);
+    const rules = new Rules();
+    CollisionResolver.resolve(world, rules);
+    expect([rules.deaths, rules.absorbed]).toEqual([1, 0]);
+  });
+
+  it('reports a hit the shield absorbed as a broken shield only, from a bullet and from the boss', () => {
+    const bullet = vulnerableWorld();
+    bullet.player.collect(PickupKind.Shield);
+    bullet.spawnEnemyBullet(120, 272, 0, 0);
+    const first = new Rules();
+    CollisionResolver.resolve(bullet, first);
+    expect([first.deaths, first.absorbed]).toEqual([0, 1]);
+
+    const boss = vulnerableWorld();
+    boss.player.collect(PickupKind.Shield);
+    boss.boss.start(CRUISER, boss.takeSerial());
+    boss.boss.state = BossState.Fighting;
+    boss.boss.position.x = 120;
+    boss.boss.position.y = 272;
+    const second = new Rules();
+    CollisionResolver.resolve(boss, second);
+    expect([second.deaths, second.absorbed]).toEqual([0, 1]);
+  });
+});

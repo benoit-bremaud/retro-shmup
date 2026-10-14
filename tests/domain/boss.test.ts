@@ -7,6 +7,7 @@ import { CRUISER } from '../../src/domain/game/cruiser';
 import { SizeTier } from '../../src/domain/game/enemy';
 import { overlapsField } from '../../src/domain/game/geometry';
 import { swayMovement } from '../../src/domain/game/movements';
+import type { MovementPattern } from '../../src/domain/game/movements';
 
 const DT = 1 / 60;
 
@@ -108,6 +109,35 @@ describe('Boss — warning and entry (GDD v0.10 §6, 05-state-boss)', () => {
       tick(boss, world);
       expect(boss.position.y + boss.height / 2).toBeLessThanOrEqual(80);
     }
+  });
+});
+
+describe('Boss — the entry slides on x as well as y (GDD v0.10 §6, ADR-0022)', () => {
+  const DIAGONAL: BossDefinition = {
+    ...SWAY_ONLY(5000, []),
+    entryFrom: { x: 40, y: -24 },
+    entryTo: { x: 200, y: 56 },
+  };
+
+  it('starts at the entry point, off the field, on x too', () => {
+    const { boss } = started(DIAGONAL);
+    expect([boss.position.x, boss.position.y]).toEqual([40, -24]);
+  });
+
+  it('is halfway on both axes after half the entry, and arrives at the entry target', () => {
+    const { boss, world } = started(DIAGONAL);
+    ticks(boss, world, 180); // the warning
+    tick(boss, world);
+    expect(boss.previousPosition.x).toBe(40);
+    expect(boss.position.x).toBeCloseTo(40 + 160 / 180, 9);
+    ticks(boss, world, 89); // 90 of 180 entry steps
+    expect(boss.state).toBe(BossState.Entering);
+    expect(boss.position.x).toBeCloseTo(120, 9);
+    expect(boss.position.y).toBeCloseTo(16, 9);
+    ticks(boss, world, 90);
+    expect(boss.state).toBe(BossState.Fighting);
+    expect(boss.position.x).toBeCloseTo(200, 9);
+    expect(boss.position.y).toBeCloseTo(56, 9);
   });
 });
 
@@ -269,6 +299,72 @@ describe('Boss — phases (ADR-0023 decision 3)', () => {
     applyDamage(boss, 1700);
     boss.advancePhase(world);
     expect(boss.age).toBe(100);
+  });
+});
+
+describe('Boss — the movement swap on the axis itself (ADR-0023 decision 3)', () => {
+  /** A phase-1 movement that puts x where the script says, by age (age 1 is the first fight step). */
+  const scripted = (xs: readonly number[]): MovementPattern => ({
+    tick(self): void {
+      self.position.x = xs[self.age - 1] ?? 120;
+    },
+  });
+
+  /** A two-phase boss whose first movement is scripted; the fight starts on x 120, phase 2 pending. */
+  function pending(xs: readonly number[]): { boss: Boss; world: TestWorld } {
+    const definition: BossDefinition = {
+      ...SWAY_ONLY(5000, [3300]),
+      phases: [
+        { hpThreshold: 5000, movement: scripted(xs), attack: NoAttack },
+        {
+          hpThreshold: 3300,
+          movement: swayMovement({ amplitude: 72, periodS: 6 }),
+          attack: NoAttack,
+        },
+      ],
+    };
+    const fight = fighting(definition);
+    applyDamage(fight.boss, 1700);
+    expect(fight.boss.advancePhase(fight.world)).toBe(true);
+    return fight;
+  }
+
+  it.each([
+    ['from the left onto the axis', [110, 120], false],
+    ['from the right onto the axis', [130, 120], true],
+    ['from the left through the axis', [110, 130], false],
+    ['from the right through the axis', [130, 110], true],
+  ])('swaps in the step the sway reaches or crosses x 120: %s', (_label, xs, mirror) => {
+    const { boss, world } = pending([...xs]);
+    // The fight starts on the axis: the first step leaves it, with no sign change yet.
+    tick(boss, world);
+    expect([boss.position.x, boss.mirror]).toEqual([xs[0], false]);
+    tick(boss, world);
+    expect([boss.position.x, boss.mirror]).toEqual([120, mirror]);
+    // The phase-2 sway now runs, leftwards when mirrored: it left the axis in the swapped direction.
+    tick(boss, world);
+    expect(boss.position.x < 120).toBe(mirror);
+    expect(boss.position.x).not.toBe(120);
+  });
+
+  it('does not swap while the sway leaves the axis or stays on it, only when it later crosses', () => {
+    const { boss, world } = pending([120, 130, 110]);
+    tick(boss, world); // 120 → 120: on the axis, no sign change
+    expect([boss.position.x, boss.mirror]).toEqual([120, false]);
+    tick(boss, world); // 120 → 130: leaves the axis, still no sign change
+    expect([boss.position.x, boss.mirror]).toEqual([130, false]);
+    tick(boss, world); // 130 → 110: crosses
+    expect([boss.position.x, boss.mirror]).toEqual([120, true]);
+  });
+
+  it('swaps once: after the swap the phase-2 sway runs, with no second restart', () => {
+    const { boss, world } = pending([110, 130]);
+    ticks(boss, world, 2);
+    expect(boss.position.x).toBe(120);
+    ticks(boss, world, 30);
+    // 30 steps of a 360-step sway, rightwards: a second restart would land elsewhere.
+    expect(boss.position.x).toBeCloseTo(120 + 72 * Math.sin((2 * Math.PI * 30) / 360), 6);
+    expect(boss.mirror).toBe(false);
   });
 });
 

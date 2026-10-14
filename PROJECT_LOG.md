@@ -8,6 +8,18 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-13
 
+### Mutation-gap tests (branch `test/mutation-gaps`)
+
+- Tests only, no game code changed: strict collision edges (shots, hitbox, pickups), Laser
+  piercing the boss, nearest target, shield vs death reports, `isOut` with lives left, pointer
+  reach, bomb during invulnerability, drop-roll boundaries, boss diagonal entry and axis swap,
+  every level-script load check. No production bug found.
+- Stryker re-run on the nine core modules: mutation score 89.7 % → 95.5 % (816 killed, 39
+  survived, mostly equivalent mutants in `boss.ts` and `attacks.ts`, left as they are).
+- Test-auditor review: 0 Must; its Should items applied (redundant edge rows removed, the boss
+  swap asserted on observable state, no magic step count, one-draw-per-kill stated as a replay
+  determinism test). 865 tests.
+
 ### PR #50 merged (`7a2f2a8`) — Knip and CodeQL security-extended
 
 - Green checks, no Codex comment. A Stryker trial on the core modules scored 89.7 % (about 93–94 % without equivalent mutants) after patching its Vitest runner locally (it ran 0 tests per mutant with Vitest 5); 15 real test gaps listed for a follow-up.
