@@ -72,7 +72,7 @@ export class ControlsScreen implements ControlsView {
     }
     this.follow(frame);
     const action = this.grid.step(frame, now);
-    if (action === undefined) return (frame.pressed & Button.Back) !== 0 ? 'back' : undefined;
+    if (action === undefined) return (frame.pressed & Button.Back) === 0 ? undefined : 'back';
     if (action.kind !== 'capture') return action.kind;
     this.pending = action;
     this.host.startCapture(this.device);
