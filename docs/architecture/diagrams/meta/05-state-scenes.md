@@ -411,6 +411,11 @@ unchanged.
   frame), *Autofire* updates the pointer module (ADR-0020 decision 4), *Language* the message
   catalogue, *Fullscreen* asks the viewport adapter, applied at the next gesture if needed
   (ADR-0009). Each change writes the save document once, outside the fixed step.
+- **G1a-2 (built)**: the pause menu (*Resume*, *Quit*; the PAUSE header in the title font
+  replaces the wordless pause icon) and `Confirm quit` (*No* first; *Yes* discards the run and
+  locks the title for 1 s like Game over); the `menu` font (the title letters at 2×); the
+  pointer release and hover in the intent frame. The *Options* row joins the pause menu with
+  the options screen (G1a-3).
 - **Not yet**: `High scores`, `Name entry`, `Ending`, `Credits`, the gesture prompt's audio part,
   the controls and audio sub-screens (G1b, G2, G3, G4).
 

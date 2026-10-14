@@ -8,6 +8,29 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-14
 
+### G1a-2: the pause menu and Confirm quit (branch `feat/g1a-pause-menu`) — Refs #46
+
+- `menu` font (`FontId`): the title letters A–Z and space at 2×, in the 8 px hud cell, so a 28-
+  character row fits the field; French in capitals without accents. Renderer, test double and
+  contract tests follow.
+- `IntentFrame` gains the pointer release (`releaseRegion/X/Y`: a lifted finger or the left
+  button going up; none for a cancelled finger or the right button; first of a read wins) and
+  the mouse hover (`hovered`, `hoverX/Y`, a new field point only); `PointerModule.takeTap`
+  writes and consumes them. Documented in CD-menus as an ADR-0009 contract extension.
+- `Menu<Id>` (`src/domain/scenes/menu.ts`): rows centred on the field, 16 px each; up/down on a
+  new direction (stick beyond 0.5), wrapping; `Confirm`; a release activates only over the row
+  its press started on; a 150 ms (9-step) re-press guard on the row just activated; hover
+  highlights. The design's `PointerPress` was folded into `Menu` (one caller).
+- Scene machine: `Paused` shows PAUSE and *Resume* / *Quit* (the pause icon and its palette
+  token are gone); Back and the pause button still resume; `Confirm quit` (*No* first, Back →
+  Paused, Pause ignored, no pause button) and *Yes* discards the run and locks the title 1 s. The
+  interim tap resume is lifted. Smoke test: the pause oracle is the highlight bar
+  (`Palette.menuHighlight`, distinct from every field colour) and the RESUME row resumes.
+- Visual check: headless Playwright captures, portrait and landscape (Claude in Chrome was not
+  connected). Found on the way: a key pressed and released inside one frame (a synthetic
+  `keyboard.press`) moves nothing, since movement is read as held; a human key tap lasts several
+  frames, so no change.
+
 ### G1a-1: the save document's options (branch `feat/g1a-save`) — Refs #46
 
 - First of the three G1a code PRs (owner choice A, 46/50: save → pause menu with the menu font and

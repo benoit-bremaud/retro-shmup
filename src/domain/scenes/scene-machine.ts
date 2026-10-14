@@ -11,7 +11,8 @@ import { isPauseTap } from '../presentation/hud-layout';
 import {
   drawBanner,
   drawCountIn,
-  drawPauseIcon,
+  drawMenu,
+  drawMenuLine,
   drawVeil,
   drawWarning,
 } from '../presentation/overlays';
@@ -19,6 +20,7 @@ import { drawResults, formatTallyValues } from '../presentation/results';
 import { RunPresenter } from '../presentation/run-presenter';
 import type { EffectSettings } from '../presentation/run-presenter';
 import type { Starfield } from '../presentation/starfield';
+import { Menu, MenuTuning } from './menu';
 
 /** The scenes built so far (meta/05-state-scenes, build order). */
 export const Scene = {
@@ -29,6 +31,7 @@ export const Scene = {
   CountIn: 'COUNT_IN',
   GameOver: 'GAME_OVER',
   Results: 'RESULTS',
+  ConfirmQuit: 'CONFIRM_QUIT',
 } as const;
 export type Scene = (typeof Scene)[keyof typeof Scene];
 
@@ -53,6 +56,7 @@ const SCENE_TRAITS: Readonly<Record<Scene, SceneTraits>> = {
   [Scene.GameOver]: { frozen: false, scrolls: true, drawsRun: true, pauseButton: false },
   // The run stands still behind the tally while the starfield keeps moving (05-state-scenes).
   [Scene.Results]: { frozen: true, scrolls: true, drawsRun: true, pauseButton: false },
+  [Scene.ConfirmQuit]: { frozen: true, scrolls: false, drawsRun: true, pauseButton: false },
 };
 
 const COUNT_IN_STEPS = toSteps(SceneTuning.countInSeconds);
@@ -60,6 +64,8 @@ const GAME_OVER_STEPS = toSteps(SceneTuning.gameOverSeconds);
 const LOCK_STEPS = toSteps(SceneTuning.gameOverLockSeconds);
 const RESULTS_LOCK_STEPS = toSteps(ResultsTuning.lockSeconds);
 const RESULTS_STEPS = toSteps(ResultsTuning.autoSeconds);
+/** The title-font header sits this far above its menu's first row. */
+const MENU_HEADER_GAP = 32;
 
 function isConfirmOrTap(frame: Readonly<IntentFrame>): boolean {
   return (frame.pressed & Button.Confirm) !== 0 || frame.tapRegion !== 'none';
@@ -100,6 +106,11 @@ export class SceneMachine {
   private presenter: RunPresenter | undefined;
   /** A frozen step ran since the last render: that frame ages no effect (count-in handoff). */
   private frozenStepSinceRender = false;
+  /** Every step since Boot: the menus' clock (the re-press guard), never wall time. */
+  private steps = 0;
+  /** The pause menu and its quit confirmation (GDD v0.13 §9.1), built once. */
+  private readonly pauseMenu = new Menu(['resume', 'quit'] as const);
+  private readonly quitMenu = new Menu(['no', 'yes'] as const);
 
   /** `createRun` builds each new run; tests pass a short level script, the game a seeded one. */
   constructor(
@@ -125,6 +136,7 @@ export class SceneMachine {
 
   step(dt: number, frame: Readonly<IntentFrame>): void {
     if (SCENE_TRAITS[this.current].frozen) this.frozenStepSinceRender = true;
+    this.steps += 1;
     switch (this.current) {
       case Scene.Boot:
         // Nothing to load yet (no assets, no save document). The title takes this step's frame,
@@ -150,6 +162,9 @@ export class SceneMachine {
       case Scene.Results:
         this.stepResults(frame);
         return;
+      case Scene.ConfirmQuit:
+        this.stepConfirmQuit(frame);
+        return;
     }
   }
 
@@ -168,7 +183,7 @@ export class SceneMachine {
   // Pause or the pause button enters the pause, before the run steps; Back is ignored in play.
   private stepPlaying(dt: number, frame: Readonly<IntentFrame>): void {
     if (this.pauses(frame)) {
-      this.current = Scene.Paused;
+      this.enterPause();
       return;
     }
     this.backgroundSteps += 1;
@@ -188,20 +203,41 @@ export class SceneMachine {
     }
   }
 
-  // Pause does nothing here: an automatic trigger can only enter the pause, never leave it. Any
-  // tap resumes until the pause menu of the screens brick (interim deviation, tap resume).
+  private enterPause(): void {
+    this.current = Scene.Paused;
+    this.pauseMenu.reset();
+  }
+
+  // Pause does nothing here: an automatic trigger can only enter the pause, never leave it. Back
+  // and the pause button resume like the Resume row; Quit asks first (GDD v0.13 §9.1).
   private stepPaused(frame: Readonly<IntentFrame>): void {
-    if ((frame.pressed & (Button.Confirm | Button.Back)) === 0 && frame.tapRegion === 'none')
-      return;
-    this.current = Scene.CountIn;
-    this.countInLeft = COUNT_IN_STEPS;
+    const button = isPauseTap(frame.tapRegion, frame.tapX, frame.tapY, this.renderer.layout());
+    const row = this.pauseMenu.rows[this.pauseMenu.step(frame, this.steps)];
+    if (row === 'quit') {
+      this.current = Scene.ConfirmQuit;
+      this.quitMenu.reset();
+    } else if (row === 'resume' || button || (frame.pressed & Button.Back) !== 0) {
+      this.current = Scene.CountIn;
+      this.countInLeft = COUNT_IN_STEPS;
+    }
+  }
+
+  // No is first, so a hurried Confirm never loses the run; Back returns to the pause, Pause is
+  // ignored. Yes discards the run: no name entry, and the title is locked like after Game over.
+  private stepConfirmQuit(frame: Readonly<IntentFrame>): void {
+    const row = this.quitMenu.rows[this.quitMenu.step(frame, this.steps)];
+    if (row === 'yes') {
+      this.toTitle();
+    } else if (row === 'no' || (frame.pressed & Button.Back) !== 0) {
+      this.enterPause();
+    }
   }
 
   // Pause wins; the last step hands over to Playing and steps the run, so the first resumed
   // frame interpolates forward from the frozen picture.
   private stepCountIn(dt: number, frame: Readonly<IntentFrame>): void {
     if (this.pauses(frame)) {
-      this.current = Scene.Paused;
+      this.enterPause();
       return;
     }
     this.countInLeft -= 1;
@@ -218,10 +254,7 @@ export class SceneMachine {
     this.gameOverLeft -= 1;
     const confirmed = !this.locked() && isConfirmOrTap(frame);
     if (!confirmed && this.gameOverLeft > 0) return;
-    this.run = undefined;
-    this.presenter = undefined;
-    this.current = Scene.Title;
-    this.lockLeft = LOCK_STEPS;
+    this.toTitle();
   }
 
   // Confirm or a tap after the 1 s lock, or the 8 s timer, returns to the title (the slice end,
@@ -232,8 +265,13 @@ export class SceneMachine {
     this.resultsSteps += 1;
     const confirmed = !this.locked() && isConfirmOrTap(frame);
     if (!confirmed && this.resultsSteps < RESULTS_STEPS) return;
-    this.run = undefined;
     this.resultsValues = [];
+    this.toTitle();
+  }
+
+  /** The run is released at the title, locked for 1 s so hammering never starts a new run. */
+  private toTitle(): void {
+    this.run = undefined;
     this.presenter = undefined;
     this.current = Scene.Title;
     this.lockLeft = LOCK_STEPS;
@@ -295,7 +333,20 @@ export class SceneMachine {
       drawResults(this.renderer, this.resultsValues, this.resultsSteps, this.language);
     } else if (this.current === Scene.Paused) {
       drawVeil(this.renderer);
-      drawPauseIcon(this.renderer);
+      drawBanner(
+        this.renderer,
+        message('pause', this.language),
+        this.pauseMenu.top - MENU_HEADER_GAP,
+      );
+      drawMenu(this.renderer, this.pauseMenu, this.language);
+    } else if (this.current === Scene.ConfirmQuit) {
+      drawVeil(this.renderer);
+      drawMenuLine(
+        this.renderer,
+        message('quitQuestion', this.language),
+        this.quitMenu.top - MenuTuning.rowHeight,
+      );
+      drawMenu(this.renderer, this.quitMenu, this.language);
     } else if (this.current === Scene.CountIn) {
       drawCountIn(this.renderer, this.countInLeft);
     }

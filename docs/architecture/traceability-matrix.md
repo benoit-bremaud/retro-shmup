@@ -26,7 +26,7 @@ Diagram abbreviations: **UC** [01-use-case](diagrams/system/01-use-case.md) · *
 | UC2 Pause the run | FrameLoop, SceneMachine, DeviceInput, WebAudioPlayer | SD-tick (pause decided before the step), STM-scenes (`Paused`, `Count-in`, `Confirm quit`) | — (scene level, no run class) | music ducking (ADR-0009) |
 | UC3 Record a high score | SceneMachine, SaveDocument, LocalStorageStore | STM-scenes (`Name entry` → `High scores`) | `RunView.snapshot().score` | insertion rule and storage failure (UC3 text, ADR-0006) |
 | UC4 Consult the high scores | SceneMachine, SaveDocument, LocalStorageStore | STM-scenes (`High scores`) | — | unreadable or newer document (UC4 text, ADR-0006) |
-| UC5 Configure the game | SceneMachine, SaveDocument, LocalStorageStore, WebAudioPlayer, DeviceInput | STM-scenes (`Options` and `Visual effects` from title and pause) | CD-menus (`Menu`, `MenuRow`, `PointerPress`, `Options`, `SaveStore`) | each option (GDD §9.3); fullscreen in the gesture handler (ADR-0009) |
+| UC5 Configure the game | SceneMachine, SaveDocument, LocalStorageStore, WebAudioPlayer, DeviceInput | STM-scenes (`Options` and `Visual effects` from title and pause) | CD-menus (`Menu`, `MenuRow`, `Options`, `SaveStore`) | each option (GDD §9.3); fullscreen in the gesture handler (ADR-0009) |
 | UC6 Remap the controls | SceneMachine, DeviceInput, SaveDocument | — | — | slots, swap, capture (UC6 text, GDD §4.2, ADR-0009) |
 | UC7 Read the credits | SceneMachine, MessageCatalogue | STM-scenes (`Credits`) | — | mirrors `CREDITS.md` (ADR-0005) |
 
@@ -61,7 +61,7 @@ SD-boss (added with the level brick) uses `Run`, `RunRules`, `World`, `LevelDire
 | `StrategyFactories` | | | | | CD rule table (Heavy, strategies built from data) | §5.2.1, §6.1 (ADR-0022) |
 | `Formation` | | ✓ | | ✓ (bomb kills count) | | §5.2, §4.6 |
 | `Boss`, `BossState`, `BossDefinition`, `BossPhaseSpec` | | (via `damageBoss`) | ✓ (boss contact, pass 3) | ✓ (`damageBoss` while `FIGHTING`) | STM-boss, SD-boss | §6, §6.1 |
-| Menu, MenuRow, PointerPress (G1a) | CD-menus; STM-scenes (title, pause, `Options`, `Visual effects`, `Confirm quit`); UC5 text |
+| Menu, MenuRow (G1a; the press and release rule inside `Menu`) | CD-menus; STM-scenes (title, pause, `Options`, `Visual effects`, `Confirm quit`); UC5 text |
 | Options, SaveStore, StoragePort (G1a) | CD-menus; STM-scenes (`Boot` reads, each option change writes); UC5 text |
 
 Every class is used by at least one behaviour diagram or by the GDD rule table of CD. The

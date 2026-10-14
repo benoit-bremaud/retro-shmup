@@ -34,7 +34,7 @@ export interface RenderSurface {
  *
  * @remarks The camera offset (screen shake) moves field-region draws only, at draw time: the HUD
  * never shakes (ADR-0014). `drawSprite` fails closed until the asset brick loads a sprite sheet;
- * `drawText` draws the placeholder `hud` and `title` glyphs and fails closed on anything else.
+ * `drawText` draws the placeholder `hud`, `title` and `menu` glyphs and fails closed on anything else.
  */
 export class Canvas2DRenderer implements RenderPort {
   private region: RenderRegion = 'hud';
@@ -104,8 +104,9 @@ export class Canvas2DRenderer implements RenderPort {
     const title = font === 'title';
     const scale = title ? TITLE_SCALE : HUD_SCALE;
     const advance = title ? TITLE_FONT_CELL.width : HUD_FONT_CELL.width;
-    this.offscreen.fillStyle = title ? Palette.titleText : Palette.hudText;
-    const glyphOf = title ? titleGlyph : hudGlyph;
+    this.offscreen.fillStyle = font === 'hud' ? Palette.hudText : Palette.titleText;
+    // The menu font draws the title letters at the hud scale (MENU_FONT_CELL).
+    const glyphOf = font === 'hud' ? hudGlyph : titleGlyph;
     for (let i = 0; i < text.length; i += 1) {
       const code = text.codePointAt(i);
       const rows = code === undefined ? undefined : glyphOf(code);

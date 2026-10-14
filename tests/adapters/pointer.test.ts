@@ -203,6 +203,95 @@ describe('PointerModule — taps (ADR-0018 decisions 2 and 5)', () => {
   });
 });
 
+function releaseOf(
+  module: PointerModule,
+): Pick<IntentFrame, 'releaseRegion' | 'releaseX' | 'releaseY' | 'hovered' | 'hoverX' | 'hoverY'> {
+  const frame = createIntentFrame();
+  module.takeTap(frame);
+  const { releaseRegion, releaseX, releaseY, hovered, hoverX, hoverY } = frame;
+  return { releaseRegion, releaseX, releaseY, hovered, hoverX, hoverY };
+}
+
+describe('PointerModule — releases and hover for the menus (GDD v0.13 §9.1)', () => {
+  it('reports where a finger is lifted, in the region coordinates of a tap', () => {
+    const module = pointer();
+    module.down(event('touch', 200, 250), 1);
+    module.up(event('touch', 210, 240), 2);
+    expect(releaseOf(module)).toMatchObject({
+      releaseRegion: 'field',
+      releaseX: 90,
+      releaseY: 240,
+    });
+  });
+
+  it('reports a lift outside the field as a hud release', () => {
+    const module = pointer();
+    module.down(event('touch', 200, 250), 1);
+    module.up(event('touch', 20, 30), 2);
+    expect(releaseOf(module)).toMatchObject({ releaseRegion: 'hud', releaseX: 20, releaseY: 30 });
+  });
+
+  it('reports no release for a cancelled finger', () => {
+    const module = pointer();
+    module.down(event('touch', 200, 250), 1);
+    module.cancel(event('touch', 200, 250));
+    expect(releaseOf(module).releaseRegion).toBe('none');
+  });
+
+  it('reports the left button going up as a release, and consumes it on read', () => {
+    const module = pointer();
+    module.down(event('mouse', 200, 250, LEFT), 1);
+    module.up(event('mouse', 205, 252, 0), 2);
+    expect(releaseOf(module)).toMatchObject({
+      releaseRegion: 'field',
+      releaseX: 85,
+      releaseY: 252,
+    });
+    expect(releaseOf(module).releaseRegion).toBe('none');
+  });
+
+  it('reports no release when the right button goes up', () => {
+    const module = pointer();
+    module.down(event('mouse', 200, 250, RIGHT), 1);
+    module.up(event('mouse', 200, 250, 0), 2);
+    expect(releaseOf(module).releaseRegion).toBe('none');
+  });
+
+  it('keeps the first release of a read', () => {
+    const module = pointer();
+    module.down(event('touch', 200, 250, 0, 1), 1);
+    module.down(event('touch', 300, 100, 0, 2), 2);
+    module.up(event('touch', 200, 250, 0, 1), 3);
+    module.up(event('touch', 300, 100, 0, 2), 4);
+    expect(releaseOf(module)).toMatchObject({ releaseX: 80, releaseY: 250 });
+  });
+
+  it('reports the mouse hovering a new field point, once, in field pixels', () => {
+    const module = pointer();
+    module.move(event('mouse', 200, 100), 1);
+    expect(releaseOf(module)).toMatchObject({ hovered: true, hoverX: 80, hoverY: 100 });
+    expect(releaseOf(module).hovered).toBe(false);
+    module.move(event('mouse', 200, 100), 2);
+    expect(releaseOf(module).hovered).toBe(false);
+  });
+
+  it('reports no hover outside the field nor for a finger', () => {
+    const module = pointer();
+    module.move(event('mouse', 20, 100), 1);
+    module.down(event('touch', 200, 250), 2);
+    module.move(event('touch', 210, 250), 3);
+    expect(releaseOf(module).hovered).toBe(false);
+  });
+
+  it('drops a pending release on a lost focus', () => {
+    const module = pointer();
+    module.down(event('touch', 200, 250), 1);
+    module.up(event('touch', 200, 250), 2);
+    module.release();
+    expect(releaseOf(module).releaseRegion).toBe('none');
+  });
+});
+
 describe('PointerModule — resize (ADR-0018 decisions 6 and 7)', () => {
   it('reports no change on the first call', () => {
     expect(new PointerModule().resize(PORTRAIT, ONE_TO_ONE)).toBe(false);

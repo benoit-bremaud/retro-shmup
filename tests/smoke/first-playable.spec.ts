@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test';
 
 // The single browser smoke test (ADR-0003; 05-state-scenes; ADR-0018 Consequences): a phone in
 // portrait, then a rotation. A tap on the HUD strip starts a run, the ship reaches its resting
-// point, the pause button pauses, a tap resumes; a landscape window pauses without restarting the
+// point, the pause button pauses, the RESUME row resumes; a landscape window pauses without restarting the
 // run, `Esc` resumes, and enemies appear.
 
 // A phone: 390 × 844 CSS pixels at pixel ratio 2, with touch (ADR-0018 Consequences).
@@ -70,19 +70,24 @@ async function hullAtRest(page: Page): Promise<boolean> {
   );
 }
 
-/** `Palette.pauseIcon`, drawn only in `Paused`: two bars centred on the field. */
-const PAUSE_ICON = { r: 0xff, g: 0xff, b: 0xff };
-/** A pixel inside the pause icon's left bar, in play-field pixels (overlays.ts). */
-const PAUSE_ICON_PIXEL = { x: 113, y: 160 };
+/** `Palette.menuHighlight`, the bar behind the highlighted row of the pause menu. */
+const MENU_HIGHLIGHT = { r: 0x3b, g: 0x4a, b: 0x8a };
+/**
+ * A pixel of the bar behind RESUME, the first row highlighted on entry, left of its text, in
+ * play-field pixels: the two-row menu starts at y 144 and the bar at x 89 (overlays.ts, menu.ts).
+ */
+const PAUSE_PIXEL = { x: 90, y: 145 };
+/** The middle of the RESUME row, in play-field pixels. */
+const RESUME_ROW = { x: 120, y: 152 };
 
-/** True when the pause icon shows, so the scene is `Paused`. */
+/** True when the pause menu shows with RESUME highlighted, so the scene is `Paused`. */
 async function paused(page: Page): Promise<boolean> {
   const g = await geometry(page);
   return colourAt(
     page,
-    (g.fieldX + PAUSE_ICON_PIXEL.x) * g.scale + 1,
-    (g.fieldY + PAUSE_ICON_PIXEL.y) * g.scale + 1,
-    PAUSE_ICON,
+    (g.fieldX + PAUSE_PIXEL.x) * g.scale + 1,
+    (g.fieldY + PAUSE_PIXEL.y) * g.scale + 1,
+    MENU_HIGHLIGHT,
   );
 }
 
@@ -194,9 +199,10 @@ test('a phone starts, pauses and resumes by touch; a rotation pauses without res
   await tapScreen(page, 215, 16);
   await expect.poll(() => paused(page), { timeout: 2000 }).toBe(true);
 
-  // Any tap resumes (interim tap resume); a HUD tap, so no finger steers the ship. After the
-  // 1 s count-in the pause is gone and the ship is still at rest.
-  await tapScreen(page, 20, 10);
+  // A tap on the RESUME row resumes (GDD v0.13 §9.1). After the 1 s count-in the pause is gone;
+  // the finger lifted before play, so it steers nothing and the ship is still at rest.
+  const g = await geometry(page);
+  await tapScreen(page, g.fieldX + RESUME_ROW.x, g.fieldY + RESUME_ROW.y);
   await page.waitForTimeout(1200);
   expect(await paused(page)).toBe(false);
   await expect.poll(() => hullAtRest(page), { timeout: 2000 }).toBe(true);

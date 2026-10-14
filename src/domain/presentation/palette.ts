@@ -31,7 +31,9 @@ export const Palette = {
   hudText: '#fdf6e3',
   titleText: '#fc8181',
   veil: '#05060fb3',
-  pauseIcon: '#ffffff',
+  // The bar behind the highlighted menu row (GDD v0.13 §9.1); the smoke test's pause oracle, so it
+  // must stay distinct from every other colour drawn on the field.
+  menuHighlight: '#3b4a8a',
   // The touch pause button over the HUD band (GDD v0.7 §4.2).
   pauseButton: '#a3b1d6',
   // Player kit (GDD v0.8 §4.6, §9.2): P capsules, their marks, the HUD weapon badge and pips.

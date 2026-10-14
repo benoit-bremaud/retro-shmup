@@ -17,6 +17,16 @@ export const MESSAGES = {
   tallyTotal: { en: 'TOTAL', fr: 'TOTAL' },
   /** The boss announcement (GDD v0.10 §6), drawn in the title font. */
   warning: { en: 'WARNING', fr: 'ATTENTION' },
+  /**
+   * The pause menu and its quit confirmation (GDD v0.13 §9.1), in the menu font: capitals, French
+   * without accents (arcade style). The header is drawn in the title font.
+   */
+  pause: { en: 'PAUSE', fr: 'PAUSE' },
+  resume: { en: 'RESUME', fr: 'REPRENDRE' },
+  quit: { en: 'QUIT', fr: 'QUITTER' },
+  quitQuestion: { en: 'QUIT THE RUN', fr: 'QUITTER LA PARTIE' },
+  no: { en: 'NO', fr: 'NON' },
+  yes: { en: 'YES', fr: 'OUI' },
 } as const;
 
 export type MessageKey = keyof typeof MESSAGES;

@@ -23,4 +23,16 @@ describe('RecordingRender — the RenderPort glyph-set contract', () => {
       render.drawText('1', 0, 0, 'title');
     }).toThrow(/glyph/);
   });
+
+  it('accepts A–Z and the space in the menu font, and throws on a digit or an accent', () => {
+    const render = new RecordingRender();
+    render.drawText('PLEIN ECRAN', 0, 0, 'menu');
+    expect(render.texts).toHaveLength(1);
+    expect(() => {
+      render.drawText('1', 0, 0, 'menu');
+    }).toThrow(/glyph/);
+    expect(() => {
+      render.drawText('É', 0, 0, 'menu');
+    }).toThrow(/glyph/);
+  });
 });

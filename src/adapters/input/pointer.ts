@@ -52,6 +52,15 @@ export class PointerModule {
   /** The pointer that made the pending tap, so a cancel before the read can take it back. */
   private tapPointer = 0;
 
+  /** The first finger or left-button release of the read, in tap coordinates. */
+  private releaseRegion: TapRegion = 'none';
+  private releaseX = 0;
+  private releaseY = 0;
+  /** The mouse reached a new field point since the last read. */
+  private hovered = false;
+  private hoverX = 0;
+  private hoverY = 0;
+
   /** The finger that drives the ship, or `undefined` when none does. */
   private steering: number | undefined;
   private touchX = 0;
@@ -96,6 +105,8 @@ export class PointerModule {
   release(): void {
     this.steering = undefined;
     this.tapRegion = 'none';
+    this.releaseRegion = 'none';
+    this.hovered = false;
     this.mouseSeen = false;
     this.mouseButtons = 0;
     this.mouseFiring = false;
@@ -141,6 +152,7 @@ export class PointerModule {
       this.mouse(event, seq, false);
       return;
     }
+    if (this.map(event)) this.released();
     this.lift(event);
   }
 
@@ -193,12 +205,20 @@ export class PointerModule {
     this.mousePressed = 0;
   }
 
-  /** Writes the pending tap into the frame and consumes it. */
+  /** Writes the pending tap, release and hover into the frame and consumes them. */
   takeTap(into: IntentFrame): void {
     into.tapRegion = this.tapRegion;
     into.tapX = this.tapX;
     into.tapY = this.tapY;
     this.tapRegion = 'none';
+    into.releaseRegion = this.releaseRegion;
+    into.releaseX = this.releaseX;
+    into.releaseY = this.releaseY;
+    this.releaseRegion = 'none';
+    into.hovered = this.hovered;
+    into.hoverX = this.hoverX;
+    into.hoverY = this.hoverY;
+    this.hovered = false;
   }
 
   /**
@@ -215,6 +235,7 @@ export class PointerModule {
     this.mouseX = this.x;
     this.mouseY = this.y;
     const pressedNow = this.mouseResync ? 0 : event.buttons & ~this.mouseButtons;
+    const releasedNow = this.mouseResync ? 0 : this.mouseButtons & ~event.buttons;
     this.mouseResync = false;
     this.mouseButtons = event.buttons;
     // Releasing the left button anywhere stops the fire; only a press on the field starts it.
@@ -223,7 +244,11 @@ export class PointerModule {
     if (isMove && newPoint && field) {
       this.mouseStart = seq;
       this.mouseInput = seq;
+      this.hovered = true;
+      this.hoverX = this.x - this.fieldOrigin().fieldX;
+      this.hoverY = this.y - this.fieldOrigin().fieldY;
     }
+    if ((releasedNow & LEFT_BUTTON) !== 0 && inside) this.released();
     // A press arrives as a down, or as a move while another button is held (ADR-0018 decision 8).
     if ((pressedNow & LEFT_BUTTON) !== 0 && inside) {
       this.tap(field ? 'field' : 'hud', event.pointerId);
@@ -277,6 +302,16 @@ export class PointerModule {
     const field = this.fieldOrigin();
     this.touchX = this.x - field.fieldX;
     this.touchY = this.y - field.fieldY - InputTuning.touchOffsetY;
+  }
+
+  /** A finger lifted or the left button released at the mapped point; the first of a read wins. */
+  private released(): void {
+    if (this.releaseRegion !== 'none') return;
+    const field = this.fieldOrigin();
+    const inField = this.inField();
+    this.releaseRegion = inField ? 'field' : 'hud';
+    this.releaseX = inField ? this.x - field.fieldX : this.x;
+    this.releaseY = inField ? this.y - field.fieldY : this.y;
   }
 
   /** Within one read, a `hud` tap replaces a pending `field` tap; otherwise the first wins. */

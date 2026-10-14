@@ -5,16 +5,14 @@ import { BossState } from '../game/boss';
 import type { BossSnapshot } from '../game/run';
 import { BossHudTuning, SceneTuning, toSteps } from '../game/tuning';
 import { message } from '../i18n/messages';
-import type { Language } from '../i18n/messages';
-import { HUD_FONT_CELL, TITLE_FONT_CELL } from '../ports/render-port';
+import type { Language, MessageKey } from '../i18n/messages';
+import { HUD_FONT_CELL, MENU_FONT_CELL, TITLE_FONT_CELL } from '../ports/render-port';
 import type { RenderPort } from '../ports/render-port';
+import { MenuTuning } from '../scenes/menu';
+import type { Menu } from '../scenes/menu';
 import { Palette } from './palette';
 import { FIELD_HEIGHT, FIELD_WIDTH } from './screen';
 
-// Pause icon: two bars, 6 × 20 px, 6 px apart (wordless until the bitmap fonts).
-const BAR_WIDTH = 6;
-const BAR_HEIGHT = 20;
-const BAR_GAP = 6;
 const COUNT_IN_DIGITS = ['1', '2', '3'] as const;
 const STEPS_PER_DIGIT = toSteps(SceneTuning.countInSeconds) / COUNT_IN_DIGITS.length;
 const WARNING_HALF_STEPS = toSteps(BossHudTuning.warningBlinkHalfSeconds);
@@ -25,13 +23,39 @@ export function drawVeil(render: RenderPort): void {
   render.drawRect(0, 0, FIELD_WIDTH, FIELD_HEIGHT, Palette.veil);
 }
 
-/** The wordless pause icon: two bars centred on the field. */
-export function drawPauseIcon(render: RenderPort): void {
+/** Horizontal room around a highlighted row's text, each side. */
+const HIGHLIGHT_PAD = 8;
+
+/** The width in logical pixels of `text` in the menu font. */
+function menuTextWidth(text: string): number {
+  return (text.length - 1) * MENU_FONT_CELL.width + MENU_FONT_CELL.glyphWidth;
+}
+
+/** A line of menu text centred on the field at the top `y`. */
+export function drawMenuLine(render: RenderPort, text: string, y: number): void {
   render.setRegion('field');
-  const left = (FIELD_WIDTH - 2 * BAR_WIDTH - BAR_GAP) / 2;
-  const top = (FIELD_HEIGHT - BAR_HEIGHT) / 2;
-  render.drawRect(left, top, BAR_WIDTH, BAR_HEIGHT, Palette.pauseIcon);
-  render.drawRect(left + BAR_WIDTH + BAR_GAP, top, BAR_WIDTH, BAR_HEIGHT, Palette.pauseIcon);
+  render.drawText(text, Math.round((FIELD_WIDTH - menuTextWidth(text)) / 2), y, 'menu');
+}
+
+/**
+ * A menu (GDD v0.13 §9.1): each row's catalogue text centred in its 16 px row, the highlighted one
+ * on a bar. Draws from the catalogue each frame and builds no string.
+ */
+export function drawMenu(render: RenderPort, menu: Menu<MessageKey>, language: Language): void {
+  render.setRegion('field');
+  const textTop = (MenuTuning.rowHeight - MENU_FONT_CELL.height) / 2;
+  for (let i = 0; i < menu.rows.length; i += 1) {
+    const key = menu.rows[i];
+    if (key === undefined) continue;
+    const text = message(key, language);
+    const y = menu.top + i * MenuTuning.rowHeight;
+    if (i === menu.highlighted) {
+      const width = menuTextWidth(text) + 2 * HIGHLIGHT_PAD;
+      const x = Math.round((FIELD_WIDTH - width) / 2);
+      render.drawRect(x, y, width, MenuTuning.rowHeight, Palette.menuHighlight);
+    }
+    drawMenuLine(render, text, y + textTop);
+  }
 }
 
 /** The 3-2-1 of the count-in, one digit per 20 steps, from the steps left (60 down to 1). */
