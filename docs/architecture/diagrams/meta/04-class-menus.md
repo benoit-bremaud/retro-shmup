@@ -217,6 +217,11 @@ classDiagram
   `InputPort.label`, which the `KeyLabels` part of the adapter answers from the characters learned
   from the session's key events, then the layout map, then US, with fixed names for the other
   keys — always a string the menu font can draw.
+- **Where the binding rules live (G1b-1)**: `REMAPPABLE_INTENTS` in the input port (the
+  `RemappableIntent` type derives from it); `domain/input/capturable.ts` the capturable set;
+  `domain/input/bindings-editor.ts` `bind` and `restore` (which also refuse an input outside the
+  set); `domain/input/parse-bindings.ts` the save document's bindings parsing, so the save store
+  only versions and migrates the document.
 - **Save version 2**: `Options` gains `bindings`; version 1 migrates by adding the defaults
   (ADR-0006 decision 4); the bindings are parsed by allowlist (every key code from the capturable
   set, every index from 0 to 15, primary present, no duplicate), a failing device getting its

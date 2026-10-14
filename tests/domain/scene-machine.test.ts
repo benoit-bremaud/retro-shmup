@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_BINDINGS } from '../../src/domain/input/default-bindings';
 import type { EffectSettings, Options } from '../../src/domain/options';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
@@ -23,7 +24,13 @@ const DT = 1 / 60;
 
 /** The options a test needs: these effect switches, the rest at its defaults. */
 function withEffects(effects: EffectSettings): Options {
-  return { effects, autofire: false, language: 'en', fullscreen: false };
+  return {
+    effects,
+    autofire: false,
+    language: 'en',
+    fullscreen: false,
+    bindings: DEFAULT_BINDINGS,
+  };
 }
 
 function setup(): { machine: SceneMachine; render: RecordingRender } {

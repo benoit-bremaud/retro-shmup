@@ -9,7 +9,6 @@ import type { InputEnvironment } from '../adapters/input/device-input';
 import { PerformanceClock } from '../adapters/performance-clock';
 import { LocalStorageStore } from '../adapters/local-storage-store';
 import { computeViewport } from '../adapters/viewport';
-import { DEFAULT_BINDINGS } from '../domain/input/default-bindings';
 import { Run } from '../domain/game/run';
 import { Starfield } from '../domain/presentation/starfield';
 import { SaveStore } from '../domain/save/save-store';
@@ -70,7 +69,6 @@ const environment: InputEnvironment = {
   },
 };
 const input = new DeviceInput(environment);
-input.setBindings(DEFAULT_BINDINGS);
 
 // The right button bombs, so the page never opens its context menu (ADR-0018 decision 10).
 globalThis.addEventListener('contextmenu', (event) => {
@@ -125,15 +123,20 @@ watchPixelRatio();
 const calm = globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const save = new SaveStore(new LocalStorageStore(() => globalThis.localStorage), calm);
 const options = save.load();
+input.setBindings(options.bindings); // the saved ones, else the defaults (GDD v0.15 §4.2)
 input.setAutofire(options.autofire);
 // A saved fullscreen wish applies at the first click, tap or key press (ADR-0009).
 if (options.fullscreen) input.setFullscreenWanted(true);
 
 let fullscreenWanted = options.fullscreen;
+let bindings = options.bindings;
 /** The scene machine's outside world (meta/04-class-menus): save, then forward to the input. */
 const host: SceneHost = {
   optionsChanged: (changed) => {
     save.saveOptions(changed); // false: the session goes on unsaved (ADR-0006 decision 5)
+    // A rebinding replaces the bindings object: only a new one is pushed to the input.
+    if (changed.bindings !== bindings) input.setBindings(changed.bindings);
+    bindings = changed.bindings;
     input.setAutofire(changed.autofire);
     // Only a change of this option asks again: flipping another never re-enters fullscreen.
     if (changed.fullscreen !== fullscreenWanted) input.setFullscreenWanted(changed.fullscreen);

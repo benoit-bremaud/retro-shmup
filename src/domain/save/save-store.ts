@@ -1,11 +1,16 @@
 import type { Language } from '../i18n/messages';
+import { isRecord } from '../guards';
+import { DEFAULT_BINDINGS } from '../input/default-bindings';
+import { parseBindings } from '../input/parse-bindings';
 import type { EffectSettings, Options } from '../options';
 import type { StoragePort } from '../ports/storage-port';
 
 /** The one key of the save document (ADR-0006 decision 2, GDD §9.8). */
 export const SAVE_KEY = 'retro-shmup.v1';
 
-const VERSION = 1;
+/** Version 2 adds the bindings (GDD v0.15 §4.2); version 1 migrates by adding the defaults. */
+const VERSION = 2;
+const FIRST_VERSION = 1;
 
 const LANGUAGES: readonly Language[] = ['en', 'fr'];
 
@@ -27,11 +32,8 @@ export function defaultOptions(reducedMotion: boolean): Options {
     autofire: false,
     language: 'en',
     fullscreen: false,
+    bindings: DEFAULT_BINDINGS,
   };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /** Rebuilds the effects from the known keys only; `undefined` if any is not a boolean. */
@@ -51,8 +53,11 @@ function parseEffects(value: unknown): EffectSettings | undefined {
   return { blink, hitFlash, explosions, shake, bombFlash, slowMotion };
 }
 
-/** Allowlist parsing (ADR-0006, INPUT-1): a new object of the known fields, or `undefined`. */
-function parseOptions(value: unknown): Options | undefined {
+/**
+ * Allowlist parsing (ADR-0006, INPUT-1): a new object of the known fields, or `undefined`. A
+ * version 1 document has no bindings: it migrates with the defaults (ADR-0006 decision 4).
+ */
+function parseOptions(value: unknown, version: number): Options | undefined {
   if (!isRecord(value)) return undefined;
   const effects = parseEffects(value.effects);
   const { autofire, fullscreen, language } = value;
@@ -60,7 +65,8 @@ function parseOptions(value: unknown): Options | undefined {
   if (typeof autofire !== 'boolean' || typeof fullscreen !== 'boolean') return undefined;
   const known = LANGUAGES.find((candidate) => candidate === language);
   if (known === undefined) return undefined;
-  return { effects, autofire, language: known, fullscreen };
+  const bindings = version === FIRST_VERSION ? DEFAULT_BINDINGS : parseBindings(value.bindings);
+  return { effects, autofire, language: known, fullscreen, bindings };
 }
 
 function parseJson(raw: string): unknown {
@@ -105,9 +111,9 @@ export class SaveStore {
       this.readOnly = true;
       return fallback;
     }
-    if (version !== VERSION) return fallback;
+    if (version !== VERSION && version !== FIRST_VERSION) return fallback;
     if (Array.isArray(document.highScores)) this.highScores = document.highScores;
-    return parseOptions(document.options) ?? fallback;
+    return parseOptions(document.options, version) ?? fallback;
   }
 
   /**
