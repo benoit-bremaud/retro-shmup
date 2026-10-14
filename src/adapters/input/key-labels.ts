@@ -39,7 +39,7 @@ export class KeyLabels {
   label(code: string): string {
     if (!CHARACTER_KEY.test(code)) return '';
     // The US character is the code's last one (`KeyQ` → `Q`), a cached one-character string.
-    const us = code.charAt(code.length - 1);
+    const us = code.at(-1) ?? '';
     return this.printed.get(code) ?? drawable(this.layout.get(code)) ?? us;
   }
 }
