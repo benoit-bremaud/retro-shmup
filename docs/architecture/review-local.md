@@ -1,12 +1,12 @@
-# Local review — retro-shmup (branch `docs/rebalance-v012`)
+# Local review — retro-shmup (branch `docs/versioning`)
 
 - Date: 2026-10-14
-- Commit: cdd9ac4
-- Scope: branch diff `origin/main...HEAD` — GDD v0.12, the second level-1 rebalance iteration
-  (#45): Cruiser 14 500 tenths with phase 2 at 9 570, three formations (8 s, 50 s, 52 s) no
-  longer pay the formation P; README, CHANGELOG, diagrams, matrix and log updated. Docs only.
-- Checks run: design · docs · tests · security · correctness (one reconciled pass over an
-  8-file docs diff; no sub-agents)
+- Commit: see the branch tip
+- Scope: branch diff `origin/main...HEAD` — ADR-0025 (SemVer, manual signed releases, the version
+  shown outside the canvas), CONTRIBUTING "Versioning and releases", README paragraph, CHANGELOG
+  and log notes, traceability scope, one wording fix in `.github/tag-protection.md`. Docs only.
+- Checks run: design · docs · tests · security · correctness (one reconciled pass over a docs
+  diff; no sub-agents)
 - Verdict: **ship** · Must 0 · Should 0 · Nice 1
 
 ## 🔴 Must Have
@@ -19,24 +19,23 @@ _None._
 
 ## 🔵 Nice to Have
 
-- `docs/design/game-design-document.md` §Decision record `[docs]` · the v0.12 row is long (the
-  measurement table and the rejected alternatives share two cells); acceptable for a record, but a
-  link to the study report would shorten it once the reports are kept in the repo.
+- `docs/decisions/ADR-0025-versioning-policy.md` `[docs]` · the rejected-options text for
+  release-please says to revisit if the manual steps become a burden; fine, no change.
 
 ## ⚪ Disagree / Intentional
 
-- `docs/architecture/diagrams/gameplay/04-class-domain.md` `[design]` · `paysP` is a suggested
-  name for the follow-up code PR; the GDD calls it the *pays P* property, default true.
-- `docs/design/game-design-document.md` §7.2.2 `[design]` · a formation without P still scores
-  and still counts in the end-of-level tally; only the P spawn is skipped (sequence diagram 02
-  updated). Design call to confirm in the playtest.
+- `.github/tag-protection.md` `[security]` · one sentence reworded: it said release-please would
+  inherit the owner's bypass, which contradicts ADR-0025 (manual releases; an App would be added
+  to `bypass_actors` in its own PR). Ruleset, commands and signing section are unchanged; the file
+  is a document, not the ruleset itself.
+- `CONTRIBUTING.md` / ADR-0025 `[docs]` · the game reads no URL parameter today; the surface is
+  declared as "none yet" so a first parameter is public from its release.
 
 ## Per-dimension summary
 
-- Design: values and rules changed in the GDD first (design before code); no code touched.
-- Docs: no stale 5 000 / 3 300 / "500 shots" left outside the v0.10/v0.11 history rows and
-  unrelated tally figures; every number matches the study reports.
-- Tests: none touched; the 21 assertions the tuning PR must re-derive are listed in the log.
-- Security: nothing untrusted introduced.
-- Correctness: figures checked against the measurement reports (14 000 row: average-bot deaths
-  1.12, dodger 100 % game over; fight 42 / 42 / 44 s at 14 500).
+- Design: policy decided in an ADR before the follow-up code PR (version text under the canvas).
+- Docs: README, CONTRIBUTING, ADR index, matrix scope and log agree with each other.
+- Tests: not applicable (no code).
+- Security: the tag ruleset is kept; no secret or credential involved.
+- Correctness: commands in the 4-step release procedure match `release-tag` (signed annotated
+  tag, explicit push, release notes from the CHANGELOG).

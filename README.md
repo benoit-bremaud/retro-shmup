@@ -120,6 +120,8 @@ Roadmap (GDD section 11):
   - [ADR-0023](docs/decisions/ADR-0023-boss-fight-one-timer-per-attack-movement-age-boss-bonus-tuning-three-prs.md)
     — Boss fight: `fire` and `tick` patterns with one timer, movement age, the boss bonus in
     `BossTuning`, F-2 in three PRs
+  - [ADR-0025](docs/decisions/ADR-0025-versioning-policy.md) — Versioning policy: SemVer, the
+    save document as public surface, manual signed releases
 - [Architecture and UML study](docs/architecture/README.md) — C4 context and containers, then
   the UML diagrams (Mermaid, PlantUML for use cases and components) and the traceability matrix.
 - [PROJECT_LOG.md](PROJECT_LOG.md) — operational logbook (what was done, why, by which PR).
@@ -127,6 +129,15 @@ Roadmap (GDD section 11):
 - [CONTRIBUTING.md](CONTRIBUTING.md) — workflow, branches, commits, labels, design-before-code.
 - [SECURITY.md](SECURITY.md) — vulnerability reporting and security practices.
 - [CREDITS.md](CREDITS.md) — every third-party asset and tool, mirrored by the in-game credits.
+
+## Versioning
+
+[Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html). The game is in initial
+development (`0.y.z`): the first tag, `v0.1.0`, comes with the rebalanced vertical slice, and
+`1.0.0` is the public release on itch.io. The public surface is the save document and the URL
+parameters, not the balance. The [CHANGELOG](CHANGELOG.md) lists the changes, releases and their
+notes will be on the GitHub releases page; the policy is ADR-0025 and the procedure is in
+[CONTRIBUTING.md](CONTRIBUTING.md#versioning-and-releases).
 
 ## Design at a glance
 
