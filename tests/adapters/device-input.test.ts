@@ -71,19 +71,34 @@ class FakeEnvironment implements InputEnvironment {
     this.pointer[kind]?.({ pointerId, pointerType, clientX: x, clientY: y, buttons });
   }
 
-  down(code: string, repeat = false, modifier: Modifier | null = null): void {
-    this.keyDown?.(this.event(code, repeat, modifier));
+  down(code: string, repeat = false, modifier: Modifier | null = null, key = ''): void {
+    this.keyDown?.(this.event(code, repeat, modifier, key));
+  }
+  /** A key down that prints `key`, as the player's layout makes it. */
+  type(code: string, key: string): void {
+    this.down(code, false, null, key);
+  }
+  /** The browser's layout map, when it has one; tests set it. */
+  layout: ReadonlyMap<string, string> | undefined;
+  layoutMap(): Promise<ReadonlyMap<string, string>> | undefined {
+    return this.layout === undefined ? undefined : Promise.resolve(this.layout);
   }
   up(code: string): void {
-    this.keyUp?.(this.event(code, false, null));
+    this.keyUp?.(this.event(code, false, null, ''));
   }
   loseFocus(): void {
     this.focusLost?.();
   }
 
-  private event(code: string, repeat: boolean, modifier: Modifier | null): KeyEventLike {
+  private event(
+    code: string,
+    repeat: boolean,
+    modifier: Modifier | null,
+    key: string,
+  ): KeyEventLike {
     return {
       code,
+      key,
       repeat,
       ctrlKey: modifier === 'ctrl',
       metaKey: modifier === 'meta',
@@ -93,6 +108,13 @@ class FakeEnvironment implements InputEnvironment {
       },
     };
   }
+}
+
+/** A standard pad holding `held` buttons, stick centred. */
+function pad(held: readonly number[] = [], connected = true): GamepadList[number] {
+  const buttons = [];
+  for (let i = 0; i < 17; i += 1) buttons.push({ pressed: held.includes(i) });
+  return { connected, mapping: 'standard', buttons, axes: [0, 0, 0, 0] };
 }
 
 function setup(): { env: FakeEnvironment; input: DeviceInput; frame: IntentFrame } {
@@ -358,13 +380,6 @@ describe('DeviceInput — touch and mouse through the façade (ADR-0018)', () =>
 });
 
 describe('DeviceInput — gamepad through the façade (ADR-0015 decisions 5 and 7)', () => {
-  /** A standard pad holding `held` buttons, stick centred. */
-  function pad(held: readonly number[] = [], connected = true): GamepadList[number] {
-    const buttons = [];
-    for (let i = 0; i < 17; i += 1) buttons.push({ pressed: held.includes(i) });
-    return { connected, mapping: 'standard', buttons, axes: [0, 0, 0, 0] };
-  }
-
   it('applies a gamepad start after the events of the same read', () => {
     const { env, input, frame } = setup();
     env.down('ArrowLeft');
@@ -522,5 +537,128 @@ describe('DeviceInput — options and menus (GDD v0.14 §9.1, ADR-0020 decision 
     input.setFullscreenWanted(false);
     env.point('down', 'touch', 200, 250);
     expect(env.fullscreenCalls).toEqual(['exit']);
+  });
+});
+
+describe('DeviceInput — capturing a new binding (GDD v0.15 §4.2, SD-remap)', () => {
+  const ONE_TO_ONE = { left: 0, top: 0, width: 480, height: 320 };
+
+  function waitingFor(device: 'keyboard' | 'gamepad'): ReturnType<typeof setup> {
+    const fixture = setup();
+    fixture.input.resize(LANDSCAPE, ONE_TO_ONE);
+    fixture.input.startCapture(device);
+    return fixture;
+  }
+
+  it('waits, then answers the next capturable key of the keyboard', () => {
+    const { env, input } = waitingFor('keyboard');
+    expect(input.captureNext()).toEqual({ kind: 'waiting' });
+    env.type('KeyC', 'c');
+    expect(input.captureNext()).toEqual({ kind: 'key', code: 'KeyC' });
+    expect(input.captureNext()).toEqual({ kind: 'cancelled' }); // nothing pending any more
+  });
+
+  it.each(['Tab', 'F5', 'Enter', 'NumpadEnter', 'MetaLeft'])(
+    'refuses %s and keeps waiting',
+    (code) => {
+      const { env, input } = waitingFor('keyboard');
+      env.down(code);
+      expect(input.captureNext()).toEqual({ kind: 'waiting' });
+    },
+  );
+
+  it('cancels on Escape, whose browser action is kept', () => {
+    const { env, input } = waitingFor('keyboard');
+    env.down('Escape');
+    expect(input.captureNext()).toEqual({ kind: 'cancelled' });
+    expect(env.prevented).not.toContain('Escape');
+  });
+
+  it('prevents every other key\u2019s browser action while waiting', () => {
+    const { env } = waitingFor('keyboard');
+    env.down('Tab');
+    env.down('KeyQ');
+    expect(env.prevented).toEqual(['Tab', 'KeyQ']);
+  });
+
+  it('answers only the device it waits for', () => {
+    const { env, input } = waitingFor('gamepad');
+    env.type('KeyC', 'c');
+    expect(input.captureNext()).toEqual({ kind: 'waiting' });
+  });
+
+  it('answers the next button pressed on a gamepad, and refuses button 16', () => {
+    const { env, input, frame } = waitingFor('gamepad');
+    env.pads = [pad([16])];
+    input.read(frame);
+    expect(input.captureNext()).toEqual({ kind: 'waiting' });
+    env.pads = [pad([16, 3])];
+    input.read(frame);
+    expect(input.captureNext()).toEqual({ kind: 'button', index: 3 });
+  });
+
+  it('ignores a button already held when the capture starts', () => {
+    const fixture = setup();
+    fixture.env.pads = [pad([0])];
+    fixture.input.read(fixture.frame);
+    fixture.input.startCapture('gamepad');
+    fixture.input.read(fixture.frame);
+    expect(fixture.input.captureNext()).toEqual({ kind: 'waiting' });
+  });
+
+  it('cancels a gamepad wait after 5 s of reads', () => {
+    const { env, input, frame } = waitingFor('gamepad');
+    env.pads = [pad()];
+    for (let i = 0; i < 299; i += 1) input.read(frame);
+    expect(input.captureNext()).toEqual({ kind: 'waiting' });
+    input.read(frame);
+    expect(input.captureNext()).toEqual({ kind: 'cancelled' });
+  });
+
+  it('cancels on a lost focus and on cancelCapture', () => {
+    const { env, input } = waitingFor('keyboard');
+    env.loseFocus();
+    expect(input.captureNext()).toEqual({ kind: 'cancelled' });
+    input.startCapture('keyboard');
+    input.cancelCapture();
+    env.type('KeyC', 'c');
+    expect(input.captureNext()).toEqual({ kind: 'cancelled' });
+  });
+});
+
+describe('DeviceInput — key labels (GDD v0.15 §4.2)', () => {
+  it('gives the US character of a letter or digit key before any press', () => {
+    const { input } = setup();
+    expect(input.label('KeyQ')).toBe('Q');
+    expect(input.label('Digit7')).toBe('7');
+  });
+
+  it('learns the character the layout prints from the key events', () => {
+    const { env, input } = setup();
+    env.type('KeyQ', 'a'); // AZERTY: the US Q position prints A
+    expect(input.label('KeyQ')).toBe('A');
+  });
+
+  it('keeps the US character when the printed one cannot be drawn', () => {
+    const { env, input } = setup();
+    env.type('Digit2', '\u00e9'); // AZERTY: the 2 key prints é
+    expect(input.label('Digit2')).toBe('2');
+  });
+
+  it('uses the browser layout map until a key event teaches better', async () => {
+    const env = new FakeEnvironment();
+    env.layout = new Map([['KeyW', 'z']]);
+    const input = new DeviceInput(env);
+    await new Promise((resolve) => setTimeout(resolve, 0)); // the map resolves asynchronously
+    expect(input.label('KeyW')).toBe('Z');
+    env.type('KeyW', 'w');
+    expect(input.label('KeyW')).toBe('W');
+  });
+
+  it('gives no character for a key that has none to show', () => {
+    const { input } = setup();
+    expect(input.label('Space')).toBe('');
+    expect(input.label('ArrowUp')).toBe('');
+    expect(input.label('Numpad1')).toBe('');
   });
 });

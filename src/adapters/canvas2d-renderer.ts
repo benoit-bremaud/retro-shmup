@@ -3,7 +3,7 @@ import type { FontId, RenderPort, RenderRegion, SpriteId } from '../domain/ports
 import { Palette } from '../domain/presentation/palette';
 import { FIELD_HEIGHT, FIELD_WIDTH, LANDSCAPE } from '../domain/presentation/screen';
 import type { ScreenLayout } from '../domain/presentation/screen';
-import { GLYPH_COLUMNS, GLYPH_ROWS, hudGlyph, titleGlyph } from './hud-font';
+import { GLYPH_COLUMNS, GLYPH_ROWS, hudGlyph, menuGlyph, titleGlyph } from './hud-font';
 import type { Viewport } from './viewport';
 
 // Logical pixels per glyph pixel: HUD_FONT_CELL and TITLE_FONT_CELL are built on them.
@@ -11,7 +11,8 @@ const HUD_SCALE = 2;
 const TITLE_SCALE = 4;
 /**
  * Each font's cell, scale, glyph set and colour (RenderPort contract), read per draw without
- * building anything: the menu font is the title letters at the hud scale.
+ * building anything: the menu font is the title letters, the digits and four arrows at the hud
+ * scale.
  */
 const FONTS = {
   hud: { cell: HUD_FONT_CELL, scale: HUD_SCALE, glyph: hudGlyph, colour: Palette.hudText },
@@ -21,7 +22,7 @@ const FONTS = {
     glyph: titleGlyph,
     colour: Palette.titleText,
   },
-  menu: { cell: MENU_FONT_CELL, scale: HUD_SCALE, glyph: titleGlyph, colour: Palette.titleText },
+  menu: { cell: MENU_FONT_CELL, scale: HUD_SCALE, glyph: menuGlyph, colour: Palette.titleText },
 } as const;
 
 /**

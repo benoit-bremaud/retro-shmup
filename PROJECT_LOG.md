@@ -8,6 +8,22 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-14
 
+### G1b-2: the capture in the input adapter and the menu font (branch `feat/g1b-capture`) — Refs #46
+
+- `InputPort.startCapture(device)`, `captureNext`, `cancelCapture` in `DeviceInput`: the next
+  capturable key or button of the device answers; `Escape` cancels and keeps its browser action;
+  a key outside the set is refused and every other key's browser action is prevented while
+  waiting; a button already held at the start never answers (the gamepad module exposes the
+  presses of its last poll); the gamepad wait cancels itself after 5 s of reads; a lost focus
+  cancels.
+- `InputPort.label(code)` now answers only a letter or digit key's printed character: learned
+  from the session's key events (`KeyEventLike.key`), else the browser layout map (Chromium,
+  read through a type guard in `main.ts`, put in capitals once), else US; a character the font
+  cannot draw falls back to US; `''` for other keys, whose names are the domain's (G1b-3, they
+  depend on the language). Nothing learned is saved or sent.
+- The menu font gains the digits and the arrows ← ↑ → ↓ (`menuGlyph`); the renderer, the test
+  double and the contract tests follow.
+
 ### G1b-1: bindings in the domain and save version 2 (branch `feat/g1b-bindings`) — Refs #46
 
 - First of the three G1b code PRs (owner choice A, 44/50). No visible change: the saved bindings

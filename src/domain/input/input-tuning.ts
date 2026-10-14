@@ -9,4 +9,6 @@ export const InputTuning = {
   stickDeadZone: 0.2,
   /** Stick components are whole multiples of 1/stickSteps, so replays stay exact (ADR-0009). */
   stickSteps: 256,
+  /** A gamepad capture cancels itself after this long without a button (GDD §4.2). */
+  captureTimeoutSeconds: 5,
 } as const;
