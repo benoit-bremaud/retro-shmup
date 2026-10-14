@@ -137,7 +137,8 @@ step depends on them.
   5. Player returns to the title screen.
 - **Extensions**:
   - 2a. The letter picker works the same on keyboard, gamepad, touch and mouse.
-  - 2b. Player skips the entry (*SKIP*), or confirms an empty name: it is stored as `???`.
+  - 2b. Player skips the entry (*SKIP*), or confirms an empty name: nothing is recorded and the
+    game returns to the title (owner decision, ADR-0021 amendment).
   - 2c. Player presses `back`: the last character (or country letter) is deleted.
   - 2d. The two letters typed are no country code: *OK* is not shown until they are.
   - 3a. Storage is unavailable or full: the save is skipped silently; the in-memory table is

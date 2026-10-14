@@ -107,3 +107,10 @@ shape of decision 1; the empty `highScores` written by versions 1 and 2 is parse
 allowlist, so no version bump and no migration are needed. The decisions are otherwise unchanged
 and the status stays *Accepted*.
 
+## Amendment (2026-10-14, owner decision)
+
+Decision 2's skipped entry is withdrawn: skipping the name entry, or confirming an empty name,
+records nothing (the player is never made to appear in the table). `???` is no longer produced;
+the save document's parser still accepts it, so an entry stored by an earlier build is kept. The
+other decisions and the status are unchanged.
+

@@ -35,13 +35,16 @@ const ARROW_DOWN = 0x2193;
 
 /**
  * The glyph sets of the RenderPort contract: `hud` digits, × and space; `title` A–Z and space;
- * `menu` A–Z, 0–9, space and the four arrows.
+ * `menu` A–Z, 0–9, space, the four arrows, `?` and `-`.
  */
 function isGlyph(code: number, font: FontId): boolean {
   const letter = (code >= LETTER_A && code <= LETTER_Z) || code === SPACE;
   const digit = code >= ZERO && code <= NINE;
   if (font === 'title') return letter;
-  if (font === 'menu') return letter || digit || (code >= ARROW_LEFT && code <= ARROW_DOWN);
+  if (font === 'menu') {
+    const arrow = code >= ARROW_LEFT && code <= ARROW_DOWN;
+    return letter || digit || arrow || code === 0x3f || code === 0x2d; // `?` and `-`
+  }
   return digit || code === TIMES || code === SPACE;
 }
 

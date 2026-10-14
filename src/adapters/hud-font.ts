@@ -57,6 +57,11 @@ const ARROWS: readonly (readonly number[])[] = [
 ];
 const ARROW_LEFT = 0x2190;
 const ARROW_DOWN = 0x2193;
+/** `?` for the skipped name and `-` for empty slots and ranks (GDD v0.16 §9.1). */
+const QUESTION = 0x3f;
+const DASH = 0x2d;
+const QUESTION_GLYPH: readonly number[] = [0b111, 0b001, 0b010, 0b000, 0b010];
+const DASH_GLYPH: readonly number[] = [0b000, 0b000, 0b111, 0b000, 0b000];
 
 const ZERO = 0x30;
 const NINE = 0x39;
@@ -77,10 +82,12 @@ export function hudGlyph(code: number): readonly number[] | undefined {
   return code === SPACE ? SPACE_GLYPH : undefined;
 }
 
-/** The rows of a `menu` glyph: the `title` set, the digits and the four arrows. */
+/** The rows of a `menu` glyph: the `title` set, the digits, the four arrows, `?` and `-`. */
 export function menuGlyph(code: number): readonly number[] | undefined {
   if (code >= ZERO && code <= NINE) return DIGITS[code - ZERO];
   if (code >= ARROW_LEFT && code <= ARROW_DOWN) return ARROWS[code - ARROW_LEFT];
+  if (code === QUESTION) return QUESTION_GLYPH;
+  if (code === DASH) return DASH_GLYPH;
   return titleGlyph(code);
 }
 

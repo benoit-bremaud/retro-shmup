@@ -28,9 +28,10 @@ describe('RecordingRender — the RenderPort glyph-set contract', () => {
     const render = new RecordingRender();
     render.drawText('PLEIN ECRAN', 0, 0, 'menu');
     render.drawText('NUM 0 \u2191\u2193\u2190\u2192 9', 0, 0, 'menu');
-    expect(render.texts).toHaveLength(2);
+    expect(render.texts).toHaveLength(2); // and `?`, `-` below
+    render.drawText('??? -', 0, 0, 'menu');
     expect(() => {
-      render.drawText('-', 0, 0, 'menu');
+      render.drawText('!', 0, 0, 'menu');
     }).toThrow(/glyph/);
     expect(() => {
       render.drawText('É', 0, 0, 'menu');

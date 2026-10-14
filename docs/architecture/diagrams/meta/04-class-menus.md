@@ -266,7 +266,7 @@ classDiagram
   entry (cells of 30 × 20 px, eight to a row; the directions move a wrapping cursor, `confirm` or
   a release over the pressed cell picks it, with `Menu`'s guards); its cells are characters or
   the actions *SPACE*, *DEL*, *OK*, *SKIP* and *NONE*. `NameEntry` builds the name (8 at most,
-  `back` deletes; on *OK* trimmed, an empty or all-space name is `???`) then the country (letters only, *OK* only for a code of
+  `back` deletes; on *OK* trimmed; *SKIP*, or an empty or all-space name, records nothing) then the country (letters only, *OK* only for a code of
   `COUNTRY_CODES`, *NONE* for none), preselected by the host from the browser language
   (ADR-0021 decision 4), and returns the `HighScoreEntry` with the date the host gives
   (`SceneHost.today()`, the domain reads no clock). `HighScoreTable` keeps ten entries, best

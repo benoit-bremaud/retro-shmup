@@ -282,3 +282,39 @@ describe('SaveStore — version 2 and the bindings (GDD v0.15 §4.2, ADR-0006 de
     expect(Object.getPrototypeOf(loaded.bindings.keyboard)).toBe(Object.prototype);
   });
 });
+
+describe('SaveStore — the hall of fame (GDD v0.16 §9.1, ADR-0021)', () => {
+  const ACE = { name: 'ACE', country: 'FR', score: 1200, level: 1, date: '2026-10-14' } as const;
+
+  it('reads the stored entries by allowlist, the invalid ones dropped', () => {
+    const storage = stored({
+      version: 2,
+      options: CUSTOM,
+      highScores: [ACE, { name: 'bad', score: 5, level: 1, date: '2026-10-14' }],
+    });
+    const store = new SaveStore(storage, false);
+    store.load();
+    expect(store.highScores).toEqual([ACE]);
+  });
+
+  it('saves the table with the options last loaded, and the options keep the table', () => {
+    const storage = stored({ version: 2, options: CUSTOM, highScores: [] });
+    const store = new SaveStore(storage, false);
+    store.load();
+    expect(store.saveHighScores([ACE])).toBe(true);
+    expect(JSON.parse(storage.values.get(SAVE_KEY) ?? '')).toEqual({
+      version: 2,
+      options: CUSTOM,
+      highScores: [ACE],
+    });
+    store.saveOptions({ ...CUSTOM, autofire: false });
+    expect(JSON.parse(storage.values.get(SAVE_KEY) ?? '')).toMatchObject({ highScores: [ACE] });
+  });
+
+  it('never writes the table over a newer document', () => {
+    const storage = stored({ version: 3, options: {} });
+    const store = new SaveStore(storage, false);
+    store.load();
+    expect(store.saveHighScores([ACE])).toBe(false);
+  });
+});

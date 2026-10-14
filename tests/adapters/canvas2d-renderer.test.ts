@@ -228,7 +228,16 @@ describe('Canvas2DRenderer — hud font (RenderPort contract, HUD_FONT_CELL)', (
     expect(blocks.length).toBeGreaterThan(5 * 4);
   });
 
-  it.each(['-', 'É'])('throws on %j in the menu font (fail closed)', (text) => {
+  it('draws ? and - in the menu font', () => {
+    const { renderer, offscreen } = setup();
+    renderer.drawText('?-', 0, 0, 'menu');
+    const blocks = offscreen.calls.filter((call) =>
+      call.startsWith(`fillRect ${Palette.titleText} `),
+    );
+    expect(blocks).toHaveLength(6 + 3); // `?`: 3 + 1 + 1 + 1 pixels; `-`: 3
+  });
+
+  it.each(['!', 'É'])('throws on %j in the menu font (fail closed)', (text) => {
     const { renderer } = setup();
     expect(() => {
       renderer.drawText(text, 0, 0, 'menu');

@@ -764,7 +764,7 @@ and space, entered with an arcade **letter picker** usable on keyboard, gamepad,
 example `fr-FR` → `FR`; none when the language has no region), changeable or clearable; no
 network call, no geolocation, nothing inferred beyond the language setting (privacy, PRIV-1). The
 country is shown as its 2-letter ISO 3166-1 code in the bitmap font, and as a pixel flag once the
-sprites land (assets brick). Confirming an empty name stores `???` like skip; the picker
+sprites land (assets brick). Confirming an empty name stores `???` like skip *(v0.9; amended in v0.16: both record nothing)*; the picker
 controls per device are specified with the screens brick (G) in its UML study.
 
 **The letter grid** *(v0.16, G2)*: the name is picked on a grid of cells 30 × 20 px, eight to a
@@ -773,13 +773,14 @@ The menu font gains `?` and `-` for this. The headings are drawn in the title fo
 everything else in the menu font.
 - **Name**: `A`–`Z`, `0`–`9` (36 cells), then *SPACE* / *ESPACE* (two cells wide), *DEL* / *EFF*
   and *OK* (40 cells, 5 rows); under the grid, *SKIP* / *PASSER*, a row of its own the cursor
-  reaches from the grid's last row, stores `???`. The directions move the cursor, wrapping; a two-
+  reaches from the grid's last row, records nothing *(owner, 2026-10-14: the player is never made
+  to appear in the table)* and returns to the title. The directions move the cursor, wrapping; a two-
   cell-wide cell is reached from either of its columns, and leaving it up or down keeps the column
   the cursor came from. `confirm` or a tap or click (on release, with the opening guard: the menus'
   rules of §9.1) adds the highlighted character; `back` (`Escape`, which also sends `pause`, and
   the gamepad's `B`) deletes the last one and never leaves; the name stops growing at eight
   characters. On *OK* the name is trimmed at both ends; an empty name, or one of spaces only,
-  stores `???` (ADR-0021 decision 2). The heading is *YOUR NAME* / *TON NOM*.
+  records nothing, like *SKIP* (ADR-0021, amended). The heading is *YOUR NAME* / *TON NOM*.
 - **Country**, the next step: the same grid with the letters only, then *DEL* / *EFF*, *NONE* /
   *AUCUN* (two cells wide: no country) and *OK* (30 cells, 4 rows), under the two-letter code
   being built, preselected from the browser language (ADR-0021 decision 4). *OK* shows, and the
@@ -1150,3 +1151,4 @@ fully playable at release quality, used to validate the design before producing 
 | Options screens *(v0.14)* | G1a-3 (owner, 2026-10-14): a row with a value shows label left, value right; any activation (confirm, tap, left or right) flips it, the two-value language choice included; the title becomes a menu (*Play* first) and a stray tap no longer starts a run; leaving a menu for play drops a mouse or touch owner of the movement (keyboard and gamepad owners kept), so a mouse click on *Resume* never hands the ship to the mouse (scored 46/50 against keeping the ADR-0018 jump, 33/50: a keyboard player clicking *Resume* would see the ship fly to the menu's place and could die without acting) | Left and right stepping a choice and confirm opening a list (no third value exists); the jump to the cursor kept |
 | Controls screen *(v0.15)* | G1b (owner, 2026-10-14): one row per intent with two slot columns, one cell highlighted, the capture shown as *PRESS* (45→46/50); key labels learned from the session's key events, then the browser layout map, then US, with fixed names and arrow glyphs (46/50); the device edited is the last of keyboard and gamepad, followed live while choosing and fixed during a capture, the row hidden on touch only; restore defaults asks first; a closed set of capturable keys (labels of 10 characters at most, the rest refused) and buttons 0–15; an exchange that would empty a primary promotes the secondary or is refused; the answering step reads no menu action; save version 2 with a v1 migration and allowlist parsing of the bindings | One row per slot on two pages (31/50, no scrolling rule); a sub-screen per intent (34/50, two screens per capture); the layout map then US only (38/50: wrong on Firefox and Safari with AZERTY); US names always (30/50, contrary to "labels use the active layout"); a full font now (30/50, part of G4) |
 | Hall of fame *(v0.16)* | G2 (owner, 2026-10-14): the name on a letter grid (43/50: 6 taps for a 6-letter name on a phone, the directions and `confirm` elsewhere, `back` deletes); the country on the same grid with the letters only, *OK* shown only for a complete code in the allowlist (44/50, revised up from the first analysis: a big-cell grid already built, 3 taps to change it); a score enters above the tenth only, ties keep the older entry first; *High scores* in the title menu; the Ending card *VICTORY* with the score, its two story sentences deferred to the assets brick | The arcade letter wheel (30/50: about 80 presses for a name, small arrows on a phone); the grid plus typing on a physical keyboard (42/50: a text capture in the adapter for little gain, kept for later if testers ask); the country as a two-letter spinner over valid codes (37/50) or a scrolling list (31/50, no-scrolling rule); *MISSION COMPLETE* in the title font (252 px, wider than the field) |
+| Skipping the name entry *(v0.16, amended)* | Owner, 2026-10-14: *SKIP*, or *OK* on an empty name, records nothing and returns to the title — the player is never made to appear in the table (42/50) | Store the score as `???` (44/50 on paper, the v0.2 arcade rule, but against the owner's intent); both buttons, *SKIP* and *ANONYMOUS* (40/50) |

@@ -485,9 +485,10 @@ stateDiagram-v2
     state "Name" as NameStep
     state "Country" as CountryStep
     [*] --> NameStep
-    NameStep --> CountryStep : OK, or SKIP with the name ???
+    NameStep --> CountryStep : OK with a name
     CountryStep --> [*] : OK with a valid code, or NONE
   }
+  NameEntry --> Title : SKIP, or OK on an empty name / nothing recorded
   state "High scores" as HighScores
   Results --> Ending : confirm after the lock, or after 8 s [RUN_CLEARED]
   Ending --> NameEntry : confirm after 1 s, or after 6 s [score enters the table]
@@ -501,7 +502,7 @@ stateDiagram-v2
 
 - **Lifts the slice-end interim**: a cleared run goes Results → Ending, no longer to the title.
 - **Name entry** keeps the finished run read-only for its score and level; the `back` intent
-  deletes, it never leaves (the entry is skipped by *SKIP* only). `Pause` and the automatic pause
+  deletes, it never leaves (only *SKIP*, or *OK* on an empty name, leaves without recording). `Pause` and the automatic pause
   triggers are ignored in `Ending`, `Name entry` and `High scores` (no run steps). The `Escape`
   key sends `back` too, so it deletes like the gamepad's `B`.
 - **Opening guard**: the press that opens `Name entry` or `High scores` never acts there (a tap
