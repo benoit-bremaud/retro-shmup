@@ -41,6 +41,18 @@ class FakeEnvironment implements InputEnvironment {
   onPointerCancel(listener: (event: PointerEventLike) => void): void {
     this.pointer.cancel = listener;
   }
+  /** The browser's fullscreen state and the calls the adapter made. */
+  fullscreenActive = false;
+  readonly fullscreenCalls: string[] = [];
+  readonly fullscreen = {
+    active: (): boolean => this.fullscreenActive,
+    request: (): void => {
+      this.fullscreenCalls.push('request');
+    },
+    exit: (): void => {
+      this.fullscreenCalls.push('exit');
+    },
+  };
   /** The pads the next read polls; tests replace it. */
   pads: GamepadList = [];
   gamepads(): GamepadList {
@@ -427,5 +439,75 @@ describe('DeviceInput — held pointer fire (ADR-0020)', () => {
     input.read(frame);
     expect(frame.held & Button.Fire).toBe(0);
     expect(frame.tapRegion).toBe('none');
+  });
+});
+
+describe('DeviceInput — options and menus (GDD v0.14 §9.1, ADR-0020 decision 4, ADR-0009)', () => {
+  const ONE_TO_ONE = { left: 0, top: 0, width: 480, height: 320 };
+
+  function pointerSetup(): ReturnType<typeof setup> {
+    const fixture = setup();
+    fixture.input.resize(LANDSCAPE, ONE_TO_ONE);
+    return fixture;
+  }
+
+  it('releaseMovement drops a mouse owner, which takes the ship back by its next move', () => {
+    const { env, input, frame } = pointerSetup();
+    env.point('down', 'mouse', 200, 250, 1);
+    env.point('up', 'mouse', 200, 250, 0);
+    input.read(frame);
+    expect(frame.moveKind).toBe('target');
+    input.releaseMovement();
+    input.read(frame);
+    expect(frame.moveKind).toBe('none');
+    env.point('move', 'mouse', 210, 250);
+    input.read(frame);
+    expect(frame).toMatchObject({ moveKind: 'target', moveX: 90 });
+  });
+
+  it('releaseMovement keeps a keyboard owner, its held direction, and adds no pause', () => {
+    const { env, input, frame } = pointerSetup();
+    env.down('ArrowLeft');
+    input.read(frame);
+    input.releaseMovement();
+    input.read(frame);
+    expect(frame).toMatchObject({ moveKind: 'direction', moveX: -1, pressed: 0 });
+  });
+
+  it('setAutofire makes touch and mouse hold Fire while they own the movement', () => {
+    const { env, input, frame } = pointerSetup();
+    input.setAutofire(true);
+    env.point('move', 'mouse', 200, 250);
+    input.read(frame);
+    expect(frame.held & Button.Fire).toBe(Button.Fire);
+    input.setAutofire(false);
+    input.read(frame);
+    expect(frame.held & Button.Fire).toBe(0);
+  });
+
+  it('applies a fullscreen change at the next key or pointer press, once', () => {
+    const { env, input, frame } = pointerSetup();
+    input.setFullscreenWanted(true);
+    expect(env.fullscreenCalls).toEqual([]);
+    env.down('KeyP');
+    expect(env.fullscreenCalls).toEqual(['request']);
+    env.fullscreenActive = true;
+    input.read(frame);
+    expect(frame.fullscreen).toBe(true);
+    // The player left fullscreen with Esc: the wish is not applied again by itself.
+    env.fullscreenActive = false;
+    env.point('down', 'mouse', 200, 250, 1);
+    expect(env.fullscreenCalls).toEqual(['request']);
+    input.setFullscreenWanted(false);
+    env.down('KeyP');
+    expect(env.fullscreenCalls).toEqual(['request']); // already out: nothing to exit
+  });
+
+  it('exits fullscreen at the next gesture when it is turned off', () => {
+    const { env, input } = pointerSetup();
+    env.fullscreenActive = true;
+    input.setFullscreenWanted(false);
+    env.point('down', 'touch', 200, 250);
+    expect(env.fullscreenCalls).toEqual(['exit']);
   });
 });

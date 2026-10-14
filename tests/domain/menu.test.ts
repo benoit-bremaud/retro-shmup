@@ -17,7 +17,7 @@ function frame(edit: Partial<IntentFrame> = {}): IntentFrame {
 }
 
 /** The field y of the middle of row `index`. */
-function rowY(subject: Menu<string>, index: number): number {
+function rowY(subject: { readonly top: number }, index: number): number {
   return subject.top + index * MENU_ROW_HEIGHT + MENU_ROW_HEIGHT / 2;
 }
 
@@ -40,6 +40,45 @@ describe('Menu — keyboard and gamepad (GDD v0.13 §9.1)', () => {
     expect(subject.highlighted).toBe(0);
     subject.step(frame(), 4);
     subject.step(frame({ moveKind: 'direction', moveY: -1 }), 5);
+    expect(subject.highlighted).toBe(1);
+  });
+
+  it('activates the highlighted row on each new left or right direction (GDD v0.14)', () => {
+    const subject = new Menu(ROWS, () => true);
+    const right = frame({ moveKind: 'direction', moveX: 1 });
+    expect(subject.step(right, 0)).toBe('resume');
+    expect(subject.step(right, 1)).toBeUndefined();
+    subject.step(frame(), 2);
+    expect(subject.step(frame({ moveKind: 'direction', moveX: -1 }), 3)).toBe('resume');
+  });
+
+  it('flips nothing by left or right on a row without a value', () => {
+    const subject = new Menu(ROWS, (row) => row === 'quit');
+    expect(subject.step(frame({ moveKind: 'direction', moveX: 1 }), 0)).toBeUndefined();
+    subject.step(frame(), 1);
+    subject.step(frame({ moveKind: 'direction', moveY: 1 }), 2);
+    subject.step(frame(), 3);
+    expect(subject.step(frame({ moveKind: 'direction', moveX: -1 }), 4)).toBe('quit');
+  });
+
+  it('ignores a direction already held when the menu opens, until it is released', () => {
+    const subject = new Menu(ROWS, () => true);
+    const held = frame({ moveKind: 'direction', moveX: 1, moveY: 0 });
+    subject.reset(0, held);
+    expect(subject.step(held, 1)).toBeUndefined();
+    expect(subject.step(frame({ moveKind: 'direction', moveY: 1 }), 2)).toBeUndefined();
+    expect(subject.highlighted).toBe(1); // a new vertical direction still moves
+    const heldDown = frame({ moveKind: 'direction', moveY: 1 });
+    subject.reset(3, heldDown);
+    subject.step(heldDown, 4);
+    expect(subject.highlighted).toBe(0);
+  });
+
+  it('moves rather than flips on a diagonal that is mostly vertical', () => {
+    const subject = new Menu(ROWS, () => true);
+    expect(
+      subject.step(frame({ moveKind: 'direction', moveX: 0.3, moveY: 0.9 }), 0),
+    ).toBeUndefined();
     expect(subject.highlighted).toBe(1);
   });
 
@@ -121,7 +160,7 @@ describe('Menu — touch and mouse (GDD v0.13 §9.1)', () => {
     const subject = menu();
     subject.step(frame({ moveKind: 'direction', moveY: 1 }), 0);
     subject.step(frame({ tapRegion: 'field', tapY: rowY(subject, 1) }), 1);
-    subject.reset(2);
+    subject.reset(2, frame());
     expect(subject.highlighted).toBe(0);
     expect(
       subject.step(frame({ releaseRegion: 'field', releaseY: rowY(subject, 1) }), 30),
@@ -130,7 +169,7 @@ describe('Menu — touch and mouse (GDD v0.13 §9.1)', () => {
 
   it('ignores any press within the guard after opening, not after it', () => {
     const subject = menu();
-    subject.reset(100);
+    subject.reset(100, frame());
     const y = rowY(subject, 1);
     const tap = frame({ tapRegion: 'field', tapY: y, releaseRegion: 'field', releaseY: y });
     expect(subject.step(tap, 100 + GUARD - 1)).toBeUndefined();

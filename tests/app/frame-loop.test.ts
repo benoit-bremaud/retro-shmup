@@ -50,6 +50,12 @@ class CountingInput implements InputPort {
   setFullscreenWanted(): void {
     // Not used by the loop.
   }
+  setAutofire(): void {
+    // Not used by the loop.
+  }
+  releaseMovement(): void {
+    // Not used by the loop.
+  }
 }
 
 /** Behaves like requestAnimationFrame: callbacks queue up and all run on the next frame. */

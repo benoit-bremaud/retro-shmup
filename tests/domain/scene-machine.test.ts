@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { EffectSettings, Options } from '../../src/domain/options';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
 import { Palette } from '../../src/domain/presentation/palette';
@@ -10,8 +11,9 @@ import { BossState } from '../../src/domain/game/boss';
 import type { BossDefinition } from '../../src/domain/game/boss';
 import { swayMovement } from '../../src/domain/game/movements';
 import { Run, RunOutcome } from '../../src/domain/game/run';
-import { MENU_ROW_HEIGHT } from '../../src/domain/presentation/menu-layout';
+import { MENU_ROW_HEIGHT, menuTop } from '../../src/domain/presentation/menu-layout';
 import { Scene, SceneMachine } from '../../src/domain/scenes/scene-machine';
+import type { SceneHost } from '../../src/domain/scenes/scene-machine';
 import { PORTRAIT } from '../../src/domain/presentation/screen';
 import { RecordingRender } from '../support/recording-render';
 import type { RecordedRect } from '../support/recording-render';
@@ -19,19 +21,24 @@ import { STUB_BOSS, testScript } from '../support/script';
 
 const DT = 1 / 60;
 
+/** The options a test needs: these effect switches, the rest at its defaults. */
+function withEffects(effects: EffectSettings): Options {
+  return { effects, autofire: false, language: 'en', fullscreen: false };
+}
+
 function setup(): { machine: SceneMachine; render: RecordingRender } {
   const render = new RecordingRender();
   const machine = new SceneMachine(
     render,
     new Starfield(() => 0.5),
-    {
+    withEffects({
       blink: true,
       hitFlash: true,
       explosions: true,
       shake: true,
       bombFlash: true,
       slowMotion: true,
-    },
+    }),
     () => new Run(),
   );
   return { machine, render };
@@ -72,12 +79,18 @@ describe('SceneMachine — first-playable subset (meta/05-state-scenes)', () => 
     expect(machine.scene).toBe(Scene.Title);
   });
 
-  it.each([
-    ['Confirm pressed', pressed(Button.Confirm)],
-    ['a tap or click', tapped()],
-  ])('starts a run from the title on %s', (_label, frame) => {
+  it('starts a run from the title on Confirm, Play being highlighted first', () => {
     const { machine } = onTitle();
-    machine.step(DT, frame);
+    machine.step(DT, pressed(Button.Confirm));
+    expect(machine.scene).toBe(Scene.Playing);
+  });
+
+  it('starts a run from a tap on the Play row, and not from a stray tap (GDD v0.14)', () => {
+    const { machine } = onTitle();
+    for (let i = 0; i < 10; i += 1) machine.step(DT, createIntentFrame());
+    machine.step(DT, tapped());
+    expect(machine.scene).toBe(Scene.Title);
+    machine.step(DT, rowTap(0, 2));
     expect(machine.scene).toBe(Scene.Playing);
   });
 
@@ -264,7 +277,7 @@ describe('SceneMachine — Paused and Count-in (meta/05-state-scenes, pause rule
     expect(fixture.render.drew(Palette.menuHighlight)).toBe(true);
     const fieldTexts = (): string[] =>
       fixture.render.texts.filter((text) => text.region === 'field').map((text) => text.text);
-    expect(fieldTexts()).toEqual(['PAUSE', 'RESUME', 'QUIT']);
+    expect(fieldTexts()).toEqual(['PAUSE', 'RESUME', 'OPTIONS', 'QUIT']);
     fixture.machine.step(DT, frame(Button.Confirm));
     fixture.machine.render(1, 16);
     expect(fieldTexts()).toEqual(['3']);
@@ -289,14 +302,14 @@ function gameOverFixture(): ReturnType<typeof setup> {
   const machine = new SceneMachine(
     render,
     new Starfield(() => 0.5),
-    {
+    withEffects({
       blink: true,
       hitFlash: true,
       explosions: true,
       shake: true,
       bombFlash: true,
       slowMotion: true,
-    },
+    }),
     () => new Run({ levels: [KILLER] }),
   );
   machine.step(DT, createIntentFrame());
@@ -335,9 +348,9 @@ describe('SceneMachine — Game over (GDD §4.4, meta/05-state-scenes)', () => {
     const { machine } = gameOverFixture();
     for (let i = 0; i < 61; i += 1) machine.step(DT, pressed(Button.Confirm));
     expect(machine.scene).toBe(Scene.Title);
-    for (let i = 0; i < 60; i += 1) machine.step(DT, tapped());
+    for (let i = 0; i < 60; i += 1) machine.step(DT, rowTap(0, 2));
     expect(machine.scene).toBe(Scene.Title);
-    machine.step(DT, tapped());
+    machine.step(DT, rowTap(0, 2));
     expect(machine.scene).toBe(Scene.Playing);
   });
 
@@ -396,14 +409,14 @@ describe('SceneMachine — effects per run (ADR-0010, 02-sequence-fixed-step-tic
     const machine = new SceneMachine(
       render,
       new Starfield(() => 0.5),
-      {
+      withEffects({
         blink: true,
         hitFlash: true,
         explosions: true,
         shake: true,
         bombFlash: true,
         slowMotion: true,
-      },
+      }),
       () => new Run({ levels: [TARGET] }),
     );
     machine.step(DT, createIntentFrame());
@@ -446,14 +459,14 @@ describe('SceneMachine — effects per run (ADR-0010, 02-sequence-fixed-step-tic
     const machine = new SceneMachine(
       render,
       new Starfield(() => 0.5),
-      {
+      withEffects({
         blink: true,
         hitFlash: true,
         explosions: true,
         shake: true,
         bombFlash: true,
         slowMotion: true,
-      },
+      }),
       () => new Run({ levels: [script] }),
     );
     machine.step(DT, createIntentFrame());
@@ -503,9 +516,9 @@ const PAUSE_TAP = hudTap(440, 10);
 const OTHER_HUD_TAP = hudTap(20, 200);
 
 describe('SceneMachine — taps and the pause button (devices brick additions)', () => {
-  it('never locks the first title: a tap starts a run at once', () => {
+  it('never locks the first title: Confirm starts a run at once', () => {
     const { machine } = onTitle();
-    machine.step(DT, OTHER_HUD_TAP);
+    machine.step(DT, pressed(Button.Confirm));
     expect(machine.scene).toBe(Scene.Playing);
   });
 
@@ -620,14 +633,14 @@ describe('SceneMachine — Results (meta/05-state-scenes, GDD v0.10 §8, F-3)', 
     const machine = new SceneMachine(
       render,
       new Starfield(() => 0.5),
-      {
+      withEffects({
         blink: true,
         hitFlash: true,
         explosions: true,
         shake: true,
         bombFlash: true,
         slowMotion: true,
-      },
+      }),
       () => new Run({ levels: [testScript([], { warningAt: 5, boss: GLASS })] }),
     );
     machine.step(DT, createIntentFrame());
@@ -719,7 +732,14 @@ describe('SceneMachine — the boss HUD (meta/05-state-scenes, F-2b)', () => {
     const machine = new SceneMachine(
       render,
       new Starfield(() => 0.5),
-      { blink, hitFlash: true, explosions: true, shake: true, bombFlash: true, slowMotion: true },
+      withEffects({
+        blink,
+        hitFlash: true,
+        explosions: true,
+        shake: true,
+        bombFlash: true,
+        slowMotion: true,
+      }),
       () => new Run({ levels: [testScript([], { warningAt: 5, boss: STUB_BOSS })] }),
     );
     machine.step(DT, createIntentFrame());
@@ -781,14 +801,14 @@ describe('SceneMachine — the boss HUD (meta/05-state-scenes, F-2b)', () => {
     const machine = new SceneMachine(
       render,
       new Starfield(() => 0.5),
-      {
+      withEffects({
         blink: true,
         hitFlash: true,
         explosions: true,
         shake: true,
         bombFlash: true,
         slowMotion: true,
-      },
+      }),
       () => ending,
     );
     machine.step(DT, createIntentFrame());
@@ -812,9 +832,8 @@ describe('SceneMachine — the boss HUD (meta/05-state-scenes, F-2b)', () => {
   });
 });
 
-/** A tap pressed and released on row `row` of a two-row menu, in one step. */
-function rowTap(row: number): IntentFrame {
-  const y = (320 - 2 * MENU_ROW_HEIGHT) / 2 + row * MENU_ROW_HEIGHT + 8;
+/** A tap pressed and released at field y, in one step. */
+function tapAt(y: number): IntentFrame {
   const tap = createIntentFrame();
   tap.tapRegion = 'field';
   tap.tapX = 120;
@@ -824,6 +843,17 @@ function rowTap(row: number): IntentFrame {
   tap.releaseY = y;
   return tap;
 }
+
+/** A tap on row `row` of a menu of `rows` rows, centred on the field. */
+function rowTap(row: number, rows: number): IntentFrame {
+  return tapAt(menuTop(rows) + row * MENU_ROW_HEIGHT + 8);
+}
+
+// The pause menu (Resume, Options, Quit) and Confirm quit (No, Yes).
+const RESUME = (): IntentFrame => rowTap(0, 3);
+const QUIT = (): IntentFrame => rowTap(2, 3);
+const NO = (): IntentFrame => rowTap(0, 2);
+const YES = (): IntentFrame => rowTap(1, 2);
 
 /** Past a menu's opening guard (150 ms), with no input. */
 function wait(fixture: ReturnType<typeof setup>): void {
@@ -842,13 +872,15 @@ describe('SceneMachine — the pause menu and Confirm quit (GDD v0.13 §9.1, G1a
     const fixture = playing();
     fixture.machine.step(DT, frame(Button.Pause));
     wait(fixture);
-    fixture.machine.step(DT, rowTap(0));
+    fixture.machine.step(DT, RESUME());
     expect(fixture.machine.scene).toBe(Scene.CountIn);
   });
 
   it('opens Confirm quit from the Quit row, with No highlighted first', () => {
     const fixture = playing();
     fixture.machine.step(DT, frame(Button.Pause));
+    fixture.machine.step(DT, down());
+    fixture.machine.step(DT, createIntentFrame());
     fixture.machine.step(DT, down());
     fixture.machine.step(DT, frame(Button.Confirm));
     expect(fixture.machine.scene).toBe(Scene.ConfirmQuit);
@@ -858,12 +890,12 @@ describe('SceneMachine — the pause menu and Confirm quit (GDD v0.13 §9.1, G1a
 
   it.each([
     ['Back', frame(Button.Back)],
-    ['the No row', rowTap(0)],
+    ['the No row', NO()],
   ])('returns to Paused from Confirm quit on %s, the run kept', (_label, input) => {
     const fixture = playing();
     fixture.machine.step(DT, frame(Button.Pause));
     wait(fixture);
-    fixture.machine.step(DT, rowTap(1));
+    fixture.machine.step(DT, QUIT());
     wait(fixture);
     fixture.machine.step(DT, input);
     expect(fixture.machine.scene).toBe(Scene.Paused);
@@ -875,8 +907,10 @@ describe('SceneMachine — the pause menu and Confirm quit (GDD v0.13 §9.1, G1a
     const fixture = playing();
     fixture.machine.step(DT, frame(Button.Pause));
     for (let i = 0; i < 10; i += 1) fixture.machine.step(DT, createIntentFrame());
-    fixture.machine.step(DT, rowTap(1)); // Quit
-    fixture.machine.step(DT, rowTap(1)); // the bounce, where Yes now is
+    // y 170 lies on Quit (y 168 to 183) and on Yes, the row in its place (y 160 to 175).
+    fixture.machine.step(DT, tapAt(170)); // Quit
+    expect(fixture.machine.scene).toBe(Scene.ConfirmQuit);
+    fixture.machine.step(DT, tapAt(170)); // the bounce, where Yes now is
     expect(fixture.machine.scene).toBe(Scene.ConfirmQuit);
   });
 
@@ -884,7 +918,7 @@ describe('SceneMachine — the pause menu and Confirm quit (GDD v0.13 §9.1, G1a
     const fixture = playing();
     fixture.machine.step(DT, frame(Button.Pause));
     wait(fixture);
-    fixture.machine.step(DT, rowTap(1));
+    fixture.machine.step(DT, QUIT());
     fixture.machine.step(DT, frame(Button.Pause));
     expect(fixture.machine.scene).toBe(Scene.ConfirmQuit);
   });
@@ -893,9 +927,9 @@ describe('SceneMachine — the pause menu and Confirm quit (GDD v0.13 §9.1, G1a
     const fixture = playing();
     fixture.machine.step(DT, frame(Button.Pause));
     wait(fixture);
-    fixture.machine.step(DT, rowTap(1));
+    fixture.machine.step(DT, QUIT());
     wait(fixture);
-    fixture.machine.step(DT, rowTap(1));
+    fixture.machine.step(DT, YES());
     expect(fixture.machine.scene).toBe(Scene.Title);
     fixture.machine.render(1, 16);
     expect(fixture.render.drew(Palette.shipHull)).toBe(false);
@@ -919,12 +953,210 @@ describe('SceneMachine — the pause menu and Confirm quit (GDD v0.13 §9.1, G1a
     const fixture = playing();
     fixture.machine.step(DT, frame(Button.Pause));
     wait(fixture);
-    fixture.machine.step(DT, rowTap(1));
+    fixture.machine.step(DT, QUIT());
     fixture.machine.render(1, 16);
     const fieldTexts = fixture.render.texts
       .filter((text) => text.region === 'field')
       .map((text) => text.text);
     expect(fieldTexts).toEqual(['QUIT THE RUN', 'NO', 'YES']);
     expect(fixture.render.drew(Palette.pauseButton)).toBe(false);
+  });
+});
+
+/** A scene host that records what the scene machine told it. */
+class RecordingHost implements SceneHost {
+  readonly saved: Options[] = [];
+  released = 0;
+  optionsChanged(options: Readonly<Options>): void {
+    this.saved.push(structuredClone(options));
+  }
+  releaseMovement(): void {
+    this.released += 1;
+  }
+}
+
+function hosted(language: Options['language'] = 'en'): {
+  machine: SceneMachine;
+  render: RecordingRender;
+  host: RecordingHost;
+} {
+  const render = new RecordingRender();
+  const host = new RecordingHost();
+  const machine = new SceneMachine(
+    render,
+    new Starfield(() => 0.5),
+    { ...withEffects(ALL_ON), language },
+    () => new Run(),
+    host,
+  );
+  machine.step(DT, createIntentFrame()); // Boot → Title
+  return { machine, render, host };
+}
+
+const ALL_ON: EffectSettings = {
+  blink: true,
+  hitFlash: true,
+  explosions: true,
+  shake: true,
+  bombFlash: true,
+  slowMotion: true,
+};
+
+function idle(machine: SceneMachine, steps = 10): void {
+  for (let i = 0; i < steps; i += 1) machine.step(DT, createIntentFrame());
+}
+
+function fieldTextsOf(render: RecordingRender): string[] {
+  return render.texts.filter((text) => text.region === 'field').map((text) => text.text);
+}
+
+/** Moves the highlight down `rows` rows, releasing the key between presses. */
+function downBy(machine: SceneMachine, rows: number): void {
+  for (let i = 0; i < rows; i += 1) {
+    machine.step(DT, down());
+    machine.step(DT, createIntentFrame());
+  }
+}
+
+function right(): IntentFrame {
+  const step = createIntentFrame();
+  step.moveKind = 'direction';
+  step.moveX = 1;
+  return step;
+}
+
+describe('SceneMachine — the options screens (GDD v0.14 §9.1, §9.3, G1a-3)', () => {
+  it('opens Options from the title and returns to it on Back and on the Back row', () => {
+    const { machine, render } = hosted();
+    downBy(machine, 1);
+    machine.step(DT, pressed(Button.Confirm));
+    expect(machine.scene).toBe(Scene.TitleOptions);
+    machine.render(0, 16);
+    expect(fieldTextsOf(render)).toEqual([
+      'OPTIONS',
+      'VISUAL EFFECTS',
+      'AUTOFIRE',
+      'OFF',
+      'LANGUAGE',
+      'ENGLISH',
+      'FULLSCREEN',
+      'OFF',
+      'BACK',
+    ]);
+    machine.step(DT, pressed(Button.Back));
+    expect(machine.scene).toBe(Scene.Title);
+    downBy(machine, 1);
+    machine.step(DT, pressed(Button.Confirm));
+    idle(machine);
+    machine.step(DT, rowTap(4, 5)); // Back
+    expect(machine.scene).toBe(Scene.Title);
+  });
+
+  it('flips autofire on Confirm and on a new right direction, and tells the host each time', () => {
+    const { machine, host } = hosted();
+    downBy(machine, 1);
+    machine.step(DT, pressed(Button.Confirm));
+    downBy(machine, 1); // Autofire
+    machine.step(DT, pressed(Button.Confirm));
+    machine.step(DT, right());
+    expect(host.saved.map((options) => options.autofire)).toEqual([true, false]);
+  });
+
+  it('switches the language at once, the value written in its own language', () => {
+    const { machine, render, host } = hosted();
+    downBy(machine, 1);
+    machine.step(DT, pressed(Button.Confirm));
+    downBy(machine, 2); // Language
+    machine.step(DT, pressed(Button.Confirm));
+    machine.render(0, 16);
+    expect(fieldTextsOf(render)).toContain('LANGUE');
+    expect(fieldTextsOf(render)).toContain('FRANCAIS');
+    expect(host.saved.at(-1)?.language).toBe('fr');
+    machine.step(DT, pressed(Button.Back));
+    machine.render(0, 16);
+    expect(fieldTextsOf(render)).toEqual(['JOUER', 'OPTIONS']);
+  });
+
+  it('turns every effect off and on from Visual effects, one row flipping one switch', () => {
+    const { machine, host } = hosted();
+    downBy(machine, 1);
+    machine.step(DT, pressed(Button.Confirm));
+    machine.step(DT, pressed(Button.Confirm)); // Visual effects
+    expect(machine.scene).toBe(Scene.TitleEffects);
+    downBy(machine, 1); // All off
+    machine.step(DT, pressed(Button.Confirm));
+    expect(host.saved.at(-1)?.effects).toEqual({
+      blink: false,
+      hitFlash: false,
+      explosions: false,
+      shake: false,
+      bombFlash: false,
+      slowMotion: false,
+    });
+    downBy(machine, 2); // Hit flash
+    machine.step(DT, right());
+    expect(host.saved.at(-1)?.effects.hitFlash).toBe(true);
+    machine.step(DT, pressed(Button.Back));
+    expect(machine.scene).toBe(Scene.TitleOptions);
+  });
+
+  it('reaches the options from the pause with the run frozen, and Back returns to the pause', () => {
+    const { machine } = hosted();
+    machine.step(DT, pressed(Button.Confirm)); // Play
+    machine.step(DT, pressed(Button.Pause));
+    downBy(machine, 1);
+    machine.step(DT, pressed(Button.Confirm));
+    expect(machine.scene).toBe(Scene.PauseOptions);
+    machine.step(DT, pressed(Button.Confirm));
+    expect(machine.scene).toBe(Scene.PauseEffects);
+    machine.step(DT, pressed(Button.Back));
+    machine.step(DT, pressed(Button.Back));
+    expect(machine.scene).toBe(Scene.Paused);
+    expect(machine.timeScale()).toBe(1);
+  });
+
+  it('applies an effect switch to the running presenter at once: no shake after All off', () => {
+    const { machine, render } = hosted();
+    machine.step(DT, pressed(Button.Confirm)); // Play
+    machine.step(DT, pressed(Button.Pause));
+    downBy(machine, 1);
+    machine.step(DT, pressed(Button.Confirm)); // Options
+    machine.step(DT, pressed(Button.Confirm)); // Visual effects
+    downBy(machine, 1);
+    machine.step(DT, pressed(Button.Confirm)); // All off
+    machine.step(DT, pressed(Button.Back));
+    machine.step(DT, pressed(Button.Back));
+    machine.step(DT, pressed(Button.Confirm)); // Resume
+    idle(machine, 200); // the count-in, then past the ship's fly-in: the bomb is usable
+    expect(machine.scene).toBe(Scene.Playing);
+    machine.step(DT, pressed(Button.Bomb));
+    machine.render(1, 16);
+    expect(render.camera).toEqual({ x: 0, y: 0 });
+  });
+
+  it('releases the movement on Play, on Resume and on Back from the pause', () => {
+    const { machine, host } = hosted();
+    machine.step(DT, pressed(Button.Confirm)); // Play
+    expect(host.released).toBe(1);
+    machine.step(DT, pressed(Button.Pause));
+    machine.step(DT, pressed(Button.Confirm)); // Resume
+    expect(host.released).toBe(2);
+    idle(machine, 60);
+    machine.step(DT, pressed(Button.Pause));
+    machine.step(DT, pressed(Button.Back));
+    expect(host.released).toBe(3);
+  });
+
+  it('ignores the whole title menu during the lock, highlight moves included', () => {
+    const { machine } = gameOverFixture();
+    for (let i = 0; i < 200 && machine.scene !== Scene.Title; i += 1) {
+      machine.step(DT, createIntentFrame());
+    }
+    expect(machine.scene).toBe(Scene.Title);
+    machine.step(DT, down());
+    machine.step(DT, createIntentFrame());
+    idle(machine, 60);
+    machine.step(DT, pressed(Button.Confirm));
+    expect(machine.scene).toBe(Scene.Playing); // Play still highlighted: the down was ignored
   });
 });

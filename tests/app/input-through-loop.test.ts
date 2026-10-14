@@ -35,6 +35,11 @@ class KeyOnlyEnvironment implements InputEnvironment {
   gamepads(): GamepadList {
     return [];
   }
+  readonly fullscreen = {
+    active: (): boolean => false,
+    request: (): void => undefined,
+    exit: (): void => undefined,
+  };
   press(code: string): void {
     this.keyDown?.({
       code,

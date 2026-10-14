@@ -82,8 +82,18 @@ export interface InputPort {
   captureNext(): BindingCapture;
   /** Label of a physical key in the active keyboard layout. */
   label(code: string): string;
-  /** Applied at the next click, tap or key press — browsers require a gesture. */
+  /**
+   * Applied once, at the next click, tap or key press — browsers require a gesture; leaving
+   * fullscreen by the browser's own key is never undone by the game.
+   */
   setFullscreenWanted(wanted: boolean): void;
+  /** Touch and mouse fire all the time while they own the movement (ADR-0020 decision 4). */
+  setAutofire(on: boolean): void;
+  /**
+   * Drops the movement owner if it is touch or the mouse, as the game leaves a menu for play (GDD
+   * v0.14 §9.1); a keyboard or gamepad owner, held buttons and the pause are untouched.
+   */
+  releaseMovement(): void;
 }
 
 /** A neutral frame: no movement, no button, no tap. Created once and reused (ADR-0009). */

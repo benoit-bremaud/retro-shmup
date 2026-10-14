@@ -14,6 +14,7 @@ import { Run } from '../domain/game/run';
 import { Starfield } from '../domain/presentation/starfield';
 import { SaveStore } from '../domain/save/save-store';
 import { SceneMachine } from '../domain/scenes/scene-machine';
+import type { SceneHost } from '../domain/scenes/scene-machine';
 import { FrameLoop } from './frame-loop';
 import type { FrameTarget } from './frame-loop';
 
@@ -57,6 +58,16 @@ const environment: InputEnvironment = {
     globalThis.addEventListener('pointercancel', listener);
   },
   gamepads: () => navigator.getGamepads(),
+  fullscreen: {
+    active: () => document.fullscreenElement !== null,
+    // A refusal (no permission, an iframe) leaves the page windowed: nothing to report.
+    request: () => {
+      document.documentElement.requestFullscreen().catch(() => undefined);
+    },
+    exit: () => {
+      document.exitFullscreen().catch(() => undefined);
+    },
+  },
 };
 const input = new DeviceInput(environment);
 input.setBindings(DEFAULT_BINDINGS);
@@ -112,7 +123,26 @@ watchPixelRatio();
 // GDD §9.3: reduced motion presets the shake, the flashes and the slow motion off on a first
 // launch; afterwards the saved options win (ADR-0006, read once here, outside the loop).
 const calm = globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const options = new SaveStore(new LocalStorageStore(() => globalThis.localStorage), calm).load();
+const save = new SaveStore(new LocalStorageStore(() => globalThis.localStorage), calm);
+const options = save.load();
+input.setAutofire(options.autofire);
+// A saved fullscreen wish applies at the first click, tap or key press (ADR-0009).
+if (options.fullscreen) input.setFullscreenWanted(true);
+
+let fullscreenWanted = options.fullscreen;
+/** The scene machine's outside world (meta/04-class-menus): save, then forward to the input. */
+const host: SceneHost = {
+  optionsChanged: (changed) => {
+    save.saveOptions(changed); // false: the session goes on unsaved (ADR-0006 decision 5)
+    input.setAutofire(changed.autofire);
+    // Only a change of this option asks again: flipping another never re-enters fullscreen.
+    if (changed.fullscreen !== fullscreenWanted) input.setFullscreenWanted(changed.fullscreen);
+    fullscreenWanted = changed.fullscreen;
+  },
+  releaseMovement: () => {
+    input.releaseMovement();
+  },
+};
 
 // Presentation randomness is unseeded on purpose: it never touches the outcome (ADR-0010).
 // Each run draws its seed here, the only module allowed Math.random (ADR-0014, ADR-0019): the
@@ -120,8 +150,9 @@ const options = new SaveStore(new LocalStorageStore(() => globalThis.localStorag
 const scenes: FrameTarget = new SceneMachine(
   renderer,
   new Starfield(Math.random),
-  options.effects,
+  options,
   () => new Run({ seed: Math.floor(Math.random() * 2 ** 32) }),
+  host,
 );
 const loop = new FrameLoop(new PerformanceClock(), input, scenes, (callback) => {
   requestAnimationFrame(callback);
