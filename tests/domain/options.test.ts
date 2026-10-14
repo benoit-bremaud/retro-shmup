@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_BINDINGS } from '../../src/domain/input/default-bindings';
 import { LiveOptions } from '../../src/domain/options';
 import type { Options } from '../../src/domain/options';
 
@@ -14,6 +15,7 @@ const SAVED: Options = {
   autofire: false,
   language: 'en',
   fullscreen: false,
+  bindings: DEFAULT_BINDINGS,
 };
 
 describe('LiveOptions (GDD v0.14 §9.3, meta/04-class-menus)', () => {

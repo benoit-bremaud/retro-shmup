@@ -8,6 +8,19 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-14
 
+### G1b-1: bindings in the domain and save version 2 (branch `feat/g1b-bindings`) — Refs #46
+
+- First of the three G1b code PRs (owner choice A, 44/50). No visible change: the saved bindings
+  now drive the input at start.
+- `domain/input/capturable.ts`: the closed capturable set of GDD v0.15 §4.2 (letters, digits,
+  arrows, space, Shift, Ctrl, Alt, Backspace, numpad; buttons 0–15); `domain/input/
+  bindings-editor.ts`: `bind` (exchange; an emptied primary takes its secondary or the input is
+  refused; a key for the gamepad or a button for the keyboard refused) and `restore` (one device).
+- `Options.bindings`; `SaveStore` version 2: version 1 migrates with the default bindings; each
+  device parsed by allowlist (capturable inputs, primary present, no duplicate, known intents
+  only), a failing device getting its defaults back, the other kept. `main.ts` pushes the saved
+  bindings at start and a new bindings object on each change.
+
 ### G1b design: the controls screen, GDD v0.15 (branch `docs/g1b-remap-design`) — Refs #46
 
 - Owner choices (scored): one row per intent with two slot columns and one cell highlighted

@@ -1,11 +1,17 @@
 import type { Language } from '../i18n/messages';
+import { REMAPPABLE_INTENTS } from '../input/bindings-editor';
+import { isCapturableButton, isCapturableKey } from '../input/capturable';
+import { DEFAULT_BINDINGS } from '../input/default-bindings';
 import type { EffectSettings, Options } from '../options';
+import type { BindingSlots, Bindings, RemappableIntent } from '../ports/input-port';
 import type { StoragePort } from '../ports/storage-port';
 
 /** The one key of the save document (ADR-0006 decision 2, GDD §9.8). */
 export const SAVE_KEY = 'retro-shmup.v1';
 
-const VERSION = 1;
+/** Version 2 adds the bindings (GDD v0.15 §4.2); version 1 migrates by adding the defaults. */
+const VERSION = 2;
+const FIRST_VERSION = 1;
 
 const LANGUAGES: readonly Language[] = ['en', 'fr'];
 
@@ -27,6 +33,7 @@ export function defaultOptions(reducedMotion: boolean): Options {
     autofire: false,
     language: 'en',
     fullscreen: false,
+    bindings: DEFAULT_BINDINGS,
   };
 }
 
@@ -51,8 +58,73 @@ function parseEffects(value: unknown): EffectSettings | undefined {
   return { blink, hitFlash, explosions, shake, bombFlash, slowMotion };
 }
 
-/** Allowlist parsing (ADR-0006, INPUT-1): a new object of the known fields, or `undefined`. */
-function parseOptions(value: unknown): Options | undefined {
+function isKey(value: unknown): value is string {
+  return typeof value === 'string' && isCapturableKey(value);
+}
+
+function isButton(value: unknown): value is number {
+  return typeof value === 'number' && isCapturableButton(value);
+}
+
+/**
+ * One device's slots, rebuilt from the known intents only (GDD v0.15 §4.2): every input from the
+ * capturable set, a primary always present, no input bound twice; `undefined` otherwise.
+ */
+function parseDevice<T>(
+  value: unknown,
+  accepts: (input: unknown) => input is T,
+): Record<RemappableIntent, BindingSlots<T>> | undefined {
+  if (!isRecord(value)) return undefined;
+  const parsed: Partial<Record<RemappableIntent, BindingSlots<T>>> = {};
+  const seen = new Set<T>();
+  for (let i = 0; i < REMAPPABLE_INTENTS.length; i += 1) {
+    const intent = REMAPPABLE_INTENTS[i];
+    if (intent === undefined) continue;
+    const slots = value[intent];
+    if (!isRecord(slots)) return undefined;
+    const { primary, secondary } = slots;
+    if (!accepts(primary) || seen.has(primary)) return undefined;
+    seen.add(primary);
+    if (secondary !== null && (!accepts(secondary) || seen.has(secondary))) return undefined;
+    if (secondary !== null) seen.add(secondary);
+    parsed[intent] = { primary, secondary };
+  }
+  return complete(parsed);
+}
+
+/** The record once every intent is in it (the loop above fills them all or returns early). */
+function complete<T>(
+  parsed: Partial<Record<RemappableIntent, BindingSlots<T>>>,
+): Record<RemappableIntent, BindingSlots<T>> | undefined {
+  const { moveUp, moveDown, moveLeft, moveRight, fire, bomb, pause } = parsed;
+  if (
+    moveUp === undefined ||
+    moveDown === undefined ||
+    moveLeft === undefined ||
+    moveRight === undefined ||
+    fire === undefined ||
+    bomb === undefined ||
+    pause === undefined
+  ) {
+    return undefined;
+  }
+  return { moveUp, moveDown, moveLeft, moveRight, fire, bomb, pause };
+}
+
+/** Both devices' bindings; a device that fails any check gets its defaults back. */
+function parseBindings(value: unknown): Bindings {
+  const devices = isRecord(value) ? value : {};
+  return {
+    keyboard: parseDevice(devices.keyboard, isKey) ?? DEFAULT_BINDINGS.keyboard,
+    gamepad: parseDevice(devices.gamepad, isButton) ?? DEFAULT_BINDINGS.gamepad,
+  };
+}
+
+/**
+ * Allowlist parsing (ADR-0006, INPUT-1): a new object of the known fields, or `undefined`. A
+ * version 1 document has no bindings: it migrates with the defaults (ADR-0006 decision 4).
+ */
+function parseOptions(value: unknown, version: number): Options | undefined {
   if (!isRecord(value)) return undefined;
   const effects = parseEffects(value.effects);
   const { autofire, fullscreen, language } = value;
@@ -60,7 +132,8 @@ function parseOptions(value: unknown): Options | undefined {
   if (typeof autofire !== 'boolean' || typeof fullscreen !== 'boolean') return undefined;
   const known = LANGUAGES.find((candidate) => candidate === language);
   if (known === undefined) return undefined;
-  return { effects, autofire, language: known, fullscreen };
+  const bindings = version === FIRST_VERSION ? DEFAULT_BINDINGS : parseBindings(value.bindings);
+  return { effects, autofire, language: known, fullscreen, bindings };
 }
 
 function parseJson(raw: string): unknown {
@@ -105,9 +178,9 @@ export class SaveStore {
       this.readOnly = true;
       return fallback;
     }
-    if (version !== VERSION) return fallback;
+    if (version !== VERSION && version !== FIRST_VERSION) return fallback;
     if (Array.isArray(document.highScores)) this.highScores = document.highScores;
-    return parseOptions(document.options) ?? fallback;
+    return parseOptions(document.options, version) ?? fallback;
   }
 
   /**

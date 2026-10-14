@@ -1,4 +1,5 @@
 import type { Language, MessageKey } from './i18n/messages';
+import type { Bindings } from './ports/input-port';
 
 /**
  * Game-feel switches the presenter honours (GDD §9.3, §9.4), one per effect drawn so far. Neutral
@@ -16,13 +17,15 @@ export interface EffectSettings {
   slowMotion: boolean;
 }
 
-/** The player's options (GDD v0.13 §9.3); the remap (G1b) and the volumes (G3) come later. */
+/** The player's options (GDD v0.13 §9.3, v0.15 §4.2); the volumes (G3) come later. */
 export interface Options {
   readonly effects: Readonly<EffectSettings>;
   /** Touch and mouse fire all the time (ADR-0020 decision 4). */
   readonly autofire: boolean;
   readonly language: Language;
   readonly fullscreen: boolean;
+  /** Both devices' slots (ADR-0012), replaced whole by each rebinding. */
+  readonly bindings: Bindings;
 }
 
 /** The effect switches, in screen order; each row's message key is its `EffectSettings` key. */
@@ -55,6 +58,8 @@ export class LiveOptions implements Options {
   autofire: boolean;
   language: Language;
   fullscreen: boolean;
+  /** Immutable: each rebinding replaces it (GDD v0.15 §4.2). */
+  bindings: Bindings;
 
   /** A copy of the saved options. */
   constructor(saved: Readonly<Options>) {
@@ -62,6 +67,7 @@ export class LiveOptions implements Options {
     this.autofire = saved.autofire;
     this.language = saved.language;
     this.fullscreen = saved.fullscreen;
+    this.bindings = saved.bindings;
   }
 
   /** The value a row shows on its right, or `undefined` for a row without one. */
