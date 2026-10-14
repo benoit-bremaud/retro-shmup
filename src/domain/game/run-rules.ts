@@ -87,8 +87,8 @@ export class RunRules implements HitRules, EnemySpawner {
   }
 
   /** `EnemySpawner`, step 1: the world spawns; a refused member may complete its formation. */
-  startFormation(total: number): Formation | undefined {
-    return this.world.startFormation(total);
+  startFormation(total: number, paysP: boolean): Formation | undefined {
+    return this.world.startFormation(total, paysP);
   }
 
   /**
@@ -225,13 +225,15 @@ export class RunRules implements HitRules, EnemySpawner {
 
   /**
    * The formation completion check (class diagram), run whenever a member is destroyed or
-   * refused: the first time every member that appeared is destroyed, the P of the dominant colour
-   * spawns at the last one and `FORMATION_CLEARED` is published. Returns whether the P exists.
+   * refused: the first time every member that appeared is destroyed, `FORMATION_CLEARED` is
+   * published and, when the formation pays (GDD v0.12), the P of the dominant colour spawns at the
+   * last one. Returns whether the P exists.
    */
   private rewardIfCleared(formation: Formation | undefined): boolean {
     if (formation?.isCleared() !== true) return false;
     formation.rewarded = true;
     this.publishAt(this.formationClearedEvent, formation.lastX, formation.lastY, 0, 0);
+    if (!formation.paysP) return false;
     return this.world.spawnPickup(this.script.dominantColour, formation.lastX, formation.lastY);
   }
 

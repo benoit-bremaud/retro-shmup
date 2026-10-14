@@ -65,7 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   public surface, manual signed releases from `v0.1.0` on.
 - Level 1 is rebalanced a second time (GDD v0.12, #45): the Cruiser takes 1 450 level-1 shots
   (was 500; phase 2 from 9 570 tenths) and the formations at 8 s, 50 s and 52 s no longer drop a
-  P, so full power comes just before the boss. Design only for now; the tuning follows.
+  P, so full power comes just before the boss.
 - Level 1 is harder after the friends' playtest (GDD v0.11, #45): Gunners drop a P at 10 % (was
   30 %) and fire every 1 s (was 1.5 s), Heavies drop a Bomb or a Shield at 30 % (was 60 %), the
   0 s and 50 s Popcorn formations have 8 members (was 6), the 92 s formation becomes two Divers,

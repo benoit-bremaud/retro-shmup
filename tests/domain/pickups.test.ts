@@ -217,10 +217,10 @@ describe('Collisions — pass 4, pickups against the ship (GDD v0.8 §4.6)', () 
 class FormationRecorder implements EnemySpawner {
   readonly started: number[] = [];
   readonly members: (Formation | undefined)[] = [];
-  startFormation(size: number): Formation {
+  startFormation(size: number, paysP: boolean): Formation {
     this.started.push(size);
     const formation = new Formation();
-    formation.start(size);
+    formation.start(size, paysP);
     return formation;
   }
   spawnEnemy(_event: Readonly<ScriptEvent>, formation: Formation | undefined): boolean {
@@ -254,7 +254,7 @@ describe('LevelDirector — one formation per pass (GDD v0.8 §4.6, ADR-0019)', 
 describe('World — formations settle (class diagram, ADR-0019)', () => {
   it('settles a formation whose member leaves the field alive', () => {
     const world = new World();
-    const formation = world.startFormation(1);
+    const formation = world.startFormation(1, true);
     expect(world.formations.count).toBe(1);
     world.spawnEnemy({ at: 0, archetype: POPCORN, count: 1, spawn: { x: 120, y: 100 } }, formation);
     const enemy = world.enemies.at(0);
@@ -407,6 +407,27 @@ describe('Run — drops, formation P and collection (GDD v0.8 §4.6, §5.2; ADR-
     expect(log).toEqual([`${String(CLEARED)}:0:0@70,90`, `${String(SPAWNED)}:0:0@70,90`]);
   });
 
+  it('skips only the P when the formation does not pay: it still publishes FORMATION_CLEARED', () => {
+    const run = new Run({ createRandom: () => scripted([]) });
+    const log = logOf(run, [SPAWNED, CLEARED]);
+    const formation = new Formation();
+    formation.start(2, false);
+    run.rules.destroyEnemy(enemyAt(POPCORN, 50, 40, formation));
+    run.rules.destroyEnemy(enemyAt(POPCORN, 70, 90, formation));
+    expect(log).toEqual([`${String(CLEARED)}:0:0@70,90`]);
+    expect(run.snapshot().pickups.count).toBe(0);
+    expect(formation.rewarded).toBe(true);
+  });
+
+  it('still pays when paysP is passed as true', () => {
+    const run = new Run({ createRandom: () => scripted([]) });
+    const log = logOf(run, [SPAWNED, CLEARED]);
+    const formation = new Formation();
+    formation.start(1, true);
+    run.rules.destroyEnemy(enemyAt(POPCORN, 70, 90, formation));
+    expect(log).toEqual([`${String(CLEARED)}:0:0@70,90`, `${String(SPAWNED)}:0:0@70,90`]);
+  });
+
   it('drops no P for a formation one of whose members escaped', () => {
     const run = new Run({ createRandom: () => scripted([]) });
     const formation = new Formation();
@@ -472,6 +493,16 @@ describe('Formations — refused members never count against the player (GDD v0.
     expect(log).toEqual([`${String(CLEARED)}:0:0@50,60`, `${String(SPAWNED)}:0:0@50,60`]);
   });
 
+  it('completes a non-paying formation on a refused last member: cleared, no P', () => {
+    const run = fullRun();
+    const log = logOf(run, [CLEARED, SPAWNED]);
+    const formation = new Formation();
+    formation.start(2, false);
+    run.rules.destroyEnemy(enemyAt(POPCORN, 50, 60, formation));
+    run.rules.spawnEnemy(POPCORN_ROW, formation);
+    expect(log).toEqual([`${String(CLEARED)}:0:0@50,60`]);
+  });
+
   it('pays nothing for a formation whose every member was refused', () => {
     const run = fullRun();
     const formation = new Formation();
@@ -504,7 +535,7 @@ describe('Formations — refused members never count against the player (GDD v0.
   it('never needs more than 16 formations over level 1, nobody shooting', () => {
     const world = new World();
     const spawner: EnemySpawner = {
-      startFormation: (total) => world.startFormation(total),
+      startFormation: (total, paysP) => world.startFormation(total, paysP),
       spawnEnemy: (event, formation) => world.spawnEnemy(event, formation),
       startBoss: () => undefined,
     };

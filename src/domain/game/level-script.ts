@@ -14,6 +14,11 @@ export interface ScriptEvent extends SpawnSpec {
   readonly archetype: EnemyArchetype;
   readonly count: number;
   readonly interval?: number;
+  /**
+   * Only on a formation row: whether the full formation pays its P (GDD v0.12 §4.6, §7.2). Absent
+   * means true. A false row still spawns, scores and counts in the tally.
+   */
+  readonly paysP?: boolean;
 }
 
 /**
@@ -39,8 +44,9 @@ export interface LevelScript {
 const POPCORN_INTERVAL = 1 / 3;
 
 /**
- * Level 1 (GDD v0.10 §7.2.1, §7.2.2): the opening, then the ramp to the 102 s Heavy pair, the
- * last spawn at 112.3 s and the field draining until the WARNING at 120 s, then the Cruiser.
+ * Level 1 (GDD v0.12 §7.2.1, §7.2.2; the formations at 8, 50 and 52 s pay no P): the opening,
+ * then the ramp to the 102 s Heavy pair, the last spawn at 112.3 s and the field draining until
+ * the WARNING at 120 s, then the Cruiser.
  */
 export const LEVEL_1: LevelScript = {
   warningAt: 120,
@@ -56,6 +62,7 @@ export const LEVEL_1: LevelScript = {
       interval: POPCORN_INTERVAL,
       spawn: { x: 160, y: -8 },
       mirror: true,
+      paysP: false,
     },
     { at: 8, archetype: DIVER, count: 1, spawn: { x: 80, y: -8 } },
     { at: 8, archetype: DIVER, count: 1, spawn: { x: 160, y: -8 } },
@@ -74,7 +81,14 @@ export const LEVEL_1: LevelScript = {
       spawn: { x: 120, y: -24 },
       hover: { x: 120, y: 72 },
     },
-    { at: 50, archetype: POPCORN, count: 8, interval: POPCORN_INTERVAL, spawn: { x: 60, y: -8 } },
+    {
+      at: 50,
+      archetype: POPCORN,
+      count: 8,
+      interval: POPCORN_INTERVAL,
+      spawn: { x: 60, y: -8 },
+      paysP: false,
+    },
     {
       at: 52,
       archetype: POPCORN,
@@ -82,6 +96,7 @@ export const LEVEL_1: LevelScript = {
       interval: POPCORN_INTERVAL,
       spawn: { x: 180, y: -8 },
       mirror: true,
+      paysP: false,
     },
     { at: 58, archetype: DIVER, count: 1, spawn: { x: 60, y: -8 } },
     { at: 58, archetype: DIVER, count: 1, spawn: { x: 180, y: -8 } },

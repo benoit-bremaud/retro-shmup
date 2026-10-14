@@ -7,7 +7,7 @@ import { toSteps } from './tuning';
 /** Where the director puts the enemies it spawns (implemented by `World`). */
 export interface EnemySpawner {
   /** A new formation of `total` members, or `undefined` when the formation pool is full. */
-  startFormation(total: number): Formation | undefined;
+  startFormation(total: number, paysP: boolean): Formation | undefined;
   /** False when a full enemy pool refused the spawn. */
   spawnEnemy(event: Readonly<ScriptEvent>, formation: Formation | undefined): boolean;
   /** At `warningAt`, once: the boss starts in `WARNING` (02-sequence-boss-fight). */
@@ -58,6 +58,12 @@ function checkEvent(event: Readonly<ScriptEvent>, lastSpawnLimit: number): void 
         `Level script: ${label} forms a formation of 5 to 8, not ${String(event.count)}`,
       );
     }
+  }
+  if (event.paysP !== undefined && typeof event.paysP !== 'boolean') {
+    throw new RangeError(`Level script: ${label} needs a true or false paysP`);
+  }
+  if (event.paysP !== undefined && !formsFormation(event)) {
+    throw new RangeError(`Level script: ${label} is not a formation, it has no P to pay`);
   }
   checkCargo(event, label);
   const last = toSteps(event.at) + (event.count - 1) * toSteps(event.interval ?? 0);
@@ -147,7 +153,11 @@ export class LevelDirector {
     let next = this.spawns[this.cursor];
     while (next !== undefined && next.step <= this.scriptStep) {
       if (formsFormation(next.event)) {
-        if (next.rank === 0) this.formations[next.row] = spawner.startFormation(next.event.count);
+        if (next.rank === 0)
+          this.formations[next.row] = spawner.startFormation(
+            next.event.count,
+            next.event.paysP !== false,
+          );
         const formation = this.formations[next.row];
         if (formation !== undefined) spawner.spawnEnemy(next.event, formation);
       } else {
