@@ -240,6 +240,7 @@ describe('SaveStore — version 2 and the bindings (GDD v0.15 §4.2, ADR-0006 de
     ['a key outside the capturable set', keyboardWith({ primary: 'F5', secondary: null })],
     ['an empty primary', keyboardWith({ primary: null, secondary: 'KeyC' })],
     ['a key bound twice', keyboardWith({ primary: 'Space', secondary: null })],
+    ['a key in both slots of an intent', keyboardWith({ primary: 'KeyC', secondary: 'KeyC' })],
     ['a number for a key', keyboardWith({ primary: 3, secondary: null })],
     [
       'a missing intent',

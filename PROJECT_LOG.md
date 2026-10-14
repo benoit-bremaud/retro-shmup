@@ -20,6 +20,10 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   device parsed by allowlist (capturable inputs, primary present, no duplicate, known intents
   only), a failing device getting its defaults back, the other kept. `main.ts` pushes the saved
   bindings at start and a new bindings object on each change.
+- Reviews: no Must. Fixed — the intent list moved into the input port with the type derived from
+  it (it was written three times and not tied to the type), the bindings parsing moved out of the
+  save store into `domain/input/parse-bindings.ts` (with a shared `domain/guards.ts`), and `bind`
+  refuses an input outside the capturable set itself.
 
 ### G1b design: the controls screen, GDD v0.15 (branch `docs/g1b-remap-design`) — Refs #46
 

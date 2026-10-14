@@ -50,9 +50,20 @@ export interface IntentFrame {
   fullscreen: boolean;
 }
 
-/** Intents the player can remap (GDD §4.2); `confirm` and `back` are fixed. */
-export type RemappableIntent =
-  'moveUp' | 'moveDown' | 'moveLeft' | 'moveRight' | 'fire' | 'bomb' | 'pause';
+/**
+ * Intents the player can remap (GDD §4.2), in the controls screen's order (v0.15); `confirm` and
+ * `back` are fixed. The type derives from the list, so an intent is never in one and not the other.
+ */
+export const REMAPPABLE_INTENTS = [
+  'moveUp',
+  'moveDown',
+  'moveLeft',
+  'moveRight',
+  'fire',
+  'bomb',
+  'pause',
+] as const;
+export type RemappableIntent = (typeof REMAPPABLE_INTENTS)[number];
 
 /** A primary input that always exists and an optional secondary one (ADR-0012). */
 export interface BindingSlots<T> {

@@ -1,4 +1,6 @@
+import { REMAPPABLE_INTENTS } from '../ports/input-port';
 import type { BindingSlots, Bindings, RemappableIntent } from '../ports/input-port';
+import { isCapturableButton, isCapturableKey } from './capturable';
 import { DEFAULT_BINDINGS } from './default-bindings';
 
 /** A device with remappable bindings: touch and the mouse have none (GDD §4.2). */
@@ -8,24 +10,13 @@ export type Slot = keyof BindingSlots<unknown>;
 
 type DeviceBindings<T> = Readonly<Record<RemappableIntent, BindingSlots<T>>>;
 
-/** The remappable intents, in the controls screen's order (GDD v0.15 §4.2). */
-export const REMAPPABLE_INTENTS: readonly RemappableIntent[] = [
-  'moveUp',
-  'moveDown',
-  'moveLeft',
-  'moveRight',
-  'fire',
-  'bomb',
-  'pause',
-];
-
 /**
  * Puts `input` in one slot (GDD v0.15 §4.2). An input already bound elsewhere on the device moves
  * here and that slot takes the slot's previous input: the two exchange. When the exchange would
  * empty an intent's primary slot, its secondary input moves up; when it has none, the input is
  * refused and `undefined` comes back, so no intent is ever left unbound. Pure: new objects, the
- * other device untouched. A key code belongs to the keyboard, a button index to the gamepad; a
- * mismatch is refused.
+ * other device untouched. A key code belongs to the keyboard, a button index to the gamepad, both
+ * from the capturable set (GDD v0.15 §4.2); anything else is refused.
  */
 export function bind(
   bindings: Bindings,
@@ -35,12 +26,12 @@ export function bind(
   input: string | number,
 ): Bindings | undefined {
   if (device === 'keyboard') {
-    if (typeof input !== 'string') return undefined;
+    if (typeof input !== 'string' || !isCapturableKey(input)) return undefined;
     const keyboard = rebind(bindings.keyboard, intent, slot, input);
     if (keyboard === undefined) return undefined;
     return keyboard === bindings.keyboard ? bindings : { ...bindings, keyboard };
   }
-  if (typeof input !== 'number') return undefined;
+  if (typeof input !== 'number' || !isCapturableButton(input)) return undefined;
   const gamepad = rebind(bindings.gamepad, intent, slot, input);
   if (gamepad === undefined) return undefined;
   return gamepad === bindings.gamepad ? bindings : { ...bindings, gamepad };

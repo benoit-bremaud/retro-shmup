@@ -94,6 +94,14 @@ describe('bind — one slot, with the exchange (GDD v0.15 §4.2)', () => {
     expect(fire?.keyboard.fire).toEqual({ primary: 'KeyZ', secondary: 'Space' });
   });
 
+  it.each([
+    ['keyboard', 'Escape'],
+    ['keyboard', 'Tab'],
+    ['gamepad', 16],
+  ] as const)('refuses on the %s an input outside the capturable set: %s', (device, input) => {
+    expect(bind(DEFAULT_BINDINGS, device, 'fire', 'secondary', input)).toBeUndefined();
+  });
+
   it('refuses a button for the keyboard and a key for the gamepad', () => {
     expect(bind(DEFAULT_BINDINGS, 'keyboard', 'fire', 'secondary', 3)).toBeUndefined();
     expect(bind(DEFAULT_BINDINGS, 'gamepad', 'fire', 'secondary', 'KeyC')).toBeUndefined();
