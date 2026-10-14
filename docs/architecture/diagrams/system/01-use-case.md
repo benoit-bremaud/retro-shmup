@@ -192,10 +192,13 @@ step depends on them.
   2. Player selects one slot of one intent; the game waits for the next key or button.
   3. Player presses a key or button; the game binds the physical key to that slot and saves.
 - **Extensions**:
-  - 1a. The active device is touch or mouse: nothing is remappable; the section is hidden.
+  - 1a. The last device used is touch: nothing is remappable; the row is hidden. A mouse player
+    edits the keyboard (GDD v0.15 §4.2).
   - 2a. Player chooses "restore defaults" and confirms: every binding of the device is reset.
   - 3a. The key is already bound to another slot: the two slots swap their keys.
   - 3b. Player presses `Esc` (keyboard) or waits 5 s (gamepad): the slot is unchanged.
+  - 3c. Player presses a key outside the capturable set (`Enter`, `Tab`, `F1`…), or one whose
+    exchange would leave an intent without a key: refused, the wait goes on (GDD v0.15).
 
 ### UC7 — Read the credits
 

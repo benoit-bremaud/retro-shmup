@@ -8,6 +8,27 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-14
 
+### G1b design: the controls screen, GDD v0.15 (branch `docs/g1b-remap-design`) — Refs #46
+
+- Owner choices (scored): one row per intent with two slot columns and one cell highlighted
+  (46/50, against one row per slot on two pages 31, a sub-screen per intent 34); key labels
+  learned from the session's key events, then the browser layout map (Chromium only, checked),
+  then US, with fixed names and arrow glyphs (46/50, against layout map then US 38 — wrong on
+  Firefox and Safari with AZERTY — US always 30, a full font now 30).
+- Defaults taken and stated: the device edited is the last of keyboard and gamepad, the row
+  hidden on touch only (a mouse player edits the keyboard; refines UC6 1a); restore defaults asks
+  first; `Enter` and `NumpadEnter` refused during a capture; save version 2 with a v1 migration
+  and allowlist parsing of the bindings.
+- Doc review: 3 Must fixed (`Escape` both cancelling and refused; an exchange into an empty slot
+  could leave an intent unbound — now the secondary moves up or the input is refused; labels the
+  font cannot draw or that overflow — now a closed capturable set with labels of 10 characters at
+  most and blank empty slots), 6 Should (row texts, live device then frozen during a capture, the
+  answering step reads no menu action, the named pause triggers, browser defaults prevented and
+  the refused keys, button 16 refused) and 3 Nice applied.
+- Docs only: GDD v0.15 (§4.2 controls screen, §9.3, decision record), CD-menus (`ControlsGrid`,
+  `BindingsEditor`, `ButtonNames`, `KeyLabels`, `InputPort` capture methods, save v2),
+  STM-scenes (G1b states), new SD-remap sequence, UC6, matrix, architecture README.
+
 ### G1a-3: the options screens and the title menu (branch `feat/g1a-options`) — Refs #46
 
 - Title menu (*Play*, *Options*; a stray tap no longer starts a run); Options and Visual

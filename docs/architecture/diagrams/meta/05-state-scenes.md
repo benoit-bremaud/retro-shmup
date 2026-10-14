@@ -423,7 +423,40 @@ unchanged.
   from a menu towards play (*Play*, *Resume*, `back` and the pause button in the pause) calls
   `SceneHost.releaseMovement`. The title lock ignores the whole menu, highlight moves included.
 - **Not yet**: `High scores`, `Name entry`, `Ending`, `Credits`, the gesture prompt's audio part,
-  the controls and audio sub-screens (G1b, G2, G3, G4).
+  the audio sub-screen (G2, G3, G4); the controls screen is G1b's (below).
+
+### Screens brick additions (G1b, GDD v0.15)
+
+```mermaid
+---
+title: stm — the controls screen (from the title and from the pause)
+---
+stateDiagram-v2
+  state "Options" as Opts
+  state "Controls" as Controls {
+    state "Choosing a cell" as Choosing
+    state "Capturing" as Capturing
+    [*] --> Choosing
+    Choosing --> Capturing : confirm, or a tap on a cell / startCapture
+    Capturing --> Choosing : key or button / bind with swap, save
+    Capturing --> Choosing : Esc, 5 s on gamepad, or a tap / cancel
+  }
+  state "Confirm restore" as ConfirmRestore
+  Opts --> Controls : controls [last device not touch]
+  Controls --> Opts : back in Choosing
+  Controls --> ConfirmRestore : restore defaults
+  ConfirmRestore --> Controls : no or back
+  ConfirmRestore --> Controls : yes / restore the device, save
+```
+
+- `Controls` and `Confirm restore` exist twice, from the title (scrolling) and from the pause
+  (frozen), like `Options`. While `Capturing`, and in the step that receives the answer, `back`
+  and `Pause` are not menu actions: the keyboard's `Escape` cancels through the capture itself,
+  and the gamepad's `B` and `Start` are bindable buttons. Leaving the scene, a tap, or an
+  automatic pause trigger (tab hidden, focus lost, the active gamepad lost) cancels the capture
+  and the screen stays in `Choosing`; on the pause side the run was already paused, on the title
+  side nothing pauses.
+
 
 ### Build order
 

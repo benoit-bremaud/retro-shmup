@@ -70,6 +70,7 @@ Status: complete for 1.0 (2026-10-08); the bomb sequence added with the player-k
 | `gameplay` | [04 class — domain](diagrams/gameplay/04-class-domain.md) | Entity composition, pools, event bus, difficulty profile |
 | `gameplay` | [05 state — player](diagrams/gameplay/05-state-player.md) | Player lifecycle |
 | `gameplay` | [05 state — boss](diagrams/gameplay/05-state-boss.md) | Boss phases and timer |
+| `meta` | [02 sequence — remap capture](diagrams/meta/02-sequence-remap-capture.md) | Rebinding one slot: capture, swap, save (G1b) |
 | `meta` | [04 class — menus](diagrams/meta/04-class-menus.md) | One menu model, the options and their save (G1a) |
 | `meta` | [05 state — scenes](diagrams/meta/05-state-scenes.md) | The screens of GDD §9.1 and their transitions |
 | — | [traceability matrix](traceability-matrix.md) | Is every use case realized, and every class used? |

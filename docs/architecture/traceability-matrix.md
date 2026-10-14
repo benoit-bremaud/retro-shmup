@@ -1,7 +1,7 @@
 # Traceability matrix — UML study (1.0)
 
 > **Scope**: the UML study of [docs/architecture](README.md) against the
-> [Game Design Document](../design/game-design-document.md) v0.14, ADR-0001 to ADR-0010,
+> [Game Design Document](../design/game-design-document.md) v0.15, ADR-0001 to ADR-0010,
 > ADR-0014, ADR-0015, ADR-0018, ADR-0019 to ADR-0024 (ADR-0011 to ADR-0013 are tooling decisions, ADR-0025 a versioning and release process decision, and ADR-0016 and ADR-0017 deployment and catalogue decisions, with no UML realization).
 > **Purpose**: prove coverage — every use case is realized, every class and component is used,
 > nothing is orphaned. Update this file in the same change as any diagram.
@@ -16,7 +16,8 @@ Diagram abbreviations: **UC** [01-use-case](diagrams/system/01-use-case.md) · *
 [05-state-player](diagrams/gameplay/05-state-player.md) · **STM-boss**
 [05-state-boss](diagrams/gameplay/05-state-boss.md) · **STM-scenes**
 [05-state-scenes](diagrams/meta/05-state-scenes.md) · **CD-menus**
-[04-class-menus](diagrams/meta/04-class-menus.md).
+[04-class-menus](diagrams/meta/04-class-menus.md) · **SD-remap**
+[02-sequence-remap-capture](diagrams/meta/02-sequence-remap-capture.md).
 
 ## 1. Use cases → realizations
 
@@ -27,7 +28,7 @@ Diagram abbreviations: **UC** [01-use-case](diagrams/system/01-use-case.md) · *
 | UC3 Record a high score | SceneMachine, SaveDocument, LocalStorageStore | STM-scenes (`Name entry` → `High scores`) | `RunView.snapshot().score` | insertion rule and storage failure (UC3 text, ADR-0006) |
 | UC4 Consult the high scores | SceneMachine, SaveDocument, LocalStorageStore | STM-scenes (`High scores`) | — | unreadable or newer document (UC4 text, ADR-0006) |
 | UC5 Configure the game | SceneMachine, SaveDocument, LocalStorageStore, WebAudioPlayer, DeviceInput | STM-scenes (`Options` and `Visual effects` from title and pause) | CD-menus (`Menu`, `MenuScreen`, `SceneHost`, `Options`, `SaveStore`) | each option (GDD §9.3); fullscreen in the gesture handler (ADR-0009) |
-| UC6 Remap the controls | SceneMachine, DeviceInput, SaveDocument | — | — | slots, swap, capture (UC6 text, GDD §4.2, ADR-0009) |
+| UC6 Remap the controls | SceneMachine, DeviceInput, SaveDocument | SD-remap, STM-scenes (G1b `Controls`) | CD-menus (`ControlsGrid`, `BindingsEditor`, `ButtonNames`, `KeyLabels`) | slots, swap, capture (UC6 text, GDD §4.2, ADR-0009) |
 | UC7 Read the credits | SceneMachine, MessageCatalogue | STM-scenes (`Credits`) | — | mirrors `CREDITS.md` (ADR-0005) |
 
 UC2 to UC7 are realized at the screen level only: they are plain navigation, reads and writes,
@@ -119,6 +120,7 @@ is a calculation covered by unit tests (ADR-0003), not by a diagram.
 | GDD v0.12 level-1 balance, second iteration (#45): §4.6, §5.2 and §5.2.1 formation P, §6 and §6.1 Cruiser HP, §7.2, §7.2.1 and §7.2.2 rows without the P | CD (`ScriptEvent.paysP`, `Formation` reward, `rewardIfCleared`), STM-boss (Cruiser HP and phase-2 threshold); tests: `boss.test.ts` and `boss-run.test.ts` (14 500 tenths, phase 2 at 9 570), `tally-run.test.ts` (a non-paying formation still counts), `pickups.test.ts` (cleared, no P), `level-director.test.ts` (the seven formations and their flags, the load checks), `level-simulation.test.ts` (limits, seeded replay on seed 1, the boss fight with a dodging test ship) |
 | GDD v0.13 menus and options (G1a): §9.1 menu rows and pointer activation, §9.3 options layout | STM-scenes (G1a additions, build order), CD-menus, UC5 text (extensions 2b, 2c); tests with the G1a code PR |
 | GDD v0.14 options screens (G1a-3): §9.1 title menu, values, leaving a menu frees the movement; §9.3 row texts | CD-menus (`SceneHost`, `InputPort.setAutofire` and `releaseMovement`, `MenuScreen.value`), STM-scenes (G1a-3 design), UC5 text (2d); tests with the G1a-3 code PR |
+| GDD v0.15 controls screen (G1b): §4.2 layout, capture, labels, device, restore, save v2 | SD-remap, STM-scenes (G1b), CD-menus, UC6 text (1a, 3c); tests with the G1b code PRs |
 
 ## 5. Known gaps (accepted)
 
