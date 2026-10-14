@@ -46,6 +46,10 @@ classDiagram
     <<interface>>
     +optionsChanged(options: Options) void
     +releaseMovement() void
+    +capture methods of G1b, see the controls notes
+    +countryOfLanguage() string | undefined
+    +today() string
+    +highScoresChanged(entries: readonly HighScoreEntry[]) void
   }
   class InputPort {
     <<interface>>
@@ -112,9 +116,33 @@ classDiagram
     +options: Options
     +highScores: readonly HighScoreEntry[]
   }
+  class HighScoreEntry {
+    <<interface>>
+    +name: string
+    +country?: string
+    +score: number
+    +level: 1 | 2 | 3
+    +date: string, YYYY-MM-DD
+  }
+  class HighScoreTable {
+    +entries: readonly HighScoreEntry[]
+    +qualifies(score: number) boolean
+    +insert(entry: HighScoreEntry) number
+  }
+  class LetterGrid {
+    +cells: readonly GridCell[]
+    +cursor: number
+    +step(frame, now) GridCell | undefined
+  }
+  class NameEntry {
+    +name: string
+    +country: string | undefined
+    +step(frame, now) HighScoreEntry | undefined
+  }
   class SaveStore {
     +load() SaveDocument
     +saveOptions(options: Options) boolean
+    +saveHighScores(entries: readonly HighScoreEntry[]) boolean
   }
   class StoragePort {
     <<interface>>
@@ -141,6 +169,12 @@ classDiagram
   Options *-- EffectSettings
   SaveDocument *-- Options
   SaveStore ..> SaveDocument : load parses, never throws
+  SaveDocument *-- "0..10" HighScoreEntry
+  HighScoreTable o-- "0..10" HighScoreEntry
+  NameEntry *-- LetterGrid
+  NameEntry ..> HighScoreEntry : builds
+  SceneMachine *-- NameEntry
+  SceneMachine *-- HighScoreTable
   SaveStore --> StoragePort
   LocalStorageStore ..|> StoragePort
   SceneHost ..> SaveStore : composition root
@@ -228,3 +262,17 @@ classDiagram
   (ADR-0006 decision 4); the bindings are parsed by allowlist (every key code from the capturable
   set, every index from 0 to 15, primary present, no duplicate), a failing device getting its
   defaults back.
+- **Hall of fame (G2, GDD v0.16 §9.1)**: `LetterGrid` is the two-dimensional menu of the name
+  entry (cells of 30 × 20 px, eight to a row; the directions move a wrapping cursor, `confirm` or
+  a release over the pressed cell picks it, with `Menu`'s guards); its cells are characters or
+  the actions *SPACE*, *DEL*, *OK*, *SKIP* and *NONE*. `NameEntry` builds the name (8 at most,
+  `back` deletes; on *OK* trimmed, an empty or all-space name is `???`) then the country (letters only, *OK* only for a code of
+  `COUNTRY_CODES`, *NONE* for none), preselected by the host from the browser language
+  (ADR-0021 decision 4), and returns the `HighScoreEntry` with the date the host gives
+  (`SceneHost.today()`, the domain reads no clock). `HighScoreTable` keeps ten entries, best
+  first, a score above 0 entering only above the tenth, ties after the older; `SaveStore` parses
+  the stored entries by allowlist (ADR-0021 decisions 2, 3, 6) and saves the table with the
+  options (`saveHighScores`). The entries first ship under the save's version 2 (G1b): the empty
+  `highScores` written since G1a-1 is parsed by the same allowlist, no version bump and no
+  migration (ADR-0021 decision 7's "version 1" overtaken, noted in the ADR).
+

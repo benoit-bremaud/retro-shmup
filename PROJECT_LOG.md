@@ -8,6 +8,27 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-14
 
+### G2 design: the hall of fame, GDD v0.16 (branch `docs/g2-hall-of-fame-design`) — Refs #46
+
+- Owner choices (scored, after a deeper analysis each): the name on a letter grid (43/50, against
+  the arcade wheel 30 and grid plus typing 42); the country on the same grid with letters only and
+  *OK* only for a valid code (44/50 — revised up from the first analysis, which preferred a
+  two-letter spinner, now 37).
+- Defaults taken and stated: a score enters only above the tenth, ties keep the older entry
+  first; *High scores* in the title menu; the Ending card *VICTORY* (title font, *MISSION
+  COMPLETE* being wider than the field) with the score, its two story sentences deferred to the
+  assets brick; the date given by the host; the slice-end interim lifted (Results → Ending).
+- Doc review: 4 Must fixed (the stale slice-end passage, UC1 9a and its decision row marked
+  superseded; *NONE* / *AUCUN* two cells wide; the menu font gains `?` and `-`; the opening guard
+  and the 1 s title lock after the high scores), Shoulds applied (an amendment note at the end of
+  ADR-0021 — entries first ship under save version 2, no bump, status unchanged; `saveHighScores`;
+  `country` optional; the name trimmed; cursor rules for the wide and hidden cells; fonts and table
+  columns named; the host gives the date as `YYYY-MM-DD`; pause ignored in the G2 screens; a score
+  of 0 never enters). A stray `.mcp.json` (not from this work) kept out of the PR.
+- Docs only: GDD v0.16 (§9.1 letter grid, table, High scores, Ending; decision record), STM-scenes
+  (G2 states), CD-menus (`LetterGrid`, `NameEntry`, `HighScoreTable`, `HighScoreEntry`), new
+  SD-score sequence, UC3, UC4, matrix, architecture README.
+
 ### G1b-3: the controls screen (branch `feat/g1b-controls-screen`) — Refs #46
 
 - *Controls* / *COMMANDES* in the options (hidden when the last device used is touch: two option
