@@ -1,6 +1,6 @@
 # Class diagram — gameplay — domain model of a run (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.10 §4–§8 (with §5.2.1, §6.1, §7.2.1 and §7.2.2), §9.2, §10
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.10 §4–§8 (with §5.2.1, §6.1, §7.2.1 and §7.2.2), §9.2, §10; v0.12 for the formation reward flag and the Cruiser values
 > **Related ADRs**: ADR-0002 (Simulation, Random, pools), ADR-0024 (`FixedPool<T>` is the pool contract), ADR-0003 (composition, patterns),
 > ADR-0009 (IntentFrame), ADR-0010 (event bus per run, `DropTable` as data,
 > presentation outside the outcome), ADR-0019 (run seed, damage in tenths, weapons as data,
@@ -416,6 +416,7 @@ classDiagram
     -refused: number
     -lastDestroyed: Vec2
     -rewarded: boolean
+    -paysP: boolean
     +isCleared() boolean
     +isResolved() boolean
   }
@@ -474,6 +475,7 @@ classDiagram
     +path: PathId
     +mirror: boolean
     +cargo: PickupKind [0..1]
+    +paysP: boolean [0..1]
   }
   class GameEvent {
     -position: Vec2
@@ -550,9 +552,10 @@ classDiagram
 | First-time pickup labels (§7.3) | `PICKUP_SPAWNED` carries the kind in `detail`; `RunPresenter` remembers which kinds it has labelled this run (presentation only, ADR-0010) |
 | Contact hits the player (§5.2) | `CollisionResolver`: player hitbox (4 × 4) against enemy and boss hitboxes |
 | Roles as data lines (§5.2, §5.3) | `EnemyArchetype` = `EnemyStats` + `DropTable` + one movement + one attack |
+| Formation P paid or not by the script (GDD v0.12 §4.6, §7.2.1) | `ScriptEvent.paysP` (optional, absent = true, only meaningful on a formation row); `LevelDirector` copies it to the `Formation` it starts (`Formation.paysP`), and the reward rule skips only the P spawn when it is false — `FORMATION_CLEARED` is still published, so the formation counts in the tally; level 1 sets it false on the 8 s, 50 s and 52 s rows; designed in v0.12, built by the tuning PR |
 | Carrier cargo set by the script (§5.2, v0.8 §5.2.1) | `ScriptEvent.cargo` → `Enemy.cargo`, which overrides the `DropTable` roll (ADR-0010); the load check throws a `RangeError` for a Carrier row without a cargo or a cargo on another archetype; an escaped Carrier drops nothing, a bomb kill drops the cargo |
 | Formation guarantee, bomb kills count (§5.2) | `Formation` counts destroyed, escaped and refused, and keeps the position of its last destroyed member; one completion check, `Run.resolveFormationMember`, runs whenever a member resolves (destroyed, escaped at step 6, or refused by the director) and, the first time `isCleared()` holds, spawns the P at that position and publishes `FORMATION_CLEARED`, once; one `Run.destroyEnemy(enemy, cause)` path for shots and bombs updates `Enemy.formation`; the boss has its own `Run.damageBoss` path (no formation) |
-| Boss phases, timer, flee, broken parts (§6, v0.10 §6.1) | one preallocated `Boss` in `World`, outside the enemy pool (ADR-0022); `Boss.state` (`BossState`), `phaseIndex`, `timeLeft` in steps; `BossPhaseSpec.hpThreshold`, `brokenPart`, movement and attack; `Boss.start(definition)` resets every field from the `BossDefinition`; lifecycle and the Cruiser's values in `05-state-boss` |
+| Boss phases, timer, flee, broken parts (§6, v0.10 §6.1) | one preallocated `Boss` in `World`, outside the enemy pool (ADR-0022); `Boss.state` (`BossState`), `phaseIndex`, `timeLeft` in steps; `BossPhaseSpec.hpThreshold`, `brokenPart`, movement and attack; `Boss.start(definition)` resets every field from the `BossDefinition`; lifecycle and the Cruiser's values in `05-state-boss` (HP 14 500 tenths, phase-2 threshold 9 570, GDD v0.12) |
 | Boss damage, targetable only while fighting (v0.10 §6) | `HitRules.damageBoss(amount)`: `applyDamage`, `ENEMY_HIT` with the boss serial, then one `BOSS_PHASE_CHANGED` per threshold crossed, or `BOSS_DESTROYED` at 0 HP; collision pass 1 adds the boss to the nearest-target candidates only while `isTargetable()` (`FIGHTING`); pass 3 tests its body while `isHarmful()` (`ENTERING`, `FIGHTING`); the bomb calls `damageBoss(300)` only in `FIGHTING` |
 | Boss bonus 10 000 + 100 × seconds left, flat (§6, v0.10) | `BOSS_DESTROYED` carries `Boss.secondsLeft()` — the steps left rounded up to whole seconds, the number the HUD shows — in `value`; `ScoreKeeper` adds 10 000 + 100 × `value`, flat, outside the chain; boss hits score 0 |
 | Deterministic script, WARNING, boss entry (§6, §7.1, v0.10) | `LevelDirector` walks `LevelScript.events` by `scriptStep`; at `warningAt` it stops spawning and calls `EnemySpawner.startBoss(LevelScript.boss)`, which puts the boss in `WARNING` and publishes `BOSS_WARNING`; the load check throws a `RangeError` for a spawn at or after `warningAt` − 4 s |

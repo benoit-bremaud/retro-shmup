@@ -8,6 +8,29 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-14
 
+### Rebalance design, GDD v0.12 (branch `docs/rebalance-v012`) — Refs #45
+
+- Second iteration, after a measurement study with an "average player" bot (reaction 0.15 / 0.25
+  / 0.40 s, 100 to 300 seeds). Owner-validated values: Cruiser 500 → 1 450 shots (14 500 tenths,
+  phase 2 at 9 570); the formations at 8 s, 50 s and 52 s no longer pay the formation P (a
+  per-row `pays P` property, default true; no enemy or formation removed).
+- Measured on 300 seeds (good / average / beginner bot): fight 42 / 42 / 44 s, the average bot
+  dies 1.45 times per run, game over 10 / 19 / 32 %, boss killed 90 / 81 / 69 %, power 5 reached
+  at about 119 s, just before the boss. Rejected: HP 13 500, 14 000, 15 000, 15 500, 16 000;
+  Gunner P 5 % (no effect); removing formations (contrary to "more enemies").
+- Limits recorded: bots are models; power 4 → 5 rests on the 7th formation's P (a cliff to watch
+  in the playtest); the waves cannot be judged by bots.
+- Docs only (GDD, class and boss state diagrams, matrix, README, CHANGELOG). The tuning PR
+  follows and must change, with the 21 assertions currently failing against the new values:
+  `src/domain/game/tuning.ts` (Cruiser `hp` 14 500, `phase2HpThreshold` 9 570); the level script
+  (`pays P` false on the 8 s, 50 s and 52 s Popcorn rows) and its type and load check in
+  `level-script.ts`; `run-rules.ts` `rewardIfCleared` (skip the reward when the row says so).
+  Tests: `boss.test.ts` 5, `boss-run.test.ts` 12, `level-simulation.test.ts` 3 (replay over two
+  passes expects a Bomb drop that the weaker scripted weapon no longer gets; the boss fight
+  replay; the Cruiser cleared by the scripted ship), `tally-run.test.ts` 1; plus new tests for the
+  flag (default pays, false pays nothing, the formation still scores and counts) in
+  `level-script`, `run-rules` and `level-director` tests, and the stale 5 000 / 3 300 comments.
+
 ### Over-engineering leftovers removed (branch `refactor/leftovers`)
 
 - Behaviour-preserving refactor after the audit: `Pool<T>` interface and `FixedPool.size` deleted
