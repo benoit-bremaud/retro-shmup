@@ -24,7 +24,7 @@ does not contradict. No earlier decision is superseded.
    - the **save document**, `localStorage` key `retro-shmup.v1`, whose own `version` field is the
      authoritative schema revision (ADR-0006) and is versioned **separately** from the game
      version;
-   - the **URL parameters** the page reads.
+   - the **URL parameters** the page reads (none yet; each becomes public surface from the release that introduces it).
 
    Gameplay balance and rules are **not** public API: tuning a number or a pattern is never a
    breaking change.

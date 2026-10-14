@@ -1,12 +1,12 @@
-# Local review — retro-shmup (branch `refactor/leftovers`)
+# Local review — retro-shmup (branch `docs/versioning`)
 
 - Date: 2026-10-14
-- Commit: fde5162
-- Scope: branch diff `origin/main...HEAD` — behaviour-preserving removal of the over-engineering
-  leftovers: `Pool<T>` and `FixedPool.size` (ADR-0024), `RunConfig.script`, `LevelTally.reset()`,
-  the second slot of `Body.volleys`, the copy in `sequenceAttack`
-- Checks run: design · docs · tests · security · correctness (one reconciled pass over a small
-  diff: 23 files, +123 / −145; no sub-agents)
+- Commit: see the branch tip
+- Scope: branch diff `origin/main...HEAD` — ADR-0025 (SemVer, manual signed releases, the version
+  shown outside the canvas), CONTRIBUTING "Versioning and releases", README paragraph, CHANGELOG
+  and log notes, traceability scope, one wording fix in `.github/tag-protection.md`. Docs only.
+- Checks run: design · docs · tests · security · correctness (one reconciled pass over a docs
+  diff; no sub-agents)
 - Verdict: **ship** · Must 0 · Should 0 · Nice 1
 
 ## 🔴 Must Have
@@ -19,23 +19,23 @@ _None._
 
 ## 🔵 Nice to Have
 
-- `docs/architecture/review-local.md` `[docs]` · the previous report (F-3) is replaced by this
-  one; history keeps it in git.
+- `docs/decisions/ADR-0025-versioning-policy.md` `[docs]` · the rejected-options text for
+  release-please says to revisit if the manual steps become a burden; fine, no change.
 
 ## ⚪ Disagree / Intentional
 
-- `docs/architecture/diagrams/gameplay/04-class-domain.md` (~l.561) `[docs]` · still says
-  `LevelTally` is "reset at each level": it describes the planned level-2 flow (`startNextLevel`,
-  brick G), not shipped code; `reset()` returns with that flow.
-- `src/domain/game/attacks.ts:183` `[design]` · `sequenceAttack` no longer copies its groups:
-  `readonly` types block mutation and the only caller (`cruiser.ts`) passes load-time literals.
+- `.github/tag-protection.md` `[security]` · one sentence reworded: it said release-please would
+  inherit the owner's bypass, which contradicts ADR-0025 (manual releases; an App would be added
+  to `bypass_actors` in its own PR). Ruleset, commands and signing section are unchanged; the file
+  is a document, not the ruleset itself.
+- `CONTRIBUTING.md` / ADR-0025 `[docs]` · the game reads no URL parameter today; the surface is
+  declared as "none yet" so a first parameter is public from its release.
 
 ## Per-dimension summary
 
-- Design: dead abstractions removed, no new structure; ADR-0024 realised.
-- Docs: TSDoc, class diagram, CHANGELOG and PROJECT_LOG match the code; no stale `volleys[0]`,
-  `Pool<T>` or `script:` left in src, tests or non-ADR docs.
-- Tests: 863 pass; only tests of removed API deleted (`size`, `reset`), call sites migrated
-  (`script: X` → `levels: [X]`), no expectation changed to pass.
-- Security: nothing untrusted touched.
-- Correctness: `volleys` reset on spawn and on phase restart is preserved; no allocation added.
+- Design: policy decided in an ADR before the follow-up code PR (version text under the canvas).
+- Docs: README, CONTRIBUTING, ADR index, matrix scope and log agree with each other.
+- Tests: not applicable (no code).
+- Security: the tag ruleset is kept; no secret or credential involved.
+- Correctness: commands in the 4-step release procedure match `release-tag` (signed annotated
+  tag, explicit push, release notes from the CHANGELOG).

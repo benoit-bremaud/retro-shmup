@@ -207,7 +207,7 @@ the tag is the version with a `v` prefix (`v0.1.0`), `package.json` holds it wit
 
 **Public surface** (what SemVer protects): the save document (`localStorage` key
 `retro-shmup.v1`, with its own authoritative `version` field, ADR-0006, versioned separately from
-the game) and the URL parameters. Gameplay balance and rules are **not** public API.
+the game) and the URL parameters it reads (none yet). Gameplay balance and rules are **not** public API.
 
 | Bump | When |
 |---|---|
