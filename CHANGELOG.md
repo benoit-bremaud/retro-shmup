@@ -61,6 +61,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Versioning policy (ADR-0025): SemVer 2.0.0, the save document and the URL parameters as
+  public surface, manual signed releases from `v0.1.0` on.
 - Level 1 is harder after the friends' playtest (GDD v0.11, #45): Gunners drop a P at 10 % (was
   30 %) and fire every 1 s (was 1.5 s), Heavies drop a Bomb or a Shield at 30 % (was 60 %), the
   0 s and 50 s Popcorn formations have 8 members (was 6), the 92 s formation becomes two Divers,

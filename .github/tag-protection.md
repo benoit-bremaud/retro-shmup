@@ -19,10 +19,9 @@ and the exact commands; the configuration itself lives on GitHub.
   keeps routine-release rights and an emergency escape hatch
 
 Per the cross-project release convention, the admin bypass is the only way to
-create, move or delete a `v*` tag. Release automation (release-please, with the
-vertical slice) runs with the owner's credentials and therefore inherits the
-bypass; if it ever moves to a GitHub App, the App is added to `bypass_actors`
-in the same PR. A failed publish keeps its tag as an audit marker; the next
+create, move or delete a `v*` tag. Releases are cut manually by the owner with
+the bypass (ADR-0025); if release automation is ever added and runs as a
+GitHub App, the App is added to `bypass_actors` in the same PR. A failed publish keeps its tag as an audit marker; the next
 attempt bumps the number, never reuses it.
 
 ## Apply (one-time, by owner)

@@ -8,6 +8,22 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-14
 
+### Versioning policy decided (branch `docs/versioning`, ADR-0025)
+
+- Owner decision after scored options: SemVer 2.0.0; public surface = the save document
+  (`retro-shmup.v1`, own `version`, ADR-0006) and the URL parameters, balance and rules excluded;
+  bump table (MINOR content/feature, PATCH fixes/rebalance/polish, MAJOR only on an unmigrable
+  save or a removed control; pre-1.0 breaking = MINOR); `1.0.0` = itch.io public release.
+- First tag `v0.1.0` after the rebalance (#53) and tuning PRs; no retroactive tags; `package.json`
+  stays `0.0.0` and the changelog `[Unreleased]` until then.
+- Releases are manual (release PR, signed annotated tag with the admin bypass, `gh release create`
+  with the changelog section, later `butler --userversion`). release-please rejected: its workflow
+  would create unsigned tags and need a bypass of the `v*` ruleset. `.github/tag-protection.md`
+  wording aligned.
+- Displayed version `v<version>+<short commit>` outside the canvas (`textContent`) is decided but
+  implemented in a follow-up PR (GDD then code); it moves to Options / About in brick G.
+- Docs only: ADR-0025, `CONTRIBUTING.md` section, `README.md` paragraph, changelog note.
+
 ### Over-engineering leftovers removed (branch `refactor/leftovers`)
 
 - Behaviour-preserving refactor after the audit: `Pool<T>` interface and `FixedPool.size` deleted

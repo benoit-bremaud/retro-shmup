@@ -199,6 +199,61 @@ it prints every property, the token included.
 After every merge, add an entry to [PROJECT_LOG.md](PROJECT_LOG.md): date, what was done, why, and
 the PR number. The log is the human-readable companion of `git log`, not the release changelog.
 
+## Versioning and releases
+
+Policy: [ADR-0025](docs/decisions/ADR-0025-versioning-policy.md), which applies the owner's
+`semver-policy` and `release-tag` conventions. [SemVer 2.0.0](https://semver.org/spec/v2.0.0.html);
+the tag is the version with a `v` prefix (`v0.1.0`), `package.json` holds it without.
+
+**Public surface** (what SemVer protects): the save document (`localStorage` key
+`retro-shmup.v1`, with its own authoritative `version` field, ADR-0006, versioned separately from
+the game) and the URL parameters. Gameplay balance and rules are **not** public API.
+
+| Bump | When |
+|---|---|
+| MAJOR (from 1.0.0) | save format incompatible and not migrable, or a documented control removed |
+| MINOR | new content or feature: level, enemy, mode, option |
+| PATCH | fixes, rebalancing, visual or audio polish with no new content |
+
+Before 1.0.0 a breaking change bumps the MINOR. `1.0.0` is the public release on itch.io. The first
+tag, `v0.1.0`, is cut after the rebalance (#53) and its tuning PRs are merged; no retroactive
+tags. Until then `package.json` stays `0.0.0` and the changelog stays `[Unreleased]`.
+
+**Who tags:** the owner only, from `main`, through the CLI (never the web UI), with the admin
+bypass of the `v*` tag ruleset ([.github/tag-protection.md](.github/tag-protection.md)). Tags are
+signed with the configured SSH key (same file, *Signing*); the signing key must be registered on
+GitHub as a *Signing Key* for the tag to show `Verified`.
+
+**Release procedure** (manual, for version `X.Y.Z`):
+
+1. **Release PR** `chore(repo): release X.Y.Z`: bump `package.json`, rename `[Unreleased]` to
+   `[X.Y.Z] - YYYY-MM-DD` in `CHANGELOG.md` (with a fresh empty `[Unreleased]` above), add the
+   compare and release links at the foot of the changelog, add a `PROJECT_LOG.md` entry. Normal PR
+   process.
+2. **Tag**, after the merge, from an up-to-date `main`:
+   ```bash
+   git checkout main && git pull origin main
+   git tag -s vX.Y.Z -m "retro-shmup X.Y.Z"
+   git tag -v vX.Y.Z            # check the signature locally
+   git push origin vX.Y.Z
+   ```
+3. **GitHub release** with the changelog section as the body (the GitHub auto-generated list may
+   follow as a complement, never alone):
+   ```bash
+   gh release create vX.Y.Z --title "X.Y.Z" --notes-file <file holding the CHANGELOG section>
+   ```
+4. **itch.io** (later, ADR-0004): the upload passes the version, `butler push <dir>
+   <user>/<game>:html5 --userversion X.Y.Z`.
+
+Prereleases are `vX.Y.Z-rcN`, an undotted counter (`v1.0.0-rc1`). Tags are immutable: never move,
+reuse or delete one. A bad release is retired by publishing a higher version and flagging the bad
+one (demote its GitHub release to pre-release with a "do not use, superseded by" note), as in the
+`release-tag` skill.
+
+**Version shown in the game** (decided in ADR-0025, implemented in a separate PR): a small text
+outside the canvas, set with `textContent`, reading `v<version>+<short commit>`, injected at build;
+it moves to the Options / About screen with brick G's final font.
+
 ## Contributing assets
 
 Sprites, music and sound effects are not covered by the MIT licence of the code (ADR-0005). A PR
