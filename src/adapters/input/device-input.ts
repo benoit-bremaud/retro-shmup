@@ -122,7 +122,7 @@ export class DeviceInput implements InputPort {
     arbitrate(this.arbitration, this.samples, into);
     if (this.automaticPause) into.pressed |= Button.Pause;
     this.automaticPause = false;
-    this.pointer.takeTap(into);
+    this.pointer.takePointerEvents(into);
     into.fullscreen = false; // reported by the browser once fullscreen lands with the options
   }
 

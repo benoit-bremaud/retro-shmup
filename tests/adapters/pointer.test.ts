@@ -43,7 +43,7 @@ function mouseSample(module: PointerModule): DeviceSample {
 
 function tapOf(module: PointerModule): Pick<IntentFrame, 'tapRegion' | 'tapX' | 'tapY'> {
   const frame = createIntentFrame();
-  module.takeTap(frame);
+  module.takePointerEvents(frame);
   return { tapRegion: frame.tapRegion, tapX: frame.tapX, tapY: frame.tapY };
 }
 
@@ -207,7 +207,7 @@ function releaseOf(
   module: PointerModule,
 ): Pick<IntentFrame, 'releaseRegion' | 'releaseX' | 'releaseY' | 'hovered' | 'hoverX' | 'hoverY'> {
   const frame = createIntentFrame();
-  module.takeTap(frame);
+  module.takePointerEvents(frame);
   const { releaseRegion, releaseX, releaseY, hovered, hoverX, hoverY } = frame;
   return { releaseRegion, releaseX, releaseY, hovered, hoverX, hoverY };
 }

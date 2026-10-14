@@ -10,7 +10,7 @@ import { BossState } from '../../src/domain/game/boss';
 import type { BossDefinition } from '../../src/domain/game/boss';
 import { swayMovement } from '../../src/domain/game/movements';
 import { Run, RunOutcome } from '../../src/domain/game/run';
-import { MenuTuning } from '../../src/domain/scenes/menu';
+import { MENU_ROW_HEIGHT } from '../../src/domain/presentation/menu-layout';
 import { Scene, SceneMachine } from '../../src/domain/scenes/scene-machine';
 import { PORTRAIT } from '../../src/domain/presentation/screen';
 import { RecordingRender } from '../support/recording-render';
@@ -814,7 +814,7 @@ describe('SceneMachine — the boss HUD (meta/05-state-scenes, F-2b)', () => {
 
 /** A tap pressed and released on row `row` of a two-row menu, in one step. */
 function rowTap(row: number): IntentFrame {
-  const y = (320 - 2 * MenuTuning.rowHeight) / 2 + row * MenuTuning.rowHeight + 8;
+  const y = (320 - 2 * MENU_ROW_HEIGHT) / 2 + row * MENU_ROW_HEIGHT + 8;
   const tap = createIntentFrame();
   tap.tapRegion = 'field';
   tap.tapX = 120;

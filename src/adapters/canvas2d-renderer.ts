@@ -9,8 +9,20 @@ import type { Viewport } from './viewport';
 // Logical pixels per glyph pixel: HUD_FONT_CELL and TITLE_FONT_CELL are built on them.
 const HUD_SCALE = 2;
 const TITLE_SCALE = 4;
-/** The cell of each font, read per draw without building anything. */
-const FONT_CELLS = { hud: HUD_FONT_CELL, title: TITLE_FONT_CELL, menu: MENU_FONT_CELL } as const;
+/**
+ * Each font's cell, scale, glyph set and colour (RenderPort contract), read per draw without
+ * building anything: the menu font is the title letters at the hud scale.
+ */
+const FONTS = {
+  hud: { cell: HUD_FONT_CELL, scale: HUD_SCALE, glyph: hudGlyph, colour: Palette.hudText },
+  title: {
+    cell: TITLE_FONT_CELL,
+    scale: TITLE_SCALE,
+    glyph: titleGlyph,
+    colour: Palette.titleText,
+  },
+  menu: { cell: MENU_FONT_CELL, scale: HUD_SCALE, glyph: titleGlyph, colour: Palette.titleText },
+} as const;
 
 /**
  * The part of `CanvasRenderingContext2D` the renderer uses; a real context satisfies it, and tests
@@ -103,19 +115,15 @@ export class Canvas2DRenderer implements RenderPort {
   }
 
   drawText(text: string, x: number, y: number, font: FontId): void {
-    const title = font === 'title';
-    const scale = title ? TITLE_SCALE : HUD_SCALE;
-    const advance = FONT_CELLS[font].width;
-    this.offscreen.fillStyle = font === 'hud' ? Palette.hudText : Palette.titleText;
-    // The menu font draws the title letters at the hud scale (MENU_FONT_CELL).
-    const glyphOf = font === 'hud' ? hudGlyph : titleGlyph;
+    const { cell, scale, glyph, colour } = FONTS[font];
+    this.offscreen.fillStyle = colour;
     for (let i = 0; i < text.length; i += 1) {
       const code = text.codePointAt(i);
-      const rows = code === undefined ? undefined : glyphOf(code);
+      const rows = code === undefined ? undefined : glyph(code);
       if (rows === undefined) {
         throw new Error(`Canvas2DRenderer: no ${font} glyph for "${text.charAt(i)}" in "${text}"`);
       }
-      this.drawGlyph(rows, x + i * advance, y, scale);
+      this.drawGlyph(rows, x + i * cell.width, y, scale);
     }
   }
 

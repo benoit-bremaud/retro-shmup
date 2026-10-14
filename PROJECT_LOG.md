@@ -31,8 +31,17 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   v0.13 §9.1 sentence added, tests; the smoke test now waits 300 ms before tapping RESUME);
   Nice applied: the renderer reads each font's own cell, the pause-button hit test runs only on
   HUD taps.
-- Visual check: headless Playwright captures, portrait and landscape (Claude in Chrome was not
-  connected). Found on the way: a key pressed and released inside one frame (a synthetic
+- Anti-pattern review (owner request, architecture-guardian): Musts fixed before merge — the
+  presentation ↔ scenes two-way dependency (new `presentation/menu-layout.ts` with
+  `MENU_ROW_HEIGHT`, `menuTop`, header gaps, `MenuView`, `MenuScreen`; `drawMenuScreen`) and the
+  scene machine growing per menu (one menu-scene table, one `openMenu`). Shoulds fixed:
+  `Menu.step` returns the row id, not an index read at −1; `EffectSettings` and `Options` moved to
+  `domain/options.ts` (the save schema no longer depends on the presenter); `takeTap` renamed
+  `takePointerEvents`; one `pauseButtonTapped` helper; the renderer reads one font table. Left for
+  G1a-3, their first user: switch and choice rows, runtime options, return-to-caller.
+- Visual check: headless Playwright captures, portrait and landscape, then in Chrome on the PR
+  preview (pause, hover, Quit → No → Resume; no console error). Noted for later: after a mouse
+  click on RESUME the mouse owns the ship, which jumps to the cursor (ADR-0018 takeover rule). Found on the way: a key pressed and released inside one frame (a synthetic
   `keyboard.press`) moves nothing, since movement is read as held; a human key tap lasts several
   frames, so no change.
 

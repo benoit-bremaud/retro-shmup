@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { HUD_FONT_CELL } from '../../src/domain/ports/render-port';
 import { drawCountIn, drawMenu, drawVeil } from '../../src/domain/presentation/overlays';
-import { Menu, MenuTuning } from '../../src/domain/scenes/menu';
+import { MENU_ROW_HEIGHT } from '../../src/domain/presentation/menu-layout';
+import { Menu } from '../../src/domain/scenes/menu';
 import { Palette } from '../../src/domain/presentation/palette';
 import { FIELD_HEIGHT, FIELD_WIDTH } from '../../src/domain/presentation/screen';
 import { RecordingRender } from '../support/recording-render';
@@ -22,7 +23,7 @@ describe('overlays of the frozen scenes (meta/05-state-scenes, enemies brick add
     drawMenu(render, menu, 'fr');
     expect(render.texts.map((text) => [text.text, text.font, text.y])).toEqual([
       ['REPRENDRE', 'menu', menu.top + 3],
-      ['QUITTER', 'menu', menu.top + MenuTuning.rowHeight + 3],
+      ['QUITTER', 'menu', menu.top + MENU_ROW_HEIGHT + 3],
     ]);
     const quitter = render.texts[1];
     expect(quitter?.x).toBe(Math.round((FIELD_WIDTH - (6 * 8 + 6)) / 2));
@@ -31,9 +32,9 @@ describe('overlays of the frozen scenes (meta/05-state-scenes, enemies brick add
       {
         region: 'field',
         x: Math.round((FIELD_WIDTH - (54 + 16)) / 2),
-        y: menu.top + MenuTuning.rowHeight,
+        y: menu.top + MENU_ROW_HEIGHT,
         w: 54 + 16,
-        h: MenuTuning.rowHeight,
+        h: MENU_ROW_HEIGHT,
         colour: Palette.menuHighlight,
       },
     ]);

@@ -27,7 +27,19 @@ classDiagram
     +highlighted: number
     +reset() void
     +rowAt(y: number) number
-    +step(frame: IntentFrame, now: number) number
+    +step(frame: IntentFrame, now: number) Id | undefined
+  }
+  class MenuView {
+    <<interface>>
+    +rows: readonly MessageKey[]
+    +top: number
+    +highlighted: number
+  }
+  class MenuScreen {
+    <<interface>>
+    +menu: MenuView
+    +header: MessageKey
+    +headerFont: title | menu
   }
   class IntentFrame {
     <<interface>>
@@ -80,6 +92,8 @@ classDiagram
   Menu *-- "1..12" MenuRow
   MenuRow --> RowKind
   Menu ..> IntentFrame : tap, release, hover
+  Menu ..|> MenuView
+  MenuScreen --> MenuView
   Options *-- EffectSettings
   SaveDocument *-- Options
   SaveStore ..> SaveDocument : load parses, never throws
@@ -114,4 +128,10 @@ classDiagram
 - **`highScores`** stays an empty list until the hall of fame (G2) fills it. The options shape
   of G1a is version 1; the remap (G1b) and the volumes (G3) change it, so each bumps `version`
   with a migration function, as ADR-0006 decision 4 requires.
+- **Layering (G1a-2 review)**: `Menu` (scenes) depends on `presentation/menu-layout` for the row
+  height and centring; presentation draws a `MenuView` / `MenuScreen` and never imports scenes.
+  The scene machine keeps one table of menu scenes (menu, header, header font) and one
+  `openMenu(scene)`, so a new menu screen is one entry plus its step method. `Options` and
+  `EffectSettings` live in `src/domain/options.ts`, shared by the presenter, the save store and
+  the options screen.
 - `Language`, `MessageKey` and `HighScoreEntry` are the existing catalogue and save types.

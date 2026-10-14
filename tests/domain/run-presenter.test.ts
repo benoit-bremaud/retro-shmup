@@ -16,7 +16,7 @@ import {
 } from '../../src/domain/game/enemy';
 import { Palette } from '../../src/domain/presentation/palette';
 import { RunPresenter } from '../../src/domain/presentation/run-presenter';
-import type { EffectSettings } from '../../src/domain/presentation/run-presenter';
+import type { EffectSettings } from '../../src/domain/options';
 import { CRUISER_TURRET } from '../../src/domain/game/cruiser';
 import { BossState } from '../../src/domain/game/boss';
 import { createGameEvent, EventBus, GameEventKind } from '../../src/domain/game/events';

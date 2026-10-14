@@ -5,22 +5,22 @@ import { Button } from '../ports/input-port';
 import type { IntentFrame } from '../ports/input-port';
 import type { RenderPort } from '../ports/render-port';
 import { message } from '../i18n/messages';
-import type { Language } from '../i18n/messages';
+import type { Language, MessageKey } from '../i18n/messages';
 import { drawHudFrame, drawPauseButton } from '../presentation/hud';
 import { isPauseTap } from '../presentation/hud-layout';
 import {
   drawBanner,
   drawCountIn,
-  drawMenu,
-  drawMenuLine,
+  drawMenuScreen,
   drawVeil,
   drawWarning,
 } from '../presentation/overlays';
 import { drawResults, formatTallyValues } from '../presentation/results';
 import { RunPresenter } from '../presentation/run-presenter';
-import type { EffectSettings } from '../presentation/run-presenter';
+import type { EffectSettings } from '../options';
 import type { Starfield } from '../presentation/starfield';
-import { Menu, MenuTuning } from './menu';
+import type { MenuScreen } from '../presentation/menu-layout';
+import { Menu } from './menu';
 
 /** The scenes built so far (meta/05-state-scenes, build order). */
 export const Scene = {
@@ -64,11 +64,14 @@ const GAME_OVER_STEPS = toSteps(SceneTuning.gameOverSeconds);
 const LOCK_STEPS = toSteps(SceneTuning.gameOverLockSeconds);
 const RESULTS_LOCK_STEPS = toSteps(ResultsTuning.lockSeconds);
 const RESULTS_STEPS = toSteps(ResultsTuning.autoSeconds);
-/** The title-font header sits this far above its menu's first row. */
-const MENU_HEADER_GAP = 32;
 
 function isConfirmOrTap(frame: Readonly<IntentFrame>): boolean {
   return (frame.pressed & Button.Confirm) !== 0 || frame.tapRegion !== 'none';
+}
+
+/** A menu scene: the presentation's screen description, holding the scene's live menu. */
+interface MenuScene extends MenuScreen {
+  readonly menu: Menu<MessageKey>;
 }
 
 /** What the scene machine holds of a run: it steps it and reads it, nothing more. */
@@ -111,6 +114,14 @@ export class SceneMachine {
   /** The pause menu and its quit confirmation (GDD v0.13 §9.1), built once. */
   private readonly pauseMenu = new Menu(['resume', 'quit'] as const);
   private readonly quitMenu = new Menu(['no', 'yes'] as const);
+  /**
+   * Every menu scene: its menu and header. Drawing and opening read this one table, so a new menu
+   * screen is one entry here plus its step method.
+   */
+  private readonly menuScreens: Partial<Record<Scene, MenuScene>> = {
+    [Scene.Paused]: { menu: this.pauseMenu, header: 'pause', headerFont: 'title' },
+    [Scene.ConfirmQuit]: { menu: this.quitMenu, header: 'quitQuestion', headerFont: 'menu' },
+  };
 
   /** `createRun` builds each new run; tests pass a short level script, the game a seeded one. */
   constructor(
@@ -183,7 +194,7 @@ export class SceneMachine {
   // Pause or the pause button enters the pause, before the run steps; Back is ignored in play.
   private stepPlaying(dt: number, frame: Readonly<IntentFrame>): void {
     if (this.pauses(frame)) {
-      this.enterPause();
+      this.openMenu(Scene.Paused);
       return;
     }
     this.backgroundSteps += 1;
@@ -203,22 +214,19 @@ export class SceneMachine {
     }
   }
 
-  private enterPause(): void {
-    this.current = Scene.Paused;
-    this.pauseMenu.reset(this.steps);
+  /** Enters a menu scene and opens its menu: the one place a menu is reset (first row, guard). */
+  private openMenu(scene: Scene): void {
+    this.current = scene;
+    this.menuScreens[scene]?.menu.reset(this.steps);
   }
 
   // Pause does nothing here: an automatic trigger can only enter the pause, never leave it. Back
   // and the pause button resume like the Resume row; Quit asks first (GDD v0.13 §9.1).
   private stepPaused(frame: Readonly<IntentFrame>): void {
-    const button =
-      frame.tapRegion === 'hud' &&
-      isPauseTap(frame.tapRegion, frame.tapX, frame.tapY, this.renderer.layout());
-    const row = this.pauseMenu.rows[this.pauseMenu.step(frame, this.steps)];
+    const row = this.pauseMenu.step(frame, this.steps);
     if (row === 'quit') {
-      this.current = Scene.ConfirmQuit;
-      this.quitMenu.reset(this.steps);
-    } else if (row === 'resume' || button || (frame.pressed & Button.Back) !== 0) {
+      this.openMenu(Scene.ConfirmQuit);
+    } else if (row === 'resume' || this.pauseButtonTapped(frame) || this.backed(frame)) {
       this.current = Scene.CountIn;
       this.countInLeft = COUNT_IN_STEPS;
     }
@@ -227,11 +235,11 @@ export class SceneMachine {
   // No is first, so a hurried Confirm never loses the run; Back returns to the pause, Pause is
   // ignored. Yes discards the run: no name entry, and the title is locked like after Game over.
   private stepConfirmQuit(frame: Readonly<IntentFrame>): void {
-    const row = this.quitMenu.rows[this.quitMenu.step(frame, this.steps)];
+    const row = this.quitMenu.step(frame, this.steps);
     if (row === 'yes') {
       this.toTitle();
-    } else if (row === 'no' || (frame.pressed & Button.Back) !== 0) {
-      this.enterPause();
+    } else if (row === 'no' || this.backed(frame)) {
+      this.openMenu(Scene.Paused);
     }
   }
 
@@ -239,7 +247,7 @@ export class SceneMachine {
   // frame interpolates forward from the frozen picture.
   private stepCountIn(dt: number, frame: Readonly<IntentFrame>): void {
     if (this.pauses(frame)) {
-      this.enterPause();
+      this.openMenu(Scene.Paused);
       return;
     }
     this.countInLeft -= 1;
@@ -288,8 +296,15 @@ export class SceneMachine {
 
   /** `Pause`, or a tap on the pause button of the current screen (ADR-0018 decision 1). */
   private pauses(frame: Readonly<IntentFrame>): boolean {
-    if ((frame.pressed & Button.Pause) !== 0) return true;
+    return (frame.pressed & Button.Pause) !== 0 || this.pauseButtonTapped(frame);
+  }
+
+  private pauseButtonTapped(frame: Readonly<IntentFrame>): boolean {
     return isPauseTap(frame.tapRegion, frame.tapX, frame.tapY, this.renderer.layout());
+  }
+
+  private backed(frame: Readonly<IntentFrame>): boolean {
+    return (frame.pressed & Button.Back) !== 0;
   }
 
   render(alpha: number, wallDtMs: number): void {
@@ -328,27 +343,14 @@ export class SceneMachine {
   }
 
   private drawOverlays(): void {
-    if (this.current === Scene.GameOver) {
+    const menuScreen = this.menuScreens[this.current];
+    if (menuScreen !== undefined) {
+      drawMenuScreen(this.renderer, menuScreen, this.language);
+    } else if (this.current === Scene.GameOver) {
       drawVeil(this.renderer);
       drawBanner(this.renderer, message('gameOver', this.language));
     } else if (this.current === Scene.Results) {
       drawResults(this.renderer, this.resultsValues, this.resultsSteps, this.language);
-    } else if (this.current === Scene.Paused) {
-      drawVeil(this.renderer);
-      drawBanner(
-        this.renderer,
-        message('pause', this.language),
-        this.pauseMenu.top - MENU_HEADER_GAP,
-      );
-      drawMenu(this.renderer, this.pauseMenu, this.language);
-    } else if (this.current === Scene.ConfirmQuit) {
-      drawVeil(this.renderer);
-      drawMenuLine(
-        this.renderer,
-        message('quitQuestion', this.language),
-        this.quitMenu.top - MenuTuning.rowHeight,
-      );
-      drawMenu(this.renderer, this.quitMenu, this.language);
     } else if (this.current === Scene.CountIn) {
       drawCountIn(this.renderer, this.countInLeft);
     }

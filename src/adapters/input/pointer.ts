@@ -206,7 +206,7 @@ export class PointerModule {
   }
 
   /** Writes the pending tap, release and hover into the frame and consumes them. */
-  takeTap(into: IntentFrame): void {
+  takePointerEvents(into: IntentFrame): void {
     into.tapRegion = this.tapRegion;
     into.tapX = this.tapX;
     into.tapY = this.tapY;
@@ -244,9 +244,10 @@ export class PointerModule {
     if (isMove && newPoint && field) {
       this.mouseStart = seq;
       this.mouseInput = seq;
+      const origin = this.fieldOrigin();
       this.hovered = true;
-      this.hoverX = this.x - this.fieldOrigin().fieldX;
-      this.hoverY = this.y - this.fieldOrigin().fieldY;
+      this.hoverX = this.x - origin.fieldX;
+      this.hoverY = this.y - origin.fieldY;
     }
     this.mouseReleased(releasedNow, inside);
     // A press arrives as a down, or as a move while another button is held (ADR-0018 decision 8).

@@ -1,19 +1,17 @@
 import { toSteps } from '../game/tuning';
 import { Button } from '../ports/input-port';
 import type { IntentFrame } from '../ports/input-port';
-import { FIELD_HEIGHT } from '../presentation/screen';
+import { MENU_ROW_HEIGHT, menuTop } from '../presentation/menu-layout';
 
-/** Menu geometry and timing (GDD v0.13 §9.1). */
+/** Menu timing and input thresholds (GDD v0.13 §9.1); the geometry is the presentation's. */
 export const MenuTuning = {
-  /** A row is at least 16 logical px high, a comfortable touch target at the usual scales. */
-  rowHeight: 16,
   /** A new press on the row just activated is ignored this long (a bouncing or doubled contact). */
   rePressGuardSeconds: 0.15,
   /** A stick tilt beyond this moves the highlight; below it is a hand resting on the stick. */
   directionThreshold: 0.5,
 } as const;
 
-/** `step` returns it when no row was activated; `rowAt` when no row is under the point. */
+/** `rowAt` returns it when no row is under the point. */
 export const NO_ROW = -1;
 
 const GUARD_STEPS = toSteps(MenuTuning.rePressGuardSeconds);
@@ -41,11 +39,12 @@ export class Menu<Id extends string> {
 
   constructor(rows: readonly Id[]) {
     this.rows = rows;
-    this.top = (FIELD_HEIGHT - rows.length * MenuTuning.rowHeight) / 2;
+    this.top = menuTop(rows.length);
   }
 
   /**
-   * Back to the first row with no press pending, each time the menu opens at step `now`. A press
+   * Opens the menu at step `now` (callers go through the scene machine's one `openMenu`): back to
+   * the first row with no press pending. A press
    * within the guard after opening is ignored too: a doubled contact on the row that opened this
    * menu never lands on the row now in its place (Quit, then Yes at the same height).
    */
@@ -58,12 +57,12 @@ export class Menu<Id extends string> {
 
   /** The row under the field y, or `NO_ROW`. */
   rowAt(y: number): number {
-    const index = Math.floor((y - this.top) / MenuTuning.rowHeight);
+    const index = Math.floor((y - this.top) / MENU_ROW_HEIGHT);
     return index >= 0 && index < this.rows.length ? index : NO_ROW;
   }
 
-  /** One scene step of input; returns the index of the row activated, or `NO_ROW`. */
-  step(frame: Readonly<IntentFrame>, now: number): number {
+  /** One scene step of input; returns the id of the row activated, or `undefined`. */
+  step(frame: Readonly<IntentFrame>, now: number): Id | undefined {
     this.moveHighlight(frame);
     if (frame.hovered) {
       const hovered = this.rowAt(frame.hoverY);
@@ -72,10 +71,10 @@ export class Menu<Id extends string> {
     if (frame.tapRegion === 'field') this.press(this.rowAt(frame.tapY), now);
     if (frame.releaseRegion !== 'none') {
       const released = frame.releaseRegion === 'field' ? this.rowAt(frame.releaseY) : NO_ROW;
-      if (this.release(released, now)) return released;
+      if (this.release(released, now)) return this.rows[released];
     }
-    if ((frame.pressed & Button.Confirm) !== 0) return this.highlighted;
-    return NO_ROW;
+    if ((frame.pressed & Button.Confirm) !== 0) return this.rows[this.highlighted];
+    return undefined;
   }
 
   private moveHighlight(frame: Readonly<IntentFrame>): void {
