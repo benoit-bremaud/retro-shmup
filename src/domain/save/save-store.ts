@@ -91,6 +91,11 @@ export class SaveStore {
   private readonly reducedMotion: boolean;
   /** A newer document read by an older build is never overwritten this session (UC4 2c). */
   private readOnly = false;
+  /**
+   * The stored top 10, kept as read so saving an option never erases it; the hall of fame (G2)
+   * validates its entries (ADR-0021) when it reads them.
+   */
+  private highScores: readonly unknown[] = [];
 
   constructor(storage: StoragePort, reducedMotion: boolean) {
     this.storage = storage;
@@ -110,16 +115,17 @@ export class SaveStore {
       return fallback;
     }
     if (version !== VERSION) return fallback;
+    if (Array.isArray(document.highScores)) this.highScores = document.highScores;
     return parseOptions(document.options) ?? fallback;
   }
 
   /**
    * Writes the whole document once; `false` when storage is unavailable or the stored document
-   * is newer: the session goes on without saving. The top 10 stays empty until the hall of fame.
+   * is newer: the session goes on without saving. The stored top 10 is written back unchanged.
    */
   saveOptions(options: Options): boolean {
     if (this.readOnly) return false;
-    const document = { version: VERSION, options, highScores: [] };
+    const document = { version: VERSION, options, highScores: this.highScores };
     return this.storage.write(SAVE_KEY, JSON.stringify(document));
   }
 }

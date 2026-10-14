@@ -120,7 +120,7 @@ const options = new SaveStore(new LocalStorageStore(() => globalThis.localStorag
 const scenes: FrameTarget = new SceneMachine(
   renderer,
   new Starfield(Math.random),
-  { ...options.effects },
+  options.effects,
   () => new Run({ seed: Math.floor(Math.random() * 2 ** 32) }),
 );
 const loop = new FrameLoop(new PerformanceClock(), input, scenes, (callback) => {

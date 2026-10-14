@@ -81,7 +81,7 @@ classDiagram
   Menu ..> PointerPress : touch and mouse
   Options *-- EffectSettings
   SaveDocument *-- Options
-  SaveStore ..> SaveDocument : parseSaveDocument, never throws
+  SaveStore ..> SaveDocument : load parses, never throws
   SaveStore --> StoragePort
   LocalStorageStore ..|> StoragePort
 ```

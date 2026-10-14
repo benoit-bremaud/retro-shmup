@@ -117,6 +117,37 @@ describe('SaveStore.load (ADR-0006: untrusted input, never throws)', () => {
     expect(new SaveStore(stored(document), false).load()).toEqual(CUSTOM);
   });
 
+  it.each([
+    ['a string version', '1'],
+    ['an older version', 0],
+  ])('falls back to the defaults on %s, and stays writable', (_label, version) => {
+    const storage = stored({ version, options: CUSTOM, highScores: [] });
+    const store = new SaveStore(storage, false);
+    expect(store.load()).toEqual(defaultOptions(false));
+    expect(store.saveOptions(CUSTOM)).toBe(true);
+  });
+
+  it('stays writable after a damaged document', () => {
+    const storage = new MemoryStorage();
+    storage.values.set(SAVE_KEY, '{"version":');
+    const store = new SaveStore(storage, false);
+    store.load();
+    expect(store.saveOptions(CUSTOM)).toBe(true);
+    expect(new SaveStore(storage, false).load()).toEqual(CUSTOM);
+  });
+
+  it('never lets a "__proto__" key reach an object prototype', () => {
+    const raw = `{"version":1,"options":{"__proto__":{"autofire":true},"effects":${JSON.stringify(
+      CUSTOM.effects,
+    )},"autofire":false,"language":"en","fullscreen":false}}`;
+    const storage = new MemoryStorage();
+    storage.values.set(SAVE_KEY, raw);
+    const options = new SaveStore(storage, false).load();
+    expect(options).toEqual({ ...CUSTOM, autofire: false, language: 'en', fullscreen: false });
+    expect(Object.getPrototypeOf(options)).toBe(Object.prototype);
+    expect(({} as Record<string, unknown>).autofire).toBeUndefined();
+  });
+
   it('gives the defaults when storage is unavailable', () => {
     const storage = new MemoryStorage();
     storage.available = false;
@@ -134,6 +165,15 @@ describe('SaveStore.saveOptions (ADR-0006 decisions 2, 5, 6)', () => {
       highScores: [],
     });
     expect(storage.writes).toBe(1);
+  });
+
+  it('writes the stored top 10 back unchanged, so an option never erases it', () => {
+    const highScores = [{ name: 'ACE', score: 1200, level: 1, date: '2026-10-14' }];
+    const storage = stored({ version: 1, options: CUSTOM, highScores });
+    const store = new SaveStore(storage, false);
+    store.load();
+    store.saveOptions({ ...CUSTOM, autofire: false });
+    expect(JSON.parse(storage.values.get(SAVE_KEY) ?? '')).toMatchObject({ highScores });
   });
 
   it('reports false when storage is unavailable, and the session goes on', () => {
