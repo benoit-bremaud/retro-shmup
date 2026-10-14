@@ -1,7 +1,7 @@
 # Class diagram — meta — menus, options and the save document (G1a)
 
 > **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.13 and v0.14 §9.1
-> (menus), §4.2 (leaving a menu frees the movement), §9.3 (options and their layout), §9.4, §9.8
+> (menus; v0.14: leaving a menu frees the movement), §9.3 (options and their layout), §9.4, §9.8
 > **Related ADRs**: ADR-0006 (save document, `StoragePort`), ADR-0009 (fullscreen at the next
 > gesture), ADR-0015 (the last device used), ADR-0020 decision 4 (the autofire option), ADR-0021
 > (the high-score entry)
@@ -94,7 +94,7 @@ classDiagram
     adapter, try/catch on every call
   }
 
-  SceneMachine *-- "6" Menu
+  SceneMachine *-- "5" Menu
   SceneMachine --> SceneHost : each change, leaving for play
   SceneMachine *-- Options
   Menu ..> IntentFrame : tap, release, hover
@@ -112,24 +112,27 @@ classDiagram
 ## Notes
 
 - **One menu model** for the title, the pause, Confirm quit, the options and the visual effects
-  (six menus, built once): the `SceneMachine` builds each menu's rows from data, so a later row
+  (five menus, built once): the `SceneMachine` builds each menu's rows from data, so a later row
   (high scores, controls, audio) is a data addition. A row whose screen does not exist yet is not
   in the list. Rows are message keys; there is no row-kind class (G1a-3 design, KISS): a row is a
   switch or a choice only because its screen's `value(row)` gives it a value (*ON* / *OFF*,
-  *ENGLISH* / *FRANCAIS*), and the scene machine knows what activating it does. Left and right on
-  a highlighted row activate it like `Confirm` (GDD v0.14 §9.1): every value has two states.
+  *ENGLISH* / *FRANCAIS*), and the scene machine knows what activating it does. A new left or
+  right direction on a highlighted row activates it like `Confirm`, detected on the edge like up
+  and down (GDD v0.14 §9.1): every value has two states.
 - **Runtime options and `SceneHost`** (G1a-3): the scene machine owns the live `Options` (the
   presenter reads the same `EffectSettings` object, so a switch applies at the next frame; the
-  language is read at each draw). After each change it calls `SceneHost.optionsChanged`, and
-  when it leaves a menu for play (*Play*, *Resume*) `SceneHost.releaseMovement` (GDD v0.14
-  §4.2). The composition root implements the host: it saves through `SaveStore` and forwards
+  language is read at each draw). After each change it calls `SceneHost.optionsChanged`, and on
+  every exit from a menu towards play (*Play*, *Resume*, `back` and the pause button in the
+  pause) `SceneHost.releaseMovement` (GDD v0.14 §9.1). The composition root implements the host: it saves through `SaveStore` and forwards
   autofire, fullscreen and the movement release to the `InputPort` — so the domain never sees
   the browser and the scene machine never sees storage.
 - **`InputPort` gains `setAutofire` and `releaseMovement`** (ADR-0009 contract, G1a-3):
-  `setAutofire` is ADR-0020 decision 4's option; `releaseMovement` reuses the lost-focus clear of
-  the arbitration (ADR-0015 decision 5), so no device owns the ship until one starts moving it.
-- **Options and Visual effects are reached from the title and from the pause**: four scenes,
-  two menus (meta/05-state-scenes), so `back` returns to the right parent.
+  `setAutofire` is ADR-0020 decision 4's option. `releaseMovement` drops the movement owner only
+  if it is the mouse or touch (it sets the arbitration's `clearedAt` in that case); unlike a lost
+  focus (ADR-0015 decision 5) it clears no held button and queues no pause, and a keyboard or
+  gamepad owner keeps the ship, a held direction included.
+- **Options and Visual effects are reached from the title and from the pause**: four scenes
+  sharing two menus (meta/05-state-scenes), so `back` returns to the right parent.
 - **The press and release rule lives in `Menu`** (built in G1a-2; the design's separate
   `PointerPress` was folded in, one caller only): a press within 150 ms of the last activation on
   the same row is ignored (a bouncing or doubled touch contact), and a release activates only over

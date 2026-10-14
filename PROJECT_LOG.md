@@ -13,7 +13,11 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 - Owner decision after a Chrome check of G1a-2: leaving a menu for play frees the ship's movement
   (option A, 46/50 vs 33/50 for keeping the jump): a mouse click on *Resume* no longer hands the
   ship to the mouse, so a keyboard player never sees it fly to the menu's place. Refines ADR-0018
-  decision 4 through GDD v0.14 §9.1 (the ADR itself unchanged).
+  decision 4 through GDD v0.14 §9.1 (the ADR itself unchanged): every exit from a menu towards
+  play drops a mouse or touch owner only; a keyboard or gamepad owner and held buttons are kept.
+- Doc review: 4 Must fixed (the title row of the input table, five menus not six, the
+  `releaseMovement` contract — copying the lost-focus path would have re-paused the game after
+  *Resume* — and stale `MenuRow` references), 5 Should and 3 Nice applied.
 - GDD v0.14: the title is a menu (*Play* first; a stray tap no longer starts a run); rows with a
   value show label left, value right; any activation, left and right included, flips it; the
   EN / FR row texts.
