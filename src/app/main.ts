@@ -23,6 +23,17 @@ function context2d(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
   return context;
 }
 
+/** The Keyboard API's `getLayoutMap`, checked before use: it is not in every browser. */
+function hasLayoutMap(
+  keyboard: unknown,
+): keyboard is { getLayoutMap(): Promise<ReadonlyMap<string, string>> } {
+  return (
+    typeof keyboard === 'object' &&
+    keyboard !== null &&
+    typeof Reflect.get(keyboard, 'getLayoutMap') === 'function'
+  );
+}
+
 const found = document.querySelector<HTMLCanvasElement>('#screen');
 if (found === null) throw new Error('Canvas #screen is missing from index.html');
 const visible: HTMLCanvasElement = found;
@@ -57,6 +68,11 @@ const environment: InputEnvironment = {
     globalThis.addEventListener('pointercancel', listener);
   },
   gamepads: () => navigator.getGamepads(),
+  layoutMap: () => {
+    // `navigator.keyboard` exists in Chromium only (GDD v0.15 §4.2): elsewhere, no map.
+    const keyboard: unknown = Reflect.get(navigator, 'keyboard');
+    return hasLayoutMap(keyboard) ? keyboard.getLayoutMap() : undefined;
+  },
   fullscreen: {
     active: () => document.fullscreenElement !== null,
     // A refusal (no permission, an iframe) leaves the page windowed: nothing to report.

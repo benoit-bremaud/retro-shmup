@@ -4,12 +4,16 @@ import type {
   InputPort,
   IntentFrame,
 } from '../../domain/ports/input-port';
+import { toSteps } from '../../domain/game/tuning';
+import { isCapturableButton, isCapturableKey } from '../../domain/input/capturable';
+import { InputTuning } from '../../domain/input/input-tuning';
 import { Button } from '../../domain/ports/input-port';
 import type { ScreenLayout } from '../../domain/presentation/screen';
 import { arbitrate, createArbitration, createSample, releasePointerOwner } from './arbitration';
 import type { DeviceSamples } from './arbitration';
 import { GamepadModule } from './gamepad';
 import type { GamepadList } from './gamepad';
+import { KeyLabels } from './key-labels';
 import { KeyboardModule } from './keyboard';
 import { PointerModule } from './pointer';
 import type { CanvasRect, PointerEventLike } from './pointer';
@@ -19,11 +23,32 @@ const NO_PADS: GamepadList = [];
 /** The part of a `KeyboardEvent` the adapter reads. */
 export interface KeyEventLike {
   readonly code: string;
+  /** The character the layout prints, or a key name (`Shift`, `Enter`). */
+  readonly key: string;
   readonly repeat: boolean;
   readonly ctrlKey: boolean;
   readonly metaKey: boolean;
   readonly altKey: boolean;
   preventDefault(): void;
+}
+
+/** The capture's two answers that carry nothing, shared. */
+const WAITING: BindingCapture = { kind: 'waiting' };
+const CANCELLED: BindingCapture = { kind: 'cancelled' };
+/** Reads (one per step) a gamepad capture waits before it cancels itself. */
+const CAPTURE_READS = toSteps(InputTuning.captureTimeoutSeconds);
+/** The standard mapping's buttons, `0` to `16`: a capture checks each against the allowlist. */
+const STANDARD_BUTTONS = 17;
+
+/**
+ * A browser shortcut is a key pressed with Ctrl, Cmd or Alt held. The Ctrl and Alt keys report
+ * their own flag on their own keydown, so that flag alone never makes a shortcut (GDD v0.15 §4.2:
+ * they are capturable).
+ */
+function isShortcut(event: KeyEventLike): boolean {
+  const ctrl = event.ctrlKey && !event.code.startsWith('Control');
+  const alt = event.altKey && !event.code.startsWith('Alt');
+  return ctrl || alt || event.metaKey;
 }
 
 /**
@@ -43,6 +68,8 @@ export interface InputEnvironment {
   onPointerCancel(listener: (event: PointerEventLike) => void): void;
   /** `navigator.getGamepads()`, polled once per read. */
   gamepads(): GamepadList;
+  /** The browser's keyboard layout map, where it exists (Chromium); `undefined` elsewhere. */
+  layoutMap(): Promise<ReadonlyMap<string, string>> | undefined;
   /** The page's fullscreen state and requests, called only inside a gesture's handler. */
   readonly fullscreen: {
     active(): boolean;
@@ -74,14 +101,33 @@ export class DeviceInput implements InputPort {
   private automaticPause = false;
   /** A fullscreen wish not applied yet: the next key or pointer press applies it, once. */
   private pendingFullscreen: boolean | undefined;
+  /** The device a capture waits for, or none (GDD v0.15 §4.2). */
+  private capturing: keyof Bindings | undefined;
+  private captured: BindingCapture = WAITING;
+  private captureReadsLeft = 0;
+  private readonly keyLabels = new KeyLabels();
 
   constructor(environment: InputEnvironment) {
     this.environment = environment;
+    // The layout map is asynchronous; until it resolves, the US characters stand in.
+    environment
+      .layoutMap()
+      ?.then((layout) => {
+        this.keyLabels.useLayout(layout);
+      })
+      .catch(() => undefined); // refused (an iframe, a policy): the US characters stay
     environment.onKeyDown((event) => {
-      // A browser shortcut (Ctrl, Cmd or Alt held) is never a game input and keeps its action.
-      if (event.ctrlKey || event.metaKey || event.altKey) return;
+      // A browser shortcut is never a game input and keeps its action.
+      if (isShortcut(event)) return;
       this.seq += 1;
       this.applyFullscreen();
+      this.keyLabels.learn(event.code, event.key);
+      // While a keyboard capture waits, a key only answers it: it latches no intent, so the
+      // answering step carries no menu action (GDD v0.15 §4.2).
+      if (this.capturing === 'keyboard' && this.captured.kind === 'waiting') {
+        if (this.captureKey(event)) event.preventDefault();
+        return;
+      }
       if (this.keyboard.keyDown(event.code, event.repeat, this.seq)) event.preventDefault();
     });
     environment.onKeyUp((event) => {
@@ -93,6 +139,7 @@ export class DeviceInput implements InputPort {
       this.pointer.release();
       this.arbitration.clearedAt = this.seq;
       this.automaticPause = true;
+      this.cancelCapture();
     });
     environment.onPointerDown((event) => {
       this.seq += 1;
@@ -127,7 +174,11 @@ export class DeviceInput implements InputPort {
     this.pointer.sampleMouse(this.samples.mouse);
     // The poll applies after this read's events (ADR-0015 decision 5); a lost active pad pauses.
     this.seq += 1;
-    if (this.gamepad.poll(this.padsOrNone(), this.seq)) this.automaticPause = true;
+    if (this.gamepad.poll(this.padsOrNone(), this.seq)) {
+      this.automaticPause = true;
+      this.cancelCapture(); // the active pad lost cancels a capture (GDD v0.15 §4.2)
+    }
+    this.captureButton();
     this.gamepad.sample(this.samples.gamepad);
     arbitrate(this.arbitration, this.samples, into);
     if (this.automaticPause) into.pressed |= Button.Pause;
@@ -164,14 +215,55 @@ export class DeviceInput implements InputPort {
     this.gamepad.setBindings(bindings);
   }
 
-  /** Key capture arrives with the options screen. */
-  captureNext(): BindingCapture {
-    return { kind: 'cancelled' };
+  startCapture(device: keyof Bindings): void {
+    this.capturing = device;
+    this.captured = WAITING;
+    this.captureReadsLeft = CAPTURE_READS;
   }
 
-  /** Layout-aware labels arrive with the options screen. */
+  captureNext(): BindingCapture {
+    if (this.capturing === undefined) return CANCELLED;
+    const answer = this.captured;
+    if (answer.kind !== 'waiting') this.capturing = undefined;
+    return answer;
+  }
+
+  cancelCapture(): void {
+    if (this.capturing !== undefined) this.captured = CANCELLED;
+  }
+
   label(code: string): string {
-    return code;
+    return this.keyLabels.label(code);
+  }
+
+  /**
+   * A keyboard capture's answer (GDD v0.15 §4.2): `Escape` cancels and keeps its browser action,
+   * a capturable key answers, any other key is refused; every key but `Escape` is prevented while
+   * waiting. Returns whether to prevent the browser action.
+   */
+  private captureKey(event: KeyEventLike): boolean {
+    if (event.code === 'Escape') {
+      this.captured = CANCELLED;
+      return false;
+    }
+    if (!event.repeat && isCapturableKey(event.code)) {
+      this.captured = { kind: 'key', code: event.code };
+    }
+    return true;
+  }
+
+  /** A gamepad capture's answer at each read: the lowest capturable button that went down. */
+  private captureButton(): void {
+    if (this.capturing !== 'gamepad' || this.captured.kind !== 'waiting') return;
+    const presses = this.gamepad.pressesOfLastPoll;
+    for (let index = 0; index < STANDARD_BUTTONS; index += 1) {
+      if ((presses & (1 << index)) !== 0 && isCapturableButton(index)) {
+        this.captured = { kind: 'button', index };
+        return;
+      }
+    }
+    this.captureReadsLeft -= 1;
+    if (this.captureReadsLeft <= 0) this.captured = CANCELLED;
   }
 
   setFullscreenWanted(wanted: boolean): void {

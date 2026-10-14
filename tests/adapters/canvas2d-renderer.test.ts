@@ -219,7 +219,16 @@ describe('Canvas2DRenderer — hud font (RenderPort contract, HUD_FONT_CELL)', (
     expect(blocks).toContain(`fillRect ${Palette.titleText} 8,0,2,2`);
   });
 
-  it.each(['1', 'É'])('throws on %j in the menu font (fail closed)', (text) => {
+  it('draws digits and the four arrows in the menu font', () => {
+    const { renderer, offscreen } = setup();
+    renderer.drawText('1\u2191\u2193\u2190\u2192', 0, 0, 'menu');
+    const blocks = offscreen.calls.filter((call) =>
+      call.startsWith(`fillRect ${Palette.titleText} `),
+    );
+    expect(blocks.length).toBeGreaterThan(5 * 4);
+  });
+
+  it.each(['-', 'É'])('throws on %j in the menu font (fail closed)', (text) => {
     const { renderer } = setup();
     expect(() => {
       renderer.drawText(text, 0, 0, 'menu');

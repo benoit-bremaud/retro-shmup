@@ -35,6 +35,9 @@ class KeyOnlyEnvironment implements InputEnvironment {
   gamepads(): GamepadList {
     return [];
   }
+  layoutMap(): undefined {
+    return undefined;
+  }
   readonly fullscreen = {
     active: (): boolean => false,
     request: (): void => undefined,
@@ -43,6 +46,7 @@ class KeyOnlyEnvironment implements InputEnvironment {
   press(code: string): void {
     this.keyDown?.({
       code,
+      key: '',
       repeat: false,
       ctrlKey: false,
       metaKey: false,

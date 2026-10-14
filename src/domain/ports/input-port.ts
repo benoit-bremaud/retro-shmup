@@ -89,9 +89,23 @@ export interface InputPort {
   /** Fills the caller's frame in place; called once per simulation step. */
   read(into: IntentFrame): void;
   setBindings(bindings: Bindings): void;
-  /** Polls the "press the new key" capture started by the options screen. */
+  /**
+   * Starts waiting for the next capturable key or button of `device` (GDD v0.15 §4.2); an input
+   * already held does not answer, and every key's browser action but `Escape`'s is prevented.
+   */
+  startCapture(device: keyof Bindings): void;
+  /**
+   * Polls the capture: `waiting`, then once a `key`, a `button` or `cancelled` (`Escape`, the
+   * gamepad's `InputTuning.captureTimeoutSeconds`, a lost focus or pad); `cancelled` too when no
+   * capture is pending. A key that answers latches no intent.
+   */
   captureNext(): BindingCapture;
-  /** Label of a physical key in the active keyboard layout. */
+  /** Stops the capture: a tap, leaving the screen or an automatic pause (GDD v0.15 §4.2). */
+  cancelCapture(): void;
+  /**
+   * The character a letter or digit key prints in the player's layout, as one character of
+   * `A`–`Z` or `0`–`9`; `''` for a key without one (the domain names the others).
+   */
   label(code: string): string;
   /**
    * Applied once, at the next click, tap or key press — browsers require a gesture; leaving

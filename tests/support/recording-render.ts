@@ -29,14 +29,20 @@ const LETTER_A = 0x41;
 const LETTER_Z = 0x5a;
 const SPACE = 0x20;
 
+/** ← ↑ → ↓ (U+2190 to U+2193), the menu font's arrows (GDD v0.15 §4.2). */
+const ARROW_LEFT = 0x2190;
+const ARROW_DOWN = 0x2193;
+
 /**
- * The glyph sets of the RenderPort contract: `hud` digits, × and space; `title` and `menu` A–Z and
- * space.
+ * The glyph sets of the RenderPort contract: `hud` digits, × and space; `title` A–Z and space;
+ * `menu` A–Z, 0–9, space and the four arrows.
  */
 function isGlyph(code: number, font: FontId): boolean {
-  if (font === 'title' || font === 'menu')
-    return (code >= LETTER_A && code <= LETTER_Z) || code === SPACE;
-  return (code >= ZERO && code <= NINE) || code === TIMES || code === SPACE;
+  const letter = (code >= LETTER_A && code <= LETTER_Z) || code === SPACE;
+  const digit = code >= ZERO && code <= NINE;
+  if (font === 'title') return letter;
+  if (font === 'menu') return letter || digit || (code >= ARROW_LEFT && code <= ARROW_DOWN);
+  return digit || code === TIMES || code === SPACE;
 }
 
 /**

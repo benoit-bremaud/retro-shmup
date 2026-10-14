@@ -24,12 +24,13 @@ describe('RecordingRender — the RenderPort glyph-set contract', () => {
     }).toThrow(/glyph/);
   });
 
-  it('accepts A–Z and the space in the menu font, and throws on a digit or an accent', () => {
+  it('accepts A–Z, 0–9, the space and four arrows in the menu font, throws on an accent', () => {
     const render = new RecordingRender();
     render.drawText('PLEIN ECRAN', 0, 0, 'menu');
-    expect(render.texts).toHaveLength(1);
+    render.drawText('NUM 0 \u2191\u2193\u2190\u2192 9', 0, 0, 'menu');
+    expect(render.texts).toHaveLength(2);
     expect(() => {
-      render.drawText('1', 0, 0, 'menu');
+      render.drawText('-', 0, 0, 'menu');
     }).toThrow(/glyph/);
     expect(() => {
       render.drawText('É', 0, 0, 'menu');

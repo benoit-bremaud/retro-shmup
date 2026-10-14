@@ -213,10 +213,12 @@ classDiagram
   on an automatic pause trigger; the answering step reads no menu action. The capture answers
   only the edited device and only the capturable set of GDD v0.15 §4.2 (a closed list; refused
   keys leave it waiting), and the adapter prevents every key's default meanwhile but `Escape`'s.
-  Gamepad labels come from the domain's `ButtonNames` table; keyboard labels from
-  `InputPort.label`, which the `KeyLabels` part of the adapter answers from the characters learned
-  from the session's key events, then the layout map, then US, with fixed names for the other
-  keys — always a string the menu font can draw.
+  Gamepad labels come from the domain's `ButtonNames` table. Keyboard labels are split by
+  language (G1b-2): `InputPort.label` answers only the character a letter or digit key prints
+  (`KeyLabels` in the adapter: learned from the session's key events, then the layout map turned
+  to capitals once, then US; `''` for any other key), and the domain names the other keys through
+  the catalogue (*SPACE* / *ESPACE*, *SHIFT L* / *MAJ G*, the arrow glyphs, *NUM 0*…) with the
+  screen (G1b-3).
 - **Where the binding rules live (G1b-1)**: `REMAPPABLE_INTENTS` in the input port (the
   `RemappableIntent` type derives from it); `domain/input/capturable.ts` the capturable set;
   `domain/input/bindings-editor.ts` `bind` and `restore` (which also refuse an input outside the

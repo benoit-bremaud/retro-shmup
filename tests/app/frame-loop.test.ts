@@ -56,6 +56,12 @@ class CountingInput implements InputPort {
   releaseMovement(): void {
     // Not used by the loop.
   }
+  startCapture(): void {
+    // Not used by the loop.
+  }
+  cancelCapture(): void {
+    // Not used by the loop.
+  }
 }
 
 /** Behaves like requestAnimationFrame: callbacks queue up and all run on the next frame. */

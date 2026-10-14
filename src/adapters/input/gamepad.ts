@@ -64,6 +64,7 @@ export class GamepadModule {
   private readonly stickX: number[] = [0, 0, 0, 0];
   private readonly stickY: number[] = [0, 0, 0, 0];
   private active = -1;
+  private newPresses = 0;
 
   private fireMask = 0;
   private bombMask = 0;
@@ -95,6 +96,7 @@ export class GamepadModule {
    */
   poll(pads: GamepadList, seq: number): boolean {
     let lost = false;
+    this.newPresses = 0;
     for (let slot = 0; slot < SLOTS; slot += 1) {
       const pad = pads[slot] ?? null;
       if (pad === null || !pad.connected || pad.mapping !== 'standard') {
@@ -110,8 +112,14 @@ export class GamepadModule {
         continue;
       }
       this.pollPad(pad, slot, seq);
+      this.newPresses |= this.pressedOf[slot] ?? 0;
     }
     return lost;
+  }
+
+  /** The buttons that went down at the last poll, on any pad: a capture's answer (GDD §4.2). */
+  get pressesOfLastPoll(): number {
+    return this.newPresses;
   }
 
   /** Fills the sample from the active pad; nothing moves or holds without one. */
