@@ -80,7 +80,9 @@ sequenceDiagram
       Rules->>F: destroyed += 1, lastDestroyed = E position
       opt [F.isCleared() and not F.rewarded]
         Note over Rules: F.rewarded = true — one P per formation, each loop pass being a new formation
-        Rules->>W: spawnPickup(P of LevelScript.dominantColour, at F.lastDestroyed, FALL)
+        opt [F.paysP — the script row's flag, true by default (GDD v0.12)]
+          Rules->>W: spawnPickup(P of LevelScript.dominantColour, at F.lastDestroyed, FALL)
+        end
         Rules->>Bus: publish FORMATION_CLEARED
         Bus->>SK: LevelTally.formationsCleared += 1
       end
