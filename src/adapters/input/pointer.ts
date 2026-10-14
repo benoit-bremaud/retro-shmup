@@ -248,7 +248,7 @@ export class PointerModule {
       this.hoverX = this.x - this.fieldOrigin().fieldX;
       this.hoverY = this.y - this.fieldOrigin().fieldY;
     }
-    if ((releasedNow & LEFT_BUTTON) !== 0 && inside) this.released();
+    this.mouseReleased(releasedNow, inside);
     // A press arrives as a down, or as a move while another button is held (ADR-0018 decision 8).
     if ((pressedNow & LEFT_BUTTON) !== 0 && inside) {
       this.tap(field ? 'field' : 'hud', event.pointerId);
@@ -302,6 +302,11 @@ export class PointerModule {
     const field = this.fieldOrigin();
     this.touchX = this.x - field.fieldX;
     this.touchY = this.y - field.fieldY - InputTuning.touchOffsetY;
+  }
+
+  /** The left button going up on the canvas is a release, like a lifted finger. */
+  private mouseReleased(releasedButtons: number, inside: boolean): void {
+    if ((releasedButtons & LEFT_BUTTON) !== 0 && inside) this.released();
   }
 
   /** A finger lifted or the left button released at the mapped point; the first of a read wins. */
