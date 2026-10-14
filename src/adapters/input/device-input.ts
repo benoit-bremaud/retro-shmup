@@ -228,8 +228,9 @@ export class DeviceInput implements InputPort {
     return answer;
   }
 
+  /** Cancels a capture still waiting; an answer already given is kept (a tap in the same step). */
   cancelCapture(): void {
-    if (this.capturing !== undefined) this.captured = CANCELLED;
+    if (this.capturing !== undefined && this.captured.kind === 'waiting') this.captured = CANCELLED;
   }
 
   label(code: string): string {

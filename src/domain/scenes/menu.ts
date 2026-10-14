@@ -52,6 +52,8 @@ export class Menu<Id extends MessageKey> implements OpenableMenu {
   private direction = 0;
   /** The same for the horizontal direction, which activates the highlighted row (GDD v0.14). */
   private sideways = 0;
+  /** The new horizontal direction of the last step (−1, 0 or 1): the controls grid's column. */
+  private turned = 0;
   /** The row the current press started on, or `NO_ROW`. */
   private pressedRow = NO_ROW;
   private lastActivatedRow = NO_ROW;
@@ -93,6 +95,14 @@ export class Menu<Id extends MessageKey> implements OpenableMenu {
     this.pressedRow = NO_ROW;
   }
 
+  /**
+   * −1 or 1 when the last step brought a new left or right direction, else 0. Valid right after
+   * `step`, until the next one: the controls grid reads it there to choose its column.
+   */
+  get lastSideways(): number {
+    return this.turned;
+  }
+
   /** The row under the field y, or `NO_ROW`. */
   rowAt(y: number): number {
     const index = Math.floor((y - this.top) / MENU_ROW_HEIGHT);
@@ -131,6 +141,7 @@ export class Menu<Id extends MessageKey> implements OpenableMenu {
     const sideways = sidewaysOf(frame);
     const flipped = sideways !== 0 && sideways !== this.sideways;
     this.sideways = sideways;
+    this.turned = flipped ? sideways : 0;
     return flipped;
   }
 

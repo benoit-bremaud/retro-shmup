@@ -8,6 +8,38 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-14
 
+### G1b-3: the controls screen (branch `feat/g1b-controls-screen`) — Refs #46
+
+- *Controls* / *COMMANDES* in the options (hidden when the last device used is touch: two option
+  menus, chosen at each opening), from the title and from the pause; *Restore defaults* asks
+  first (*NO* first) and resets the edited device only.
+- `ControlsScreen` (`scenes/controls-screen.ts`) owns the screen so the scene machine only routes:
+  the `ControlsGrid` (a `Menu` of 9 rows plus the column from left and right, the hover and the
+  tap's x), the edited device (the last of keyboard and gamepad, fixed during a capture), the
+  capture through the `SceneHost` (now also `startCapture`, `captureNext`, `cancelCapture`,
+  `keyLabel`, in its own `scenes/scene-host.ts`), `bind` with a refused exchange restarting the
+  wait, and each cell's text. No menu action is read while waiting nor in the answering step; a
+  tap or leaving cancels.
+- `domain/input/input-names.ts`: `keyName` (the layout's character, else the arrow glyph, the
+  numpad name or the catalogue's name by language) and `buttonName` (A, B, … START, the d-pad
+  arrows), strings built once. The catalogue gains the screen's texts EN / FR.
+- `drawControlsScreen`: the header, the device, one row per intent (label, two centred cells), the
+  two action rows; one cell highlighted.
+- Reviews: no Must. Fixed (architecture-guardian) — no capture cancel on every menu opening (it
+  could never act); the options without *Controls* chosen once per opening, the scene table kept
+  immutable (`screenOf`); the grid rows derived from `REMAPPABLE_INTENTS` through a typed label
+  record (a reorder can no longer bind the wrong intent); the view says how many intent rows it
+  has; `drawMenu` and the controls screen share one highlighted-row drawing; `SlotColumn`.
+  Fixed (code-reviewer) — a tap in the same step no longer erases a capture's answer; left, right
+  and the hover change the column on the intent rows only; a tap on a label starts nothing; the
+  touch test uses a real tap and covers the row coming back after a key; the pause-side
+  automatic pause during a capture is tested.
+- Chrome check on the local build (an AZERTY keyboard): the US `W A S D` and `Z` show as **Z S Q D**
+  and **W** through the layout map; capture of *PAUSE*'s secondary (*PRESS*, then `C`, saved);
+  exchange (*FIRE* takes `X`, *BOMB* gets *SPACE*); *Restore defaults* with its confirmation; no
+  console error. Not proven in Chrome: that the new key pauses in play (the extension's captures
+  pause the game on their own); the input tests cover a new binding being applied.
+
 ### G1b-2: the capture in the input adapter and the menu font (branch `feat/g1b-capture`) — Refs #46
 
 - `InputPort.startCapture(device)`, `captureNext`, `cancelCapture` in `DeviceInput`: the next

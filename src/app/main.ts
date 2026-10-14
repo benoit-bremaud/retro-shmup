@@ -13,7 +13,7 @@ import { Run } from '../domain/game/run';
 import { Starfield } from '../domain/presentation/starfield';
 import { SaveStore } from '../domain/save/save-store';
 import { SceneMachine } from '../domain/scenes/scene-machine';
-import type { SceneHost } from '../domain/scenes/scene-machine';
+import type { SceneHost } from '../domain/scenes/scene-host';
 import { FrameLoop } from './frame-loop';
 import type { FrameTarget } from './frame-loop';
 
@@ -161,6 +161,14 @@ const host: SceneHost = {
   releaseMovement: () => {
     input.releaseMovement();
   },
+  startCapture: (device) => {
+    input.startCapture(device);
+  },
+  captureNext: () => input.captureNext(),
+  cancelCapture: () => {
+    input.cancelCapture();
+  },
+  keyLabel: (code) => input.label(code),
 };
 
 // Presentation randomness is unseeded on purpose: it never touches the outcome (ADR-0010).

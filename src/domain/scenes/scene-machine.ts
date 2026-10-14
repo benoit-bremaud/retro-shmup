@@ -10,6 +10,7 @@ import { drawHudFrame, drawPauseButton } from '../presentation/hud';
 import { isPauseTap } from '../presentation/hud-layout';
 import {
   drawBanner,
+  drawControlsScreen,
   drawCountIn,
   drawMenuScreen,
   drawVeil,
@@ -21,7 +22,10 @@ import { EFFECT_ROWS, LiveOptions } from '../options';
 import type { Options } from '../options';
 import type { Starfield } from '../presentation/starfield';
 import type { MenuScreen } from '../presentation/menu-layout';
+import { ControlsScreen } from './controls-screen';
 import { Menu } from './menu';
+import { NO_HOST } from './scene-host';
+import type { SceneHost } from './scene-host';
 import type { OpenableMenu } from './menu';
 
 /** The scenes built so far (meta/05-state-scenes, build order). */
@@ -39,6 +43,11 @@ export const Scene = {
   TitleEffects: 'TITLE_EFFECTS',
   PauseOptions: 'PAUSE_OPTIONS',
   PauseEffects: 'PAUSE_EFFECTS',
+  /** The controls screen and its restore confirmation, from the title and from the pause (G1b). */
+  TitleControls: 'TITLE_CONTROLS',
+  TitleRestore: 'TITLE_RESTORE',
+  PauseControls: 'PAUSE_CONTROLS',
+  PauseRestore: 'PAUSE_RESTORE',
 } as const;
 export type Scene = (typeof Scene)[keyof typeof Scene];
 
@@ -68,34 +77,40 @@ const SCENE_TRAITS: Readonly<Record<Scene, SceneTraits>> = {
   [Scene.TitleEffects]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
   [Scene.PauseOptions]: { frozen: true, scrolls: false, drawsRun: true, pauseButton: false },
   [Scene.PauseEffects]: { frozen: true, scrolls: false, drawsRun: true, pauseButton: false },
+  [Scene.TitleControls]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
+  [Scene.TitleRestore]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
+  [Scene.PauseControls]: { frozen: true, scrolls: false, drawsRun: true, pauseButton: false },
+  [Scene.PauseRestore]: { frozen: true, scrolls: false, drawsRun: true, pauseButton: false },
 };
 
 /** Where each options scene's Back and sub-screen lead (meta/05-state-scenes). */
 const OPTIONS_ROUTES = {
-  [Scene.TitleOptions]: { parent: Scene.Title, effects: Scene.TitleEffects },
-  [Scene.PauseOptions]: { parent: Scene.Paused, effects: Scene.PauseEffects },
+  [Scene.TitleOptions]: {
+    parent: Scene.Title,
+    effects: Scene.TitleEffects,
+    controls: Scene.TitleControls,
+  },
+  [Scene.PauseOptions]: {
+    parent: Scene.Paused,
+    effects: Scene.PauseEffects,
+    controls: Scene.PauseControls,
+  },
 } as const;
+const CONTROLS_ROUTES = {
+  [Scene.TitleControls]: { parent: Scene.TitleOptions, restore: Scene.TitleRestore },
+  [Scene.PauseControls]: { parent: Scene.PauseOptions, restore: Scene.PauseRestore },
+} as const;
+const RESTORE_PARENT = {
+  [Scene.TitleRestore]: Scene.TitleControls,
+  [Scene.PauseRestore]: Scene.PauseControls,
+} as const;
+
+/** The options rows; *Controls* is hidden when the last device used is touch (GDD v0.15 §4.2). */
+type OptionsRow = 'visualEffects' | 'controls' | 'autofire' | 'language' | 'fullscreen' | 'back';
 const EFFECTS_PARENT = {
   [Scene.TitleEffects]: Scene.TitleOptions,
   [Scene.PauseEffects]: Scene.PauseOptions,
 } as const;
-
-/**
- * What the scene machine tells the outside (meta/04-class-menus): the composition root saves the
- * options and forwards autofire, fullscreen and the movement release to the input port, so the
- * domain never sees storage or the browser.
- */
-export interface SceneHost {
-  /** After each change of an option: the live options, to read at once and never keep. */
-  optionsChanged(options: Readonly<Options>): void;
-  /** On each exit from a menu towards play: a mouse or touch owner lets the ship go (§9.1). */
-  releaseMovement(): void;
-}
-
-const NO_HOST: SceneHost = {
-  optionsChanged: () => undefined,
-  releaseMovement: () => undefined,
-};
 
 const COUNT_IN_STEPS = toSteps(SceneTuning.countInSeconds);
 const GAME_OVER_STEPS = toSteps(SceneTuning.gameOverSeconds);
@@ -157,10 +172,22 @@ export class SceneMachine {
   private readonly hasValue = (row: MessageKey): boolean => this.options.value(row) !== undefined;
   /** The value each options row shows, read at each draw; built once. */
   private readonly value = (row: MessageKey): MessageKey | undefined => this.options.value(row);
-  private readonly optionsMenu = new Menu(
-    ['visualEffects', 'autofire', 'language', 'fullscreen', 'back'] as const,
+  private readonly fullOptionsMenu = new Menu<OptionsRow>(
+    ['visualEffects', 'controls', 'autofire', 'language', 'fullscreen', 'back'],
     this.hasValue,
   );
+  private readonly touchOptionsMenu = new Menu<OptionsRow>(
+    ['visualEffects', 'autofire', 'language', 'fullscreen', 'back'],
+    this.hasValue,
+  );
+  /** Whether the options opened without *Controls* (touch used last), frozen until they reopen. */
+  private optionsTouch = false;
+  private readonly restoreMenu = new Menu(['no', 'yes'] as const);
+  /**
+   * The device of the last input, touch included (the controls screen's own device is the last
+   * of keyboard and gamepad): touch hides the *Controls* row.
+   */
+  private lastDevice: IntentFrame['device'] = 'keyboard';
   private readonly effectsMenu = new Menu(
     ['allOn', 'allOff', ...EFFECT_ROWS, 'back'] as const,
     this.hasValue,
@@ -169,7 +196,7 @@ export class SceneMachine {
    * Every menu scene: its menu and header. Drawing and opening read this one table, so a new menu
    * screen is one entry here plus its step method.
    */
-  private readonly menuScreens: Partial<Record<Scene, MenuScene>> = {
+  private readonly menuScreens: Readonly<Partial<Record<Scene, MenuScene>>> = {
     [Scene.Title]: { menu: this.titleMenu },
     [Scene.Paused]: { menu: this.pauseMenu, header: { key: 'pause', font: 'title' } },
     [Scene.ConfirmQuit]: { menu: this.quitMenu, header: { key: 'quitQuestion', font: 'menu' } },
@@ -177,7 +204,12 @@ export class SceneMachine {
     [Scene.PauseOptions]: this.optionsScreen(),
     [Scene.TitleEffects]: this.effectsScreen(),
     [Scene.PauseEffects]: this.effectsScreen(),
+    [Scene.TitleRestore]: this.restoreScreen(),
+    [Scene.PauseRestore]: this.restoreScreen(),
   };
+  /** The options screen without *Controls*, used in place of the table's when `optionsTouch`. */
+  private readonly touchOptions: MenuScene = this.touchOptionsScreen();
+  private readonly controls: ControlsScreen;
 
   /**
    * `options` are the saved ones, copied into the live options; `createRun` builds each new run
@@ -195,10 +227,27 @@ export class SceneMachine {
     this.createRun = createRun;
     this.host = host;
     this.options = new LiveOptions(options);
+    this.controls = new ControlsScreen(this.options, host);
   }
 
   private optionsScreen(): MenuScene {
-    return { menu: this.optionsMenu, header: { key: 'options', font: 'title' }, value: this.value };
+    return {
+      menu: this.fullOptionsMenu,
+      header: { key: 'options', font: 'title' },
+      value: this.value,
+    };
+  }
+
+  private touchOptionsScreen(): MenuScene {
+    return {
+      menu: this.touchOptionsMenu,
+      header: { key: 'options', font: 'title' },
+      value: this.value,
+    };
+  }
+
+  private restoreScreen(): MenuScene {
+    return { menu: this.restoreMenu, header: { key: 'restoreDefaults', font: 'menu' } };
   }
 
   private effectsScreen(): MenuScene {
@@ -224,6 +273,7 @@ export class SceneMachine {
     // The title and its menus scroll the background; the scenes with a run count it themselves.
     if (traits.scrolls && !traits.drawsRun) this.backgroundSteps += 1;
     this.steps += 1;
+    this.lastDevice = frame.device;
     switch (this.current) {
       case Scene.Boot:
         // Nothing to load yet (no assets, no save document). The title takes this step's frame,
@@ -260,6 +310,14 @@ export class SceneMachine {
       case Scene.PauseEffects:
         this.stepEffects(frame, this.current);
         return;
+      case Scene.TitleControls:
+      case Scene.PauseControls:
+        this.stepControls(frame, this.current);
+        return;
+      case Scene.TitleRestore:
+      case Scene.PauseRestore:
+        this.stepRestore(frame, this.current);
+        return;
     }
   }
 
@@ -286,9 +344,11 @@ export class SceneMachine {
   // Each change applies at once and reaches the host; Back and the Back row return to the
   // parent, Visual effects opens its sub-screen (GDD v0.14 §9.1, §9.3).
   private stepOptions(frame: Readonly<IntentFrame>, scene: keyof typeof OPTIONS_ROUTES): void {
-    const row = this.optionsMenu.step(frame, this.steps);
+    const menu = this.optionsTouch ? this.touchOptionsMenu : this.fullOptionsMenu;
+    const row = menu.step(frame, this.steps);
     if (this.backTo(row, frame, OPTIONS_ROUTES[scene].parent)) return;
     if (row === 'visualEffects') this.openMenu(OPTIONS_ROUTES[scene].effects, frame);
+    else if (row === 'controls') this.openControls(OPTIONS_ROUTES[scene].controls, frame);
     else this.change(row);
   }
 
@@ -296,6 +356,25 @@ export class SceneMachine {
     const row = this.effectsMenu.step(frame, this.steps);
     if (this.backTo(row, frame, EFFECTS_PARENT[scene])) return;
     this.change(row);
+  }
+
+  // The controls screen does its own work; it hands back only its two exits (GDD v0.15 §4.2).
+  private stepControls(frame: Readonly<IntentFrame>, scene: keyof typeof CONTROLS_ROUTES): void {
+    const exit = this.controls.step(frame, this.steps);
+    if (exit === 'back') this.openMenu(CONTROLS_ROUTES[scene].parent, frame);
+    else if (exit === 'restore') this.openMenu(CONTROLS_ROUTES[scene].restore, frame);
+  }
+
+  // No is first, like Quit; Yes restores the device edited only, then back to the controls.
+  private stepRestore(frame: Readonly<IntentFrame>, scene: keyof typeof RESTORE_PARENT): void {
+    const row = this.restoreMenu.step(frame, this.steps);
+    if (row === 'yes') this.controls.restoreDefaults();
+    if (row !== undefined || this.backed(frame)) this.openControls(RESTORE_PARENT[scene], frame);
+  }
+
+  private openControls(scene: Scene, frame: Readonly<IntentFrame>): void {
+    this.current = scene;
+    this.controls.open(this.steps, frame);
   }
 
   /** The Back row or `back` opens `parent`; returns whether it did. */
@@ -338,8 +417,13 @@ export class SceneMachine {
 
   /** Enters a menu scene and opens its menu: the one place a menu is reset (first row, guard). */
   private openMenu(scene: Scene, frame: Readonly<IntentFrame>): void {
+    // The options show *Controls* unless touch was used last (GDD v0.15 §4.2), fixed until they
+    // reopen: a touch on the open screen never swaps its rows.
+    if (scene === Scene.TitleOptions || scene === Scene.PauseOptions) {
+      this.optionsTouch = this.lastDevice === 'touch';
+    }
     this.current = scene;
-    this.menuScreens[scene]?.menu.reset(this.steps, frame);
+    this.screenOf(scene)?.menu.reset(this.steps, frame);
   }
 
   // Pause does nothing here: an automatic trigger can only enter the pause, never leave it. Back
@@ -412,6 +496,12 @@ export class SceneMachine {
     this.lockLeft = LOCK_STEPS;
   }
 
+  /** The menu screen of a scene: the table's, or the options without *Controls* on touch. */
+  private screenOf(scene: Scene): MenuScene | undefined {
+    const touchOptions = scene === Scene.TitleOptions || scene === Scene.PauseOptions;
+    return touchOptions && this.optionsTouch ? this.touchOptions : this.menuScreens[scene];
+  }
+
   /** Consumes one locked step; true while Confirm and taps are still ignored. */
   private locked(): boolean {
     if (this.lockLeft === 0) return false;
@@ -468,8 +558,10 @@ export class SceneMachine {
   }
 
   private drawOverlays(): void {
-    const menuScreen = this.menuScreens[this.current];
-    if (menuScreen !== undefined) {
+    const menuScreen = this.screenOf(this.current);
+    if (this.current === Scene.TitleControls || this.current === Scene.PauseControls) {
+      drawControlsScreen(this.renderer, this.controls, this.options.language);
+    } else if (menuScreen !== undefined) {
       drawMenuScreen(this.renderer, menuScreen, this.options.language);
     } else if (this.current === Scene.GameOver) {
       drawVeil(this.renderer);
