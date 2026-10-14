@@ -422,8 +422,8 @@ unchanged.
   *Options*); every change applies at once and reaches `SceneHost.optionsChanged`; every exit
   from a menu towards play (*Play*, *Resume*, `back` and the pause button in the pause) calls
   `SceneHost.releaseMovement`. The title lock ignores the whole menu, highlight moves included.
-- **Not yet**: `High scores`, `Name entry`, `Ending`, `Credits`, the gesture prompt's audio part,
-  the audio sub-screen (G2, G3, G4); the controls screen is G1b's (below).
+- **Not yet**: `Credits`, the gesture prompt's audio part, the audio sub-screen (G3, G4); the
+  controls screen is G1b's and the hall of fame G2's (below).
 
 ### Screens brick additions (G1b, GDD v0.15)
 
@@ -470,3 +470,46 @@ stateDiagram-v2
 | F — the level | PRs F-0 to F-3 (ADR-0022, F-2 split by ADR-0023), each merge playable: F-0 design (GDD v0.10, ADR-0022); F-1 the strategy factories (the Gunner refactor first, no behaviour change), `Body.volleys`, `SizeTier.LARGE`, the Heavy (ring and fan archetypes, its drop), the ring and fan attacks, the 120 s script of GDD v0.10 §7.2.2 with the 1-UP Carrier and without the Bomb Carrier (interim: it still wraps at 120 s), the level simulation at ≤ 16 enemies and ≤ 40 enemy bullets; F-2 the boss, in three PRs (ADR-0023: F-2-0 its design; F-2a the domain — `fire`/`tick` patterns and group sequences, `warningAt`, `startBoss`, `Boss` and `BossState`, the Cruiser's `BossDefinition`, `BossTuning`, `damageBoss` in pass 1 and the bomb, the boss body in pass 3, the boss events, `RunOutcome.LEVEL_CLEARED` and `RUN_CLEARED` over the level list, the snapshot's boss view, `loopAt` removed, the boss drawn as grey rectangles, interim `Results` with the "LEVEL CLEAR" banner for 3 s, then the title; F-2b the HUD — the WARNING banner (`drawWarning`, a scene overlay read from the boss state under the pause veil), the HP bar with the 66 % tick and the seconds (`drawBossBar`, drawn by the presenter); F-2c the game feel — the debris, the Large and boss explosion tiers, the slow motion and its switch; built as animated explosions in style A without white (a shrinking core, deterministic fragments, a boss core reduced to 0.3 × its size), the ship's explosion on `PLAYER_DIED`, the boss chain of 1 + 6 bursts 1/3 s apart, `EffectSettings.slowMotion` off under reduced motion); F-3 `LevelTally`, `TallyTuning`, `RunView.tally()`, the `Results` lines, lock and 8 s exit, `RUN_CLEARED` → `Results` → `Title`, the documentation pass |
 | G1a — menus and options | GDD v0.13: the menu-row model, the title and pause menus, `Confirm quit`, the options and visual-effects screens, the `localStorage` adapter of `StoragePort` and the options part of the save document, every string EN and FR (the section above) |
 | Later bricks | screens brick (G1b remap, G2 hall of fame, G3 audio, G4 art): the Ending card and the name entry after a cleared run (lifting the slice-end deviation), the bitmap fonts with the first-time pickup labels, a touch bomb button if the screens revisit it (GDD v0.8 §4.2), the name entry with the letter picker and the optional country, and the save-document schema for the named top 10 (GDD v0.9 §9.1, §9.8) |
+
+### Screens brick additions (G2, GDD v0.16)
+
+```mermaid
+---
+title: stm — the hall of fame
+---
+stateDiagram-v2
+  state "Level results" as Results
+  state "Game over" as GameOver
+  state "Ending" as Ending
+  state "Name entry" as NameEntry {
+    state "Name" as NameStep
+    state "Country" as CountryStep
+    [*] --> NameStep
+    NameStep --> CountryStep : OK, or SKIP with the name ???
+    CountryStep --> [*] : OK with a valid code, or NONE
+  }
+  state "High scores" as HighScores
+  Results --> Ending : confirm after the lock, or after 8 s [RUN_CLEARED]
+  Ending --> NameEntry : confirm after 1 s, or after 6 s [score enters the table]
+  Ending --> Title : confirm after 1 s, or after 6 s [otherwise]
+  GameOver --> NameEntry : confirm after the lock, or after 3 s [score enters the table]
+  GameOver --> Title : confirm after the lock, or after 3 s [otherwise]
+  NameEntry --> HighScores : the entry stored and saved, highlighted
+  Title --> HighScores : high scores
+  HighScores --> Title : back, confirm or a tap
+```
+
+- **Lifts the slice-end interim**: a cleared run goes Results → Ending, no longer to the title.
+- **Name entry** keeps the finished run read-only for its score and level; the `back` intent
+  deletes, it never leaves (the entry is skipped by *SKIP* only). `Pause` and the automatic pause
+  triggers are ignored in `Ending`, `Name entry` and `High scores` (no run steps). The `Escape`
+  key sends `back` too, so it deletes like the gamepad's `B`.
+- **Opening guard**: the press that opens `Name entry` or `High scores` never acts there (a tap
+  must start on the new screen, §9.1); the title reached from `High scores` is locked for 1 s, as
+  after Game over.
+- **The letter grid** is one model for both steps (the country step shows the letters only, with
+  *DEL*, *NONE* and *OK*), sharing `Menu`'s press, release and opening-guard rules; the cursor
+  moves in two dimensions and wraps.
+- `High scores` scrolls the background like the title; `Ending` keeps the run frozen behind it, as
+  `Results` does.
+

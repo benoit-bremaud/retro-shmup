@@ -98,3 +98,12 @@ backend. Values are GDD v0.9 values (§8, §9.1, §9.8).
 - GDD v0.9 §8, §9.1, §9.8, §13, Decision record ("Top-10 name", "Top-10 country"); ADR-0006,
   ADR-0009; `docs/architecture/diagrams/meta/05-state-scenes.md` (design revision v0.9);
   ISO 3166-1 alpha-2; BCP 47 (region subtag); Regulation (EU) 2016/679, Art. 5(1)(c).
+
+## Amendment (2026-10-14, GDD v0.16)
+
+Decision 7's `version: 1` is overtaken: the save document reached version 2 with the bindings
+(GDD v0.15, G1b) before any entry was stored. The entries first ship under version 2, in the
+shape of decision 1; the empty `highScores` written by versions 1 and 2 is parsed by the same
+allowlist, so no version bump and no migration are needed. The decisions are otherwise unchanged
+and the status stays *Accepted*.
+

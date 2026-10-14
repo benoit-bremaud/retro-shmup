@@ -84,9 +84,8 @@ step depends on them.
   - 6c. Player lets a pickup leave the screen: it is lost.
   - 8a. The boss timer expires: the boss flees, no boss bonus, continue at step 9 (GDD §6).
   - 9a. Vertical slice (GDD v0.10 §9.1, ADR-0022): the level list holds level 1 only, so after
-    its results the run is cleared and the game returns to the title (step 12); steps 10 and 11
-    — the next levels, the Ending and the top-10 comparison — arrive with level 2 and the
-    screens brick (G).
+    its results the run is cleared; since GDD v0.16 (G2) it goes to the Ending and the top-10
+    comparison (steps 10 and 11), the next levels arriving with level 2.
   - 11a. The final score enters the top 10: UC3 runs at *run end*, then step 12.
   - *a. At any moment of play (steps 4–8), Player pauses: UC2.
   - *b. At any moment of play, the tab is hidden, the window loses focus, the gamepad in use
@@ -128,16 +127,19 @@ step depends on them.
 - **Minimal guarantee**: if storage fails, the table still shows the entry for the session;
   nothing crashes (ADR-0006).
 - **Main success scenario**:
-  1. The game shows the arcade name entry with the score and a letter picker (GDD v0.9 §9.1).
-  2. Player enters up to 8 characters (A–Z, 0–9, space), then keeps, changes or clears the
-     country preselected from the browser language's region, and confirms; there is no timer.
+  1. The game shows the arcade name entry with the score and the letter grid (GDD v0.16 §9.1).
+  2. Player picks up to 8 characters (A–Z, 0–9, space) on the grid and confirms with *OK*; then,
+     on the same grid with the letters only, keeps, changes or clears (*NONE*) the country
+     preselected from the browser language's region, and confirms; there is no timer.
   3. The game inserts the entry at its rank — after earlier entries of equal score — keeps the 10
      best, and saves the table.
   4. The game shows the high scores with the new entry highlighted.
   5. Player returns to the title screen.
 - **Extensions**:
   - 2a. The letter picker works the same on keyboard, gamepad, touch and mouse.
-  - 2b. Player skips the entry: the name is stored as `???`.
+  - 2b. Player skips the entry (*SKIP*), or confirms an empty name: it is stored as `???`.
+  - 2c. Player presses `back`: the last character (or country letter) is deleted.
+  - 2d. The two letters typed are no country code: *OK* is not shown until they are.
   - 3a. Storage is unavailable or full: the save is skipped silently; the in-memory table is
     shown for the session.
 
@@ -145,7 +147,7 @@ step depends on them.
 
 - **Primary actor**: Player. **Level**: user goal.
 - **Main success scenario**:
-  1. Player opens the high scores from the title screen.
+  1. Player opens the high scores from the title menu's *High scores* row.
   2. The game shows the local top 10: rank, name, country code (blank when absent), score, level reached.
   3. Player returns to the title screen.
 - **Extensions**:
