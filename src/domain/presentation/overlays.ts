@@ -8,8 +8,13 @@ import { message } from '../i18n/messages';
 import type { Language, MessageKey } from '../i18n/messages';
 import { HUD_FONT_CELL, MENU_FONT_CELL, TITLE_FONT_CELL } from '../ports/render-port';
 import type { RenderPort } from '../ports/render-port';
-import { MENU_HEADER_GAP, MENU_ROW_HEIGHT, MENU_VALUE_MARGIN } from './menu-layout';
-import type { MenuScreen, MenuView } from './menu-layout';
+import {
+  CONTROLS_COLUMNS,
+  MENU_HEADER_GAP,
+  MENU_ROW_HEIGHT,
+  MENU_VALUE_MARGIN,
+} from './menu-layout';
+import type { ControlsView, MenuScreen, MenuView } from './menu-layout';
 import { Palette } from './palette';
 import { FIELD_HEIGHT, FIELD_WIDTH } from './screen';
 
@@ -135,4 +140,67 @@ export function drawMenuScreen(render: RenderPort, screen: MenuScreen, language:
     else drawMenuLine(render, text, headerY);
   }
   drawMenu(render, screen.menu, language, screen.value);
+}
+
+/** The two action rows that close the controls screen: *Restore defaults* and *Back*. */
+const CONTROLS_ACTION_ROWS = 2;
+
+/**
+ * The controls screen (GDD v0.15 §4.2): *CONTROLS* in the title font, the device edited, then one
+ * row per intent — its label, then its two slot cells — and the two action rows, centred. One
+ * cell, or one action row, is highlighted. Builds no string: the cells come from the view.
+ */
+export function drawControlsScreen(
+  render: RenderPort,
+  view: ControlsView,
+  language: Language,
+): void {
+  drawVeil(render);
+  const menu = view.menu;
+  drawBanner(
+    render,
+    message('controls', language),
+    menu.top - MENU_HEADER_GAP.title - MENU_ROW_HEIGHT,
+  );
+  drawMenuLine(render, message(view.deviceName, language), menu.top - MENU_ROW_HEIGHT);
+  const textTop = (MENU_ROW_HEIGHT - MENU_FONT_CELL.height) / 2;
+  const intents = menu.rows.length - CONTROLS_ACTION_ROWS;
+  for (let i = 0; i < menu.rows.length; i += 1) {
+    const key = menu.rows[i];
+    if (key === undefined) continue;
+    const y = menu.top + i * MENU_ROW_HEIGHT;
+    if (i >= intents) {
+      drawActionRow(render, message(key, language), y, i === menu.highlighted);
+      continue;
+    }
+    if (i === menu.highlighted) {
+      const x = CONTROLS_COLUMNS.slots[view.column];
+      render.drawRect(x, y, CONTROLS_COLUMNS.slotWidth, MENU_ROW_HEIGHT, Palette.menuHighlight);
+    }
+    render.drawText(message(key, language), CONTROLS_COLUMNS.label, y + textTop, 'menu');
+    drawCell(render, view.cell(i, 0), 0, y + textTop);
+    drawCell(render, view.cell(i, 1), 1, y + textTop);
+  }
+}
+
+/** A slot's text centred in its cell; an empty slot draws nothing. */
+function drawCell(render: RenderPort, text: string, column: 0 | 1, y: number): void {
+  if (text === '') return;
+  const x = CONTROLS_COLUMNS.slots[column] + (CONTROLS_COLUMNS.slotWidth - menuTextWidth(text)) / 2;
+  render.drawText(text, Math.round(x), y, 'menu');
+}
+
+/** A centred menu row, on its bar when highlighted, as in `drawMenu`. */
+function drawActionRow(render: RenderPort, text: string, y: number, highlighted: boolean): void {
+  if (highlighted) {
+    const width = menuTextWidth(text) + 2 * HIGHLIGHT_PAD;
+    render.drawRect(
+      Math.round((FIELD_WIDTH - width) / 2),
+      y,
+      width,
+      MENU_ROW_HEIGHT,
+      Palette.menuHighlight,
+    );
+  }
+  drawMenuLine(render, text, y + (MENU_ROW_HEIGHT - MENU_FONT_CELL.height) / 2);
 }

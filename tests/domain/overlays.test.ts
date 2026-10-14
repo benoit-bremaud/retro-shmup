@@ -1,7 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { HUD_FONT_CELL } from '../../src/domain/ports/render-port';
-import { drawCountIn, drawMenu, drawVeil } from '../../src/domain/presentation/overlays';
-import { MENU_ROW_HEIGHT, MENU_VALUE_MARGIN } from '../../src/domain/presentation/menu-layout';
+import {
+  drawControlsScreen,
+  drawCountIn,
+  drawMenu,
+  drawVeil,
+} from '../../src/domain/presentation/overlays';
+import {
+  CONTROLS_COLUMNS,
+  MENU_ROW_HEIGHT,
+  MENU_VALUE_MARGIN,
+} from '../../src/domain/presentation/menu-layout';
+import type { ControlsView } from '../../src/domain/presentation/menu-layout';
 import { Menu } from '../../src/domain/scenes/menu';
 import { Palette } from '../../src/domain/presentation/palette';
 import { FIELD_HEIGHT, FIELD_WIDTH } from '../../src/domain/presentation/screen';
@@ -69,6 +79,55 @@ describe('overlays of the frozen scenes (meta/05-state-scenes, enemies brick add
         y: (FIELD_HEIGHT - HUD_FONT_CELL.height) / 2,
         text: digit,
         font: 'hud',
+      },
+    ]);
+  });
+});
+
+describe('drawControlsScreen (GDD v0.15 §4.2)', () => {
+  const view: ControlsView = {
+    menu: { rows: ['up', 'fire', 'restoreDefaults', 'back'], top: 100, highlighted: 1 },
+    column: 1,
+    deviceName: 'keyboard',
+    cell: (row, column) =>
+      [
+        ['↑', 'Z'],
+        ['ESPACE', 'W'],
+      ][row]?.[column] ?? '',
+  };
+
+  it('draws the header, the device, each intent with its two cells, then the actions', () => {
+    const render = new RecordingRender();
+    drawControlsScreen(render, view, 'fr');
+    expect(render.texts.map((text) => text.text)).toEqual([
+      'COMMANDES',
+      'CLAVIER',
+      'HAUT',
+      '↑',
+      'Z',
+      'TIR',
+      'ESPACE',
+      'W',
+      'PAR DEFAUT',
+      'RETOUR',
+    ]);
+    const label = render.texts.find((text) => text.text === 'TIR');
+    const second = render.texts.find((text) => text.text === 'W');
+    expect(label?.x).toBe(CONTROLS_COLUMNS.label);
+    expect(second?.x).toBeGreaterThanOrEqual(CONTROLS_COLUMNS.slots[1]);
+  });
+
+  it('highlights the one cell of the highlighted row and column', () => {
+    const render = new RecordingRender();
+    drawControlsScreen(render, view, 'fr');
+    expect(render.rectsOf(Palette.menuHighlight)).toEqual([
+      {
+        region: 'field',
+        x: CONTROLS_COLUMNS.slots[1],
+        y: 100 + MENU_ROW_HEIGHT,
+        w: CONTROLS_COLUMNS.slotWidth,
+        h: MENU_ROW_HEIGHT,
+        colour: Palette.menuHighlight,
       },
     ]);
   });

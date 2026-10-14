@@ -34,3 +34,19 @@ export interface MenuScreen {
 
 /** A row with a value: its label starts here and its value ends at the mirror edge. */
 export const MENU_VALUE_MARGIN = 24;
+
+/**
+ * The controls screen's columns (GDD v0.15 §4.2): an intent label of 6 characters, then two slot
+ * cells of 10 characters (80 px each) — 8 + 48 + 8 + 80 + 8 + 80 = 232 of the 240 px.
+ */
+export const CONTROLS_COLUMNS = { label: 8, slots: [64, 152], slotWidth: 80 } as const;
+
+/** What the controls screen shows: its rows, the highlighted cell and each slot's text. */
+export interface ControlsView {
+  readonly menu: MenuView;
+  readonly column: 0 | 1;
+  /** *KEYBOARD* or *GAMEPAD*, under the header. */
+  readonly deviceName: MessageKey;
+  /** A slot cell's text for intent row `row` (0 to 6), built by no draw. */
+  cell(row: number, column: 0 | 1): string;
+}

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_BINDINGS } from '../../src/domain/input/default-bindings';
 import type { EffectSettings, Options } from '../../src/domain/options';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
-import type { IntentFrame } from '../../src/domain/ports/input-port';
+import type { BindingCapture, IntentFrame } from '../../src/domain/ports/input-port';
 import { Palette } from '../../src/domain/presentation/palette';
 import { Starfield } from '../../src/domain/presentation/starfield';
 import { DIVER, POPCORN } from '../../src/domain/game/enemy';
@@ -14,7 +14,8 @@ import { swayMovement } from '../../src/domain/game/movements';
 import { Run, RunOutcome } from '../../src/domain/game/run';
 import { MENU_ROW_HEIGHT, menuTop } from '../../src/domain/presentation/menu-layout';
 import { Scene, SceneMachine } from '../../src/domain/scenes/scene-machine';
-import type { SceneHost } from '../../src/domain/scenes/scene-machine';
+import { NO_HOST } from '../../src/domain/scenes/scene-host';
+import type { SceneHost } from '../../src/domain/scenes/scene-host';
 import { PORTRAIT } from '../../src/domain/presentation/screen';
 import { RecordingRender } from '../support/recording-render';
 import type { RecordedRect } from '../support/recording-render';
@@ -974,6 +975,18 @@ describe('SceneMachine — the pause menu and Confirm quit (GDD v0.13 §9.1, G1a
 class RecordingHost implements SceneHost {
   readonly saved: Options[] = [];
   released = 0;
+  startCapture(): void {
+    // This host captures nothing.
+  }
+  captureNext(): BindingCapture {
+    return NO_HOST.captureNext();
+  }
+  cancelCapture(): void {
+    // Nothing to cancel.
+  }
+  keyLabel(): string {
+    return '';
+  }
   optionsChanged(options: Readonly<Options>): void {
     this.saved.push(structuredClone(options));
   }
@@ -1042,6 +1055,7 @@ describe('SceneMachine — the options screens (GDD v0.14 §9.1, §9.3, G1a-3)',
     expect(fieldTextsOf(render)).toEqual([
       'OPTIONS',
       'VISUAL EFFECTS',
+      'CONTROLS',
       'AUTOFIRE',
       'OFF',
       'LANGUAGE',
@@ -1055,7 +1069,7 @@ describe('SceneMachine — the options screens (GDD v0.14 §9.1, §9.3, G1a-3)',
     downBy(machine, 1);
     machine.step(DT, pressed(Button.Confirm));
     idle(machine);
-    machine.step(DT, rowTap(4, 5)); // Back
+    machine.step(DT, rowTap(5, 6)); // Back
     expect(machine.scene).toBe(Scene.Title);
   });
 
@@ -1063,7 +1077,7 @@ describe('SceneMachine — the options screens (GDD v0.14 §9.1, §9.3, G1a-3)',
     const { machine, host } = hosted();
     downBy(machine, 1);
     machine.step(DT, pressed(Button.Confirm));
-    downBy(machine, 1); // Autofire
+    downBy(machine, 2); // Autofire
     machine.step(DT, pressed(Button.Confirm));
     machine.step(DT, right());
     expect(host.saved.map((options) => options.autofire)).toEqual([true, false]);
@@ -1073,7 +1087,7 @@ describe('SceneMachine — the options screens (GDD v0.14 §9.1, §9.3, G1a-3)',
     const { machine, render, host } = hosted();
     downBy(machine, 1);
     machine.step(DT, pressed(Button.Confirm));
-    downBy(machine, 2); // Language
+    downBy(machine, 3); // Language
     machine.step(DT, pressed(Button.Confirm));
     machine.render(0, 16);
     expect(fieldTextsOf(render)).toContain('LANGUE');
@@ -1165,5 +1179,66 @@ describe('SceneMachine — the options screens (GDD v0.14 §9.1, §9.3, G1a-3)',
     idle(machine, 60);
     machine.step(DT, pressed(Button.Confirm));
     expect(machine.scene).toBe(Scene.Playing); // Play still highlighted: the down was ignored
+  });
+});
+
+describe('SceneMachine — the controls screen (GDD v0.15 §4.2, G1b-3)', () => {
+  function toControls(machine: SceneMachine): void {
+    downBy(machine, 1);
+    machine.step(DT, pressed(Button.Confirm)); // Options
+    downBy(machine, 1);
+    machine.step(DT, pressed(Button.Confirm)); // Controls
+  }
+
+  it('opens Controls from the options and returns to them on Back', () => {
+    const { machine, render } = hosted();
+    toControls(machine);
+    expect(machine.scene).toBe(Scene.TitleControls);
+    machine.render(0, 16);
+    // The test host names no letter key (the adapter does): only the arrow shows on this row.
+    expect(fieldTextsOf(render).slice(0, 5)).toEqual(['CONTROLS', 'KEYBOARD', 'UP', '↑', 'DOWN']);
+    machine.step(DT, pressed(Button.Back));
+    expect(machine.scene).toBe(Scene.TitleOptions);
+  });
+
+  it('hides the Controls row when the last device used is touch', () => {
+    const { machine, render } = hosted();
+    downBy(machine, 1);
+    const touch = pressed(Button.Confirm);
+    touch.device = 'touch';
+    machine.step(DT, touch);
+    machine.render(0, 16);
+    expect(fieldTextsOf(render)).not.toContain('CONTROLS');
+  });
+
+  it('asks before restoring the defaults, No first, and comes back to the controls', () => {
+    const { machine, host } = hosted();
+    toControls(machine);
+    downBy(machine, 7); // Restore defaults
+    machine.step(DT, pressed(Button.Confirm));
+    expect(machine.scene).toBe(Scene.TitleRestore);
+    machine.step(DT, pressed(Button.Confirm)); // No
+    expect(machine.scene).toBe(Scene.TitleControls);
+    expect(host.saved).toHaveLength(0);
+    downBy(machine, 7);
+    machine.step(DT, pressed(Button.Confirm));
+    downBy(machine, 1);
+    machine.step(DT, pressed(Button.Confirm)); // Yes
+    expect(machine.scene).toBe(Scene.TitleControls);
+    expect(host.saved).toHaveLength(1);
+  });
+
+  it('reaches the controls from the pause with the run frozen', () => {
+    const { machine } = hosted();
+    machine.step(DT, pressed(Button.Confirm)); // Play
+    machine.step(DT, pressed(Button.Pause));
+    downBy(machine, 1);
+    machine.step(DT, pressed(Button.Confirm)); // Options
+    downBy(machine, 1);
+    machine.step(DT, pressed(Button.Confirm)); // Controls
+    expect(machine.scene).toBe(Scene.PauseControls);
+    machine.step(DT, pressed(Button.Back));
+    machine.step(DT, pressed(Button.Back));
+    expect(machine.scene).toBe(Scene.Paused);
   });
 });
