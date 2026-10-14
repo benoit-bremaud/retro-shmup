@@ -1,7 +1,7 @@
 # State machine diagram — meta — screens and their transitions (1.0)
 
 > **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.10 §3.2, §3.4,
-> §4.2, §4.3–§4.6, §5.2.1, §6, §7.2.1, §7.2.2, §7.3, §8, §9.1, §9.2, §9.3, §9.4, §9.7
+> §4.2, §4.3–§4.6, §5.2.1, §6, §7.2.1, §7.2.2, §7.3, §8, §9.1, §9.2, §9.3, §9.4, §9.7; v0.13 §9.1 menus, §9.3 options layout
 > **Related ADRs**: ADR-0006 (save document), ADR-0009 (gestures, automatic pause), ADR-0010
 > (one run, one bus), ADR-0015 (pause in the first playable), ADR-0018 (taps, locks, pause button),
 > ADR-0019 (run seed, player-kit build order), ADR-0020 (pointer fire, autofire option), ADR-0021 (hall of fame entry), ADR-0022 (level
@@ -25,6 +25,7 @@ stateDiagram-v2
   state "Boot — load assets and save document" as Boot
   state "High scores" as HighScores
   state "Gesture prompt" as GesturePrompt
+  state "Visual effects" as Effects
   state "Game over" as GameOver
   state "Name entry" as NameEntry
 
@@ -32,6 +33,8 @@ stateDiagram-v2
   Boot --> Title : loaded
   Title --> Options : options
   Options --> Title : back
+  Options --> Effects : visual effects
+  Effects --> Options : back
   Title --> HighScores : high scores
   HighScores --> Title : back
   Title --> Credits : credits
@@ -47,6 +50,7 @@ stateDiagram-v2
     state "Count-in 3-2-1" as CountIn
     state "Options" as PauseOptions
     state "Confirm quit" as ConfirmQuit
+    state "Visual effects" as PauseEffects
 
     [*] --> IntroCard
     IntroCard --> LevelCard : confirm or after(intro time)
@@ -58,6 +62,8 @@ stateDiagram-v2
     CountIn --> Paused : Pause pressed
     Paused --> PauseOptions : options
     PauseOptions --> Paused : back
+    PauseOptions --> PauseEffects : visual effects
+    PauseEffects --> PauseOptions : back
     Paused --> ConfirmQuit : quit
     ConfirmQuit --> Paused : no
     Playing --> Results : run outcome is LEVEL_CLEARED or RUN_CLEARED
@@ -99,8 +105,9 @@ stateDiagram-v2
     when play starts and cleared when leaving `InRun`;
   - every other scene ignores `Pause`.
 - **The time scale** returned to the loop is 1 in every scene except `Playing` (ADR-0010).
-- **Options are two states sharing one screen implementation**, so `back` returns to the right
-  parent without a history pseudostate.
+- **Options and Visual effects are two states each, sharing one screen implementation** (GDD
+  v0.13 §9.3), so `back` returns to the right parent without a history pseudostate; the pause
+  pair keeps the simulation frozen like `Paused`.
 - **Gesture prompt** exists only for a start from a gamepad before any click, tap or key press;
   the audio unlock itself happens in the input adapter's handler (ADR-0009).
 - **Name entry** follows both Ending and Game over when the score qualifies (GDD v0.2 §9.1); a run
@@ -234,7 +241,7 @@ The devices brick makes the game playable on a phone, with a gamepad and with a 
   `toSteps(gameOverLockSeconds)` = 60 steps and accepted from the 61st; the 180-step timer counts
   from the same entry (the entering step is step 0 for both). A `Title` entered from `Game over` applies the same 60-step lock; the first
   `Title` never does.
-- **Interim deviation, tap resume**: until the pause menu (screens brick), any tap or click also
+- **Interim deviation, tap resume** (lifted by G1a): until the pause menu, any tap or click also
   starts `Count-in` from `Paused`.
 - **Interim deviation, gamepad start before a gesture**: unchanged (first-playable subset above);
   the gesture prompt comes with audio.
@@ -243,7 +250,10 @@ The devices brick makes the game playable on a phone, with a gamepad and with a 
 |---|---|---|---|---|---|
 | `Title` | starts a run (after the lock) | starts a run (after the lock) | starts a run (after the lock) | ignored | ignored |
 | `Playing` | `Paused`, before the run steps | field: steering finger; HUD: nothing | ignored | `Paused`, before the run steps | ignored |
-| `Paused` | `Count-in` | `Count-in` (interim) | `Count-in` | ignored | `Count-in` |
+| `Paused` | `Count-in` | activates the menu row under it, on release (G1a; before: `Count-in`, interim) | activates the highlighted row | ignored | `Count-in` |
+| `Options`, `Visual effects` (title) | (not drawn) | activates the row under it, on release | activates the highlighted row | ignored | parent screen |
+| `Options`, `Visual effects` (pause) | (not drawn) | activates the row under it, on release | activates the highlighted row | ignored (`Esc` acts as `Back`) | parent screen (`Paused` from `Options`) |
+| `Confirm quit` | (not drawn) | activates the row under it (*No* or *Yes*), on release | activates the highlighted row, *No* first | ignored (`Esc` acts as `Back`) | `Paused` |
 | `Count-in` | `Paused` | ignored | ignored | `Paused` (wins over `Confirm`, so `Start` returns to `Paused`) | ignored |
 | `Game over` | (not drawn) leaves after the lock | leaves after the lock | leaves after the lock | ignored | ignored |
 
@@ -386,6 +396,24 @@ unchanged.
 - **Strings**: the message catalogue gains `warning`, `levelClear` (interim), and the five tally
   labels, EN and FR.
 
+### Screens brick additions (G1a, GDD v0.13)
+
+- **States**: `Options` and `Visual effects` from the title and from the pause (the diagram
+  above); the pause menu's *Resume*, *Options*, *Quit* rows and `Confirm quit` (lifting the
+  tap-resume and pause-menu interim deviations). `Boot` reads the save document
+  (`parseSaveDocument`, never throws, ADR-0006) and gives the options to the composition root;
+  the title shows *Play* and *Options* only.
+- **Menu rows** (GDD v0.13 §9.1): one model for every menu — a list of rows, one highlighted,
+  each row an action, a switch, a choice or a sub-screen. Keyboard and gamepad move with up and
+  down and activate with `confirm`; touch and mouse activate on release over the pressed row,
+  with a 150 ms re-press guard; hover highlights. No timer anywhere.
+- **Options applied at once**: a switch updates `EffectSettings` (the presenter reads it each
+  frame), *Autofire* updates the pointer module (ADR-0020 decision 4), *Language* the message
+  catalogue, *Fullscreen* asks the viewport adapter, applied at the next gesture if needed
+  (ADR-0009). Each change writes the save document once, outside the fixed step.
+- **Not yet**: `High scores`, `Name entry`, `Ending`, `Credits`, the gesture prompt's audio part,
+  the controls and audio sub-screens (G1b, G2, G3, G4).
+
 ### Build order
 
 | Brick | Delivers |
@@ -396,4 +424,5 @@ unchanged.
 | E — the player kit | five PRs (ADR-0019), each merge playable: E-0 this design; E-1 randomness, pickups and their sources (run seed, pickup pool, fall and sway, collision pass 4, P-red and P-blue, `Weapon.kind` and `level` with `powerUp`, the cap bonus, `Formation` with the formation P and `FORMATION_CLEARED`, `LevelScript.dominantColour`, the Gunner `DropTable` at 30 %, the `DifficultyProfile` subset, the HUD weapon badge and pips, the determinism test with a seed; until E-2, `WEAPONS` holds the level-1 Spread record for every level and both kinds: the level, the kind and the pips change, the shot does not); E-2 the weapons on levels 1 to 5 (the data tables, damage in tenths, Laser bolts, pierce memory, the player bullet pool at 80); E-3 the Carrier (`CrossMovement`, the archetype, cargo with its load checks, the §7.2.1 rows, the Shield, Bomb and 1-UP pickups collectable, the HUD shield and bomb icons as needed); E-4 the bomb, the shield and the death rule (step slot 3, `useBomb`, `BOMB_USED`, flash and shake, `ABSORBED`, `shieldBroken`, `PLAYER_HIT`, the ring, `powerDown` with the release hop and the bombs reset). The Carrier comes before the bomb, so Shield and Bomb are catchable as soon as they exist |
 | Pointer fire and shot proportions | ADR-0020 decisions 1 to 3 and 6 (mouse left-button fire latch, touch fire while steering, samples with `autofire = false`) and the GDD v0.9 §3.2 drawn sizes in `RunPresenter`; done by #32 (`91691e4`) before F (design revision v0.9 above) |
 | F — the level | PRs F-0 to F-3 (ADR-0022, F-2 split by ADR-0023), each merge playable: F-0 design (GDD v0.10, ADR-0022); F-1 the strategy factories (the Gunner refactor first, no behaviour change), `Body.volleys`, `SizeTier.LARGE`, the Heavy (ring and fan archetypes, its drop), the ring and fan attacks, the 120 s script of GDD v0.10 §7.2.2 with the 1-UP Carrier and without the Bomb Carrier (interim: it still wraps at 120 s), the level simulation at ≤ 16 enemies and ≤ 40 enemy bullets; F-2 the boss, in three PRs (ADR-0023: F-2-0 its design; F-2a the domain — `fire`/`tick` patterns and group sequences, `warningAt`, `startBoss`, `Boss` and `BossState`, the Cruiser's `BossDefinition`, `BossTuning`, `damageBoss` in pass 1 and the bomb, the boss body in pass 3, the boss events, `RunOutcome.LEVEL_CLEARED` and `RUN_CLEARED` over the level list, the snapshot's boss view, `loopAt` removed, the boss drawn as grey rectangles, interim `Results` with the "LEVEL CLEAR" banner for 3 s, then the title; F-2b the HUD — the WARNING banner (`drawWarning`, a scene overlay read from the boss state under the pause veil), the HP bar with the 66 % tick and the seconds (`drawBossBar`, drawn by the presenter); F-2c the game feel — the debris, the Large and boss explosion tiers, the slow motion and its switch; built as animated explosions in style A without white (a shrinking core, deterministic fragments, a boss core reduced to 0.3 × its size), the ship's explosion on `PLAYER_DIED`, the boss chain of 1 + 6 bursts 1/3 s apart, `EffectSettings.slowMotion` off under reduced motion); F-3 `LevelTally`, `TallyTuning`, `RunView.tally()`, the `Results` lines, lock and 8 s exit, `RUN_CLEARED` → `Results` → `Title`, the documentation pass |
-| Later bricks | screens brick (G): the Ending card and the name entry after a cleared run (lifting the slice-end deviation), the bitmap fonts with the first-time pickup labels, the options with the effect switches, a touch bomb button if the screens revisit it (GDD v0.8 §4.2), the autofire option (ADR-0020 decision 4), the name entry with the letter picker and the optional country, and the save-document schema for the named top 10 (GDD v0.9 §9.1, §9.8) |
+| G1a — menus and options | GDD v0.13: the menu-row model, the title and pause menus, `Confirm quit`, the options and visual-effects screens, the `localStorage` adapter of `StoragePort` and the options part of the save document, every string EN and FR (the section above) |
+| Later bricks | screens brick (G1b remap, G2 hall of fame, G3 audio, G4 art): the Ending card and the name entry after a cleared run (lifting the slice-end deviation), the bitmap fonts with the first-time pickup labels, a touch bomb button if the screens revisit it (GDD v0.8 §4.2), the name entry with the letter picker and the optional country, and the save-document schema for the named top 10 (GDD v0.9 §9.1, §9.8) |

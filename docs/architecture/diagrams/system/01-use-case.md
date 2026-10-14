@@ -163,13 +163,18 @@ step depends on them.
 - **Main success scenario**:
   1. Player opens the options.
   2. Player adjusts any option of GDD §9.3: music and SFX volumes, language, fullscreen, the
-     on/off switch of each visual effect.
+     autofire switch, and, in the *Visual effects* sub-screen, the on/off switch of each visual
+     effect or all of them at once (GDD v0.13).
   3. The game applies each change at once and saves the options.
   4. Player returns to the previous screen.
 - **Extensions**:
-  - 1a. First launch with `prefers-reduced-motion`: shake, flashes, hit-stop and slow motion are
-    preset to off (GDD §9.3).
+  - 1a. First launch with `prefers-reduced-motion`: shake, flashes, hit-stop, slow motion, the
+    invulnerability blink (non-flashing form) and the bomb flash are preset to off (GDD §9.3).
   - 2a. Player wants to change the controls: see UC6.
+  - 2b. Player uses touch or the mouse: a tap or click activates the row under it on release;
+    sliding off the row cancels; the *Back* row returns to the previous screen (GDD v0.13 §9.1).
+  - 2c. A row's screen does not exist yet (volumes before the audio brick, controls before the
+    remap brick): the row is not shown.
   - 3a. Fullscreen is enabled without a click, tap or key press (gamepad): the preference is
     saved and applied at the next click, tap or key press (GDD v0.4 §9.3, ADR-0009).
   - 3b. Storage is unavailable: changes apply for the session only.

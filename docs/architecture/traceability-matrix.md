@@ -1,7 +1,7 @@
 # Traceability matrix — UML study (1.0)
 
 > **Scope**: the UML study of [docs/architecture](README.md) against the
-> [Game Design Document](../design/game-design-document.md) v0.12, ADR-0001 to ADR-0010,
+> [Game Design Document](../design/game-design-document.md) v0.13, ADR-0001 to ADR-0010,
 > ADR-0014, ADR-0015, ADR-0018, ADR-0019 to ADR-0024 (ADR-0011 to ADR-0013 are tooling decisions, ADR-0025 a versioning and release process decision, and ADR-0016 and ADR-0017 deployment and catalogue decisions, with no UML realization).
 > **Purpose**: prove coverage — every use case is realized, every class and component is used,
 > nothing is orphaned. Update this file in the same change as any diagram.
@@ -15,7 +15,8 @@ Diagram abbreviations: **UC** [01-use-case](diagrams/system/01-use-case.md) · *
 [02-sequence-boss-fight](diagrams/gameplay/02-sequence-boss-fight.md) · **STM-player**
 [05-state-player](diagrams/gameplay/05-state-player.md) · **STM-boss**
 [05-state-boss](diagrams/gameplay/05-state-boss.md) · **STM-scenes**
-[05-state-scenes](diagrams/meta/05-state-scenes.md).
+[05-state-scenes](diagrams/meta/05-state-scenes.md) · **CD-menus**
+[04-class-menus](diagrams/meta/04-class-menus.md).
 
 ## 1. Use cases → realizations
 
@@ -25,7 +26,7 @@ Diagram abbreviations: **UC** [01-use-case](diagrams/system/01-use-case.md) · *
 | UC2 Pause the run | FrameLoop, SceneMachine, DeviceInput, WebAudioPlayer | SD-tick (pause decided before the step), STM-scenes (`Paused`, `Count-in`, `Confirm quit`) | — (scene level, no run class) | music ducking (ADR-0009) |
 | UC3 Record a high score | SceneMachine, SaveDocument, LocalStorageStore | STM-scenes (`Name entry` → `High scores`) | `RunView.snapshot().score` | insertion rule and storage failure (UC3 text, ADR-0006) |
 | UC4 Consult the high scores | SceneMachine, SaveDocument, LocalStorageStore | STM-scenes (`High scores`) | — | unreadable or newer document (UC4 text, ADR-0006) |
-| UC5 Configure the game | SceneMachine, SaveDocument, WebAudioPlayer, DeviceInput | STM-scenes (`Options` from title and pause) | — | each option (GDD §9.3); fullscreen in the gesture handler (ADR-0009) |
+| UC5 Configure the game | SceneMachine, SaveDocument, LocalStorageStore, WebAudioPlayer, DeviceInput | STM-scenes (`Options` and `Visual effects` from title and pause) | CD-menus (`Menu`, `MenuRow`, `PointerPress`, `Options`, `SaveStore`) | each option (GDD §9.3); fullscreen in the gesture handler (ADR-0009) |
 | UC6 Remap the controls | SceneMachine, DeviceInput, SaveDocument | — | — | slots, swap, capture (UC6 text, GDD §4.2, ADR-0009) |
 | UC7 Read the credits | SceneMachine, MessageCatalogue | STM-scenes (`Credits`) | — | mirrors `CREDITS.md` (ADR-0005) |
 
@@ -60,6 +61,8 @@ SD-boss (added with the level brick) uses `Run`, `RunRules`, `World`, `LevelDire
 | `StrategyFactories` | | | | | CD rule table (Heavy, strategies built from data) | §5.2.1, §6.1 (ADR-0022) |
 | `Formation` | | ✓ | | ✓ (bomb kills count) | | §5.2, §4.6 |
 | `Boss`, `BossState`, `BossDefinition`, `BossPhaseSpec` | | (via `damageBoss`) | ✓ (boss contact, pass 3) | ✓ (`damageBoss` while `FIGHTING`) | STM-boss, SD-boss | §6, §6.1 |
+| Menu, MenuRow, PointerPress (G1a) | CD-menus; STM-scenes (title, pause, `Options`, `Visual effects`, `Confirm quit`); UC5 text |
+| Options, SaveStore, StoragePort (G1a) | CD-menus; STM-scenes (`Boot` reads, each option change writes); UC5 text |
 
 Every class is used by at least one behaviour diagram or by the GDD rule table of CD. The
 movement and attack strategies are exercised per archetype by the level scripts; their behaviour
@@ -80,7 +83,7 @@ is a calculation covered by unit tests (ADR-0003), not by a diagram.
 | SeededRandom | SD-kill (`Random`), CD (`Run` owns it); in the code since PR #5 but unused by the game; owned by `Run` from the player-kit brick E-1 (ADR-0019) |
 | Canvas2DRenderer, DeviceInput, PerformanceClock | SD-tick (through `RenderPort`, `InputPort`, `Clock`), CMP |
 | WebAudioPlayer | SD-kill and SD-hit (SFX through the presenter), CMP |
-| LocalStorageStore | STM-scenes (`Boot`, `Name entry`), CMP |
+| LocalStorageStore | STM-scenes (`Boot`, `Name entry`, `Options`), CD-menus (realizes `StoragePort`), CMP |
 
 ## 4. Decisions → where they are realized
 
@@ -113,6 +116,7 @@ is a calculation covered by unit tests (ADR-0003), not by a diagram.
 | GDD v0.10 (§5.2.1 Heavy; §6, §6.1 warning, Cruiser, boss HUD; §7.1, §7.2, §7.2.2 the 120 s level 1; §8 tally and Results; §9.1 the slice end; §9.2 HP bar and seconds; §9.3, §9.4 slow-motion switch, debris; §9.7 WARNING blink) | STM-boss (Cruiser table), SD-boss, CD rule table, STM-scenes (level brick additions), UC1 9 and 9a; tests: the WARNING banner visible 0.75 s of each 1.5 s, the HP bar fill and tick and the seconds from `ENTERING` (presenter, mocked `RenderPort`), slow motion off under reduced motion and never changing the step count |
 | GDD v0.11 level-1 balance (#45): §4.6, §5.2, §5.2.1 drop rates and Gunner period, §6.1 Cruiser HP, §7.2.1 rows | CD rule table (drops, `aimedAttack` period), STM-boss (Cruiser HP and phase-2 threshold); tests: `pickups.test.ts` (Gunner P below 10 %, Heavy Bomb or Shield below 30 %, nothing at the rate), `heavy.test.ts`, `enemy.test.ts` (3 bullets per hover at 1, 2 and 3 s), `boss.test.ts` and `boss-run.test.ts` (5 000 tenths, phase 2 at 3 300), `tally-run.test.ts`, `level-director.test.ts` (8-member formations at 0 s and 50 s, the 92 s and 93 s Divers, rows per pass), `level-simulation.test.ts` (Bomb drop replayed on seed 3) |
 | GDD v0.12 level-1 balance, second iteration (#45): §4.6, §5.2 and §5.2.1 formation P, §6 and §6.1 Cruiser HP, §7.2, §7.2.1 and §7.2.2 rows without the P | CD (`ScriptEvent.paysP`, `Formation` reward, `rewardIfCleared`), STM-boss (Cruiser HP and phase-2 threshold); tests: `boss.test.ts` and `boss-run.test.ts` (14 500 tenths, phase 2 at 9 570), `tally-run.test.ts` (a non-paying formation still counts), `pickups.test.ts` (cleared, no P), `level-director.test.ts` (the seven formations and their flags, the load checks), `level-simulation.test.ts` (limits, seeded replay on seed 1, the boss fight with a dodging test ship) |
+| GDD v0.13 menus and options (G1a): §9.1 menu rows and pointer activation, §9.3 options layout | STM-scenes (G1a additions, build order), CD-menus, UC5 text (extensions 2b, 2c); tests with the G1a code PR |
 
 ## 5. Known gaps (accepted)
 
