@@ -152,3 +152,12 @@ describe('ScoreKeeper — the end-of-level tally (GDD v0.10 §8, ADR-0022 decisi
     expect(keeper.multiplier).toBe(3); // the chain unchanged
   });
 });
+
+describe('ScoreKeeper — the counter stop (GDD v0.16 §8)', () => {
+  it('stops the score at 99 999 999, the eight digits shown', () => {
+    const { keeper, kill } = setup();
+    kill(99_999_000);
+    kill(5_000);
+    expect(keeper.score).toBe(99_999_999);
+  });
+});

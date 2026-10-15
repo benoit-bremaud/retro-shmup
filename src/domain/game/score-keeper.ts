@@ -2,7 +2,7 @@ import { GameEventKind } from './events';
 import type { GameEvent, RunEvents } from './events';
 import { LevelTally } from './level-tally';
 import type { TallyView } from './level-tally';
-import { BossTuning, ChainTuning, toSteps } from './tuning';
+import { BossTuning, ChainTuning, ScoreTuning, toSteps } from './tuning';
 
 const WINDOW_STEPS = toSteps(ChainTuning.windowSeconds);
 const NO_CHAIN = -1;
@@ -64,26 +64,31 @@ export class ScoreKeeper {
 
   // A kill is scored at the current multiplier, then the chain steps up (GDD v0.4 §8).
   private readonly onEnemyDestroyed = (event: Readonly<GameEvent>): void => {
-    this.points += event.value * this.multiplier;
+    this.add(event.value * this.multiplier);
     this.chainKills += 1;
     this.chainTimer = WINDOW_STEPS;
   };
 
   // The cap bonus is flat: never multiplied, and the chain does not move (GDD v0.8 §4.6).
   private readonly onPickupCollected = (event: Readonly<GameEvent>): void => {
-    this.points += event.value;
+    this.add(event.value);
   };
 
   // The boss bonus is flat too, and neither extends nor breaks the chain (GDD v0.10 §6): `value`
   // is the whole seconds the HUD showed.
   private readonly onBossDestroyed = (event: Readonly<GameEvent>): void => {
-    this.points += BossTuning.bonus + BossTuning.bonusPerSecond * event.value;
+    this.add(BossTuning.bonus + BossTuning.bonusPerSecond * event.value);
   };
 
   // The tally is flat too: added once when the level ends, the chain unchanged (GDD v0.10 §8).
   private readonly onLevelCleared = (): void => {
-    this.points += this.levelTally.total();
+    this.add(this.levelTally.total());
   };
+
+  /** Every point goes through here: the score stops at the counter stop (GDD v0.16 §8). */
+  private add(points: number): void {
+    this.points = Math.min(this.points + points, ScoreTuning.counterStop);
+  }
 
   private readonly onPlayerDied = (): void => {
     this.chainKills = 0;

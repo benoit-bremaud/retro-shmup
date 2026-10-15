@@ -686,6 +686,8 @@ until then they are an interim deviation recorded in the scene machine.
 
 ## 8. Scoring
 
+- **Counter stop** *(v0.16, owner 2026-10-15)*: the score stops at **99 999 999**, the eight digits
+  the HUD and the high scores show (the arcade way); a stored score above it is dropped.
 - **Base points** per enemy (§5.2) and per boss (§6); a pickup at its cap gives a flat 1 000,
   outside the chain (§4.6) *(v0.8)*.
 - **Chain multiplier ×1 … ×8** *(initial)*: every kill within **2 s** of the previous one extends the

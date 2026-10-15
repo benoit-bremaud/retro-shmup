@@ -41,6 +41,10 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   scores columns as coded; C2 Ending and Game over → title an interim until G2-3; C3 keys with
   Ctrl, Alt or Cmd/Meta held are ignored and keep their browser action. Name entry, letter grid
   and the host's G2-3 methods stay in the study, marked planned.
+- Codex review (P2): a stored score wider than the column overlapped the row. Owner choice A
+  (47/50): an arcade counter stop at 99 999 999 — `ScoreKeeper.add` stops there
+  (`ScoreTuning.counterStop`), `parseHighScores` drops a stored score above it; GDD §8 and the
+  gameplay class diagram updated.
 
 ### G2-1: the high-score table, its save and two glyphs (branch `feat/g2-table`) — Refs #46
 

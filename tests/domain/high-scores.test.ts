@@ -86,6 +86,7 @@ describe('parseHighScores (ADR-0021 decisions 2, 3 and 6; untrusted input)', () 
     ['a lowercase country', { ...entry('ACE', 10, 'fr') }],
     ['a negative score', { ...entry('ACE', -5) }],
     ['a score of 0', { ...entry('ACE', 0) }],
+    ['a score past the counter stop (Codex review, PR #68)', { ...entry('ACE', 100_000_000) }],
     ['a fractional score', { ...entry('ACE', 1.5) }],
     ['level 4', { ...entry('ACE', 10), level: 4 }],
     ['a bad date', { ...entry('ACE', 10), date: '14/10/2026' }],

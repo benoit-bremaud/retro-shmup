@@ -1,3 +1,4 @@
+import { ScoreTuning } from '../game/tuning';
 import { isRecord } from '../guards';
 import { COUNTRY_CODES } from './country-codes';
 
@@ -50,8 +51,9 @@ function parseEntry(value: unknown): HighScoreEntry | undefined {
   if (!isRecord(value)) return undefined;
   const { name, country, score, level, date } = value;
   if (!isName(name) || !isLevel(level)) return undefined;
-  // A score of 0 never enters the table, so none is ever stored.
-  if (typeof score !== 'number' || !Number.isSafeInteger(score) || score < 1) return undefined;
+  // A score of 0 never enters the table, and none goes past the counter stop (GDD v0.16 §8).
+  if (typeof score !== 'number' || !Number.isSafeInteger(score)) return undefined;
+  if (score < 1 || score > ScoreTuning.counterStop) return undefined;
   if (!isCalendarDate(date)) return undefined;
   if (country === undefined) return { name, score, level, date };
   if (typeof country !== 'string' || !COUNTRY_CODES.has(country)) return undefined;
