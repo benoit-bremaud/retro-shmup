@@ -39,12 +39,12 @@ Sketch of the port (signatures only; the authoritative version is the UML class 
 before implementation, per CLAUDE.md "Design before code"):
 
 ```ts
-export type SpriteId = string;          // key into the loaded sprite sheet(s) — a closed union since the 2026-10-15 amendment
+export type SpriteId = string;          // key into the loaded sprite sheet(s) — superseded: see Amendment 2026-10-15
 export type FontId = 'hud' | 'title';   // bitmap fonts, no system text
 
 export interface RenderPort {
   clear(): void;
-  drawSprite(id: SpriteId, x: number, y: number, frame?: number, flipX?: boolean): void; // boolean since the 2026-10-15 amendment
+  drawSprite(id: SpriteId, x: number, y: number, frame?: number, flipX?: boolean): void; // superseded: see Amendment 2026-10-15
   drawRect(x: number, y: number, w: number, h: number, colour: string): void;
   drawText(text: string, x: number, y: number, font: FontId): void;
   setCameraOffset(dx: number, dy: number): void;   // screen shake; (0, 0) when disabled
@@ -130,6 +130,21 @@ whole on its shapes if the image never arrives (owner, MCDA A 475/500, against a
 game's shapes). `SpriteId` becomes the closed union of the ids the presentation draws, so an
 unknown id fails to compile and the adapter's lookup table is a `Record<SpriteId, …>` checked for
 completeness. `frame` and `flipX` are unchanged and still unused.
+
+The amended signatures (the authoritative version stays the UML class diagram
+`render/04-class-sprites`):
+
+```ts
+export type SpriteId =
+  | 'player' | 'popcorn' | 'diver' | 'gunner' | 'carrier' | 'heavy'
+  | 'cruiserHull' | 'cruiserWing' | 'cruiserTurret';
+
+export interface RenderPort {
+  // (x, y) is the sprite's centre; true when drawn, false while the sheets are not baked
+  drawSprite(id: SpriteId, x: number, y: number, frame?: number, flipX?: boolean): boolean;
+  // other methods unchanged
+}
+```
 
 Sizes other than the sheet's 32 × 32 cell, and the player's upward-facing copy, are baked once at
 load into off-screen canvases, each under its own id (owner, MCDA B 430/500 against a `flipY`
