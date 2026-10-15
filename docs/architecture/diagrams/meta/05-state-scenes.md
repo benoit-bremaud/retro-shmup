@@ -535,7 +535,7 @@ stateDiagram-v2
   moves in two dimensions and wraps.
 - `High scores` scrolls the background like the title; `Ending` keeps the run frozen behind it, as
   `Results` does.
-- **Implementation shape** (refactor, 2026-10-15): each state of this diagram is one entry of the
+- **Implementation shape** (planned refactor, 2026-10-15; the code follows in its own PR): each state of this diagram is one entry of the
   scene machine's dispatch table (`step`, `overlay`; CD-menus), and every timed state (`Count-in`,
   `Game over`, `Results`, `Ending`) counts the one `sceneSteps` from its entry, with the same step
   counts as above. The Title / Pause variants of the options, effects, controls and restore states
