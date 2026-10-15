@@ -1,7 +1,7 @@
 # State machine diagram — gameplay — a boss fight (1.0)
 
 > **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.10 §3.3,
-> §4.5, §6, §6.1, §8, §9.2, §9.4
+> §4.5, §6, §6.1, §8, §9.2, §9.4; v0.18 for the Cruiser values
 > **Related ADRs**: ADR-0003 (boss phases as data), ADR-0010 (outcome vs presentation, time
 > scale), ADR-0022 (the boss outside the enemy pool, `startBoss`, `damageBoss`)
 > **Realizes**: UC1 steps 7–8 and extension 8a of [01-use-case](../system/01-use-case.md);
