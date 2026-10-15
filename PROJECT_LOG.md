@@ -8,6 +8,23 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-15
 
+### G4-1b: the ships drawn as sprites (#77 → `87a2d5b`) — G4-1 done
+
+- `RunPresenter`: the player (cockpit still drawn on its hitbox, on top), the five roles through
+  `SPRITE_OF_ROLE`, the Cruiser as two wings at x ∓ 44, the hull and the turret in phase 0; the
+  first wing's `false` means no sheet, then today's shapes.
+- A headless capture showed the Cruiser as a white box for its whole fight (sustained fire keeps
+  the hit flash on). Owner MCDA B 460/500: the flash draws the sprite's white silhouette, baked
+  at load (`BakedSprite.flash`, `drawSprite` frame `SPRITE_FLASH_FRAME`), the box stays the
+  fallback; rejected the box (325), a blink (330), a veil (295). GDD §3.2.1 / §9.4, ADR-0001
+  amendment, UML updated in the PR.
+- Reviews: 0 Must; Should fixed — two doc drifts (first wing decides the fallback, the sequence
+  diagram's flash), cockpit order (`RecordingRender.order`), flashing Cruiser in phase 2, flash
+  switched off. Codex: no findings. Doc pass: README, CHANGELOG, CONTRIBUTING.
+- Spun off on the owner's playtest: the country step as a list of codes plus manual entry (own
+  task); the shared online leaderboard stays v2 (MCDA A 400/500, local in 1.0; v2 = a Worker
+  replaying seed + inputs to verify scores).
+
 ### G4-1a: the sprite bank (#76 → `4491f15`)
 
 - `SPRITE_IDS` closed union; `drawSprite(id, centre x, y)` returns `false` until baked;
