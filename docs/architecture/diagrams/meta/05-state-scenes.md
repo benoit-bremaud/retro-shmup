@@ -509,12 +509,13 @@ stateDiagram-v2
 ```
 
 - **Attract** (planned, G2-3b, GDD v0.16 §9.1): the idle time counts on `Title` only, from its
-  opening, and restarts on any input — pressed or held buttons, a direction, a tap, a release,
-  or the hovering mouse moving (`hoverX`/`hoverY` differing from the last step); the 1 s title
-  lock counts as idle. `Attract` scrolls the background and draws the High scores with no
+  opening, and restarts on any step whose frame is `active` (ADR-0009, amended: any physical key,
+  pointer or gamepad input, never an automatic pause trigger); the 1 s title lock counts as
+  idle. `Attract` scrolls the background and draws the High scores with no
   highlight (the table may be empty: dashes); any input returns to `Title` through `openMenu`
   (the opening guard, what is held counts as held), with no lock; after 6 s it returns the same
-  way and the idle time starts again. `Pause` is ignored.
+  way and the idle time starts again. The *Pause* key returns to the title like any input; the
+  automatic triggers do nothing there.
 - **Lifts the slice-end interim**: a cleared run goes Results → Ending, no longer to the title.
 - ~~**Interim deviation, no name entry until G2-3**~~ (lifted by G2-3: the `[score enters the
   table]` branches and `Name entry --> High scores` are built; recording releases the run). `Title --> High scores` and `High scores --> Title` (on `back`, `confirm` or a

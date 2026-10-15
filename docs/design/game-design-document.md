@@ -824,14 +824,16 @@ after Game over.
 
 **The attract mode** *(v0.16, G2-3b, owner 2026-10-14 and 2026-10-15)*: after **10 s** on the
 title without any input, the High scores show on their own for **6 s**, then the title comes
-back, and so on while nobody plays. Any input counts — a key or a button pressed or held, a
-stick tilted, a tap, a click, a release, **a mouse move** — and restarts the 10 s. The attract
+back, and so on while nobody plays. Any physical input counts — any key, bound or not, pressed
+or held, a gamepad button or a tilted stick, a tap, a click, **a mouse move anywhere on the
+page** (the side bands too) — and restarts the 10 s; the automatic pause triggers (focus loss,
+rotation, a gamepad lost) are not inputs (ADR-0009, amended). The attract
 starts from the title only (never from the options, the controls or any other screen); the 1 s
 lock after Game over counts as idle time. It shows the same table as the *High scores* row, empty
 ranks as dashes even when the table is empty, with no row highlighted. During the attract any
 input returns to the title **without doing anything else**: the title opens on *Play* with the
 menus' opening guard (the press that ended the attract never acts, a key held across counts as
-held), and **no 1 s lock**. `Pause` and the automatic pause triggers are ignored there.
+held), and **no 1 s lock**. The *Pause* key is such an input; it never pauses there.
 
 **The Ending card** *(v0.16)*: after the Results of a cleared run, *VICTORY* / *VICTOIRE* in the
 title font and the final score; `confirm` or a tap after a 1 s lock, or 6 s, leads to the name
