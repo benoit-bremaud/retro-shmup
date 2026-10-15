@@ -63,6 +63,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enter your name in the high scores: a top-10 score opens a letter grid for an 8-character name,
   then an optional country (preselected from your browser language), saved in the browser; skip
   it and nothing is recorded.
+- An attract mode: after 10 s on the title without touching anything, the high scores show for
+  6 s, then the title again; any key, button, click or mouse move brings the title back.
 - A controls screen in the options: every keyboard and gamepad action on two keys or buttons,
   changed by pressing the new one (a key already used swaps places), shown with the letters your
   own keyboard prints; restore the defaults per device. Saved in the browser.

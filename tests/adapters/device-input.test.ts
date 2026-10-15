@@ -727,3 +727,99 @@ describe('DeviceInput — key labels (GDD v0.15 §4.2)', () => {
     expect(input.label('Numpad1')).toBe('');
   });
 });
+
+describe('DeviceInput — the raw activity signal (ADR-0009 amended, GDD v0.16 §9.1)', () => {
+  it('is quiet when nothing happens', () => {
+    const { input, frame } = setup();
+    input.read(frame);
+    expect(frame.active).toBe(false);
+  });
+
+  it('sees any key, bound or not, and a key held until it is released', () => {
+    const { env, input, frame } = setup();
+    env.down('KeyQ'); // not bound by default
+    input.read(frame);
+    expect(frame.active).toBe(true);
+    input.read(frame); // still down, no new event
+    expect(frame.active).toBe(true);
+    env.up('KeyQ');
+    input.read(frame);
+    expect(frame.active).toBe(false);
+  });
+
+  it('sees a held Enter, a fixed key, for as long as it is down', () => {
+    const { env, input, frame } = setup();
+    env.down('Enter');
+    input.read(frame);
+    input.read(frame);
+    expect(frame.active).toBe(true);
+  });
+
+  it('sees a browser shortcut too: it is the player touching the keyboard', () => {
+    const { env, input, frame } = setup();
+    env.down('KeyR', false, 'ctrl');
+    input.read(frame);
+    expect(frame.active).toBe(true);
+  });
+
+  it('sees a held shortcut key, Meta included, without auto-repeat, until it is released', () => {
+    const { env, input, frame } = setup();
+    env.down('MetaLeft', false, 'meta');
+    input.read(frame);
+    input.read(frame); // no repeat event: still held
+    expect(frame.active).toBe(true);
+    expect(frame.pressed).toBe(0); // a shortcut is never a game input
+    env.up('MetaLeft');
+    input.read(frame);
+    expect(frame.active).toBe(false);
+  });
+
+  it('forgets a held shortcut key on focus loss', () => {
+    const { env, input, frame } = setup();
+    env.down('KeyR', false, 'ctrl');
+    env.loseFocus();
+    input.read(frame); // the keydown of this read still counts
+    input.read(frame);
+    expect(frame.active).toBe(false);
+  });
+
+  it('sees a pointer moving anywhere on the page, the side bands included', () => {
+    const { env, input, frame } = setup();
+    input.resize(LANDSCAPE, { left: 0, top: 0, width: LANDSCAPE.width, height: LANDSCAPE.height });
+    env.point('move', 'mouse', 1, 1); // outside the play field
+    input.read(frame);
+    expect(frame.active).toBe(true);
+    input.read(frame);
+    expect(frame.active).toBe(false);
+  });
+
+  it.each(['down', 'up'] as const)('sees a pointer %s', (kind) => {
+    const { env, input, frame } = setup();
+    env.point(kind, 'touch', 100, 100);
+    input.read(frame);
+    expect(frame.active).toBe(true);
+  });
+
+  it('sees a pad button held and a stick beyond the dead zone, not a resting stick', () => {
+    const { env, input, frame } = setup();
+    env.pads = [pad([0])];
+    input.read(frame);
+    expect(frame.active).toBe(true);
+    env.pads = [pad()];
+    input.read(frame);
+    expect(frame.active).toBe(false);
+    const buttons = [];
+    for (let i = 0; i < 17; i += 1) buttons.push({ pressed: false });
+    env.pads = [{ connected: true, mapping: 'standard', buttons, axes: [0.9, 0, 0, 0] }];
+    input.read(frame);
+    expect(frame.active).toBe(true);
+  });
+
+  it('is never set by the automatic pause triggers', () => {
+    const { env, input, frame } = setup();
+    env.loseFocus();
+    input.read(frame);
+    expect(frame.pressed & Button.Pause).not.toBe(0);
+    expect(frame.active).toBe(false);
+  });
+});

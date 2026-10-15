@@ -48,6 +48,12 @@ export interface IntentFrame {
   hoverY: number;
   /** Current fullscreen state, as reported by the browser. */
   fullscreen: boolean;
+  /**
+   * This step saw a physical input (ADR-0009, amended): any key down or still held, bound or not,
+   * any pointer event on the page, a pad button down or a stick beyond its dead zone. Never set by
+   * the automatic pause triggers; a boolean only, no key or point.
+   */
+  active: boolean;
 }
 
 /**
@@ -140,5 +146,6 @@ export function createIntentFrame(): IntentFrame {
     hoverX: 0,
     hoverY: 0,
     fullscreen: false,
+    active: false,
   };
 }

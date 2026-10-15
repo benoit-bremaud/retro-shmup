@@ -99,6 +99,10 @@ export class DeviceInput implements InputPort {
   private seq = 0;
   /** One `Pause` press for lost focus, delivered by the next `read` (ADR-0009). */
   private automaticPause = false;
+  /** A physical event since the last read (ADR-0009, amended); the automatic triggers never set it. */
+  private eventSinceRead = false;
+  /** Shortcut keys held: activity only, never game input (Meta does not auto-repeat). */
+  private readonly shortcutsDown = new Set<string>();
   /** A fullscreen wish not applied yet: the next key or pointer press applies it, once. */
   private pendingFullscreen: boolean | undefined;
   /** The device a capture waits for, or none (GDD v0.15 §4.2). */
@@ -117,8 +121,12 @@ export class DeviceInput implements InputPort {
       })
       .catch(() => undefined); // refused (an iframe, a policy): the US characters stay
     environment.onKeyDown((event) => {
+      this.eventSinceRead = true; // any key is the player touching the game, a shortcut too
       // A browser shortcut is never a game input and keeps its action.
-      if (isShortcut(event)) return;
+      if (isShortcut(event)) {
+        this.shortcutsDown.add(event.code);
+        return;
+      }
       this.seq += 1;
       this.applyFullscreen();
       this.keyLabels.learn(event.code, event.key);
@@ -131,26 +139,31 @@ export class DeviceInput implements InputPort {
       if (this.keyboard.keyDown(event.code, event.repeat, this.seq)) event.preventDefault();
     });
     environment.onKeyUp((event) => {
+      this.shortcutsDown.delete(event.code);
       this.keyboard.keyUp(event.code);
     });
     environment.onFocusLost(() => {
       // Clear first: no key release arrives after a blur (ADR-0015 decision 5).
       this.keyboard.release();
+      this.shortcutsDown.clear();
       this.pointer.release();
       this.arbitration.clearedAt = this.seq;
       this.automaticPause = true;
       this.cancelCapture();
     });
     environment.onPointerDown((event) => {
+      this.eventSinceRead = true;
       this.seq += 1;
       this.applyFullscreen();
       this.pointer.down(event, this.seq);
     });
     environment.onPointerMove((event) => {
+      this.eventSinceRead = true; // anywhere on the page, the side bands too
       this.seq += 1;
       this.pointer.move(event, this.seq);
     });
     environment.onPointerUp((event) => {
+      this.eventSinceRead = true;
       this.seq += 1;
       this.pointer.up(event, this.seq);
     });
@@ -185,6 +198,9 @@ export class DeviceInput implements InputPort {
     this.automaticPause = false;
     this.pointer.takePointerEvents(into);
     into.fullscreen = this.environment.fullscreen.active();
+    const keyHeld = this.keyboard.anyDown || this.shortcutsDown.size > 0;
+    into.active = this.eventSinceRead || keyHeld || this.gamepad.anyHeld;
+    this.eventSinceRead = false;
   }
 
   /** Inside a gesture's handler, the only place browsers allow it (ADR-0009). */

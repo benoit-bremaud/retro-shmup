@@ -125,8 +125,12 @@ stay accepted for everything else (back-links added in a dedicated PR).
 ## Amendment (2026-10-15, GDD v0.16 attract mode)
 
 The frame gains one field, `active: boolean`: this step saw any physical input — a `keydown` of
-any key (bound or not) or a key still down, a pointer down, move or up anywhere on the page, a
-gamepad button down or a stick beyond its dead zone. It is filled by the input adapter from the
+any key (bound or not, a browser shortcut too) or any key still down (shortcut keys are tracked
+apart, never as game input), a pointer down, move or up anywhere on the page, a button down or a
+stick tilted enough to move the ship on any connected gamepad — the movement's own threshold:
+past the dead zone, after the 1/256 quantization, so about 0.203 of the throw rather than 0.200;
+one threshold for moving and for activity, and a pad drifting just past the dead zone never
+holds the attract back (owner, MCDA B 440/500, Codex finding on #71). It is filled by the input adapter from the
 browser events, never from the intent bits, so the automatic pause triggers (focus loss, layout
 change, gamepad lost), which only set `Pause`, never make a frame active. It carries no key, no
 position: a boolean only. Its one reader is the title's idle count of the attract mode (owner

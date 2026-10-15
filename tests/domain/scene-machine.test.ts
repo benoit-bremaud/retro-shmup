@@ -1532,3 +1532,83 @@ describe('SceneMachine — the name entry (GDD v0.16 §9.1, SD-score, G2-3)', ()
     return { machine };
   }
 });
+
+describe('SceneMachine — the attract mode (GDD v0.16 §9.1, G2-3b)', () => {
+  const IDLE_STEPS = 600;
+  const ATTRACT_STEPS = 360;
+
+  function idle(machine: SceneMachine, steps: number): void {
+    for (let i = 0; i < steps; i += 1) machine.step(DT, createIntentFrame());
+  }
+
+  it('shows the high scores after 10 s on the title without input', () => {
+    const { machine } = onTitle(); // the title's first step counts
+    idle(machine, IDLE_STEPS - 2);
+    expect(machine.scene).toBe(Scene.Title);
+    idle(machine, 1);
+    expect(machine.scene).toBe(Scene.Attract);
+  });
+
+  it('draws the table, dashes when empty, with no row highlighted', () => {
+    const { machine, render } = onTitle();
+    idle(machine, IDLE_STEPS);
+    machine.render(0, 16);
+    const texts = fieldTextsOf(render);
+    expect(texts[0]).toBe('HIGH SCORES');
+    expect(texts).toContain('--------');
+    expect(render.drew(Palette.menuHighlight)).toBe(false);
+  });
+
+  it('returns to the title after 6 s, then starts again', () => {
+    const { machine } = onTitle();
+    idle(machine, IDLE_STEPS - 1 + ATTRACT_STEPS - 1);
+    expect(machine.scene).toBe(Scene.Attract);
+    idle(machine, 1);
+    expect(machine.scene).toBe(Scene.Title);
+    idle(machine, IDLE_STEPS);
+    expect(machine.scene).toBe(Scene.Attract);
+  });
+
+  it('returns to an unlocked title on any input, which does nothing else', () => {
+    const { machine } = onTitle();
+    idle(machine, IDLE_STEPS);
+    const confirm = pressed(Button.Confirm);
+    confirm.active = true; // the adapter marks every physical input
+    machine.step(DT, confirm);
+    expect(machine.scene).toBe(Scene.Title);
+    machine.step(DT, createIntentFrame());
+    machine.step(DT, confirm); // no 1 s lock: Play starts at once
+    expect(machine.scene).toBe(Scene.Playing);
+  });
+
+  it('restarts the 10 s on any physical input on the title, a mouse move included', () => {
+    const { machine } = onTitle();
+    idle(machine, IDLE_STEPS - 2); // one step short of the attract
+    const move = createIntentFrame();
+    move.active = true; // a mouse move anywhere on the page: no intent, only activity
+    machine.step(DT, move);
+    idle(machine, IDLE_STEPS - 1);
+    expect(machine.scene).toBe(Scene.Title);
+    idle(machine, 1);
+    expect(machine.scene).toBe(Scene.Attract);
+  });
+
+  it('keeps showing on an automatic pause, returns on the Pause key', () => {
+    const { machine } = onTitle();
+    idle(machine, IDLE_STEPS);
+    machine.step(DT, pressed(Button.Pause)); // focus lost: Pause without activity
+    expect(machine.scene).toBe(Scene.Attract);
+    const key = pressed(Button.Pause);
+    key.active = true;
+    machine.step(DT, key);
+    expect(machine.scene).toBe(Scene.Title);
+  });
+
+  it('starts from the title only', () => {
+    const { machine } = onTitle();
+    downBy(machine, 2);
+    machine.step(DT, pressed(Button.Confirm)); // Options
+    idle(machine, IDLE_STEPS * 2);
+    expect(machine.scene).toBe(Scene.TitleOptions);
+  });
+});

@@ -81,6 +81,10 @@ export const SceneTuning = {
   endingSeconds: 6,
   /** Confirm and taps are ignored this long on the Ending card (GDD v0.16 §9.1). */
   endingLockSeconds: 1,
+  /** The title without input this long shows the attract mode (GDD v0.16 §9.1). */
+  attractIdleSeconds: 10,
+  /** The attract mode shows the high scores this long, then the title again (GDD v0.16 §9.1). */
+  attractSeconds: 6,
 } as const;
 
 /**

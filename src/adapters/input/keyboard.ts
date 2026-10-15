@@ -85,6 +85,11 @@ export class KeyboardModule {
     return isPrevented(code, intent);
   }
 
+  /** Any key is down, bound or not: the frame's raw activity (ADR-0009, amended). */
+  get anyDown(): boolean {
+    return this.down.size > 0;
+  }
+
   keyUp(code: string): void {
     if (!this.down.delete(code)) return;
     const intent = this.intentOf.get(code);

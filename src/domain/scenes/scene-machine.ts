@@ -59,6 +59,8 @@ export const Scene = {
   HighScores: 'HIGH_SCORES',
   Ending: 'ENDING',
   NameEntry: 'NAME_ENTRY',
+  /** The high scores shown on their own after the title waits (G2-3b). */
+  Attract: 'ATTRACT',
 } as const;
 export type Scene = (typeof Scene)[keyof typeof Scene];
 
@@ -97,6 +99,8 @@ const SCENE_TRAITS: Readonly<Record<Scene, SceneTraits>> = {
   [Scene.Ending]: { frozen: true, scrolls: true, drawsRun: true, pauseButton: false },
   // The finished run stands still behind the grid, read for its score only (05-state-scenes).
   [Scene.NameEntry]: { frozen: true, scrolls: true, drawsRun: true, pauseButton: false },
+  // The attract has the title's traits: the stars scroll, no run, no pause button.
+  [Scene.Attract]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
 };
 
 /** Where each options scene's Back and sub-screen lead (meta/05-state-scenes). */
@@ -136,6 +140,9 @@ const RESULTS_STEPS = toSteps(ResultsTuning.autoSeconds);
 /** The Ending card's lock and its time on screen (GDD v0.16 §9.1). */
 const ENDING_LOCK_STEPS = toSteps(SceneTuning.endingLockSeconds);
 const ENDING_STEPS = toSteps(SceneTuning.endingSeconds);
+/** The attract mode's wait on the title and its time on screen (GDD v0.16 §9.1). */
+const ATTRACT_IDLE_STEPS = toSteps(SceneTuning.attractIdleSeconds);
+const ATTRACT_STEPS = toSteps(SceneTuning.attractSeconds);
 
 function isConfirmOrTap(frame: Readonly<IntentFrame>): boolean {
   return (frame.pressed & Button.Confirm) !== 0 || frame.tapRegion !== 'none';
@@ -172,7 +179,8 @@ export class SceneMachine {
   private backgroundSteps = 0;
   /**
    * Steps since the current scene was entered (0 on the entering step): the count-in digit, the
-   * Game over, Results and Ending timers, and the Results lines shown.
+   * Game over, Results and Ending timers, the Results lines shown, the title's steps without
+   * input and the attract's time on screen.
    */
   private sceneSteps = 0;
   /** The Results values, formatted once on entry so no string is built per frame. */
@@ -332,6 +340,10 @@ export class SceneMachine {
         step: this.stepNameEntry.bind(this),
         overlay: this.overlayNameEntry.bind(this),
       },
+      [Scene.Attract]: {
+        step: this.stepAttract.bind(this),
+        overlay: this.overlayHighScores.bind(this),
+      },
     };
   }
 
@@ -392,6 +404,12 @@ export class SceneMachine {
   // Pause is ignored on the title, as in every scene but play (pause rules). The lock ignores
   // the whole menu; Play starts a run, Options opens the options (GDD v0.14 §9.1).
   private stepTitle(_dt: number, frame: Readonly<IntentFrame>): void {
+    // The title's lock counts as idle time; any physical input restarts the wait (GDD v0.16 §9.1).
+    this.sceneSteps = frame.active ? 0 : this.sceneSteps + 1;
+    if (this.sceneSteps >= ATTRACT_IDLE_STEPS) {
+      this.openAttract();
+      return;
+    }
     if (this.locked()) {
       // The lock ignores the whole menu: what is held now counts as held when it ends.
       this.titleMenu.ignore(frame);
@@ -610,6 +628,19 @@ export class SceneMachine {
       this.presenter = undefined;
       this.openHighScores(rank);
     }
+  }
+
+  /** The high scores on their own, no row highlighted (-1, GDD v0.16 §9.1). */
+  private openAttract(): void {
+    this.enter(Scene.Attract);
+    this.highScores.open(this.table, -1);
+  }
+
+  // Any physical input, or 6 s, returns to the title with the opening guard and no lock: the
+  // input that ended the attract does nothing else (GDD v0.16 §9.1); the Pause key is one.
+  private stepAttract(_dt: number, frame: Readonly<IntentFrame>): void {
+    this.sceneSteps += 1;
+    if (frame.active || this.sceneSteps >= ATTRACT_STEPS) this.openMenu(Scene.Title, frame);
   }
 
   private openHighScores(highlighted: number): void {
