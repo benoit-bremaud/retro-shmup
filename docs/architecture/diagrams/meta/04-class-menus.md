@@ -123,8 +123,8 @@ classDiagram
     -menuScreens: table of menu scenes
     -optionsTouch: boolean
     -table: HighScoreTable
-    -handlers: Record of Scene to SceneHandler, built once, planned refactor
-    -sceneSteps: number, steps since the scene was entered, planned refactor
+    -handlers: Record of Scene to SceneHandler, built once
+    -sceneSteps: number, steps since the scene was entered
     -lockLeft: number
     -idleSteps: number, planned G2-3b
     +constructor(..., host, highScores)
@@ -237,7 +237,7 @@ classDiagram
     adapter, try/catch on every call
   }
 
-  SceneMachine ..> SceneHandler : handlers table, one entry per Scene, planned refactor
+  SceneMachine ..> SceneHandler : handlers table, one entry per Scene
   SceneMachine *-- "7" Menu
   SceneMachine --> SceneHost : each change, leaving for play
   SceneMachine *-- ControlsScreen
@@ -425,8 +425,7 @@ classDiagram
   migration (ADR-0021 decision 7's "version 1" overtaken, noted in the ADR). `parseHighScores`
   (`src/domain/hall-of-fame/high-scores.ts`) still accepts the name `???`: a legacy value only,
   since *SKIP* records nothing.
-- **One dispatch table (planned refactor, owner-approved 2026-10-15, option B; the code follows in
-  its own PR)**: the scene machine will keep one `Record<Scene, SceneHandler>` of its own methods
+- **One dispatch table (refactor, owner-approved 2026-10-15, option B)**: the scene machine keeps one `Record<Scene, SceneHandler>` of its own methods
   (`step`, `overlay`), bound once in the constructor (the routed Title / Pause steps take their
   scene first and get it bound with `bind(this, scene)`), in place of the `switch` in `step` and the `if` chain in the overlay drawing; the
   table type makes a missing scene a compile error, so a new scene (the attract mode) is one entry.
