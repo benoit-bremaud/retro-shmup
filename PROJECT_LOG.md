@@ -8,6 +8,32 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-14
 
+### G2-1: the high-score table, its save and two glyphs (branch `feat/g2-table`) — Refs #46
+
+- First of the three G2 code PRs (owner choice A, 44/50). No visible change.
+- `domain/hall-of-fame/country-codes.ts`: the 249 officially assigned ISO 3166-1 alpha-2 codes
+  (XK excluded); `domain/hall-of-fame/high-scores.ts`: `HighScoreEntry`, `parseHighScores`
+  (allowlist: name rules, country in the list, whole score ≥ 0, level 1–3, `YYYY-MM-DD`; invalid
+  entries dropped, best first, ten at most, never throws) and `HighScoreTable` (a score above 0
+  enters above the tenth, ties after the older, `insert` returns the rank).
+- `SaveStore` reads the table by allowlist (`highScores`) and writes it with the options last
+  loaded or saved (`saveHighScores`); an option change keeps it; a newer document stays unwritten.
+- The menu font gains `?` and `-`.
+- Reviews: code-reviewer no Must or Should (the 249 codes checked against the official list by
+  script); architecture-guardian 2 Must fixed — `HighScoreTable` now sorts and caps whatever it is
+  given (the guarantee lived in the parser only), and `SaveStore` writes nothing before `load`,
+  which also resets its cached options and table (a save before reading could have overwritten
+  the stored options with the defaults). Also: a stored score of 0 dropped, the class diagram's
+  `SaveStore` aligned (`load` returns the options, `highScores`), tests for ties, a full table and
+  `__proto__`. Not done: exporting `???` as a constant, no second use since skipping records
+  nothing.
+- Owner decision the same day: *SKIP*, or *OK* on an empty name, records nothing and returns to the
+  title (the player is never made to appear) — GDD v0.16 amended, a second amendment note in
+  ADR-0021 (status unchanged; `???` still parsed), UC3 2b, STM-scenes and CD-menus follow.
+- Also decided: after G2, a third rebalance of level 1 (v0.17) — the owner finds the waves, the
+  boss, the ship's power and the whole level far too easy; the measurement bot (#56) is rebuilt
+  for it.
+
 ### G2 design: the hall of fame, GDD v0.16 (branch `docs/g2-hall-of-fame-design`) — Refs #46
 
 - Owner choices (scored, after a deeper analysis each): the name on a letter grid (43/50, against

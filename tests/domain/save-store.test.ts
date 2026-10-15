@@ -95,7 +95,9 @@ describe('SaveStore.load (ADR-0006: untrusted input, never throws)', () => {
 
   it('reads back the options it saved', () => {
     const storage = new MemoryStorage();
-    expect(new SaveStore(storage, false).saveOptions(CUSTOM)).toBe(true);
+    const writer = new SaveStore(storage, false);
+    writer.load(); // a store always reads before it writes
+    expect(writer.saveOptions(CUSTOM)).toBe(true);
     // A stored document wins over reduced motion: it only presets a first launch.
     expect(new SaveStore(storage, true).load()).toEqual(CUSTOM);
   });
@@ -181,7 +183,9 @@ describe('SaveStore.load (ADR-0006: untrusted input, never throws)', () => {
 describe('SaveStore.saveOptions (ADR-0006 decisions 2, 5, 6)', () => {
   it('writes one versioned document under the one key', () => {
     const storage = new MemoryStorage();
-    new SaveStore(storage, false).saveOptions(CUSTOM);
+    const store = new SaveStore(storage, false);
+    store.load();
+    store.saveOptions(CUSTOM);
     expect(JSON.parse(storage.values.get(SAVE_KEY) ?? '')).toEqual({
       version: 2,
       options: CUSTOM,
@@ -280,5 +284,57 @@ describe('SaveStore — version 2 and the bindings (GDD v0.15 §4.2, ADR-0006 de
     const loaded = new SaveStore(storage, false).load();
     expect(loaded.bindings).toEqual(CUSTOM_BINDINGS);
     expect(Object.getPrototypeOf(loaded.bindings.keyboard)).toBe(Object.prototype);
+  });
+});
+
+describe('SaveStore — the hall of fame (GDD v0.16 §9.1, ADR-0021)', () => {
+  const ACE = { name: 'ACE', country: 'FR', score: 1200, level: 1, date: '2026-10-14' } as const;
+
+  it('reads the stored entries by allowlist, the invalid ones dropped', () => {
+    const storage = stored({
+      version: 2,
+      options: CUSTOM,
+      highScores: [ACE, { name: 'bad', score: 5, level: 1, date: '2026-10-14' }],
+    });
+    const store = new SaveStore(storage, false);
+    store.load();
+    expect(store.highScores).toEqual([ACE]);
+  });
+
+  it('saves the table with the options last loaded, and the options keep the table', () => {
+    const storage = stored({ version: 2, options: CUSTOM, highScores: [] });
+    const store = new SaveStore(storage, false);
+    store.load();
+    expect(store.saveHighScores([ACE])).toBe(true);
+    expect(JSON.parse(storage.values.get(SAVE_KEY) ?? '')).toEqual({
+      version: 2,
+      options: CUSTOM,
+      highScores: [ACE],
+    });
+    store.saveOptions({ ...CUSTOM, autofire: false });
+    expect(JSON.parse(storage.values.get(SAVE_KEY) ?? '')).toMatchObject({ highScores: [ACE] });
+  });
+
+  it('writes nothing before the stored document has been read', () => {
+    const storage = stored({ version: 2, options: CUSTOM, highScores: [ACE] });
+    const store = new SaveStore(storage, false);
+    expect(store.saveHighScores([])).toBe(false);
+    expect(storage.writes).toBe(0);
+  });
+
+  it('forgets a previous table when a reload finds no document', () => {
+    const storage = stored({ version: 2, options: CUSTOM, highScores: [ACE] });
+    const store = new SaveStore(storage, false);
+    store.load();
+    storage.values.clear();
+    store.load();
+    expect(store.highScores).toEqual([]);
+  });
+
+  it('never writes the table over a newer document', () => {
+    const storage = stored({ version: 3, options: {} });
+    const store = new SaveStore(storage, false);
+    store.load();
+    expect(store.saveHighScores([ACE])).toBe(false);
   });
 });

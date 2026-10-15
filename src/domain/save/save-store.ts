@@ -1,5 +1,6 @@
 import type { Language } from '../i18n/messages';
 import { isRecord } from '../guards';
+import { parseHighScores, type HighScoreEntry } from '../hall-of-fame/high-scores';
 import { DEFAULT_BINDINGS } from '../input/default-bindings';
 import { parseBindings } from '../input/parse-bindings';
 import type { EffectSettings, Options } from '../options';
@@ -88,21 +89,26 @@ export class SaveStore {
   private readonly reducedMotion: boolean;
   /** A newer document read by an older build is never overwritten this session (UC4 2c). */
   private readOnly = false;
-  /**
-   * The stored top 10, kept as read so saving an option never erases it; the hall of fame (G2)
-   * validates its entries (ADR-0021) when it reads them.
-   */
-  private highScores: readonly unknown[] = [];
+  /** The stored top 10, read by allowlist (ADR-0021); saving an option writes it back. */
+  private table: readonly HighScoreEntry[] = [];
+  /** False until `load`: nothing is written before the stored document has been read. */
+  private loaded = false;
+  /** The options last loaded or saved, written with the table. */
+  private options: Options;
 
   constructor(storage: StoragePort, reducedMotion: boolean) {
     this.storage = storage;
     this.reducedMotion = reducedMotion;
+    this.options = defaultOptions(reducedMotion);
   }
 
   /** The stored options, or the defaults of a first launch. */
   load(): Options {
-    const raw = this.storage.read(SAVE_KEY);
+    this.loaded = true;
     const fallback = defaultOptions(this.reducedMotion);
+    this.options = fallback;
+    this.table = [];
+    const raw = this.storage.read(SAVE_KEY);
     if (raw === null) return fallback;
     const document = parseJson(raw);
     if (!isRecord(document)) return fallback;
@@ -112,17 +118,34 @@ export class SaveStore {
       return fallback;
     }
     if (version !== VERSION && version !== FIRST_VERSION) return fallback;
-    if (Array.isArray(document.highScores)) this.highScores = document.highScores;
-    return parseOptions(document.options, version) ?? fallback;
+    this.table = parseHighScores(document.highScores);
+    this.options = parseOptions(document.options, version) ?? fallback;
+    return this.options;
   }
 
   /**
    * Writes the whole document once; `false` when storage is unavailable or the stored document
-   * is newer: the session goes on without saving. The stored top 10 is written back unchanged.
+   * is newer: the session goes on without saving. The current top 10 is written with them.
    */
   saveOptions(options: Options): boolean {
-    if (this.readOnly) return false;
-    const document = { version: VERSION, options, highScores: this.highScores };
+    this.options = options;
+    return this.write();
+  }
+
+  /** The top 10 read by `load`, best first. */
+  get highScores(): readonly HighScoreEntry[] {
+    return this.table;
+  }
+
+  /** Writes the new top 10 with the options last saved or loaded (GDD v0.16 §9.1). */
+  saveHighScores(entries: readonly HighScoreEntry[]): boolean {
+    this.table = entries;
+    return this.write();
+  }
+
+  private write(): boolean {
+    if (this.readOnly || !this.loaded) return false;
+    const document = { version: VERSION, options: this.options, highScores: this.table };
     return this.storage.write(SAVE_KEY, JSON.stringify(document));
   }
 }

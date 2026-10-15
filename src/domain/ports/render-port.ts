@@ -7,7 +7,7 @@ export type SpriteId = string;
  * Bitmap fonts; no system text is ever drawn (ADR-0001). A font draws only its glyph set and
  * throws on any other character: `hud` is `0`–`9`, `×` (U+00D7) and the
  * space (an empty cell, ADR-0022 decision 8), `title` is `A`–`Z` and the
- * space, `menu` the same plus `0`–`9` and the arrows ← ↑ → ↓ (U+2190–U+2193, GDD v0.15 §4.2);
+ * space, `menu` the same plus `0`–`9`, the arrows ← ↑ → ↓ (U+2190–U+2193, GDD v0.15 §4.2), `?` and `-` (v0.16);
  * French text is written in capitals without accents, arcade style, until the bitmap fonts of
  * the screens brick.
  */
