@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Vertical slice — v0.17 (2026-10-15): v0.17 draws the ships with the CC0 placeholder sprites of G4-1 (§3.2.1: the sprite per role, the small enemies drawn at 1× over their 16 × 16 hitbox, the Cruiser built from three ships, the shapes kept as the fallback). v0.16 (2026-10-14; amended 2026-10-15 by the owner after a design-versus-code audit: the High scores columns as built, the browser-shortcut rule of the capture, the name entry as built in G2-3, the attract mode of G2-3b): v0.16 settles the hall of fame of G2 (the letter grid for the name and the country, the high-score table and screen, the Ending card, leaving the slice-end interim). v0.15 (2026-10-14): v0.15 settles the controls screen of G1b (layout, key labels, the device edited, restore confirmation, save version 2). v0.14 (2026-10-14): v0.14 settles the options screens of G1a-3 (row texts and values, the title menu replacing tap-to-start, leaving a menu frees the ship's movement). v0.13 (2026-10-14): v0.13 designs the menus and the options of the screens brick, first part (G1a: title and pause menus, the options screen and its visual-effects sub-screen, menu navigation by touch and mouse, the save document's options). v0.12 (2026-10-14): v0.12 is the second rebalance iteration of level 1 (#45): the Cruiser takes 1 450 level-1 shots and three of the seven formations no longer pay the formation P. v0.11 (2026-10-13): v0.11 rebalances level 1 after the friends' playtest (harder, fewer drops, the ship slightly weaker than the attack; #45). v0.10 (2026-10-12): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot); v0.6 adds the initial values of the enemies brick; v0.7 settles the devices brick (portrait HUD strip, touch pause button, resuming and leaving Game over by tap or Start, mouse takeover, rotation pause); v0.8 settles the player kit (Spread and Laser tables, the death release hop, bomb, shield and pickup rules, P colours, the Carrier, HUD icons); v0.9 follows the brick-E playtest (difficulty ramp by script, a named top 10 with an optional country, pointer fire held by the left button or a steering finger with an autofire option, shot proportions for readability); v0.10 settles the level brick (the 120 s level-1 script, the Heavy, the Cruiser, the WARNING, the boss HP bar and timer, the end-of-level tally and the Results screen, a vertical slice ending after level 1) |
+| **Status** | Vertical slice — v0.18 (2026-10-16): v0.18 is the third rebalance of level 1 (#56), after the owner found it far too easy and a committed measurement bot confirmed it: enemy aimed, fan and triple bullets at 85 px/s, the Gunner tougher and faster-firing, the Heavy tougher, the Cruiser at 1 800 shots with faster volleys, and the 70 s formation no longer paying its P. v0.17 (2026-10-15): v0.17 draws the ships with the CC0 placeholder sprites of G4-1 (§3.2.1: the sprite per role, the small enemies drawn at 1× over their 16 × 16 hitbox, the Cruiser built from three ships, the shapes kept as the fallback). v0.16 (2026-10-14; amended 2026-10-15 by the owner after a design-versus-code audit: the High scores columns as built, the browser-shortcut rule of the capture, the name entry as built in G2-3, the attract mode of G2-3b): v0.16 settles the hall of fame of G2 (the letter grid for the name and the country, the high-score table and screen, the Ending card, leaving the slice-end interim). v0.15 (2026-10-14): v0.15 settles the controls screen of G1b (layout, key labels, the device edited, restore confirmation, save version 2). v0.14 (2026-10-14): v0.14 settles the options screens of G1a-3 (row texts and values, the title menu replacing tap-to-start, leaving a menu frees the ship's movement). v0.13 (2026-10-14): v0.13 designs the menus and the options of the screens brick, first part (G1a: title and pause menus, the options screen and its visual-effects sub-screen, menu navigation by touch and mouse, the save document's options). v0.12 (2026-10-14): v0.12 is the second rebalance iteration of level 1 (#45): the Cruiser takes 1 450 level-1 shots and three of the seven formations no longer pay the formation P. v0.11 (2026-10-13): v0.11 rebalances level 1 after the friends' playtest (harder, fewer drops, the ship slightly weaker than the attack; #45). v0.10 (2026-10-12): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot); v0.6 adds the initial values of the enemies brick; v0.7 settles the devices brick (portrait HUD strip, touch pause button, resuming and leaving Game over by tap or Start, mouse takeover, rotation pause); v0.8 settles the player kit (Spread and Laser tables, the death release hop, bomb, shield and pickup rules, P colours, the Carrier, HUD icons); v0.9 follows the brick-E playtest (difficulty ramp by script, a named top 10 with an optional country, pointer fire held by the left button or a steering finger with an autofire option, shot proportions for readability); v0.10 settles the level brick (the 120 s level-1 script, the Heavy, the Cruiser, the WARNING, the boss HP bar and timer, the end-of-level tally and the Results screen, a vertical slice ending after level 1) |
 | **Working title** | *retro-shmup* (codename; the commercial title is still open) |
 | **Genre** | Retro vertical-scrolling shoot'em up (shmup), 16-bit aesthetic |
 | **Platform** | Web browser (desktop first, mobile playable), TypeScript + native Canvas 2D |
@@ -434,9 +434,11 @@ multiplied by the chain; catching a pickup neither extends nor breaks the chain.
 - **P colours**: a full Popcorn formation gives a P of the **level's dominant colour** — red
   (Spread) in level 1 — at the position of the last member destroyed, even above the field; each
   pass of a looping script row is a new formation. *(v0.12)* A formation pays this P unless its
-  script row says otherwise (`paysP`, §7.2): in level 1 three of the seven formations — those
-  starting at 8 s, 50 s and 52 s — pay none, so the P that stacked up at 11 s, 53 s and 56 s are
-  gone and the ship reaches its full power only just before the boss. A Gunner drops at 10 % *(v0.11; was 30 %)* a P-red or a P-blue,
+  script row says otherwise (`paysP`, §7.2): in level 1 four of the seven formations — those
+  starting at 8 s, 50 s, 52 s and *(v0.18)* 70 s — pay none, so the three formation P lift the
+  ship to power 4 and power 5 needs a Gunner's P (§5.2.1) as well; it comes, if at all, just
+  before the boss *(v0.18; v0.12: three formations paid none, full power near 119 s from the
+  formation P alone)*. A Gunner drops at 10 % *(v0.11; was 30 %)* a P-red or a P-blue,
   50 / 50, both decided by one random draw. The Carrier's cargo is chosen by the level script
   (§5.2.1).
 
@@ -460,11 +462,11 @@ roles on three size tiers cover every wave the three levels need.
 
 | Role | Question asked | Size | HP *(initial, L1 shots)* | Movement | Attack | Drop table *(initial)* | Score *(initial)* |
 |---|---|---|---|---|---|---|---|
-| **Popcorn** | "Where do I place my fire to clear the whole formation?" | Small (16 px) | 1 | Scripted formations of 5–8 along curves (S, sine, loop) | None, or one slow bullet per formation (later levels; none in level 1 *(v0.10)*) | None individually; **full formation destroyed = P** of the level's dominant colour, unless its script row pays none *(v0.12; every formation paid it before, level 1 has three that do not, §7.2.2)* | 100 |
+| **Popcorn** | "Where do I place my fire to clear the whole formation?" | Small (16 px) | 1 | Scripted formations of 5–8 along curves (S, sine, loop) | None, or one slow bullet per formation (later levels; none in level 1 *(v0.10)*) | None individually; **full formation destroyed = P** of the level's dominant colour, unless its script row pays none *(v0.12; every formation paid it before, level 1 has four that do not since v0.18, three in v0.12, §7.2.2)* | 100 |
 | **Diver** | "Where must I *not* be?" | Small (16 px) | 1 | Enters, then dives straight at the player's position at the moment of the dive | Contact only | None | 150 |
-| **Gunner** | "Kill first, or dodge first?" | Medium (32 px) | 8 | Enters from top or side, hovers 3–4 s, leaves | 1–3 aimed bullets per volley, every 1 s *(v0.11; was 1.5 s)* | P-red or P-blue (50 / 50 *(v0.8)*) at **10 %** *(v0.11; was 30 %)* | 300 |
+| **Gunner** | "Kill first, or dodge first?" | Medium (32 px) | 10 *(v0.18; was 8)* | Enters from top or side, hovers 3–4 s, leaves | 1–3 aimed bullets per volley, every 0.8 s *(v0.18; 1 s in v0.11, 1.5 s before)* | P-red or P-blue (50 / 50 *(v0.8)*) at **10 %** *(v0.11; was 30 %)* | 300 |
 | **Carrier** | "Do I catch it before it leaves?" | Medium (32 px) | 4 | Crosses the screen laterally, never stops | None | **100 %**: Shield, Bomb or 1-UP as chosen by the level script | 500 |
-| **Heavy** | "How do I handle the pressure while I wear it down?" | Large (48–64 px; 56 × 48 *(v0.10)*) | 40 | Slow entry from the top, holds position 8–12 s (10 s *(v0.10)*), leaves | Bullet patterns: ring (12 bullets) or fan (5 bullets), every 2 s | Bomb or Shield at **30 %** *(v0.11; was 60 %)* | 1 000 |
+| **Heavy** | "How do I handle the pressure while I wear it down?" | Large (48–64 px; 56 × 48 *(v0.10)*) | 50 *(v0.18; was 40)* | Slow entry from the top, holds position 8–12 s (10 s *(v0.10)*), leaves | Bullet patterns: ring (12 bullets) or fan (5 bullets), every 2 s | Bomb or Shield at **30 %** *(v0.11; was 60 %)* | 1 000 |
 
 - **Contact** *(v0.3)*: touching any enemy body, boss included, hits the player like a bullet; the
   enemy takes no damage from it.
@@ -487,16 +489,16 @@ rounding residue (ADR-0019).
 | | Popcorn | Diver | Gunner | Carrier *(v0.8)* | Heavy *(v0.10)* |
 |---|---|---|---|---|---|
 | Hitbox | 16 × 16 | 16 × 16 | 32 × 32 | 32 × 32 | 56 × 48 (size tier Large) |
-| HP | 1 | 1 | 8 | 4 | 40 |
+| HP | 1 | 1 | 10 *(v0.18; was 8)* | 4 | 50 *(v0.18; was 40)* |
 | Movement | one every 1/3 s along the S curve below, at **70 px/s** downward | enters from the top at 60 px/s for 1 s, then dives in a straight line at **180 px/s** toward where the ship was at that moment, and keeps that heading until it leaves the field | flies in a straight line from its spawn point to its hover point in 1 s, hovers **3.5 s**, then flies back the way it came at 60 px/s | crosses the field horizontally in a straight line at **60 px/s**, away from the side it spawned on (spawn x < 120 → moves right, otherwise left); never stops | the Gunner's movement with its own values: from its spawn point (y −24, straight above its hover point) to its hover point in **2 s**, hovers **10 s**, then flies back the way it came — upward — at **40 px/s** |
-| Attack | none | contact only | **1 aimed bullet** per volley: the first 1 s after it stops, then every 1 s while hovering (3 bullets per hover) *(v0.11; was 1.5 s, 2 bullets)* | none (contact only) | set by the script row, every **2 s** while hovering, the first volley 2 s after it stops: **ring** — 12 bullets 30° apart at **60 px/s**, the whole ring turned by 15° every other volley; or **fan** — 5 bullets 15° apart centred on the aim at the ship, at **75 px/s** |
+| Attack | none | contact only | **1 aimed bullet** per volley: the first 0.8 s after it stops, then every 0.8 s while hovering (4 bullets per hover) *(v0.18; 1 s and 3 bullets in v0.11, 1.5 s and 2 bullets before)* | none (contact only) | set by the script row, every **2 s** while hovering, the first volley 2 s after it stops: **ring** — 12 bullets 30° apart at **60 px/s**, the whole ring turned by 15° every other volley; or **fan** — 5 bullets 15° apart centred on the aim at the ship, at **85 px/s** *(v0.18; was 75)* |
 | Drop | formation P (§4.6), unless the script row sets `paysP` to false *(v0.12)* | none | P-red or P-blue at 10 % *(v0.11)* (§4.6) | its cargo, always: Shield, Bomb or 1-UP, set by the script row; an escaped Carrier drops nothing; a bomb kill drops the cargo | Bomb or Shield at 30 % *(v0.11)*, 50 / 50, from its one drop draw (as the Gunner's P) |
 | Score | 100 | 150 | 300 | 500 | 1 000 |
 
 The script is checked at load: a Carrier row without a cargo, a cargo on any other role, or a
 Carrier whose spawn box overlaps the field is rejected.
 
-**Heavy** *(v0.10, initial)*: one bomb (30 shots) leaves a Heavy at 10 level-1 shots. The ring's
+**Heavy** *(v0.10, initial)*: one bomb (30 shots) leaves a Heavy at 20 level-1 shots *(v0.18; 10 before)*. The ring's
 first bullet points straight down; the volley count is kept per Heavy, so every other volley is
 the ring turned by 15° and the pattern is the same on every replay. The ring or the fan is chosen
 by the script row (two archetypes, `HEAVY_RING` and `HEAVY_FAN`), never by a random draw.
@@ -507,8 +509,9 @@ by the script row (two archetypes, `HEAVY_RING` and `HEAVY_FAN`), never by a ran
   script data (§7.2.1), never role constants.
 - **Aim**: a Gunner aims, and a Diver dives, at the ship's current position whatever its state;
   when the ship is exactly on the shooter, the shot or dive goes straight down.
-- **Enemy bullets**: 4 × 4 px at **75 px/s**, straight toward the ship's position when fired.
-  *(v0.10)* Rings fly at 60 px/s along their own angles; fans and aimed bullets at 75 px/s.
+- **Enemy bullets**: 4 × 4 px at **85 px/s** *(v0.18; was 75)*, straight toward the ship's
+  position when fired, still well under the ship's 150 px/s. *(v0.10)* Rings fly at 60 px/s
+  along their own angles; fans, triples and aimed bullets at 85 px/s *(v0.18; was 75)*.
 - **Leaving the field**: an enemy despawns (§5.2) only once it has been inside the field and is
   then fully outside it, so an enemy spawning outside the field is never removed on arrival.
 - **At most** 48 enemy bullets, 16 enemies, 80 player bullets *(v0.8: 16 before; 5 streams ×
@@ -546,7 +549,7 @@ Ground targets (two collision layers, terrain per level) and mid-bosses are **ex
 - **End of the fight** *(v0.4)*: when the boss is destroyed or flees, every enemy bullet on screen is
   cancelled and the boss body becomes harmless, so the player cannot die during the boss's dying
   or fleeing sequence.
-- HP *(initial, L1 shots)*: Cruiser 1 450 *(v0.12; was 500 in v0.11, 300 in v0.10)*, Gantry turret 450, Mothership core 600 (the later bosses are rebalanced with their levels).
+- HP *(initial, L1 shots)*: Cruiser 1 800 *(v0.18; 1 450 in v0.12, 500 in v0.11, 300 in v0.10)*, Gantry turret 450, Mothership core 600 (the later bosses are rebalanced with their levels).
 - Score: **10 000 + 100 × seconds remaining** on the timer *(initial)*. *(v0.10)* The bonus is
   flat: never multiplied by the chain, and it neither extends nor breaks the chain; hits on the
   boss score 0. The seconds remaining are the whole seconds the HUD shows (the steps left rounded
@@ -582,11 +585,11 @@ failure, the bonus being the reward for growing the weapon.
 | | Cruiser |
 |---|---|
 | Hitbox | 112 × 48 (its box never goes below y 80) |
-| HP | 1 450 level-1 shots (14 500 tenths) *(v0.12; was 500 shots in v0.11 and 300 in v0.10)*; phase 2 at 66 % (9 570 tenths) |
+| HP | 1 800 level-1 shots (18 000 tenths) *(v0.18; 1 450 in v0.12, 500 in v0.11, 300 in v0.10)*; phase 2 at 66 % (11 880 tenths; 9 570 in v0.12) |
 | Timer and bonus | 90 s; 10 000 + 100 × seconds left |
 | Entry | slides from y −24 to y 56 over **3 s**, at x 120 |
-| Phase 1 | sways x = 120 ± 56 · sin(2π · t / 8 s); alternates a **fan** of 5 bullets 15° apart aimed at the ship at 75 px/s and a **ring** of 12 at 60 px/s, one volley every second (the first, a fan, 1 s into the fight), each pattern every 2 s |
-| Phase 2 | the forward turret breaks off (debris effect, §9.4); sways ±72 over 6 s; a **ring of 16** at 60 px/s every **1.5 s**, turned by 11.25° each volley, and an **aimed triple** (3 bullets 15° apart at 75 px/s) every **3 s** |
+| Phase 1 | sways x = 120 ± 56 · sin(2π · t / 8 s); alternates a **fan** of 5 bullets 15° apart aimed at the ship at 85 px/s and a **ring** of 12 at 60 px/s, one volley every **0.9 s** (the first, a fan, 0.9 s into the fight), each pattern every 1.8 s *(v0.18; 75 px/s and 1 s before)* |
+| Phase 2 | the forward turret breaks off (debris effect, §9.4); sways ±72 over 6 s; a **ring of 16** at 60 px/s every **1.25 s**, turned by 11.25° each volley, and an **aimed triple** (3 bullets 15° apart at 85 px/s) every **2.5 s** *(v0.18; 1.5 s, 3 s and 75 px/s before)* |
 | Flee | straight up at 60 px/s |
 | Destroyed | a 2 s explosion sequence, then the level ends |
 
@@ -596,7 +599,7 @@ failure, the bonus being the reward for growing the weapon.
   jumps. In phase 2 the box overhangs the field edges by up to 8 px at the ends of its sway.
 - The phase-1 ring of 12 does not turn; its first bullet points straight down. The phase-2 ring
   turns by 11.25° per ring fired, counted from 0 at the phase change; its first ring and first
-  triple fire 1.5 s and 3 s after the change. Each pattern keeps its own count, so every replay is
+  triple fire 1.25 s and 2.5 s after the change *(v0.18; 1.5 s and 3 s before)*. Each pattern keeps its own count, so every replay is
   identical.
 - Boss volleys follow the enemy-bullet pool's rule (§5.2.1): a bullet beyond the pool of 48 is
   dropped; the level simulation keeps the fight, phase 2 held for its whole timer, at ≤ 40.
@@ -685,7 +688,7 @@ bullets** at once.
 | 59 | Diver | 1 | — | x 140, y −8 | dive |
 | 64 | Gunner | 1 | — | (60, −16) | (60, 64) |
 | 64 | Gunner | 1 | — | (180, −16) | (180, 64) |
-| 70 | Popcorn | 8 | 1/3 s | x0 120, y −8 | S curve |
+| 70 | Popcorn | 8 | 1/3 s | x0 120, y −8 | S curve — no P *(v0.18)* |
 | 70 | Diver | 1 | — | x 40, y −8 | dive |
 | 70 | Diver | 1 | — | x 200, y −8 | dive |
 | 78 | Carrier | 1 | — | (−16, 48) | cross → right, cargo 1-UP |
@@ -697,15 +700,16 @@ bullets** at once.
 | 93 | Diver *(v0.11)* | 1 | — | x 180, y −8 | dive |
 | 102 | Heavy (ring) | 1 | — | (60, −24) | (60, 80) |
 | 102 | Heavy (fan) | 1 | — | (180, −24) | (180, 80) |
-| 110 | Popcorn | 8 | 1/3 s | x0 120, y −8 | S curve — the last formation P (the 4th since v0.12) |
+| 110 | Popcorn | 8 | 1/3 s | x0 120, y −8 | S curve — the last formation P (the 3rd since v0.18, the 4th in v0.12) |
 | 116–120 | — | — | — | — | calm: the field drains |
 | 120 | WARNING | — | — | — | `warningAt`; the Cruiser (§6.1) |
 
-*(v0.12)* Of the seven formations, in start order, those at 0 s, 32 s, 70 s and 110 s pay the
-formation P (3, 35, 73 and 113 s into the level) and those at 8 s, 50 s and 52 s do not; none is
-removed, so the level keeps its enemies and its score. A player who catches every P reaches power
-5 near 119 s, just before the WARNING: the 4th formation P is a cliff (power 4 to 5), watched in
-the playtest.
+*(v0.18)* Of the seven formations, in start order, those at 0 s, 32 s and 110 s pay the
+formation P (3, 35 and 113 s into the level) and those at 8 s, 50 s, 52 s and 70 s do not; none
+is removed, so the level keeps its enemies and its score. A player who catches every formation P
+reaches power 4 at 113 s; power 5 needs a Gunner's P on top (10 % each), so it comes near 118 s in
+the median measured run and some runs fight the Cruiser at power 4 *(v0.12: the 70 s formation
+paid too, power 5 near 119 s from the formation P alone)*.
 
 The 102 s pair is the peak of the level. *(v0.11)* The 92 s formation became two Divers on purpose: one formation P fewer, so the ship reaches its full power only near the boss, and only without dying. The one 1-UP of level 1 crosses high (y 48) at 78 s;
 the Shield Carrier at 28 s stays; the Heavies are the Bomb and Shield sources (§5.2.1). The last
@@ -1221,5 +1225,6 @@ fully playable at release quality, used to validate the design before producing 
 | Controls screen *(v0.15)* | G1b (owner, 2026-10-14): one row per intent with two slot columns, one cell highlighted, the capture shown as *PRESS* (45→46/50); key labels learned from the session's key events, then the browser layout map, then US, with fixed names and arrow glyphs (46/50); the device edited is the last of keyboard and gamepad, followed live while choosing and fixed during a capture, the row hidden on touch only; restore defaults asks first; a closed set of capturable keys (labels of 10 characters at most, the rest refused) and buttons 0–15; an exchange that would empty a primary promotes the secondary or is refused; the answering step reads no menu action; save version 2 with a v1 migration and allowlist parsing of the bindings | One row per slot on two pages (31/50, no scrolling rule); a sub-screen per intent (34/50, two screens per capture); the layout map then US only (38/50: wrong on Firefox and Safari with AZERTY); US names always (30/50, contrary to "labels use the active layout"); a full font now (30/50, part of G4) |
 | Hall of fame *(v0.16)* | G2 (owner, 2026-10-14): the name on a letter grid (43/50: 6 taps for a 6-letter name on a phone, the directions and `confirm` elsewhere, `back` deletes); the country on the same grid with the letters only, *OK* shown only for a complete code in the allowlist (44/50, revised up from the first analysis: a big-cell grid already built, 3 taps to change it); a score enters above the tenth only, ties keep the older entry first; *High scores* in the title menu; the Ending card *VICTORY* with the score, its two story sentences deferred to the assets brick | The arcade letter wheel (30/50: about 80 presses for a name, small arrows on a phone); the grid plus typing on a physical keyboard (42/50: a text capture in the adapter for little gain, kept for later if testers ask); the country as a two-letter spinner over valid codes (37/50) or a scrolling list (31/50, no-scrolling rule); *MISSION COMPLETE* in the title font (252 px, wider than the field) |
 | Skipping the name entry *(v0.16, amended)* | Owner, 2026-10-14: *SKIP*, or *OK* on an empty name, records nothing and returns to the title — the player is never made to appear in the table (42/50) | Store the score as `???` (44/50 on paper, the v0.2 arcade rule, but against the owner's intent); both buttons, *SKIP* and *ANONYMOUS* (40/50) |
+| Level 1 balance *(v0.18)* | Third iteration (#56), superseding the v0.12 row for these values only (owner, 2026-10-16, "far too easy": waves, boss, ship power, the whole level). A committed measurement bot (`tests/support/average-player.ts`: sample-and-hold looks every 0.15 / 0.25 / 0.40 s, a miss chance, a dodge that reads every bullet's path over 0.8 s; seeded) measured v0.12 on 200 seeds: the average bot dies 0.56 times, 2 % game over, kills the Cruiser in 27 s of its 90 s, reaches power 5 at 88 s. Lever package chosen by MCDA: a mixed, attenuated package (405/500) over durability only (385), bullet pressure only (360), slower power only (340), scarcity (275). Values chosen (V7, 415/500): aimed, fan and triple bullets 75 → **85 px/s** (rings stay 60); Gunner HP 8 → **10** shots, fire 1 → **0.8 s**; Heavy HP 40 → **50**; Cruiser 1 450 → **1 800** shots (18 000 tenths, phase 2 at 11 880), phase-1 volley 1 → **0.9 s**, phase-2 volley 1.5 → **1.25 s**; the **70 s formation pays no P**. Measured, 200 seeds, good / average / beginner: game over 10 / 30 / 77 %, boss killed 90 / 70 / 26 %, the average bot dies 2.3 times, Cruiser fight 39 / 37 / 39 s, power 5 near 118 s. Isolated effects on the average bot: bullets 85 none, Gunner none, Heavy +0.3 deaths, Cruiser 2 200 +0.6 deaths and +11 s, faster volleys +0.6 deaths, 70 s without P moves power 5 from 88 to 118 s; the levers compound. Limits: the bots are models (one is non-monotonic on some sets), so the numbers are bands to guard, not exact targets; the waves' feel waits for the testers. | V9 (385/500: Cruiser 2 000 and the 70 s P kept, power 5 still at 88 s, contrary to "ship power"); V2 (385/500: bullets 90, at the edge of a cliff — 100 px/s gives the good bot 73 % game over); V1 and V4 (280 and 315/500 under the first bot: the beginner almost never finishes) |
 | Placeholder sprites *(v0.17)* | G4-1 (owner, 2026-10-15): Kenney *Pixel Shmup* (CC0) for the player, the five roles and the Cruiser; small enemies at 1× over their 16 × 16 hitbox (380/500); the Cruiser as hull ×2 between two 1× wings with the turret tile (410/500); the player's nose-up copy and the 2× sizes baked at load (430/500); `drawSprite` returns whether it drew, the presentation draws its shape otherwise (475/500) | Halving the small ships to 16 (260/500: hitbox larger than the drawing); hitboxes grown to the sprites (280/500, a balance change); the Cruiser as one ship ×3 (370/500) or kept as shapes (300/500); a `flipY` port parameter (360/500); a `hasSprite` query (440/500); the fallback drawn inside the adapter (270/500) |
 | Sprite hit flash *(v0.17, G4-1b)* | Owner, 2026-10-15, after a headless capture showed the Cruiser as a white box for its whole fight: the flash draws the sprite's white silhouette, baked at load, through `drawSprite`'s `frame` (460/500); the box stays the fallback without sheets | The white box (325/500: sustained fire keeps the boss flashing); a blink instead of the flash (330/500); a translucent white veil over the sprite (295/500) |
