@@ -762,6 +762,27 @@ describe('DeviceInput â€” the raw activity signal (ADR-0009 amended, GDD v0.16 Â
     expect(frame.active).toBe(true);
   });
 
+  it('sees a held shortcut key, Meta included, without auto-repeat, until it is released', () => {
+    const { env, input, frame } = setup();
+    env.down('MetaLeft', false, 'meta');
+    input.read(frame);
+    input.read(frame); // no repeat event: still held
+    expect(frame.active).toBe(true);
+    expect(frame.pressed).toBe(0); // a shortcut is never a game input
+    env.up('MetaLeft');
+    input.read(frame);
+    expect(frame.active).toBe(false);
+  });
+
+  it('forgets a held shortcut key on focus loss', () => {
+    const { env, input, frame } = setup();
+    env.down('KeyR', false, 'ctrl');
+    env.loseFocus();
+    input.read(frame); // the keydown of this read still counts
+    input.read(frame);
+    expect(frame.active).toBe(false);
+  });
+
   it('sees a pointer moving anywhere on the page, the side bands included', () => {
     const { env, input, frame } = setup();
     input.resize(LANDSCAPE, { left: 0, top: 0, width: LANDSCAPE.width, height: LANDSCAPE.height });

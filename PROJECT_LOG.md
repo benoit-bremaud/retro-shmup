@@ -21,6 +21,10 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   scene machine refactor (#73): the title's wait and the attract's time use its one `sceneSteps`.
 - A first version read the intents (an `ActivityWatch` over the frame); dropped after the Codex
   findings on #70 for the raw signal.
+- Codex on #71: a held Cmd/Meta (a shortcut, no auto-repeat) counted only on its keydown — fixed
+  (owner A): shortcut keys held are tracked apart, as activity only. A stick just past the dead
+  zone quantizes to zero — owner kept the movement's threshold (MCDA B 440/500 against a raw
+  threshold 335: one threshold, robust to a drifting pad), now written in the ADR-0009 amendment.
 
 ### Scene machine refactor: one dispatch table (branches `docs/uml`, `refactor/engine`)
 
