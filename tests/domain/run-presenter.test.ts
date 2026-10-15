@@ -591,7 +591,11 @@ describe('RunPresenter — placeholder sprites (GDD v0.17 §3.2.1, render/04-cla
     expect(render.sprites).toEqual([{ region: 'field', id: 'player', x: 105, y: 200, frame: 0 }]);
     expect(hullRects(render)).toEqual([]);
     expect(render.drew(Palette.shipWing)).toBe(false);
-    expect(render.rectsOf(Palette.shipCockpit)).toHaveLength(1);
+    const half = PlayerTuning.hitboxSize / 2;
+    expect(render.rectsOf(Palette.shipCockpit)).toMatchObject([{ x: 105 - half, y: 200 - half }]);
+    expect(render.order.indexOf(`rect ${Palette.shipCockpit}`)).toBeGreaterThan(
+      render.order.indexOf('sprite player'),
+    );
   });
 
   it.each([
@@ -611,7 +615,7 @@ describe('RunPresenter — placeholder sprites (GDD v0.17 §3.2.1, render/04-cla
       16,
     );
     expect(render.sprites).toEqual([{ region: 'field', id, x: 60, y: 70, frame: 0 }]);
-    expect(render.rects.filter((r) => r.region === 'field' && r.w >= 16)).toEqual([]);
+    expect(render.rects.filter((r) => r.region === 'field')).toEqual([]);
   });
 
   it('draws a flashing enemy as its white silhouette, the flash frame of its sprite (§9.4)', () => {
@@ -678,6 +682,37 @@ describe('RunPresenter — placeholder sprites (GDD v0.17 §3.2.1, render/04-cla
       SPRITE_FLASH_FRAME,
     ]);
     expect(render.drew(Palette.hitFlash)).toBe(false);
+  });
+
+  it('draws a flashing Cruiser in phase 2 as three silhouettes, its turret gone', () => {
+    const bus = new EventBus();
+    const render = loaded();
+    const view = presenter(render, false, bus);
+    const hit = createGameEvent(GameEventKind.EnemyHit);
+    hit.subject = 5;
+    bus.publish(hit);
+    view.draw(
+      snapshot(ship({ state: PlayerState.Dead }), [], { boss: { ...FIGHTING, phase: 1 } }),
+      1,
+      16,
+    );
+    expect(render.sprites.map((sprite) => [sprite.id, sprite.frame])).toEqual([
+      ['cruiserWing', SPRITE_FLASH_FRAME],
+      ['cruiserWing', SPRITE_FLASH_FRAME],
+      ['cruiserHull', SPRITE_FLASH_FRAME],
+    ]);
+  });
+
+  it('draws a hit enemy as its plain sprite when the hit flash is switched off (§9.3)', () => {
+    const bus = new EventBus();
+    const render = loaded();
+    const view = presenter(render, false, bus, { hitFlash: false });
+    const enemy = enemyAt(POPCORN, 60, 70);
+    const hit = createGameEvent(GameEventKind.EnemyHit);
+    hit.subject = enemy.serial;
+    bus.publish(hit);
+    view.draw(snapshot(ship({ state: PlayerState.Dead }), [], { enemies: listOf([enemy]) }), 1, 16);
+    expect(render.sprites).toEqual([{ region: 'field', id: 'popcorn', x: 60, y: 70, frame: 0 }]);
   });
 
   it('draws nothing of an idle Cruiser', () => {

@@ -114,8 +114,9 @@ classDiagram
   allocate nothing. `heavy` and `cruiserHull` are the 2× cells.
 - **The Cruiser** is three `drawSprite` calls: the wings at x ∓ 44, the hull at x, then the
   turret at the turret's offset (`CRUISER_TURRET`) while phase 0, all four with the flash frame
-  while it flashes. If the hull
-  draw returns `false`, the presenter draws the current boxes instead.
+  while it flashes. If the first
+  wing's draw returns `false` (one sheet, so one answer for all), nothing is drawn yet and the
+  presenter draws the boxes instead.
 - **Hit flash** (§9.4, amended in G4-1b): a flashing entity is drawn with
   `frame = SPRITE_FLASH_FRAME`, its white silhouette `BakedSprite.flash`, baked from the sprite's
   own canvas (`source-in` fill in `Palette.hitFlash`); while the sheets are not loaded it stays its

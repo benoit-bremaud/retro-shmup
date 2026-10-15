@@ -26,18 +26,18 @@ sequenceDiagram
   par the images decode
     Img-->>Main: decode() resolves (both)
     Main->>Bank: bake(ships, tiles, newCanvas)
-    Note over Bank: one off-screen canvas per SpriteId,<br/>2× and nose-up copies made here
+    Note over Bank: one off-screen canvas per SpriteId and its white<br/>flash silhouette, 2× and nose-up copies made here
   and frames run
     Frames->>Pres: draw(snapshot, alpha)
-    Pres->>R: drawSprite(popcorn, x, y)
+    Pres->>R: drawSprite(popcorn, x, y, frame 0 or flash)
     R->>Bank: get(popcorn)
     alt baked
-      Bank-->>R: baked sprite (canvas, size)
-      R-->>Pres: true (drawn)
+      Bank-->>R: baked sprite (image, flash, size)
+      R-->>Pres: true (drawn: the image, or the flash for frame 1)
     else not baked yet, or failed
       Bank-->>R: undefined
       R-->>Pres: false
-      Pres->>R: drawRect(the shape of today)
+      Pres->>R: drawRect(the shape of today, white while it flashes)
     end
   end
   opt either decode() rejects

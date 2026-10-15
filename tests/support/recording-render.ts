@@ -81,6 +81,7 @@ export class RecordingRender implements RenderPort {
     this.rects.length = 0;
     this.texts.length = 0;
     this.sprites.length = 0;
+    this.order.length = 0;
   }
   /**
    * What `drawSprite` answers: `false` by default — no sheet, the presentation draws its shapes
@@ -89,11 +90,17 @@ export class RecordingRender implements RenderPort {
   spritesLoaded = false;
   readonly sprites: RecordedSprite[] = [];
   drawSprite(id: SpriteId, x: number, y: number, frame = 0): boolean {
-    if (this.spritesLoaded) this.sprites.push({ region: this.region, id, x, y, frame });
+    if (this.spritesLoaded) {
+      this.sprites.push({ region: this.region, id, x, y, frame });
+      this.order.push(`sprite ${id}`);
+    }
     return this.spritesLoaded;
   }
+  /** Sprites and rectangles in drawing order, as `sprite <id>` and `rect <colour>`. */
+  readonly order: string[] = [];
   drawRect(x: number, y: number, w: number, h: number, colour: string): void {
     this.rects.push({ region: this.region, x, y, w, h, colour });
+    this.order.push(`rect ${colour}`);
   }
   /** Honours the RenderPort glyph contract, so domain tests fail like the real renderer. */
   drawText(text: string, x: number, y: number, font: FontId): void {
