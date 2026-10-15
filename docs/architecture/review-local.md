@@ -1,46 +1,49 @@
-# Local review — retro-shmup (branch `refactor/engine`)
+# Local review — retro-shmup (docs/sprites)
 
 - Date: 2026-10-15
-- Commit: see the branch tip
-- Scope: branch diff `origin/main...HEAD` — `src/domain/scenes/scene-machine.ts` (the dispatch
-  table and the single scene timer designed in #72), the *planned* tags lifted in CD-menus,
-  STM-scenes and the matrix, the `PROJECT_LOG.md` entry.
-- Checks run: design · correctness (architecture-guardian, step-for-step timer equivalence) ·
-  docs (UML against the code, comments on the new members) · tests (suite unchanged; SonarQube
-  new-code gate) · security (no input, storage or DOM surface touched)
-- Verdict: **ship** · Must 0 · Should 0 · Nice 2 (both applied)
+- Commit: 95f4c6f + review fixes
+- Scope: branch diff main...HEAD (GDD v0.17 §3.2.1, ADR-0001 amendment, UML render/\*)
+- Checks run: design · docs (tests, security, correctness: not applicable — no code in the diff)
+- Verdict: ship after fixes · Must 3 (fixed) · Should 7 (fixed) · Nice 3
 
 ## 🔴 Must Have
 
-_None._
+- `docs/architecture/diagrams/gameplay/04-class-domain.md:368,461` `[docs]` · `EnemyStats.sprite`
+  and `brokenPart: SpriteId` contradicted `SPRITE_OF_ROLE` (ADR-0010) · fixed: field removed,
+  `brokenPart: BrokenPart` as in the code.
+- `docs/architecture/diagrams/render/*.md` `[docs]` · Mermaid generics with commas and a `;` in a
+  note broke parsing · fixed: plain text, both diagrams render with mermaid-cli 11.4.2.
+- `docs/decisions/ADR-0001-…md:42,47` `[docs]` · the frozen sketch still read `string` / `void` ·
+  fixed: pointer to the amendment.
 
 ## 🟡 Should Have
 
-_None._
+- `render/04-class-sprites.md` `[design]` · cell centre vs ship centre · fixed: whole cells, ships
+  measured centred within half a pixel, bake test planned.
+- `render/04-class-sprites.md` `[design]` · centre vs top-left convention and rounding · fixed:
+  documented, rounded as `fillLogical`.
+- `render/04-class-sprites.md` `[design]` · code changes implied (renderer no longer throws,
+  recording double returns a configurable boolean, `'ship'` test id) · fixed: listed.
+- `ADR-0001` `[design]` · "its sheet" vs both sheets baked together · fixed.
+- `game-design-document.md:393` `[docs]` · "full sprite (32 × 32)" · fixed: "sprite box".
+- GDD §3.2.1 `[docs]` · the Heavy also overhangs (64 over 56) · fixed: overhang bullet.
+- `render/04-class-sprites.md` `[docs]` · abbreviated renderer signature · fixed: noted.
 
 ## 🔵 Nice to Have
 
-- `src/domain/scenes/scene-machine.ts` `[design]` · four closure factories for the routed
-  Title / Pause steps · applied: the steps take their scene first and are bound with
-  `bind(this, scene)`, as CD-menus describes.
-- `docs/architecture/diagrams/meta/05-state-scenes.md` `[docs]` · "share one handler" · applied in
-  #72: "share one step method".
+- `ADR-0001` `[design]` · `frame` / `flipX` unused since 2026-10-07 · left as the ADR says (YAGNI
+  candidate for a later cleanup).
+- GDD decision record v0.6 row "full-box hitboxes" · historical, left.
+- `02-sequence-sprite-loading.md` `[docs]` · sheet sizes ≈ 2 / 4 KB unverified until the PNGs land.
 
 ## ⚪ Disagree / Intentional
 
-- `src/domain/scenes/scene-machine.ts` `[design]` · a bound-method table rather than per-scene
-  State objects · owner decision (option B, 2026-10-15, CD-menus note).
-- `src/domain/scenes/scene-machine.ts` `[design]` · unused `_dt` on the frame-only steps · the
-  shared `SceneStep` signature.
-- `src/domain/scenes/scene-machine.ts` `[design]` · the file grows from 672 to about 730 lines ·
-  the gain is one compiler-checked extension point and one timer, not fewer lines.
+- `render/04-class-sprites.md` `[design]` · "turret tile narrower than `CRUISER_TURRET`, empty
+  hittable space" · the turret has no hitbox of its own; it sits inside the Cruiser's 112 × 48 box,
+  and `CRUISER_TURRET` only places the debris. Noted in the diagram.
+- `drawSprite` returning `boolean` (command + answer) · owner MCDA A 475/500, ADR-0001 amendment.
 
 ## Per-dimension summary
 
-- Design: no anti-pattern, no over-engineering; ADR-0003 respected; matches CD-menus and
-  STM-scenes.
-- Docs: the *planned* tags of #72 lifted with the code, so the UML and the code agree.
-- Tests: `tests/` untouched; 1190 tests passing; the SonarQube quality gate passed.
-- Security: no surface changed; gitleaks and `pnpm audit` clean.
-- Correctness: count-in, game over, Results and Ending timers equivalent step for step; every
-  scene change goes through `enter()`; the handlers are built once, so a step allocates nothing.
+- Design: sound, no over-engineering; spec gaps fixed · Docs: consistent numbers and links; three
+  freshness/syntax fixes · Tests / Security / Correctness: no code changed.

@@ -39,12 +39,12 @@ Sketch of the port (signatures only; the authoritative version is the UML class 
 before implementation, per CLAUDE.md "Design before code"):
 
 ```ts
-export type SpriteId = string;          // key into the loaded sprite sheet(s)
+export type SpriteId = string;          // key into the loaded sprite sheet(s) — superseded: see Amendment 2026-10-15
 export type FontId = 'hud' | 'title';   // bitmap fonts, no system text
 
 export interface RenderPort {
   clear(): void;
-  drawSprite(id: SpriteId, x: number, y: number, frame?: number, flipX?: boolean): void;
+  drawSprite(id: SpriteId, x: number, y: number, frame?: number, flipX?: boolean): void; // superseded: see Amendment 2026-10-15
   drawRect(x: number, y: number, w: number, h: number, colour: string): void;
   drawText(text: string, x: number, y: number, font: FontId): void;
   setCameraOffset(dx: number, dy: number): void;   // screen shake; (0, 0) when disabled
@@ -119,6 +119,37 @@ Follow-ups and review rules:
 - The scale-factor formula is covered by a unit test on the adapter's layout function, no canvas.
 - The port signatures above are frozen once the UML class and sequence diagrams for the render
   seam are validated (CLAUDE.md "Design before code"); until then this ADR fixes intent and rules.
+
+## Amendment (2026-10-15, GDD v0.17 sprites)
+
+`drawSprite` returns `boolean`: `true` when the sprite was drawn, `false` while the sheets are not
+baked (still loading, or a load failed). It never throws for a known id. The caller — the
+presentation — draws its own placeholder shape on `false`, so the game starts at once and runs
+whole on its shapes if the image never arrives (owner, MCDA A 475/500, against a separate
+`hasSprite` query, 440, and a fallback drawn inside the adapter, 270: the adapter would copy the
+game's shapes). `SpriteId` becomes the closed union of the ids the presentation draws, so an
+unknown id fails to compile and the adapter's lookup table is a `Record<SpriteId, …>` checked for
+completeness. `frame` and `flipX` are unchanged and still unused.
+
+The amended signatures (the authoritative version stays the UML class diagram
+`render/04-class-sprites`):
+
+```ts
+export type SpriteId =
+  | 'player' | 'popcorn' | 'diver' | 'gunner' | 'carrier' | 'heavy'
+  | 'cruiserHull' | 'cruiserWing' | 'cruiserTurret';
+
+export interface RenderPort {
+  // (x, y) is the sprite's centre; true when drawn, false while the sheets are not baked
+  drawSprite(id: SpriteId, x: number, y: number, frame?: number, flipX?: boolean): boolean;
+  // other methods unchanged
+}
+```
+
+Sizes other than the sheet's 32 × 32 cell, and the player's upward-facing copy, are baked once at
+load into off-screen canvases, each under its own id (owner, MCDA B 430/500 against a `flipY`
+parameter, 360): the port gains no scale or flip parameter, and a frame's draw calls stay
+allocation-free.
 
 ## References
 
