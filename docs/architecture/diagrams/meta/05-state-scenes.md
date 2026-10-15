@@ -503,8 +503,18 @@ stateDiagram-v2
   NameEntry --> HighScores : the entry stored and saved, highlighted
   Title --> HighScores : high scores
   HighScores --> Title : back, confirm or a tap
+  state "Attract (planned, G2-3b)" as Attract
+  Title --> Attract : after(10 s without input)
+  Attract --> Title : any input, or after(6 s) / opening guard, no lock
 ```
 
+- **Attract** (planned, G2-3b, GDD v0.16 §9.1): the idle time counts on `Title` only, from its
+  opening, and restarts on any input — pressed or held buttons, a direction, a tap, a release,
+  or the hovering mouse moving (`hoverX`/`hoverY` differing from the last step); the 1 s title
+  lock counts as idle. `Attract` scrolls the background and draws the High scores with no
+  highlight (the table may be empty: dashes); any input returns to `Title` through `openMenu`
+  (the opening guard, what is held counts as held), with no lock; after 6 s it returns the same
+  way and the idle time starts again. `Pause` is ignored.
 - **Lifts the slice-end interim**: a cleared run goes Results → Ending, no longer to the title.
 - ~~**Interim deviation, no name entry until G2-3**~~ (lifted by G2-3: the `[score enters the
   table]` branches and `Name entry --> High scores` are built; recording releases the run). `Title --> High scores` and `High scores --> Title` (on `back`, `confirm` or a

@@ -123,6 +123,8 @@ classDiagram
     -menuScreens: table of menu scenes
     -optionsTouch: boolean
     -table: HighScoreTable
+    -idleSteps: number, planned G2-3b
+    -activity: ActivityWatch, planned G2-3b
     +constructor(..., host, highScores)
     -openMenu(scene, frame) void
     -screenOf(scene) MenuScene | undefined
@@ -166,6 +168,11 @@ classDiagram
     +entries: readonly HighScoreEntry[]
     +qualifies(score: number) boolean
     +insert(entry: HighScoreEntry) number
+  }
+  class ActivityWatch {
+    <<planned G2-3b>>
+    +reset(frame) void
+    +step(frame) boolean
   }
   class PressGuard {
     +open(now) void
@@ -260,6 +267,7 @@ classDiagram
   Menu *-- PressGuard
   NameEntry ..> HighScoreEntry : builds with the host's date
   SceneMachine *-- NameEntry
+  SceneMachine *-- ActivityWatch : planned G2-3b
   SceneMachine *-- HighScoreTable
   SaveStore --> StoragePort
   LocalStorageStore ..|> StoragePort
@@ -387,6 +395,14 @@ classDiagram
   `entered`, with the score given to `open` and the date the host gives (`SceneHost.today()`,
   the domain reads no clock); the level stored is 1, the slice having one level (owner,
   2026-10-15, ADR-0022 decision 9).
+- **Attract mode (planned, G2-3b, GDD v0.16 §9.1)**: `ActivityWatch` (`scenes/activity-watch.ts`)
+  says whether a frame holds any input: a button pressed or held, a direction, a tap, a release,
+  or the hovering mouse at another point than at the last step (it keeps that point; `reset`
+  takes the frame that opens the title, so a mouse resting there is not a move). The scene
+  machine counts `idleSteps` on `Title` (`SceneTuning.attractIdleSeconds` 10) and enters the
+  `Attract` scene, which reuses `HighScoresScreen` (`open(table, -1)`) and `drawHighScores`, and
+  leaves it on any input or after `SceneTuning.attractSeconds` (6) through `openMenu`, with no
+  lock.
 - **Name entry, as built (G2-3, owner-approved 2026-10-15)**: the cells are data (`NAME_CELLS`,
   `COUNTRY_CELLS`, characters eight to a row, then the actions; an action never straddles two
   rows). `PressGuard` (`src/domain/scenes/menu-input.ts`, with the direction thresholds) holds the
