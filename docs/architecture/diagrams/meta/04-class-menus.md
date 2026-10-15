@@ -25,9 +25,16 @@ classDiagram
     +rows: readonly Id[]
     +top: number
     +highlighted: number
-    +reset() void
+    +lastSideways: number
+    -flips: row to boolean, constructor
+    +reset(now: number, opening: IntentFrame) void
+    +ignore(frame: IntentFrame) void
     +rowAt(y: number) number
     +step(frame: IntentFrame, now: number) Id | undefined
+  }
+  class OpenableMenu {
+    <<interface>>
+    +reset(now: number, opening: IntentFrame) void
   }
   class MenuView {
     <<interface>>
@@ -38,18 +45,45 @@ classDiagram
   class MenuScreen {
     <<interface>>
     +menu: MenuView
-    +header: MessageKey
-    +headerFont: title | menu
-    +value(row: MessageKey) MessageKey | undefined
+    +header?: key and font, title or menu
+    +value?(row: MessageKey) MessageKey | undefined
+  }
+  class ControlsView {
+    <<interface>>
+    presentation/menu-layout, with CONTROLS_COLUMNS and SlotColumn 0 or 1
+  }
+  class ControlsScreen {
+    +grid: ControlsGrid
+    +device: keyboard | gamepad
+    +capturing: boolean
+    -pending: intent and slot | undefined
+    +open(now, opening) void
+    +step(frame, now) back | restore | undefined
+    +restoreDefaults() void
+    +cell(row, column: SlotColumn) string
+  }
+  class HighScoresView {
+    <<interface>>
+    +rows: readonly HighScoreRow[]
+    +highlighted: number
+  }
+  class HighScoresScreen {
+    +rows: readonly HighScoreRow[]
+    +highlighted: number
+    +open(table: HighScoreTable, highlighted: number) void
+    +step(frame) boolean
   }
   class SceneHost {
     <<interface>>
     +optionsChanged(options: Options) void
     +releaseMovement() void
-    +capture methods of G1b, see the controls notes
-    +countryOfLanguage() string | undefined
-    +today() string
-    +highScoresChanged(entries: readonly HighScoreEntry[]) void
+    +startCapture(device: keyboard | gamepad) void
+    +captureNext() BindingCapture
+    +cancelCapture() void
+    +keyLabel(code: string) string
+    +countryOfLanguage() string | undefined, planned G2-3
+    +today() string, planned G2-3
+    +highScoresChanged(entries) void, planned G2-3
   }
   class InputPort {
     <<interface>>
@@ -70,12 +104,12 @@ classDiagram
   }
   class BindingsEditor {
     <<functions>>
-    +bind(bindings, device, intent, slot, input) Bindings
+    +bind(bindings, device, intent, slot, input) Bindings | undefined
     +restore(bindings, device) Bindings
   }
   class ButtonNames {
     <<table>>
-    standard-mapping index 0 to 15 to A, B, X, Y, LB, RB, LT, RT, SELECT, START, L3, R3, arrows
+    input-names BUTTON_NAMES behind buttonName and keyName, index 0 to 15
   }
   class Bindings {
     <<interface>>
@@ -87,7 +121,11 @@ classDiagram
   class SceneMachine {
     -options: LiveOptions
     -menuScreens: table of menu scenes
+    -optionsTouch: boolean
+    -table: HighScoreTable
+    +constructor(..., host, highScores)
     -openMenu(scene, frame) void
+    -screenOf(scene) MenuScene | undefined
   }
   class LiveOptions {
     +value(row: MessageKey) MessageKey | undefined
@@ -130,17 +168,19 @@ classDiagram
     +insert(entry: HighScoreEntry) number
   }
   class LetterGrid {
+    <<planned G2-3>>
     +cells: readonly GridCell[]
     +cursor: number
     +step(frame, now) GridCell | undefined
   }
   class NameEntry {
+    <<planned G2-3>>
     +name: string
     +country: string | undefined
     +step(frame, now) HighScoreEntry | undefined
   }
   class SaveStore {
-    +load() Options
+    +load() Options, parseBindings and parseHighScores
     +highScores: readonly HighScoreEntry[]
     +saveOptions(options: Options) boolean
     +saveHighScores(entries: readonly HighScoreEntry[]) boolean
@@ -154,18 +194,24 @@ classDiagram
     adapter, try/catch on every call
   }
 
-  SceneMachine *-- "5" Menu
+  SceneMachine *-- "7" Menu
   SceneMachine --> SceneHost : each change, leaving for play
+  SceneMachine *-- ControlsScreen
+  SceneMachine *-- HighScoresScreen
+  ControlsScreen ..|> ControlsView
+  ControlsScreen *-- ControlsGrid
+  ControlsScreen ..> BindingsEditor : bind, restore
+  ControlsScreen ..> ButtonNames : slot names
+  ControlsScreen --> SceneHost : capture, keyLabel, optionsChanged
+  HighScoresScreen ..|> HighScoresView
+  HighScoresScreen ..> HighScoreTable : rows formatted on open
+  Menu ..|> OpenableMenu
+  OpenableMenu --|> MenuView
   SceneMachine *-- LiveOptions
   LiveOptions ..|> Options
-  SceneMachine *-- ControlsGrid
-  SceneMachine ..> BindingsEditor : capture result, restore
-  SceneMachine ..> ButtonNames : gamepad labels
-  SceneMachine ..> InputPort : capture, keyboard labels
   KeyLabels ..> InputPort : behind label()
   Options --> Bindings : v0.15
   Menu ..> IntentFrame : tap, release, hover
-  Menu ..|> MenuView
   MenuScreen --> MenuView
   Options *-- EffectSettings
   SaveDocument *-- Options
@@ -174,7 +220,7 @@ classDiagram
   HighScoreTable o-- "0..10" HighScoreEntry
   NameEntry *-- LetterGrid
   NameEntry ..> HighScoreEntry : builds
-  SceneMachine *-- NameEntry
+  SceneMachine *-- NameEntry : planned G2-3
   SceneMachine *-- HighScoreTable
   SaveStore --> StoragePort
   LocalStorageStore ..|> StoragePort
@@ -184,8 +230,9 @@ classDiagram
 
 ## Notes
 
-- **One menu model** for the title, the pause, Confirm quit, the options and the visual effects
-  (five menus, built once): the `SceneMachine` builds each menu's rows from data, so a later row
+- **One menu model** for the title, the pause, Confirm quit, the options (full, and the touch
+  variant without *Controls*), the visual effects and Confirm restore (seven menus, built once;
+  owner, 2026-10-15, decision A4): the `SceneMachine` builds each menu's rows from data, so a later row
   (high scores, controls, audio) is a data addition. A row whose screen does not exist yet is not
   in the list. Rows are message keys; there is no row-kind class (G1a-3 design, KISS): a row is a
   switch or a choice only because its screen's `value(row)` gives it a value (*ON* / *OFF*,
@@ -230,8 +277,8 @@ classDiagram
   with a migration function, as ADR-0006 decision 4 requires.
 - **Layering (G1a-2 review)**: `Menu` (scenes) depends on `presentation/menu-layout` for the row
   height and centring; presentation draws a `MenuView` / `MenuScreen` and never imports scenes.
-  The scene machine keeps one table of menu scenes (menu, header, header font) and one
-  `openMenu(scene)`, so a new menu screen is one entry plus its step method. `Options` and
+  The scene machine keeps one table of menu scenes (menu, optional header) and one
+  `openMenu(scene, frame)`, so a new menu screen is one entry plus its step method. `Options` and
   `EffectSettings` live in `src/domain/options.ts`, shared by the presenter, the save store and
   the options screen.
 - `Language`, `MessageKey` and `HighScoreEntry` are the existing catalogue and save types.
@@ -242,18 +289,46 @@ classDiagram
   domain: `bind` puts the captured input in the slot and exchanges it with the slot that held it
   on the same device; when that would empty another intent's primary, its secondary moves up,
   and when it has none `bind` refuses (the capture goes on), so no intent is left unbound;
-  `restore` resets one device. The scene machine
-  asks the input port to `startCapture`, polls `captureNext` each step until `key`, `button` or
-  `cancelled` (the keyboard's `Escape`, the gamepad's 5 s), and cancels on a tap, on leaving or
-  on an automatic pause trigger; the answering step reads no menu action. The capture answers
+  `restore` resets one device. `ControlsScreen`
+  asks `SceneHost` to `startCapture`, polls `captureNext` each step until `key`, `button` or
+  `cancelled` (the keyboard's `Escape`, the gamepad's 5 s), and cancels on a tap; leaving or an
+  automatic pause trigger cancels too; the answering step reads no menu action. The capture answers
   only the edited device and only the capturable set of GDD v0.15 §4.2 (a closed list; refused
   keys leave it waiting), and the adapter prevents every key's default meanwhile but `Escape`'s.
-  Gamepad labels come from the domain's `ButtonNames` table. Keyboard labels are split by
-  language (G1b-2): `InputPort.label` answers only the character a letter or digit key prints
+  Gamepad labels come from the domain's `ButtonNames` table (the private `BUTTON_NAMES` behind
+  `buttonName()` and `keyName()` in `src/domain/input/input-names.ts`; the gamepad capture reads
+  the buttons 0 to 16 and refuses 16, the system's home button). A key pressed with Ctrl, Alt or
+  Cmd/Meta held is ignored in play and in capture and keeps its browser action (`isShortcut`,
+  `src/adapters/input/device-input.ts`); the Ctrl and Alt keys themselves, whose own keydown
+  carries their flag, are not shortcuts and stay capturable (owner, 2026-10-15, decision C3).
+  Keyboard labels are split by language (G1b-2): `InputPort.label` (reached through
+  `SceneHost.keyLabel`) answers only the character a letter or digit key prints
   (`KeyLabels` in the adapter: learned from the session's key events, then the layout map turned
   to capitals once, then US; `''` for any other key), and the domain names the other keys through
   the catalogue (*SPACE* / *ESPACE*, *SHIFT L* / *MAJ G*, the arrow glyphs, *NUM 0*…) with the
   screen (G1b-3).
+- **Screens own their state, the scene machine routes** (owner, 2026-10-15, decision A1):
+  `ControlsScreen` (`src/domain/scenes/controls-screen.ts`) owns the grid, the edited device, the
+  pending capture and the cell texts, implements `ControlsView` (`CONTROLS_COLUMNS`,
+  `ControlsView` and `SlotColumn` in `presentation/menu-layout.ts`), calls `bind` itself and
+  hands the scene machine only `back` and `restore`. `HighScoresScreen`
+  (`src/domain/scenes/high-scores-screen.ts`) formats its ten `HighScoreRow`s once on open and
+  implements `HighScoresView` (both in `presentation/overlays.ts`); `back`, `confirm` or a tap
+  started on the screen leaves it.
+- **The capture goes through `SceneHost`** (decision A2): `startCapture`, `captureNext`,
+  `cancelCapture` and `keyLabel` (`src/domain/scenes/scene-host.ts`), never straight to
+  `InputPort`; the composition root's host forwards to the input port, and its `optionsChanged`
+  saves and pushes new bindings with `setBindings`.
+- **The stored top 10** (decision A3) reaches the scene machine as its constructor parameter
+  `highScores` (`main.ts` passes `save.highScores`), built into a `HighScoreTable`.
+  `SceneHost.countryOfLanguage`, `today` and `highScoresChanged`, `NameEntry` and `LetterGrid`
+  are planned, G2-3.
+- **Menu members** (decision A4): `Menu` implements `OpenableMenu` (`reset(now, opening)`, what a
+  scene needs to open and draw any menu); `ignore(frame)` is the title lock's step; `lastSideways`
+  gives the controls grid its column; the constructor's `flips` predicate says which rows left and
+  right flip. `MenuScreen` has an optional `header {key, font}` and an optional `value`. The scene
+  machine's `screenOf(scene)` returns the table's screen, or the options without *Controls* when
+  `optionsTouch` (touch used last, frozen when the options open in `openMenu(scene, frame)`).
 - **Where the binding rules live (G1b-1)**: `REMAPPABLE_INTENTS` in the input port (the
   `RemappableIntent` type derives from it); `domain/input/capturable.ts` the capturable set;
   `domain/input/bindings-editor.ts` `bind` and `restore` (which also refuse an input outside the
@@ -275,5 +350,7 @@ classDiagram
   the stored entries by allowlist (ADR-0021 decisions 2, 3, 6) and saves the table with the
   options (`saveHighScores`). The entries first ship under the save's version 2 (G1b): the empty
   `highScores` written since G1a-1 is parsed by the same allowlist, no version bump and no
-  migration (ADR-0021 decision 7's "version 1" overtaken, noted in the ADR).
+  migration (ADR-0021 decision 7's "version 1" overtaken, noted in the ADR). `parseHighScores`
+  (`src/domain/hall-of-fame/high-scores.ts`) still accepts the name `???`: a legacy value only,
+  since *SKIP* records nothing.
 

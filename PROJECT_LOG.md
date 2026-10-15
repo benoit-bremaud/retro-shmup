@@ -30,6 +30,17 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   tuning value; stale Results comment; the screen reuses the table's size.
 - Owner decisions the same day: a simple attract mode (10 s idle on the title → the high scores 6 s
   → the title; any input returns) in G2-3; the enemies' look (squares today) — analysis pending.
+- Design-versus-code drift audit (2026-10-15): 27 drifts — 18 where the code was ahead of the
+  study, 4 contradictions, 5 planned items. Owner approvals the same day, documented in the GDD
+  (§4.2, §9.1), STM-scenes, CD-menus, SD-remap and the traceability matrix: A1 `ControlsScreen`
+  and `HighScoresScreen` own their screens, the scene machine routes; A2 the binding capture
+  goes through `SceneHost` (`keyLabel`), `ControlsScreen` calls `bind`; A3 the top 10 is the
+  scene machine's `highScores` constructor parameter, the host's country, date and table
+  callbacks planned for G2-3; A4 seven `Menu` objects, `OpenableMenu`, `ignore`,
+  `lastSideways`, `flips`, optional `MenuScreen` header and value, `screenOf`; C1 the High
+  scores columns as coded; C2 Ending and Game over → title an interim until G2-3; C3 keys with
+  Ctrl, Alt or Cmd/Meta held are ignored and keep their browser action. Name entry, letter grid
+  and the host's G2-3 methods stay in the study, marked planned.
 
 ### G2-1: the high-score table, its save and two glyphs (branch `feat/g2-table`) — Refs #46
 
