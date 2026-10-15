@@ -1,17 +1,9 @@
+import { TABLE_SIZE } from '../hall-of-fame/high-scores';
 import type { HighScoreTable } from '../hall-of-fame/high-scores';
+import type { HighScoreRow } from '../presentation/overlays';
 import { Button } from '../ports/input-port';
 import type { IntentFrame } from '../ports/input-port';
 
-/** One row of the high scores, as drawn: every field a string built when the screen opens. */
-export interface HighScoreRow {
-  readonly rank: string;
-  readonly name: string;
-  readonly country: string;
-  readonly score: string;
-  readonly level: string;
-}
-
-const RANKS = 10;
 const EMPTY_NAME = '--------';
 const EMPTY_SCORE = '-------';
 
@@ -29,7 +21,7 @@ export class HighScoresScreen {
 
   open(table: HighScoreTable, highlighted: number): void {
     const rows: HighScoreRow[] = [];
-    for (let i = 0; i < RANKS; i += 1) {
+    for (let i = 0; i < TABLE_SIZE; i += 1) {
       const entry = table.entries[i];
       rows.push(
         entry === undefined

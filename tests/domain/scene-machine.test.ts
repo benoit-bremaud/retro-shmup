@@ -741,6 +741,16 @@ describe('SceneMachine — Results (meta/05-state-scenes, GDD v0.10 §8, F-3)', 
     expect(machine.scene).toBe(Scene.Playing);
   });
 
+  it('keeps the starfield moving on the Ending card', () => {
+    const { machine, render } = clearedFixture();
+    for (let i = 0; i < 480; i += 1) machine.step(DT, createIntentFrame());
+    machine.render(1, 16);
+    const stars = render.rectsOf(Palette.starNear).map((rect) => rect.y);
+    for (let i = 0; i < 30; i += 1) machine.step(DT, createIntentFrame());
+    machine.render(1, 16);
+    expect(render.rectsOf(Palette.starNear).map((rect) => rect.y)).not.toEqual(stars);
+  });
+
   it('leaves the Ending card on its own after 6 s (360 steps)', () => {
     const { machine } = clearedFixture();
     for (let i = 0; i < 480; i += 1) machine.step(DT, createIntentFrame());

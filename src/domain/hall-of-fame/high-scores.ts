@@ -15,7 +15,7 @@ export interface HighScoreEntry {
 }
 
 /** The table's size (GDD v0.16 §9.1). */
-const TABLE_SIZE = 10;
+export const TABLE_SIZE = 10;
 
 const NAME = /^[A-Z\d ]{1,8}$/;
 const DATE = /^(\d{4})-(\d{2})-(\d{2})$/;

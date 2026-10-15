@@ -71,6 +71,8 @@ export const SceneTuning = {
   gameOverLockSeconds: 1,
   /** The Ending card leaves on its own after this long (GDD v0.16 §9.1). */
   endingSeconds: 6,
+  /** Confirm and taps are ignored this long on the Ending card (GDD v0.16 §9.1). */
+  endingLockSeconds: 1,
 } as const;
 
 /**

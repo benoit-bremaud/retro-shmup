@@ -24,6 +24,12 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 - Chrome check on the local build with a planted table: the title menu, the High scores screen
   (aligned columns, dashes), a click back to the title, no console error. Not checked in Chrome:
   the Ending card (it needs a cleared run); the scene tests cover its texts, lock and timer.
+- Reviews: no Must. Fixed — the starfield froze on the Ending card (each scene drawing a run counts
+  its own background steps; test proven against the old code); the high-score row type declared
+  once in presentation; the Ending layout and highlight margin named; the Ending lock its own
+  tuning value; stale Results comment; the screen reuses the table's size.
+- Owner decisions the same day: a simple attract mode (10 s idle on the title → the high scores 6 s
+  → the title; any input returns) in G2-3; the enemies' look (squares today) — analysis pending.
 
 ### G2-1: the high-score table, its save and two glyphs (branch `feat/g2-table`) — Refs #46
 

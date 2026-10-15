@@ -129,7 +129,7 @@ const LOCK_STEPS = toSteps(SceneTuning.gameOverLockSeconds);
 const RESULTS_LOCK_STEPS = toSteps(ResultsTuning.lockSeconds);
 const RESULTS_STEPS = toSteps(ResultsTuning.autoSeconds);
 /** The Ending card's lock and its time on screen (GDD v0.16 §9.1). */
-const ENDING_LOCK_STEPS = toSteps(SceneTuning.gameOverLockSeconds);
+const ENDING_LOCK_STEPS = toSteps(SceneTuning.endingLockSeconds);
 const ENDING_STEPS = toSteps(SceneTuning.endingSeconds);
 
 function isConfirmOrTap(frame: Readonly<IntentFrame>): boolean {
@@ -226,8 +226,9 @@ export class SceneMachine {
   private readonly controls: ControlsScreen;
   private readonly table: HighScoreTable;
   private readonly highScores = new HighScoresScreen();
-  /** Steps since the Ending card opened, and its score, formatted once on entry. */
+  /** Steps since the Ending card opened. */
   private endingSteps = 0;
+  /** The final score on the Ending card, formatted once on entry. */
   private endingScore = '';
 
   /**
@@ -505,9 +506,8 @@ export class SceneMachine {
     this.toTitle(frame);
   }
 
-  // Confirm or a tap after the 1 s lock, or the 8 s timer, returns to the title (the slice end,
-  // interim until the Ending), where the same lock as after Game over applies. Pause is ignored:
-  // the slice's Results lead to the title, never back to play (interim deviation, 05-state-scenes).
+  // Confirm or a tap after the 1 s lock, or the 8 s timer, leads a cleared run to the Ending
+  // card (GDD v0.16 §9.1). Pause is ignored: the slice's Results never lead back to play.
   private stepResults(frame: Readonly<IntentFrame>): void {
     this.backgroundSteps += 1;
     this.resultsSteps += 1;
@@ -522,8 +522,11 @@ export class SceneMachine {
   }
 
   // Confirm or a tap after the 1 s lock, or 6 s, leaves the card. The name entry of a score that
-  // enters the table arrives with G2-3; until then the card returns to the title (interim).
+  // enters the table arrives with G2-3; until then the card returns to the title (interim,
+  // meta/05-state-scenes G2).
   private stepEnding(frame: Readonly<IntentFrame>): void {
+    // The stars keep moving over the frozen run, as on the Results.
+    this.backgroundSteps += 1;
     this.endingSteps += 1;
     const confirmed = !this.locked() && isConfirmOrTap(frame);
     if (!confirmed && this.endingSteps < ENDING_STEPS) return;
