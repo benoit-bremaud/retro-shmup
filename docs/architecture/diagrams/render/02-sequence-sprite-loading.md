@@ -32,7 +32,7 @@ sequenceDiagram
     Pres->>R: drawSprite(popcorn, x, y)
     R->>Bank: get(popcorn)
     alt baked
-      Bank-->>R: canvas
+      Bank-->>R: baked sprite (canvas, size)
       R-->>Pres: true (drawn)
     else not baked yet, or failed
       Bank-->>R: undefined

@@ -43,13 +43,15 @@ export class SpriteBank {
 
   /**
    * Copies every cell into its own canvas, once, outside the game loop: scaled with nearest
-   * neighbour, turned nose up where the cell says so.
+   * neighbour, turned nose up where the cell says so. All or nothing: if a canvas fails, the bank
+   * stays empty, so a run never mixes sprites and shapes (render/02-sequence-sprite-loading).
    */
   bake(
     ships: CanvasImageSource,
     tiles: CanvasImageSource,
     newCanvas: (width: number, height: number) => BakeCanvas,
   ): void {
+    const staged = new Map<SpriteId, BakedSprite>();
     for (let i = 0; i < SPRITE_IDS.length; i += 1) {
       const id = SPRITE_IDS[i];
       if (id === undefined) continue;
@@ -65,8 +67,9 @@ export class SpriteBank {
       }
       const sheet = cell.sheet === 'ships' ? ships : tiles;
       surface.drawImage(sheet, cell.column * size, cell.row * size, size, size, 0, 0, side, side);
-      this.baked.set(id, { image: canvas.image, width: side, height: side });
+      staged.set(id, { image: canvas.image, width: side, height: side });
     }
+    staged.forEach((sprite, id) => this.baked.set(id, sprite));
   }
 
   get(id: SpriteId): BakedSprite | undefined {

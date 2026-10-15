@@ -104,6 +104,22 @@ describe('SpriteBank (GDD v0.17 §3.2.1, ADR-0001 amendment)', () => {
     ]);
   });
 
+  it('keeps nothing when a canvas fails midway: never half sprites, half shapes', () => {
+    const bank = new SpriteBank();
+    let made = 0;
+
+    expect(() => {
+      bank.bake(ships, tiles, (): BakeCanvas => {
+        made += 1;
+        if (made === 3) throw new Error('no canvas');
+        return { surface: new RecordingBakeSurface(), image: {} as CanvasImageSource };
+      });
+    }).toThrow('no canvas');
+    for (const id of SPRITE_IDS) {
+      expect(bank.get(id)).toBeUndefined();
+    }
+  });
+
   it('reports each baked size, so the renderer centres the sprite', () => {
     const { bank } = bakeAll();
     expect(bank.get('popcorn')).toMatchObject({ width: 32, height: 32 });

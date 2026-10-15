@@ -1,9 +1,4 @@
-import type {
-  FontId,
-  RenderPort,
-  RenderRegion,
-  SpriteId,
-} from '../../src/domain/ports/render-port';
+import type { FontId, RenderPort, RenderRegion } from '../../src/domain/ports/render-port';
 import { LANDSCAPE } from '../../src/domain/presentation/screen';
 import type { ScreenLayout } from '../../src/domain/presentation/screen';
 
@@ -15,14 +10,6 @@ export interface RecordedRect {
   w: number;
   h: number;
   colour: string;
-}
-
-/** A sprite drawn through the port, centred on (x, y), with its region. */
-export interface RecordedSprite {
-  region: RenderRegion;
-  id: SpriteId;
-  x: number;
-  y: number;
 }
 
 /** A text drawn through the port, with the region it was drawn in. */
@@ -79,14 +66,10 @@ export class RecordingRender implements RenderPort {
   clear(): void {
     this.rects.length = 0;
     this.texts.length = 0;
-    this.sprites.length = 0;
   }
-  /** What `drawSprite` answers: `false` (sheets not loaded, the shapes path) unless a test sets it. */
-  spritesLoaded = false;
-  readonly sprites: RecordedSprite[] = [];
-  drawSprite(id: SpriteId, x: number, y: number): boolean {
-    if (this.spritesLoaded) this.sprites.push({ region: this.region, id, x, y });
-    return this.spritesLoaded;
+  /** No sprite sheet: the presentation draws its placeholder shapes (ADR-0001 amendment). */
+  drawSprite(): boolean {
+    return false;
   }
   drawRect(x: number, y: number, w: number, h: number, colour: string): void {
     this.rects.push({ region: this.region, x, y, w, h, colour });
