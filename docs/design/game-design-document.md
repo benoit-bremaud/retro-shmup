@@ -827,7 +827,8 @@ title without any input, the High scores show on their own for **6 s**, then the
 back, and so on while nobody plays. Any physical input counts — any key, bound or not, pressed
 or held, a gamepad button or a tilted stick, a tap, a click, **a mouse move anywhere on the
 page** (the side bands too) — and restarts the 10 s; the automatic pause triggers (focus loss,
-rotation, a gamepad lost) are not inputs (ADR-0009, amended). The attract
+rotation, a gamepad lost) are not inputs (ADR-0009, amended). A key or button held keeps the title
+waiting. The attract
 starts from the title only (never from the options, the controls or any other screen); the 1 s
 lock after Game over counts as idle time. It shows the same table as the *High scores* row, empty
 ranks as dashes even when the table is empty, with no row highlighted. During the attract any

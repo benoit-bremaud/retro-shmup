@@ -503,16 +503,18 @@ stateDiagram-v2
   NameEntry --> HighScores : the entry stored and saved, highlighted
   Title --> HighScores : high scores
   HighScores --> Title : back, confirm or a tap
-  state "Attract (planned, G2-3b)" as Attract
+  state "Attract (G2-3b)" as Attract
   Title --> Attract : after(10 s without input)
   Attract --> Title : any input, or after(6 s) / opening guard, no lock
 ```
 
-- **Attract** (planned, G2-3b, GDD v0.16 §9.1): the idle time counts on `Title` only, from its
+- **Attract** (G2-3b, GDD v0.16 §9.1): the idle time counts on `Title` only, from its
   opening, and restarts on any step whose frame is `active` (ADR-0009, amended: any physical key,
   pointer or gamepad input, never an automatic pause trigger); the 1 s title lock counts as
-  idle. `Attract` scrolls the background and draws the High scores with no
+  idle. `Attract` has the title's traits (it scrolls the background, draws no run, no pause
+  button) and draws the High scores with no
   highlight (the table may be empty: dashes); any input returns to `Title` through `openMenu`
+  (cursor on *Play*)
   (the opening guard, what is held counts as held), with no lock; after 6 s it returns the same
   way and the idle time starts again. The *Pause* key returns to the title like any input; the
   automatic triggers do nothing there.

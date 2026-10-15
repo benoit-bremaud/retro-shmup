@@ -125,8 +125,9 @@ stay accepted for everything else (back-links added in a dedicated PR).
 ## Amendment (2026-10-15, GDD v0.16 attract mode)
 
 The frame gains one field, `active: boolean`: this step saw any physical input — a `keydown` of
-any key (bound or not) or a key still down, a pointer down, move or up anywhere on the page, a
-gamepad button down or a stick beyond its dead zone. It is filled by the input adapter from the
+any key (bound or not, a browser shortcut too, its auto-repeat included) or a non-shortcut key
+still down, a pointer down, move or up anywhere on the page, a button down or a stick beyond its
+dead zone on any connected gamepad. It is filled by the input adapter from the
 browser events, never from the intent bits, so the automatic pause triggers (focus loss, layout
 change, gamepad lost), which only set `Pause`, never make a frame active. It carries no key, no
 position: a boolean only. Its one reader is the title's idle count of the attract mode (owner

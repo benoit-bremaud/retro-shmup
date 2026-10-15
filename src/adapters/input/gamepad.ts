@@ -117,6 +117,17 @@ export class GamepadModule {
     return lost;
   }
 
+  /**
+   * A pad held a button or tilted its stick beyond the dead zone at the last poll, on any pad:
+   * the frame's raw activity (ADR-0009, amended).
+   */
+  get anyHeld(): boolean {
+    for (let slot = 0; slot < SLOTS; slot += 1) {
+      if ((this.previous[slot] ?? 0) !== 0 || this.stickWasOut[slot] === true) return true;
+    }
+    return false;
+  }
+
   /** The buttons that went down at the last poll, on any pad: a capture's answer (GDD §4.2). */
   get pressesOfLastPoll(): number {
     return this.newPresses;

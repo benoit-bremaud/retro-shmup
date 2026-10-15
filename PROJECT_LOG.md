@@ -8,6 +8,20 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-15
 
+### G2-3b: the attract mode (branch `feat/g2-attract`) — Refs #46
+
+- `IntentFrame.active` (ADR-0009, amended): `DeviceInput` sets it on any keydown (bound or not,
+  a browser shortcut too), any pointer event on the page, a key still down
+  (`KeyboardModule.anyDown`), a pad button or a stick beyond the dead zone
+  (`GamepadModule.anyHeld`); the automatic pause triggers never set it.
+- The `Attract` scene: 10 s on the title with no active frame (`SceneTuning.attractIdleSeconds`;
+  the title's lock counts) shows the High scores, no highlight, for 6 s
+  (`SceneTuning.attractSeconds`); any active frame or the 6 s return to the title through
+  `openMenu` (opening guard, no lock), and the wait starts again. The title only. Rebased on the
+  scene machine refactor (#73): the title's wait and the attract's time use its one `sceneSteps`.
+- A first version read the intents (an `ActivityWatch` over the frame); dropped after the Codex
+  findings on #70 for the raw signal.
+
 ### Scene machine refactor: one dispatch table (branches `docs/uml`, `refactor/engine`)
 
 - Architecture-guardian (G2-3b review) rated `scene-machine.ts` a God-object trend: a 19-case
