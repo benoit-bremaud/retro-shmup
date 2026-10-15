@@ -180,6 +180,7 @@ const scenes: FrameTarget = new SceneMachine(
   options,
   () => new Run({ seed: Math.floor(Math.random() * 2 ** 32) }),
   host,
+  save.highScores,
 );
 const loop = new FrameLoop(new PerformanceClock(), input, scenes, (callback) => {
   requestAnimationFrame(callback);

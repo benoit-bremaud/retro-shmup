@@ -198,3 +198,48 @@ function drawActionRow(render: RenderPort, text: string, y: number, highlighted:
   }
   drawMenuLine(render, text, y + (MENU_ROW_HEIGHT - MENU_FONT_CELL.height) / 2);
 }
+
+/** The High scores columns (GDD v0.16 §9.1): 24 characters of 8 px, one space apart. */
+const SCORE_COLUMNS = { rankEnd: 24, name: 32, country: 104, scoreEnd: 208, level: 224 } as const;
+const SCORE_ROWS_TOP = 80;
+
+/** What the High scores screen shows: ten formatted rows and the highlighted rank, or −1. */
+export interface HighScoresView {
+  readonly rows: readonly {
+    readonly rank: string;
+    readonly name: string;
+    readonly country: string;
+    readonly score: string;
+    readonly level: string;
+  }[];
+  readonly highlighted: number;
+}
+
+/** The High scores (GDD v0.16 §9.1): the heading, then one row per rank; builds no string. */
+export function drawHighScores(render: RenderPort, view: HighScoresView, language: Language): void {
+  drawVeil(render);
+  drawMenuLine(render, message('highScores', language), SCORE_ROWS_TOP - 2 * MENU_ROW_HEIGHT);
+  const textTop = (MENU_ROW_HEIGHT - MENU_FONT_CELL.height) / 2;
+  for (let i = 0; i < view.rows.length; i += 1) {
+    const row = view.rows[i];
+    if (row === undefined) continue;
+    const y = SCORE_ROWS_TOP + i * MENU_ROW_HEIGHT;
+    if (i === view.highlighted) {
+      render.drawRect(8, y, FIELD_WIDTH - 16, MENU_ROW_HEIGHT, Palette.menuHighlight);
+    }
+    const textY = y + textTop;
+    render.drawText(row.rank, SCORE_COLUMNS.rankEnd - menuTextWidth(row.rank), textY, 'menu');
+    render.drawText(row.name, SCORE_COLUMNS.name, textY, 'menu');
+    if (row.country !== '') render.drawText(row.country, SCORE_COLUMNS.country, textY, 'menu');
+    render.drawText(row.score, SCORE_COLUMNS.scoreEnd - menuTextWidth(row.score), textY, 'menu');
+    if (row.level !== '') render.drawText(row.level, SCORE_COLUMNS.level, textY, 'menu');
+  }
+}
+
+/** The Ending card (GDD v0.16 §9.1): *VICTORY* in the title font, then the final score. */
+export function drawEnding(render: RenderPort, score: string, language: Language): void {
+  drawVeil(render);
+  drawBanner(render, message('victory', language), 120);
+  drawMenuLine(render, message('score', language), 160);
+  drawMenuLine(render, score, 176);
+}

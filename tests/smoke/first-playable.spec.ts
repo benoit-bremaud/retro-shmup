@@ -77,8 +77,8 @@ const MENU_HIGHLIGHT = { r: 0x3b, g: 0x4a, b: 0x8a };
  * play-field pixels: the three-row menu starts at y 136 and the bar at x 89 (overlays.ts, menu-layout.ts).
  */
 const PAUSE_PIXEL = { x: 90, y: 137 };
-/** The middle of the PLAY row of the title menu (two rows from y 144), in play-field pixels. */
-const PLAY_ROW = { x: 120, y: 152 };
+/** The middle of the PLAY row of the title menu (three rows from y 136), in play-field pixels. */
+const PLAY_ROW = { x: 120, y: 144 };
 /** The middle of the RESUME row (three rows from y 136), in play-field pixels. */
 const RESUME_ROW = { x: 120, y: 144 };
 

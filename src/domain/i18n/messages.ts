@@ -66,6 +66,10 @@ export const MESSAGES = {
   keyAltLeft: { en: 'ALT L', fr: 'ALT G' },
   keyAltRight: { en: 'ALT R', fr: 'ALT D' },
   keyBackspace: { en: 'BACKSPACE', fr: 'EFFACER' },
+  /** The hall of fame (GDD v0.16 §9.1): the High scores heading, the Ending card. */
+  highScores: { en: 'HIGH SCORES', fr: 'MEILLEURS SCORES' },
+  victory: { en: 'VICTORY', fr: 'VICTOIRE' },
+  score: { en: 'SCORE', fr: 'SCORE' },
   /** A language is always named in itself (GDD v0.14 §9.1). */
   english: { en: 'ENGLISH', fr: 'ENGLISH' },
   francais: { en: 'FRANCAIS', fr: 'FRANCAIS' },

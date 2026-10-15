@@ -69,6 +69,8 @@ export const SceneTuning = {
   gameOverSeconds: 3,
   /** Confirm and taps are ignored this long on Game over and on the title after it (GDD v0.7 §4.4). */
   gameOverLockSeconds: 1,
+  /** The Ending card leaves on its own after this long (GDD v0.16 §9.1). */
+  endingSeconds: 6,
 } as const;
 
 /**

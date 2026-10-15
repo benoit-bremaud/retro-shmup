@@ -12,6 +12,8 @@ import {
   drawBanner,
   drawControlsScreen,
   drawCountIn,
+  drawEnding,
+  drawHighScores,
   drawMenuScreen,
   drawVeil,
   drawWarning,
@@ -22,7 +24,10 @@ import { EFFECT_ROWS, LiveOptions } from '../options';
 import type { Options } from '../options';
 import type { Starfield } from '../presentation/starfield';
 import type { MenuScreen } from '../presentation/menu-layout';
+import { HighScoreTable } from '../hall-of-fame/high-scores';
+import type { HighScoreEntry } from '../hall-of-fame/high-scores';
 import { ControlsScreen } from './controls-screen';
+import { HighScoresScreen } from './high-scores-screen';
 import { Menu } from './menu';
 import { NO_HOST } from './scene-host';
 import type { SceneHost } from './scene-host';
@@ -48,6 +53,9 @@ export const Scene = {
   TitleRestore: 'TITLE_RESTORE',
   PauseControls: 'PAUSE_CONTROLS',
   PauseRestore: 'PAUSE_RESTORE',
+  /** The hall of fame (G2): the table, and the card after a cleared run. */
+  HighScores: 'HIGH_SCORES',
+  Ending: 'ENDING',
 } as const;
 export type Scene = (typeof Scene)[keyof typeof Scene];
 
@@ -81,6 +89,9 @@ const SCENE_TRAITS: Readonly<Record<Scene, SceneTraits>> = {
   [Scene.TitleRestore]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
   [Scene.PauseControls]: { frozen: true, scrolls: false, drawsRun: true, pauseButton: false },
   [Scene.PauseRestore]: { frozen: true, scrolls: false, drawsRun: true, pauseButton: false },
+  [Scene.HighScores]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
+  // The run stands still behind the card, as behind the Results (GDD v0.16 §9.1).
+  [Scene.Ending]: { frozen: true, scrolls: true, drawsRun: true, pauseButton: false },
 };
 
 /** Where each options scene's Back and sub-screen lead (meta/05-state-scenes). */
@@ -117,6 +128,9 @@ const GAME_OVER_STEPS = toSteps(SceneTuning.gameOverSeconds);
 const LOCK_STEPS = toSteps(SceneTuning.gameOverLockSeconds);
 const RESULTS_LOCK_STEPS = toSteps(ResultsTuning.lockSeconds);
 const RESULTS_STEPS = toSteps(ResultsTuning.autoSeconds);
+/** The Ending card's lock and its time on screen (GDD v0.16 §9.1). */
+const ENDING_LOCK_STEPS = toSteps(SceneTuning.gameOverLockSeconds);
+const ENDING_STEPS = toSteps(SceneTuning.endingSeconds);
 
 function isConfirmOrTap(frame: Readonly<IntentFrame>): boolean {
   return (frame.pressed & Button.Confirm) !== 0 || frame.tapRegion !== 'none';
@@ -164,7 +178,7 @@ export class SceneMachine {
   /** Every step since Boot: the menus' clock (the re-press guard), never wall time. */
   private steps = 0;
   /** The five menus (GDD v0.13 and v0.14 §9.1), built once. */
-  private readonly titleMenu = new Menu(['play', 'options'] as const);
+  private readonly titleMenu = new Menu(['play', 'highScores', 'options'] as const);
   private readonly pauseMenu = new Menu(['resume', 'options', 'quit'] as const);
   private readonly quitMenu = new Menu(['no', 'yes'] as const);
   // Called only after the constructor has set `options` (field initialisers run first).
@@ -210,6 +224,11 @@ export class SceneMachine {
   /** The options screen without *Controls*, used in place of the table's when `optionsTouch`. */
   private readonly touchOptions: MenuScene = this.touchOptionsScreen();
   private readonly controls: ControlsScreen;
+  private readonly table: HighScoreTable;
+  private readonly highScores = new HighScoresScreen();
+  /** Steps since the Ending card opened, and its score, formatted once on entry. */
+  private endingSteps = 0;
+  private endingScore = '';
 
   /**
    * `options` are the saved ones, copied into the live options; `createRun` builds each new run
@@ -221,7 +240,9 @@ export class SceneMachine {
     options: Readonly<Options>,
     createRun: () => InRun,
     host: SceneHost = NO_HOST,
+    highScores: readonly HighScoreEntry[] = [],
   ) {
+    this.table = new HighScoreTable(highScores);
     this.renderer = render;
     this.starfield = starfield;
     this.createRun = createRun;
@@ -318,6 +339,12 @@ export class SceneMachine {
       case Scene.PauseRestore:
         this.stepRestore(frame, this.current);
         return;
+      case Scene.HighScores:
+        this.stepHighScores(frame);
+        return;
+      case Scene.Ending:
+        this.stepEnding(frame);
+        return;
     }
   }
 
@@ -332,6 +359,8 @@ export class SceneMachine {
     const row = this.titleMenu.step(frame, this.steps);
     if (row === 'options') {
       this.openMenu(Scene.TitleOptions, frame);
+    } else if (row === 'highScores') {
+      this.openHighScores(-1);
     } else if (row === 'play') {
       const run = this.createRun(); // InRun entry creates the run and its presenter.
       this.run = run;
@@ -485,7 +514,31 @@ export class SceneMachine {
     const confirmed = !this.locked() && isConfirmOrTap(frame);
     if (!confirmed && this.resultsSteps < RESULTS_STEPS) return;
     this.resultsValues = [];
+    // A cleared run goes to the Ending card (GDD v0.16 §9.1); the slice-end interim is lifted.
+    this.current = Scene.Ending;
+    this.endingSteps = 0;
+    this.endingScore = String(this.run?.snapshot().score ?? 0);
+    this.lockLeft = ENDING_LOCK_STEPS;
+  }
+
+  // Confirm or a tap after the 1 s lock, or 6 s, leaves the card. The name entry of a score that
+  // enters the table arrives with G2-3; until then the card returns to the title (interim).
+  private stepEnding(frame: Readonly<IntentFrame>): void {
+    this.endingSteps += 1;
+    const confirmed = !this.locked() && isConfirmOrTap(frame);
+    if (!confirmed && this.endingSteps < ENDING_STEPS) return;
+    this.endingScore = '';
     this.toTitle(frame);
+  }
+
+  private openHighScores(highlighted: number): void {
+    this.current = Scene.HighScores;
+    this.highScores.open(this.table, highlighted);
+  }
+
+  // Back, confirm or a tap started here returns to the title, locked as after Game over.
+  private stepHighScores(frame: Readonly<IntentFrame>): void {
+    if (this.highScores.step(frame)) this.toTitle(frame);
   }
 
   /** The run is released at the title, locked for 1 s so hammering never starts a new run. */
@@ -559,7 +612,11 @@ export class SceneMachine {
 
   private drawOverlays(): void {
     const menuScreen = this.screenOf(this.current);
-    if (this.current === Scene.TitleControls || this.current === Scene.PauseControls) {
+    if (this.current === Scene.HighScores) {
+      drawHighScores(this.renderer, this.highScores, this.options.language);
+    } else if (this.current === Scene.Ending) {
+      drawEnding(this.renderer, this.endingScore, this.options.language);
+    } else if (this.current === Scene.TitleControls || this.current === Scene.PauseControls) {
       drawControlsScreen(this.renderer, this.controls, this.options.language);
     } else if (menuScreen !== undefined) {
       drawMenuScreen(this.renderer, menuScreen, this.options.language);
