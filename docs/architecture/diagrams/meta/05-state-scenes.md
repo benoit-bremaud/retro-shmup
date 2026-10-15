@@ -36,7 +36,7 @@ stateDiagram-v2
   Options --> Effects : visual effects
   Effects --> Options : back
   Title --> HighScores : high scores
-  HighScores --> Title : back
+  HighScores --> Title : back, confirm or a tap
   Title --> Credits : credits
   Credits --> Title : back
   Title --> GesturePrompt : start [from a gamepad, no gesture yet]
@@ -72,7 +72,6 @@ stateDiagram-v2
 
   InRun --> Title : yes in Confirm quit / discard the run
   InRun --> Ending : confirm after the lock or after(8 s) in Results [RUN_CLEARED]
-  InRun --> Title : confirm after the lock or after(8 s) in Results [RUN_CLEARED, slice interim]
   InRun --> GameOver : run outcome is GAME_OVER
 
   Ending --> NameEntry : confirm or after(ending time) [score enters the top 10]
@@ -256,6 +255,10 @@ The devices brick makes the game playable on a phone, with a gamepad and with a 
 | `Confirm quit` | (not drawn) | activates the row under it (*No* or *Yes*), on release | activates the highlighted row, *No* first | ignored (`Esc` acts as `Back`) | `Paused` |
 | `Count-in` | `Paused` | ignored | ignored | `Paused` (wins over `Confirm`, so `Start` returns to `Paused`) | ignored |
 | `Game over` | (not drawn) leaves after the lock | leaves after the lock | leaves after the lock | ignored | ignored |
+| `Controls` (title, pause; G1b) | (not drawn) | on release over a cell: starts its capture; over *Restore defaults* or *Back*: that row; while capturing: cancels | starts the capture of the highlighted cell, or activates its row | ignored (`Esc` acts as `Back`; while capturing, `Escape` cancels and `Start` is bindable) | parent `Options` (while capturing: not a menu action) |
+| `Confirm restore` (title, pause; G1b) | (not drawn) | activates the row under it (*No* or *Yes*), on release | activates the highlighted row, *No* first | ignored (`Esc` acts as `Back`) | `Controls` |
+| `High scores` (G2) | (not drawn) | a tap started on the screen leaves on its release (the opening tap never does) | `Title`, locked 1 s | ignored | `Title`, locked 1 s |
+| `Ending` (G2) | (not drawn) | leaves after the 1 s lock | leaves after the 1 s lock; after 6 s it leaves on its own | ignored | ignored |
 
 ### Player-kit brick additions (E)
 
@@ -359,7 +362,7 @@ unchanged.
 - **Exits**: `Confirm` or a tap after the 60-step lock, or the 480-step (8 s) timer, whichever
   comes first: `LEVEL_CLEARED` → the next level's card (`run.startNextLevel()`), `RUN_CLEARED` →
   `Ending` in 1.0, `Title` in the one-level slice (interim, below).
-- **Interim deviation, slice end**: `Results --> Title` for `RUN_CLEARED`, releasing the run,
+- ~~**Interim deviation, slice end**~~ (lifted by G2-2: `Results --> Ending`): `Results --> Title` for `RUN_CLEARED`, releasing the run,
   instead of `Ending` and `Name entry` (screens brick G); the `Title` reached from `Results`
   applies the 60-step lock, as from Game over. `LEVEL_CLEARED → LevelCard` waits for level 2.
 - ~~**Interim deviation, F-2 before F-3**~~ (built in F-2a): lifted by F-3 — the "LEVEL CLEAR"
@@ -401,8 +404,10 @@ unchanged.
 - **States**: `Options` and `Visual effects` from the title and from the pause (the diagram
   above); the pause menu's *Resume*, *Options*, *Quit* rows and `Confirm quit` (lifting the
   tap-resume and pause-menu interim deviations). `Boot` reads the save document
-  (`parseSaveDocument`, never throws, ADR-0006) and gives the options to the composition root;
-  the title shows *Play* and *Options* only.
+  (`SaveStore.load`, which never throws and parses by allowlist with `parseBindings` in
+  `domain/input/parse-bindings.ts` and `parseHighScores` in `domain/hall-of-fame/high-scores.ts`,
+  ADR-0006) and gives the options to the composition root; the title showed *Play* and *Options*
+  in G1a, and shows *Play*, *High scores* and *Options* since G2-2.
 - **Menu rows** (GDD v0.13 §9.1): one model for every menu — a list of rows, one highlighted,
   each row an action, a switch, a choice or a sub-screen. Keyboard and gamepad move with up and
   down and activate with `confirm`; touch and mouse activate on release over the pressed row,
@@ -481,7 +486,7 @@ stateDiagram-v2
   state "Level results" as Results
   state "Game over" as GameOver
   state "Ending" as Ending
-  state "Name entry" as NameEntry {
+  state "Name entry (planned, G2-3)" as NameEntry {
     state "Name" as NameStep
     state "Country" as CountryStep
     [*] --> NameStep
@@ -501,6 +506,11 @@ stateDiagram-v2
 ```
 
 - **Lifts the slice-end interim**: a cleared run goes Results → Ending, no longer to the title.
+- **Interim deviation, no name entry until G2-3** (owner, 2026-10-15): `Ending` and `Game over`
+  both go to `Title` (released run, 60-step lock) whatever the score, until the name entry of
+  G2-3 lands; the `[score enters the table]` branches and `Name entry --> High scores` are
+  planned, G2-3. `Title --> High scores` and `High scores --> Title` (on `back`, `confirm` or a
+  tap started on the screen) are built (G2-2, `HighScoresScreen`).
 - **Name entry** keeps the finished run read-only for its score and level; the `back` intent
   deletes, it never leaves (only *SKIP*, or *OK* on an empty name, leaves without recording). `Pause` and the automatic pause
   triggers are ignored in `Ending`, `Name entry` and `High scores` (no run steps). The `Escape`

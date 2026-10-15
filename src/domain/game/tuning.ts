@@ -64,11 +64,23 @@ export const LaserTuning = {
 } as const;
 
 /** Times of the frozen scenes (GDD §4.4, §9.1); the scene machine converts them with toSteps. */
+/**
+ * The score's counter stop (GDD v0.16 §8, owner 2026-10-15): the score never goes past the eight
+ * digits the HUD and the high scores show, the arcade way.
+ */
+export const ScoreTuning = {
+  counterStop: 99_999_999,
+} as const;
+
 export const SceneTuning = {
   countInSeconds: 1,
   gameOverSeconds: 3,
   /** Confirm and taps are ignored this long on Game over and on the title after it (GDD v0.7 §4.4). */
   gameOverLockSeconds: 1,
+  /** The Ending card leaves on its own after this long (GDD v0.16 §9.1). */
+  endingSeconds: 6,
+  /** Confirm and taps are ignored this long on the Ending card (GDD v0.16 §9.1). */
+  endingLockSeconds: 1,
 } as const;
 
 /**

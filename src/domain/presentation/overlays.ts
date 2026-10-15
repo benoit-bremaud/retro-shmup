@@ -198,3 +198,57 @@ function drawActionRow(render: RenderPort, text: string, y: number, highlighted:
   }
   drawMenuLine(render, text, y + (MENU_ROW_HEIGHT - MENU_FONT_CELL.height) / 2);
 }
+
+/** The High scores columns (GDD v0.16 §9.1): 24 characters of 8 px, one space apart. */
+const SCORE_COLUMNS = { rankEnd: 24, name: 32, country: 104, scoreEnd: 208, level: 224 } as const;
+const SCORE_ROWS_TOP = 80;
+
+/** One row of the high scores, as drawn: every field a string built when the screen opens. */
+export interface HighScoreRow {
+  readonly rank: string;
+  readonly name: string;
+  readonly country: string;
+  readonly score: string;
+  readonly level: string;
+}
+
+/** What the High scores screen shows: ten formatted rows and the highlighted rank, or −1. */
+export interface HighScoresView {
+  readonly rows: readonly HighScoreRow[];
+  readonly highlighted: number;
+}
+
+/** The Ending card's layout (GDD v0.16 §9.1): the banner, then the score label and value. */
+const ENDING_LAYOUT = { bannerY: 120, labelY: 160 } as const;
+/** The high-score highlight leaves this margin on each side of the field. */
+const SCORE_HIGHLIGHT_MARGIN = 8;
+
+/** The High scores (GDD v0.16 §9.1): the heading, then one row per rank; builds no string. */
+export function drawHighScores(render: RenderPort, view: HighScoresView, language: Language): void {
+  drawVeil(render);
+  drawMenuLine(render, message('highScores', language), SCORE_ROWS_TOP - 2 * MENU_ROW_HEIGHT);
+  const textTop = (MENU_ROW_HEIGHT - MENU_FONT_CELL.height) / 2;
+  for (let i = 0; i < view.rows.length; i += 1) {
+    const row = view.rows[i];
+    if (row === undefined) continue;
+    const y = SCORE_ROWS_TOP + i * MENU_ROW_HEIGHT;
+    if (i === view.highlighted) {
+      const width = FIELD_WIDTH - 2 * SCORE_HIGHLIGHT_MARGIN;
+      render.drawRect(SCORE_HIGHLIGHT_MARGIN, y, width, MENU_ROW_HEIGHT, Palette.menuHighlight);
+    }
+    const textY = y + textTop;
+    render.drawText(row.rank, SCORE_COLUMNS.rankEnd - menuTextWidth(row.rank), textY, 'menu');
+    render.drawText(row.name, SCORE_COLUMNS.name, textY, 'menu');
+    if (row.country !== '') render.drawText(row.country, SCORE_COLUMNS.country, textY, 'menu');
+    render.drawText(row.score, SCORE_COLUMNS.scoreEnd - menuTextWidth(row.score), textY, 'menu');
+    if (row.level !== '') render.drawText(row.level, SCORE_COLUMNS.level, textY, 'menu');
+  }
+}
+
+/** The Ending card (GDD v0.16 §9.1): *VICTORY* in the title font, then the final score. */
+export function drawEnding(render: RenderPort, score: string, language: Language): void {
+  drawVeil(render);
+  drawBanner(render, message('victory', language), ENDING_LAYOUT.bannerY);
+  drawMenuLine(render, message('score', language), ENDING_LAYOUT.labelY);
+  drawMenuLine(render, score, ENDING_LAYOUT.labelY + MENU_ROW_HEIGHT);
+}

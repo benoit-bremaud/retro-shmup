@@ -98,7 +98,7 @@ describe('SceneMachine — first-playable subset (meta/05-state-scenes)', () => 
     for (let i = 0; i < 10; i += 1) machine.step(DT, createIntentFrame());
     machine.step(DT, tapped());
     expect(machine.scene).toBe(Scene.Title);
-    machine.step(DT, rowTap(0, 2));
+    machine.step(DT, rowTap(0, 3));
     expect(machine.scene).toBe(Scene.Playing);
   });
 
@@ -356,9 +356,9 @@ describe('SceneMachine — Game over (GDD §4.4, meta/05-state-scenes)', () => {
     const { machine } = gameOverFixture();
     for (let i = 0; i < 61; i += 1) machine.step(DT, pressed(Button.Confirm));
     expect(machine.scene).toBe(Scene.Title);
-    for (let i = 0; i < 60; i += 1) machine.step(DT, rowTap(0, 2));
+    for (let i = 0; i < 60; i += 1) machine.step(DT, rowTap(0, 3));
     expect(machine.scene).toBe(Scene.Title);
-    machine.step(DT, rowTap(0, 2));
+    machine.step(DT, rowTap(0, 3));
     expect(machine.scene).toBe(Scene.Playing);
   });
 
@@ -703,29 +703,61 @@ describe('SceneMachine — Results (meta/05-state-scenes, GDD v0.10 §8, F-3)', 
   it.each([
     ['Confirm', pressed(Button.Confirm)],
     ['a tap', tapped()],
-  ])('ignores %s for 1 s (60 steps), then returns to the title on it', (_label, frame) => {
+  ])('ignores %s for 1 s (60 steps), then goes to the Ending card on it', (_label, frame) => {
     const { machine } = clearedFixture();
     for (let i = 0; i < 60; i += 1) machine.step(DT, frame);
     expect(machine.scene).toBe(Scene.Results);
     machine.step(DT, frame);
-    expect(machine.scene).toBe(Scene.Title);
+    expect(machine.scene).toBe(Scene.Ending);
   });
 
-  it('returns to the title on its own after 8 s (480 steps); Pause and Back are ignored', () => {
+  it('goes to the Ending card on its own after 8 s (480 steps); Pause and Back are ignored', () => {
     const { machine } = clearedFixture();
     for (let i = 0; i < 479; i += 1) machine.step(DT, pressed(Button.Pause | Button.Back));
     expect(machine.scene).toBe(Scene.Results);
     machine.step(DT, createIntentFrame());
-    expect(machine.scene).toBe(Scene.Title);
+    expect(machine.scene).toBe(Scene.Ending);
   });
 
-  it('locks the title reached from Results for 1 s, so a held Confirm never starts a run', () => {
+  it('shows VICTORY and the final score on the Ending card (GDD v0.16 §9.1)', () => {
+    const { machine, render } = clearedFixture();
+    for (let i = 0; i < 480; i += 1) machine.step(DT, createIntentFrame());
+    machine.render(1, 16);
+    const texts = render.texts.filter((text) => text.region === 'field').map((text) => text.text);
+    expect(texts.slice(0, 2)).toEqual(['VICTORY', 'SCORE']);
+    expect(texts[2]).toMatch(/^\d+$/);
+  });
+
+  it('leaves the Ending card after its 1 s lock or 6 s, to a title locked for 1 s', () => {
     const { machine } = clearedFixture();
     for (let i = 0; i < 480; i += 1) machine.step(DT, createIntentFrame());
+    for (let i = 0; i < 60; i += 1) machine.step(DT, pressed(Button.Confirm));
+    expect(machine.scene).toBe(Scene.Ending);
+    machine.step(DT, pressed(Button.Confirm));
+    expect(machine.scene).toBe(Scene.Title);
     for (let i = 0; i < 60; i += 1) machine.step(DT, pressed(Button.Confirm));
     expect(machine.scene).toBe(Scene.Title);
     machine.step(DT, pressed(Button.Confirm));
     expect(machine.scene).toBe(Scene.Playing);
+  });
+
+  it('keeps the starfield moving on the Ending card', () => {
+    const { machine, render } = clearedFixture();
+    for (let i = 0; i < 480; i += 1) machine.step(DT, createIntentFrame());
+    machine.render(1, 16);
+    const stars = render.rectsOf(Palette.starNear).map((rect) => rect.y);
+    for (let i = 0; i < 30; i += 1) machine.step(DT, createIntentFrame());
+    machine.render(1, 16);
+    expect(render.rectsOf(Palette.starNear).map((rect) => rect.y)).not.toEqual(stars);
+  });
+
+  it('leaves the Ending card on its own after 6 s (360 steps)', () => {
+    const { machine } = clearedFixture();
+    for (let i = 0; i < 480; i += 1) machine.step(DT, createIntentFrame());
+    for (let i = 0; i < 359; i += 1) machine.step(DT, createIntentFrame());
+    expect(machine.scene).toBe(Scene.Ending);
+    machine.step(DT, createIntentFrame());
+    expect(machine.scene).toBe(Scene.Title);
   });
 });
 
@@ -1048,7 +1080,7 @@ function right(): IntentFrame {
 describe('SceneMachine — the options screens (GDD v0.14 §9.1, §9.3, G1a-3)', () => {
   it('opens Options from the title and returns to it on Back and on the Back row', () => {
     const { machine, render } = hosted();
-    downBy(machine, 1);
+    downBy(machine, 2);
     machine.step(DT, pressed(Button.Confirm));
     expect(machine.scene).toBe(Scene.TitleOptions);
     machine.render(0, 16);
@@ -1075,7 +1107,7 @@ describe('SceneMachine — the options screens (GDD v0.14 §9.1, §9.3, G1a-3)',
 
   it('flips autofire on Confirm and on a new right direction, and tells the host each time', () => {
     const { machine, host } = hosted();
-    downBy(machine, 1);
+    downBy(machine, 2);
     machine.step(DT, pressed(Button.Confirm));
     downBy(machine, 2); // Autofire
     machine.step(DT, pressed(Button.Confirm));
@@ -1085,7 +1117,7 @@ describe('SceneMachine — the options screens (GDD v0.14 §9.1, §9.3, G1a-3)',
 
   it('switches the language at once, the value written in its own language', () => {
     const { machine, render, host } = hosted();
-    downBy(machine, 1);
+    downBy(machine, 2);
     machine.step(DT, pressed(Button.Confirm));
     downBy(machine, 3); // Language
     machine.step(DT, pressed(Button.Confirm));
@@ -1095,12 +1127,12 @@ describe('SceneMachine — the options screens (GDD v0.14 §9.1, §9.3, G1a-3)',
     expect(host.saved.at(-1)?.language).toBe('fr');
     machine.step(DT, pressed(Button.Back));
     machine.render(0, 16);
-    expect(fieldTextsOf(render)).toEqual(['JOUER', 'OPTIONS']);
+    expect(fieldTextsOf(render)).toEqual(['JOUER', 'MEILLEURS SCORES', 'OPTIONS']);
   });
 
   it('turns every effect off and on from Visual effects, one row flipping one switch', () => {
     const { machine, host } = hosted();
-    downBy(machine, 1);
+    downBy(machine, 2);
     machine.step(DT, pressed(Button.Confirm));
     machine.step(DT, pressed(Button.Confirm)); // Visual effects
     expect(machine.scene).toBe(Scene.TitleEffects);
@@ -1184,7 +1216,7 @@ describe('SceneMachine — the options screens (GDD v0.14 §9.1, §9.3, G1a-3)',
 
 describe('SceneMachine — the controls screen (GDD v0.15 §4.2, G1b-3)', () => {
   function toControls(machine: SceneMachine): void {
-    downBy(machine, 1);
+    downBy(machine, 2);
     machine.step(DT, pressed(Button.Confirm)); // Options
     downBy(machine, 1);
     machine.step(DT, pressed(Button.Confirm)); // Controls
@@ -1204,14 +1236,14 @@ describe('SceneMachine — the controls screen (GDD v0.15 §4.2, G1b-3)', () => 
   it('hides the Controls row after a touch, and shows it again after a key', () => {
     const { machine, render } = hosted();
     idle(machine);
-    const touch = rowTap(1, 2); // the title's Options row, by a finger
+    const touch = rowTap(2, 3); // the title's Options row, by a finger
     touch.device = 'touch';
     machine.step(DT, touch);
     expect(machine.scene).toBe(Scene.TitleOptions);
     machine.render(0, 16);
     expect(fieldTextsOf(render)).not.toContain('CONTROLS');
     machine.step(DT, pressed(Button.Back)); // a key: the keyboard is the last device now
-    downBy(machine, 1);
+    downBy(machine, 2);
     machine.step(DT, pressed(Button.Confirm));
     machine.render(0, 16);
     expect(fieldTextsOf(render)).toContain('CONTROLS');
@@ -1262,5 +1294,52 @@ describe('SceneMachine — the controls screen (GDD v0.15 §4.2, G1b-3)', () => 
     machine.step(DT, pressed(Button.Back));
     machine.step(DT, pressed(Button.Back));
     expect(machine.scene).toBe(Scene.Paused);
+  });
+});
+
+describe('SceneMachine — the High scores screen (GDD v0.16 §9.1, G2-2)', () => {
+  const ACE = { name: 'ACE', country: 'FR', score: 125400, level: 1, date: '2026-10-15' } as const;
+
+  function withTable(): { machine: SceneMachine; render: RecordingRender } {
+    const render = new RecordingRender();
+    const machine = new SceneMachine(
+      render,
+      new Starfield(() => 0.5),
+      withEffects(ALL_ON),
+      () => new Run(),
+      NO_HOST,
+      [ACE],
+    );
+    machine.step(DT, createIntentFrame()); // Boot → Title
+    return { machine, render };
+  }
+
+  it('opens from the High scores row of the title and lists the stored table, dashes after it', () => {
+    const { machine, render } = withTable();
+    downBy(machine, 1);
+    machine.step(DT, pressed(Button.Confirm));
+    expect(machine.scene).toBe(Scene.HighScores);
+    machine.render(0, 16);
+    const texts = fieldTextsOf(render);
+    expect(texts.slice(0, 6)).toEqual(['HIGH SCORES', '1', 'ACE', 'FR', '125400', '1']);
+    expect(texts).toContain('--------');
+  });
+
+  it('returns to a title locked for 1 s on back, confirm or a tap started here', () => {
+    const { machine } = withTable();
+    downBy(machine, 1);
+    machine.step(DT, pressed(Button.Confirm));
+    machine.step(DT, pressed(Button.Back));
+    expect(machine.scene).toBe(Scene.Title);
+    for (let i = 0; i < 60; i += 1) machine.step(DT, pressed(Button.Confirm));
+    expect(machine.scene).toBe(Scene.Title);
+  });
+
+  it('ignores Pause', () => {
+    const { machine } = withTable();
+    downBy(machine, 1);
+    machine.step(DT, pressed(Button.Confirm));
+    machine.step(DT, pressed(Button.Pause));
+    expect(machine.scene).toBe(Scene.HighScores);
   });
 });

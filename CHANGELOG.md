@@ -58,6 +58,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   left × 1 000, and the total, added to the score when the level ends; a missed bonus shows as 0.
   Confirm, a tap or a click leaves after 1 s, or the title comes back after 8 s. It replaces the
   3 s "LEVEL CLEAR" banner.
+- A high scores screen from the title (the local top 10, with the country), and a VICTORY card
+  with the final score after a cleared run.
 - A controls screen in the options: every keyboard and gamepad action on two keys or buttons,
   changed by pressing the new one (a key already used swaps places), shown with the letters your
   own keyboard prints; restore the defaults per device. Saved in the browser.

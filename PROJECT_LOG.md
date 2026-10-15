@@ -8,6 +8,44 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-14
 
+### G2-2: the High scores screen and the Ending card (branch `feat/g2-high-scores-screen`) — Refs #46
+
+- *High scores* / *MEILLEURS SCORES* in the title menu (between *Play* and *Options*): ten rows
+  formatted once on opening by `HighScoresScreen` (`scenes/high-scores-screen.ts`: rank, name,
+  country, score, level; dashes on an empty rank), drawn by `drawHighScores` in the menu font;
+  `back`, `confirm` or a tap started on the screen returns to a title locked 1 s; `Pause` ignored.
+  The table comes from the save (`SceneMachine`'s new `highScores` argument, `main.ts` passes
+  `save.highScores`).
+- The Ending card: a cleared run's Results now lead to *VICTORY* / *VICTOIRE* and the final score
+  (`drawEnding`), left by `confirm` or a tap after 1 s, or after 6 s (`SceneTuning.endingSeconds`);
+  the slice-end interim is lifted. Interim until G2-3: the card returns to the title (the name
+  entry of a qualifying score comes with the letter grid).
+- The title menu has three rows: the smoke test taps PLAY at y 144.
+- Chrome check on the local build with a planted table: the title menu, the High scores screen
+  (aligned columns, dashes), a click back to the title, no console error. Not checked in Chrome:
+  the Ending card (it needs a cleared run); the scene tests cover its texts, lock and timer.
+- Reviews: no Must. Fixed — the starfield froze on the Ending card (each scene drawing a run counts
+  its own background steps; test proven against the old code); the high-score row type declared
+  once in presentation; the Ending layout and highlight margin named; the Ending lock its own
+  tuning value; stale Results comment; the screen reuses the table's size.
+- Owner decisions the same day: a simple attract mode (10 s idle on the title → the high scores 6 s
+  → the title; any input returns) in G2-3; the enemies' look (squares today) — analysis pending.
+- Design-versus-code drift audit (2026-10-15): 27 drifts — 18 where the code was ahead of the
+  study, 4 contradictions, 5 planned items. Owner approvals the same day, documented in the GDD
+  (§4.2, §9.1), STM-scenes, CD-menus, SD-remap and the traceability matrix: A1 `ControlsScreen`
+  and `HighScoresScreen` own their screens, the scene machine routes; A2 the binding capture
+  goes through `SceneHost` (`keyLabel`), `ControlsScreen` calls `bind`; A3 the top 10 is the
+  scene machine's `highScores` constructor parameter, the host's country, date and table
+  callbacks planned for G2-3; A4 seven `Menu` objects, `OpenableMenu`, `ignore`,
+  `lastSideways`, `flips`, optional `MenuScreen` header and value, `screenOf`; C1 the High
+  scores columns as coded; C2 Ending and Game over → title an interim until G2-3; C3 keys with
+  Ctrl, Alt or Cmd/Meta held are ignored and keep their browser action. Name entry, letter grid
+  and the host's G2-3 methods stay in the study, marked planned.
+- Codex review (P2): a stored score wider than the column overlapped the row. Owner choice A
+  (47/50): an arcade counter stop at 99 999 999 — `ScoreKeeper.add` stops there
+  (`ScoreTuning.counterStop`), `parseHighScores` drops a stored score above it; GDD §8 and the
+  gameplay class diagram updated.
+
 ### G2-1: the high-score table, its save and two glyphs (branch `feat/g2-table`) — Refs #46
 
 - First of the three G2 code PRs (owner choice A, 44/50). No visible change.
