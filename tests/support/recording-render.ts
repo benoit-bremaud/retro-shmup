@@ -67,8 +67,9 @@ export class RecordingRender implements RenderPort {
     this.rects.length = 0;
     this.texts.length = 0;
   }
-  drawSprite(): void {
-    throw new Error('no sprite before the assets brick');
+  /** No sprite sheet: the presentation draws its placeholder shapes (ADR-0001 amendment). */
+  drawSprite(): boolean {
+    return false;
   }
   drawRect(x: number, y: number, w: number, h: number, colour: string): void {
     this.rects.push({ region: this.region, x, y, w, h, colour });

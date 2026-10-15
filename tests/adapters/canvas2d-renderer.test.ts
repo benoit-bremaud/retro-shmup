@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { Canvas2DRenderer } from '../../src/adapters/canvas2d-renderer';
 import type { RenderSurface } from '../../src/adapters/canvas2d-renderer';
+import { SpriteBank } from '../../src/adapters/sprite-bank';
+import type { BakeSurface } from '../../src/adapters/sprite-bank';
 import { computeViewport } from '../../src/adapters/viewport';
-import { HUD_FONT_CELL } from '../../src/domain/ports/render-port';
+import { HUD_FONT_CELL, SPRITE_IDS } from '../../src/domain/ports/render-port';
+import type { SpriteId } from '../../src/domain/ports/render-port';
 import { Palette } from '../../src/domain/presentation/palette';
 
 class RecordingSurface implements RenderSurface {
@@ -28,7 +31,9 @@ class RecordingSurface implements RenderSurface {
   clip(): void {
     this.calls.push('clip');
   }
-  drawImage(_image: CanvasImageSource, dx: number, dy: number, dw: number, dh: number): void {
+  readonly images: CanvasImageSource[] = [];
+  drawImage(image: CanvasImageSource, dx: number, dy: number, dw: number, dh: number): void {
+    this.images.push(image);
     this.calls.push(
       `drawImage smoothing=${String(this.imageSmoothingEnabled)} ${[dx, dy, dw, dh].join(',')}`,
     );
@@ -37,16 +42,37 @@ class RecordingSurface implements RenderSurface {
 
 const image = {} as CanvasImageSource;
 
+// The bake's own calls are not under test here (sprite-bank.test.ts covers them).
+const bakeSurface: BakeSurface = {
+  imageSmoothingEnabled: false,
+  drawImage: () => undefined,
+  translate: () => undefined,
+  scale: () => undefined,
+};
+
+/** Bakes every sprite into its own stand-in canvas and returns them by id. */
+function bakeOwnCanvases(sprites: SpriteBank): Map<SpriteId, CanvasImageSource> {
+  const canvases = new Map<SpriteId, CanvasImageSource>();
+  sprites.bake(image, image, () => ({ surface: bakeSurface, image: {} as CanvasImageSource }));
+  for (const id of SPRITE_IDS) {
+    const baked = sprites.get(id);
+    if (baked !== undefined) canvases.set(id, baked.image);
+  }
+  return canvases;
+}
+
 function setup(): {
   renderer: Canvas2DRenderer;
   offscreen: RecordingSurface;
   visible: RecordingSurface;
+  sprites: SpriteBank;
 } {
   const offscreen = new RecordingSurface();
   const visible = new RecordingSurface();
-  const renderer = new Canvas2DRenderer(offscreen, image, visible);
+  const sprites = new SpriteBank();
+  const renderer = new Canvas2DRenderer(offscreen, image, visible, sprites);
   renderer.resize(computeViewport(1920, 1080, 1));
-  return { renderer, offscreen, visible };
+  return { renderer, offscreen, visible, sprites };
 }
 
 describe('Canvas2DRenderer (ADR-0001, ADR-0010, ADR-0014)', () => {
@@ -118,11 +144,37 @@ describe('Canvas2DRenderer (ADR-0001, ADR-0010, ADR-0014)', () => {
     expect(offscreen.calls.at(-1)).toBe('restore');
   });
 
-  it('fails closed on sprites until the sprite sheet is loaded', () => {
-    const { renderer } = setup();
-    expect(() => {
-      renderer.drawSprite('ship', 0, 0);
-    }).toThrow(/sprite/);
+  it('answers false and draws nothing before the bake, then draws its baked canvas', () => {
+    const { renderer, offscreen, sprites } = setup();
+    renderer.setRegion('field');
+    const calls = offscreen.calls.length;
+
+    expect(renderer.drawSprite('popcorn', 100, 50)).toBe(false);
+    expect(offscreen.calls).toHaveLength(calls);
+
+    const baked = bakeOwnCanvases(sprites);
+    expect(renderer.drawSprite('popcorn', 100, 50)).toBe(true);
+    expect(offscreen.images.at(-1)).toBe(baked.get('popcorn'));
+  });
+
+  it('centres a field sprite on (x, y) after the field origin and camera, whole pixels', () => {
+    const { renderer, offscreen, sprites } = setup();
+    bakeOwnCanvases(sprites);
+    renderer.setRegion('field');
+    renderer.setCameraOffset(1, -2);
+
+    expect(renderer.drawSprite('heavy', 100.4, 50.6)).toBe(true);
+    // 120 + 1 + 100.4 − 32 = 189.4 and 0 − 2 + 50.6 − 32 = 16.6, rounded.
+    expect(offscreen.calls.at(-1)).toBe('drawImage smoothing=true 189,17,64,64');
+  });
+
+  it('centres a HUD sprite on (x, y) with no field origin and no camera', () => {
+    const { renderer, offscreen, sprites } = setup();
+    bakeOwnCanvases(sprites);
+    renderer.setCameraOffset(1, -2);
+
+    expect(renderer.drawSprite('heavy', 100.4, 50.6)).toBe(true);
+    expect(offscreen.calls.at(-1)).toBe('drawImage smoothing=true 68,19,64,64');
   });
 });
 
@@ -248,7 +300,12 @@ describe('Canvas2DRenderer — hud font (RenderPort contract, HUD_FONT_CELL)', (
 describe('Canvas2DRenderer — portrait screen (ADR-0015 decisions 1–3, ADR-0018 decision 6)', () => {
   function portrait(): { renderer: Canvas2DRenderer; offscreen: RecordingSurface } {
     const offscreen = new RecordingSurface();
-    const renderer = new Canvas2DRenderer(offscreen, image, new RecordingSurface());
+    const renderer = new Canvas2DRenderer(
+      offscreen,
+      image,
+      new RecordingSurface(),
+      new SpriteBank(),
+    );
     renderer.resize(computeViewport(390, 844, 3));
     return { renderer, offscreen };
   }

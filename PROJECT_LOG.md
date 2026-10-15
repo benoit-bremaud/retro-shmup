@@ -8,6 +8,21 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-15
 
+### G4-1 design: placeholder sprites (#75 → `a2a9c35`)
+
+- Kenney *Pixel Shmup* (CC0, `kenney_pixel-shmup.zip`, 127 424 bytes, sha256 `e33fd626…f952`)
+  downloaded with the owner's OK into a scratch directory; 24 ships of 32 × 32, nose down.
+- GDD v0.17 §3.2.1 (the rebalance becomes v0.18). Owner MCDA choices: small enemies at 1× over
+  their 16 × 16 hitbox (380/500; halving drew 10 × 9 ships in a 16 hitbox, 260); the Cruiser as
+  hull ×2 between two 1× wings (410/500), the turret tile breaking off in phase 2, wings kept
+  (440 vs a wing breaking, 280: 24 px of invisible hitbox); the player's nose-up copy baked at
+  load (430 vs a `flipY` port parameter, 360); `drawSprite` returns whether it drew and the
+  presentation keeps its shapes as the fallback (475 vs `hasSprite`, 440).
+- ADR-0001 amendment with the amended signature block (Codex P2 ×2 on #75: the original sketch
+  still read `string` / `void`; owner chose to amend by appended section, not to rewrite).
+- UML `render/04-class-sprites`, `render/02-sequence-sprite-loading` (checked with mermaid-cli);
+  stale `EnemyStats.sprite` removed from CD-domain. CSP unchanged (`img-src 'self'`).
+
 ### G2-3b: the attract mode (branch `feat/g2-attract`) — Refs #46
 
 - `IntentFrame.active` (ADR-0009, amended): `DeviceInput` sets it on any keydown (bound or not,

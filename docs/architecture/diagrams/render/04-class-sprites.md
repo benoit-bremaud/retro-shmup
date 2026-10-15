@@ -22,6 +22,7 @@ classDiagram
   direction LR
   class SpriteId {
     <<type, domain/ports/render-port>>
+    one of the SPRITE_IDS constant
     player | popcorn | diver | gunner | carrier | heavy
     cruiserHull | cruiserWing | cruiserTurret
   }
@@ -41,8 +42,8 @@ classDiagram
     archetype id to SpriteId
   }
   class SpriteCell {
-    <<type, adapters>>
-    +sheet: ships | tiles
+    <<type, adapters/sprite-atlas>>
+    +sheet: SheetId, ships 32 px or tiles 16 px cells
     +column: number
     +row: number
     +scale: 1 | 2
@@ -54,9 +55,15 @@ classDiagram
   }
   class SpriteBank {
     <<adapters/sprite-bank>>
-    -baked: Map of SpriteId to CanvasImageSource
+    -baked: Map of SpriteId to BakedSprite
     +bake(ships, tiles, newCanvas) void
-    +get(id: SpriteId) CanvasImageSource | undefined
+    +get(id: SpriteId) BakedSprite | undefined
+  }
+  class BakedSprite {
+    <<type, adapters/sprite-bank>>
+    +image: CanvasImageSource
+    +width: number
+    +height: number
   }
   class Canvas2DRenderer {
     <<adapters>>
@@ -72,6 +79,7 @@ classDiagram
   RunPresenter ..> SPRITE_OF_ROLE
   RunPresenter ..> SpriteId
   Canvas2DRenderer --> SpriteBank : get
+  SpriteBank ..> BakedSprite
   SpriteBank ..> SPRITE_CELLS
   SPRITE_CELLS ..> SpriteCell
   main ..> SpriteBank : bake once loaded
@@ -94,12 +102,17 @@ classDiagram
   compile; `SPRITE_CELLS` is a `Record<SpriteId, SpriteCell>`, so a missing cell does not either.
 - **Baking**: `bake` runs once, outside the game loop: for each id it copies the cell into its own
   off-screen canvas at its scale (nearest neighbour), turned nose up when `flipY` (the player
-  only). `get` and `drawSprite` allocate nothing. `heavy` and `cruiserHull` are the 2× cells.
+  only); `newCanvas(width, height)` returns the canvas and its context (`BakeCanvas`), so tests
+  bake without a browser. All or nothing: if a canvas fails the bank stays empty. `get` returns
+  the canvas with its size, which `drawSprite` needs to centre it; `get` and `drawSprite`
+  allocate nothing. `heavy` and `cruiserHull` are the 2× cells.
 - **The Cruiser** is three `drawSprite` calls: the wings at x ∓ 44, the hull at x, then the
   turret at the turret's offset (`CRUISER_TURRET`) while phase 0 and not flashing. If the hull
   draw returns `false`, the presenter draws the current boxes instead.
 - **Hit flash** (§9.4): a flashing entity is drawn as its box in the flash colour, before any
   sprite lookup — unchanged.
+- **G4-1b**: `RunPresenter`'s sprite drawing and `SPRITE_OF_ROLE` arrive in the second code PR;
+  until then every `drawSprite` caller is absent and the shapes are drawn as before.
 - **`SPRITE_OF_ROLE`** maps the archetype id (`popcorn` … `heavy-ring`, `heavy-fan`) to a sprite,
   as `enemyColour` maps it to a colour today (ADR-0010: never stored in archetype data).
 - `frame` and `flipX` stay unused (ADR-0001); the `Canvas2DRenderer` box abbreviates the

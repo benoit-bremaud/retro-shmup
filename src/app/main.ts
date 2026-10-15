@@ -7,6 +7,8 @@ import { Canvas2DRenderer } from '../adapters/canvas2d-renderer';
 import { DeviceInput } from '../adapters/input/device-input';
 import type { InputEnvironment } from '../adapters/input/device-input';
 import { PerformanceClock } from '../adapters/performance-clock';
+import { SpriteBank } from '../adapters/sprite-bank';
+import type { BakeCanvas } from '../adapters/sprite-bank';
 import { LocalStorageStore } from '../adapters/local-storage-store';
 import { computeViewport } from '../adapters/viewport';
 import { Run } from '../domain/game/run';
@@ -51,7 +53,39 @@ if (found === null) throw new Error('Canvas #screen is missing from index.html')
 const visible: HTMLCanvasElement = found;
 
 const offscreen = document.createElement('canvas');
-const renderer = new Canvas2DRenderer(context2d(offscreen), offscreen, context2d(visible));
+const sprites = new SpriteBank();
+const renderer = new Canvas2DRenderer(context2d(offscreen), offscreen, context2d(visible), sprites);
+
+/** A decoded image from the game's own origin (CSP `img-src 'self'`, ADR-0008). */
+async function loadImage(path: string): Promise<HTMLImageElement> {
+  const image = new Image();
+  image.src = `${import.meta.env.BASE_URL}${path}`;
+  await image.decode();
+  return image;
+}
+
+function newCanvas(width: number, height: number): BakeCanvas {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  return { surface: context2d(canvas), image: canvas };
+}
+
+/**
+ * Loads both sheets and bakes them once both decoded (render/02-sequence-sprite-loading); on any
+ * failure the game keeps its shapes, the player sees no error (GDD v0.17 §3.2.1).
+ */
+async function loadSprites(): Promise<void> {
+  try {
+    const [ships, tiles] = await Promise.all([
+      loadImage('assets/sprites/ships.png'),
+      loadImage('assets/sprites/tiles.png'),
+    ]);
+    sprites.bake(ships, tiles, newCanvas);
+  } catch (error) {
+    console.warn('Sprites not loaded, drawing the placeholder shapes', error);
+  }
+}
 
 // The input adapter never touches a browser global: it gets these narrow hooks (ADR-0015).
 const environment: InputEnvironment = {
@@ -211,3 +245,6 @@ const loop = new FrameLoop(new PerformanceClock(), input, scenes, (callback) => 
   requestAnimationFrame(callback);
 });
 loop.start();
+
+// Awaited after the loop started: the first frames draw the shapes while the sheets load.
+await loadSprites();
