@@ -1,41 +1,45 @@
-# Local review — retro-shmup (branch `docs/versioning`)
+# Local review — retro-shmup (branch `docs/uml`)
 
-- Date: 2026-10-14
+- Date: 2026-10-15
 - Commit: see the branch tip
-- Scope: branch diff `origin/main...HEAD` — ADR-0025 (SemVer, manual signed releases, the version
-  shown outside the canvas), CONTRIBUTING "Versioning and releases", README paragraph, CHANGELOG
-  and log notes, traceability scope, one wording fix in `.github/tag-protection.md`. Docs only.
-- Checks run: design · docs · tests · security · correctness (one reconciled pass over a docs
-  diff; no sub-agents)
-- Verdict: **ship** · Must 0 · Should 0 · Nice 1
+- Scope: branch diff `main...docs/uml` — the UML of the planned scene machine refactor
+  (CD-menus `SceneHandler`, `handlers`, `sceneSteps`; STM-scenes implementation-shape note;
+  one traceability row). Docs only; the code follows in its own `refactor/engine` PR, which
+  records its own review.
+- Checks run: docs (doc-auditor) · design (architecture-guardian, UML against the owner-approved
+  option B and ADR-0003). Tests, security and correctness: not applicable, no code or test changed.
+- Verdict: ship after the fixes below (applied) · Must 1 · Should 3 · Nice 2
 
 ## 🔴 Must Have
 
-_None._
+- `docs/architecture/diagrams/meta/04-class-menus.md`, `05-state-scenes.md` `[docs]` · the refactor
+  read as already built while the code still has the `switch` and four timers · applied: the new
+  fields, the edge and both notes are tagged *planned refactor*, as `idleSteps` already is.
 
 ## 🟡 Should Have
 
-_None._
+- `docs/architecture/diagrams/meta/04-class-menus.md` `[docs]` · `SceneHandler.step(dt, frame)`
+  has no scene, while the routed Title / Pause steps need one · applied: the note says those steps
+  take their scene first and get it bound with `bind(this, scene)`.
+- `docs/architecture/diagrams/meta/04-class-menus.md` `[docs|design]` · `*--` composition drew
+  owned functions as parts · applied: a `..>` dependency labelled *handlers table, one entry per Scene*.
+- `docs/architecture/traceability-matrix.md` `[docs]` · "unchanged" claimed an outcome before the
+  code exists · applied: "must pass unchanged", row tagged planned.
 
 ## 🔵 Nice to Have
 
-- `docs/decisions/ADR-0025-versioning-policy.md` `[docs]` · the rejected-options text for
-  release-please says to revisit if the manual steps become a burden; fine, no change.
+- `docs/architecture/diagrams/meta/04-class-menus.md` `[docs]` · "the count-in digit is derived"
+  was vague · applied: the drawing gets `COUNT_IN_STEPS - sceneSteps`.
+- `docs/architecture/diagrams/meta/04-class-menus.md` `[docs]` · the rejected-options sentence is
+  long · kept: it is the decision record.
 
 ## ⚪ Disagree / Intentional
 
-- `.github/tag-protection.md` `[security]` · one sentence reworded: it said release-please would
-  inherit the owner's bypass, which contradicts ADR-0025 (manual releases; an App would be added
-  to `bypass_actors` in its own PR). Ruleset, commands and signing section are unchanged; the file
-  is a document, not the ruleset itself.
-- `CONTRIBUTING.md` / ADR-0025 `[docs]` · the game reads no URL parameter today; the surface is
-  declared as "none yet" so a first parameter is public from its release.
+- `docs/architecture/diagrams/meta/04-class-menus.md` `[design]` · a bound-method table rather
+  than per-scene State objects · owner decision (option B, 2026-10-15); ADR-0003 allows both.
 
 ## Per-dimension summary
 
-- Design: policy decided in an ADR before the follow-up code PR (version text under the canvas).
-- Docs: README, CONTRIBUTING, ADR index, matrix scope and log agree with each other.
-- Tests: not applicable (no code).
-- Security: the tag ruleset is kept; no secret or credential involved.
-- Correctness: commands in the 4-step release procedure match `release-tag` (signed annotated
-  tag, explicit push, release notes from the CHANGELOG).
+- Design: matches option B and ADR-0003 · Docs: planned status now explicit, Mermaid follows the
+  file's existing syntax · Tests: n/a (no test changed) · Security: n/a (docs only) · Correctness:
+  n/a (no code)

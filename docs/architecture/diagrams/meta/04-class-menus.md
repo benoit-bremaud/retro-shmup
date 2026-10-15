@@ -123,10 +123,18 @@ classDiagram
     -menuScreens: table of menu scenes
     -optionsTouch: boolean
     -table: HighScoreTable
+    -handlers: Record of Scene to SceneHandler, built once, planned refactor
+    -sceneSteps: number, steps since the scene was entered, planned refactor
+    -lockLeft: number
     -idleSteps: number, planned G2-3b
     +constructor(..., host, highScores)
     -openMenu(scene, frame) void
     -screenOf(scene) MenuScene | undefined
+  }
+  class SceneHandler {
+    <<interface>>
+    +step(dt: number, frame: IntentFrame) void
+    +overlay() void
   }
   class LiveOptions {
     +value(row: MessageKey) MessageKey | undefined
@@ -229,6 +237,7 @@ classDiagram
     adapter, try/catch on every call
   }
 
+  SceneMachine ..> SceneHandler : handlers table, one entry per Scene, planned refactor
   SceneMachine *-- "7" Menu
   SceneMachine --> SceneHost : each change, leaving for play
   SceneMachine *-- ControlsScreen
@@ -416,4 +425,15 @@ classDiagram
   migration (ADR-0021 decision 7's "version 1" overtaken, noted in the ADR). `parseHighScores`
   (`src/domain/hall-of-fame/high-scores.ts`) still accepts the name `???`: a legacy value only,
   since *SKIP* records nothing.
-
+- **One dispatch table (planned refactor, owner-approved 2026-10-15, option B; the code follows in
+  its own PR)**: the scene machine will keep one `Record<Scene, SceneHandler>` of its own methods
+  (`step`, `overlay`), bound once in the constructor (the routed Title / Pause steps take their
+  scene first and get it bound with `bind(this, scene)`), in place of the `switch` in `step` and the `if` chain in the overlay drawing; the
+  table type makes a missing scene a compile error, so a new scene (the attract mode) is one entry.
+  The per-scene timers (count-in, game over, Results, Ending) become one `sceneSteps`, reset to 0
+  on every scene entry and counted up; the count-in drawing gets the steps left as
+  `COUNT_IN_STEPS - sceneSteps`. `lockLeft` (existing) stays
+  apart, since the title lock survives the transition from Game over. Per-scene State objects and
+  the extraction of the run-end flow were rejected: the scenes share the run, the lock, the host
+  and the menus, so either would move the coupling into a mutable context without removing it
+  (architecture-guardian finding on G2-3b, ADR-0003 allows both). No behaviour change.

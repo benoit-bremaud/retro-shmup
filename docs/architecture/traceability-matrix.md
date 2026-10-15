@@ -127,6 +127,7 @@ is a calculation covered by unit tests (ADR-0003), not by a diagram.
 | GDD v0.14 options screens (G1a-3): §9.1 title menu, values, leaving a menu frees the movement; §9.3 row texts | CD-menus (`SceneHost`, `InputPort.setAutofire` and `releaseMovement`, `MenuScreen.value`), STM-scenes (G1a-3 design), UC5 text (2d); tests with the G1a-3 code PR |
 | GDD v0.15 controls screen (G1b): §4.2 layout, capture, labels, device, restore, save v2 | SD-remap, STM-scenes (G1b), CD-menus, UC6 text (1a, 3c); tests with the G1b code PRs |
 | GDD v0.16 hall of fame (G2): §9.1 letter grid, table, High scores, Ending | SD-score, STM-scenes (G2), CD-menus (`LetterGrid`, `NameEntry`, `HighScoreTable`, `HighScoreEntry`), UC3, UC4; tests `high-scores.test.ts`, `high-scores-screen.test.ts`, `letter-grid.test.ts`, `name-entry.test.ts`, `scene-machine.test.ts` |
+| Scene machine refactor, planned (architecture-guardian, G2-3b review; owner option B, 2026-10-15): one dispatch table, one `sceneSteps` | CD-menus (`SceneHandler`, `SceneMachine.handlers`, `sceneSteps`), STM-scenes (implementation-shape note); no behaviour change: `scene-machine.test.ts` must pass unchanged |
 
 ## 5. Known gaps (accepted)
 
