@@ -10,11 +10,13 @@ import { HUD_FONT_CELL, MENU_FONT_CELL, TITLE_FONT_CELL } from '../ports/render-
 import type { RenderPort } from '../ports/render-port';
 import {
   CONTROLS_COLUMNS,
+  LETTER_GRID,
   MENU_HEADER_GAP,
+  NAME_ENTRY_LAYOUT,
   MENU_ROW_HEIGHT,
   MENU_VALUE_MARGIN,
 } from './menu-layout';
-import type { ControlsView, MenuScreen, MenuView, SlotColumn } from './menu-layout';
+import type { ControlsView, MenuScreen, MenuView, NameEntryView, SlotColumn } from './menu-layout';
 import { Palette } from './palette';
 import { FIELD_HEIGHT, FIELD_WIDTH } from './screen';
 
@@ -251,4 +253,49 @@ export function drawEnding(render: RenderPort, score: string, language: Language
   drawBanner(render, message('victory', language), ENDING_LAYOUT.bannerY);
   drawMenuLine(render, message('score', language), ENDING_LAYOUT.labelY);
   drawMenuLine(render, score, ENDING_LAYOUT.labelY + MENU_ROW_HEIGHT);
+}
+
+/**
+ * The name entry (GDD v0.16 §9.1): the heading in the title font, the slots of the name or the
+ * code (`-` when empty, the next one on a bar), then the grid, each cell's text centred in it and
+ * the highlighted cell on a bar; an unavailable cell (*OK* before a known code) is not drawn.
+ */
+export function drawNameEntry(render: RenderPort, view: NameEntryView, language: Language): void {
+  drawVeil(render);
+  drawBanner(render, message(view.heading, language), NAME_ENTRY_LAYOUT.headingY);
+  const width = NAME_ENTRY_LAYOUT.slotWidth;
+  const left = (FIELD_WIDTH - view.slotCount * width) / 2;
+  const slotsY = NAME_ENTRY_LAYOUT.slotsY;
+  const textTop = (MENU_ROW_HEIGHT - MENU_FONT_CELL.height) / 2;
+  for (let i = 0; i < view.slotCount; i += 1) {
+    const x = left + i * width;
+    if (i === view.nextSlot)
+      render.drawRect(x, slotsY, width, MENU_ROW_HEIGHT, Palette.menuHighlight);
+    const text = view.slot(i);
+    render.drawText(
+      text,
+      Math.round(x + (width - menuTextWidth(text)) / 2),
+      slotsY + textTop,
+      'menu',
+    );
+  }
+  const grid = view.grid;
+  const cellTextTop = (LETTER_GRID.cellHeight - MENU_FONT_CELL.height) / 2;
+  for (let i = 0; i < grid.cells.length; i += 1) {
+    const cell = grid.cells[i];
+    if (cell === undefined || !grid.available(i)) continue;
+    const x = cell.column * LETTER_GRID.cellWidth;
+    const y = LETTER_GRID.top + cell.row * LETTER_GRID.cellHeight;
+    const cellWidth = cell.span * LETTER_GRID.cellWidth;
+    if (i === grid.cursor) {
+      render.drawRect(x, y, cellWidth, LETTER_GRID.cellHeight, Palette.menuHighlight);
+    }
+    const text = cell.label === undefined ? cell.text : message(cell.label, language);
+    render.drawText(
+      text,
+      Math.round(x + (cellWidth - menuTextWidth(text)) / 2),
+      y + cellTextTop,
+      'menu',
+    );
+  }
 }

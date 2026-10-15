@@ -6,6 +6,35 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ---
 
+## 2026-10-15
+
+### G2-3a: the name entry (branch `feat/g2-name-entry`) — Refs #46
+
+- After Game over or the Ending card, a score that enters the top 10 opens the name entry; else
+  the title, as before. `NameEntry` (`scenes/name-entry.ts`): the name on a letter grid (`A`–`Z`,
+  `0`–`9`, *SPACE*, *DEL*, *OK*, *SKIP*), then the country on the letters-only grid (*DEL*,
+  *NONE*, *OK* shown only for a code of `COUNTRY_CODES`), preselected from the browser language.
+  *SKIP*, or *OK* on an empty or all-space name, records nothing; `back` deletes and never
+  leaves. An entry is inserted, saved through `SceneHost.highScoresChanged` and shown
+  highlighted on the High scores screen. The two G2 interims (Ending and Game over → title) are
+  lifted.
+- `LetterGrid` (`scenes/letter-grid.ts`): a two-dimensional wrapping cursor, wide cells, the
+  menus' release, re-press and opening guards through `PressGuard`, shared with `Menu` in the new
+  `scenes/menu-input.ts` (the direction thresholds moved there too). `drawNameEntry` in
+  `overlays.ts`; six catalogue keys. `SceneHost` gains `countryOfLanguage` (the region of the
+  browser language, read once at startup: ADR-0009's snapshot), `today` and `highScoresChanged`
+  (`main.ts`).
+- Owner decisions (2026-10-15, after a drift audit of 27 items): the stored level is 1 while the
+  slice has one level; the country step opens on *OK* when the preselected code is known; the
+  other implementation choices (diagonal sideways, row-wrapping, the cursor stepping back when
+  *OK* disappears, no way back to the name, the geometry, `PressGuard`) approved and documented in
+  GDD v0.16 §9.1, CD-menus, STM-scenes, SD-score and the traceability matrix.
+- Reviews: code review no Must/Should; anti-patterns no Must, four Should fixed (private
+  `stage`/`cursor`, shared input rules out of `menu.ts`, `GridAction` back in the scene, the entry
+  built by `NameEntry`). Mutation checks: every planted bug caught.
+- Headless check: a run lost at 16 500 points opens the grid; the cursor, typing and `Escape`
+  deleting work.
+
 ## 2026-10-14
 
 ### G2-2: the High scores screen and the Ending card (branch `feat/g2-high-scores-screen`) — Refs #46

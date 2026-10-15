@@ -26,14 +26,16 @@ sequenceDiagram
   Table-->>Scenes: true
   Scenes->>Host: countryOfLanguage()
   Host-->>Scenes: FR, from fr-FR, or none
-  Scenes->>Entry: open(score, level, FR)
+  Scenes->>Entry: open(now, opening frame, score, FR)
   loop each step until the entry is complete
     Player->>Scenes: a direction, confirm, back or a tap
     Scenes->>Entry: step(frame)
   end
-  Entry-->>Scenes: name BENOIT, country FR
+  Entry-->>Scenes: entered
   Scenes->>Host: today()
   Host-->>Scenes: 2026-10-14
+  Scenes->>Entry: entry(2026-10-14)
+  Entry-->>Scenes: BENOIT, FR, score, level 1, date
   Scenes->>Table: insert(entry)
   Table-->>Scenes: rank 3
   Scenes->>Host: highScoresChanged(entries)
@@ -43,6 +45,8 @@ sequenceDiagram
 
 ## Notes
 
+- The browser language is read once at startup by the composition root (the ADR-0009 snapshot);
+  the domain keeps the code only if it is in `COUNTRY_CODES`.
 - `countryOfLanguage` reads only the region of the browser's first language (ADR-0021 decision
   4); nothing else is read or inferred, and the country is stored only once confirmed.
 - The table and the entries are domain data; the host only stores them (`SaveStore`), which keeps

@@ -15,6 +15,7 @@ import {
   drawEnding,
   drawHighScores,
   drawMenuScreen,
+  drawNameEntry,
   drawVeil,
   drawWarning,
 } from '../presentation/overlays';
@@ -29,6 +30,7 @@ import type { HighScoreEntry } from '../hall-of-fame/high-scores';
 import { ControlsScreen } from './controls-screen';
 import { HighScoresScreen } from './high-scores-screen';
 import { Menu } from './menu';
+import { NameEntry } from './name-entry';
 import { NO_HOST } from './scene-host';
 import type { SceneHost } from './scene-host';
 import type { OpenableMenu } from './menu';
@@ -56,6 +58,7 @@ export const Scene = {
   /** The hall of fame (G2): the table, and the card after a cleared run. */
   HighScores: 'HIGH_SCORES',
   Ending: 'ENDING',
+  NameEntry: 'NAME_ENTRY',
 } as const;
 export type Scene = (typeof Scene)[keyof typeof Scene];
 
@@ -92,6 +95,8 @@ const SCENE_TRAITS: Readonly<Record<Scene, SceneTraits>> = {
   [Scene.HighScores]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
   // The run stands still behind the card, as behind the Results (GDD v0.16 §9.1).
   [Scene.Ending]: { frozen: true, scrolls: true, drawsRun: true, pauseButton: false },
+  // The finished run stands still behind the grid, read for its score only (05-state-scenes).
+  [Scene.NameEntry]: { frozen: true, scrolls: true, drawsRun: true, pauseButton: false },
 };
 
 /** Where each options scene's Back and sub-screen lead (meta/05-state-scenes). */
@@ -230,6 +235,7 @@ export class SceneMachine {
   private endingSteps = 0;
   /** The final score on the Ending card, formatted once on entry. */
   private endingScore = '';
+  private readonly nameEntry = new NameEntry();
 
   /**
    * `options` are the saved ones, copied into the live options; `createRun` builds each new run
@@ -345,6 +351,9 @@ export class SceneMachine {
         return;
       case Scene.Ending:
         this.stepEnding(frame);
+        return;
+      case Scene.NameEntry:
+        this.stepNameEntry(frame);
         return;
     }
   }
@@ -503,7 +512,7 @@ export class SceneMachine {
     this.gameOverLeft -= 1;
     const confirmed = !this.locked() && isConfirmOrTap(frame);
     if (!confirmed && this.gameOverLeft > 0) return;
-    this.toTitle(frame);
+    this.endRun(frame);
   }
 
   // Confirm or a tap after the 1 s lock, or the 8 s timer, leads a cleared run to the Ending
@@ -521,9 +530,7 @@ export class SceneMachine {
     this.lockLeft = ENDING_LOCK_STEPS;
   }
 
-  // Confirm or a tap after the 1 s lock, or 6 s, leaves the card. The name entry of a score that
-  // enters the table arrives with G2-3; until then the card returns to the title (interim,
-  // meta/05-state-scenes G2).
+  // Confirm or a tap after the 1 s lock, or 6 s, leaves the card (GDD v0.16 §9.1).
   private stepEnding(frame: Readonly<IntentFrame>): void {
     // The stars keep moving over the frozen run, as on the Results.
     this.backgroundSteps += 1;
@@ -531,7 +538,33 @@ export class SceneMachine {
     const confirmed = !this.locked() && isConfirmOrTap(frame);
     if (!confirmed && this.endingSteps < ENDING_STEPS) return;
     this.endingScore = '';
-    this.toTitle(frame);
+    this.endRun(frame);
+  }
+
+  /** After Game over or the Ending: the name entry when the score enters the table, else the title. */
+  private endRun(frame: Readonly<IntentFrame>): void {
+    const score = this.run?.snapshot().score ?? 0;
+    if (!this.table.qualifies(score)) {
+      this.toTitle(frame);
+      return;
+    }
+    this.current = Scene.NameEntry;
+    this.nameEntry.open(this.steps, frame, score, this.host.countryOfLanguage());
+  }
+
+  // Pause is ignored: no run steps here. SKIP, or OK on an empty name, records nothing; an entry
+  // is inserted, saved through the host and shown highlighted (SD-score).
+  private stepNameEntry(frame: Readonly<IntentFrame>): void {
+    const exit = this.nameEntry.step(frame, this.steps);
+    if (exit === 'skipped') {
+      this.toTitle(frame);
+    } else if (exit === 'entered') {
+      const rank = this.table.insert(this.nameEntry.entry(this.host.today()));
+      this.host.highScoresChanged(this.table.entries);
+      this.run = undefined;
+      this.presenter = undefined;
+      this.openHighScores(rank);
+    }
   }
 
   private openHighScores(highlighted: number): void {
@@ -619,6 +652,8 @@ export class SceneMachine {
       drawHighScores(this.renderer, this.highScores, this.options.language);
     } else if (this.current === Scene.Ending) {
       drawEnding(this.renderer, this.endingScore, this.options.language);
+    } else if (this.current === Scene.NameEntry) {
+      drawNameEntry(this.renderer, this.nameEntry, this.options.language);
     } else if (this.current === Scene.TitleControls || this.current === Scene.PauseControls) {
       drawControlsScreen(this.renderer, this.controls, this.options.language);
     } else if (menuScreen !== undefined) {

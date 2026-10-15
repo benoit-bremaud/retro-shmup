@@ -55,3 +55,47 @@ export interface ControlsView {
   /** A slot cell's text for intent row `row` (0 to 6), built by no draw. */
   cell(row: number, column: SlotColumn): string;
 }
+
+/**
+ * The name entry's letter grid (GDD v0.16 §9.1): cells of 30 × 20 px, eight to a row, filling the
+ * field's width under the name being built; *SKIP* is one more row, the grid's width.
+ */
+export const LETTER_GRID = { top: 120, cellWidth: 30, cellHeight: 20, columns: 8 } as const;
+
+/** The name entry above its grid: the heading, then the slots of the name or the code. */
+export const NAME_ENTRY_LAYOUT = { headingY: 48, slotsY: 88, slotWidth: 16 } as const;
+
+/**
+ * One cell of the letter grid, placed on it: `span` columns wide from `column`. The scene reads its
+ * `action`; the presentation draws its `text` or `label` only.
+ */
+export interface GridCell<Action extends string = string> {
+  readonly action: Action;
+  /** The character a `char` cell adds, else `''`. */
+  readonly text: string;
+  /** The catalogue text an action cell shows. */
+  readonly label?: MessageKey;
+  readonly row: number;
+  readonly column: number;
+  readonly span: number;
+}
+
+/** What the letter grid shows: its cells, the highlighted one, and which ones show. */
+export interface LetterGridView {
+  readonly cells: readonly GridCell[];
+  readonly cursor: number;
+  /** False for *OK* while the country code is incomplete or unknown: not drawn, not reached. */
+  available(index: number): boolean;
+}
+
+/** What the name entry shows (GDD v0.16 §9.1): its heading, the slots and the grid. */
+export interface NameEntryView {
+  readonly heading: MessageKey;
+  /** 8 for the name, 2 for the country code. */
+  readonly slotCount: number;
+  /** The character in slot `index`, `'-'` when empty; built by no draw. */
+  slot(index: number): string;
+  /** The slot on the bar: the next one to fill, or −1 when full. */
+  readonly nextSlot: number;
+  readonly grid: LetterGridView;
+}

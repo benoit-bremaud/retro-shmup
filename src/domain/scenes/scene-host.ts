@@ -1,3 +1,4 @@
+import type { HighScoreEntry } from '../hall-of-fame/high-scores';
 import type { BindableDevice } from '../input/bindings-editor';
 import type { Options } from '../options';
 import type { BindingCapture } from '../ports/input-port';
@@ -18,6 +19,15 @@ export interface SceneHost {
   cancelCapture(): void;
   /** `InputPort.label`: a letter or digit key's printed character, else `''`. */
   keyLabel(code: string): string;
+  /**
+   * The region of the browser's first language, as a code (`FR` from `fr-FR`), or `undefined`:
+   * the name entry's preselected country (ADR-0021 decision 4); the domain checks it is known.
+   */
+  countryOfLanguage(): string | undefined;
+  /** Today's date as `YYYY-MM-DD`: the domain reads no clock (ADR-0006). */
+  today(): string;
+  /** After a new entry: the whole table, to save with the options (SD-score). */
+  highScoresChanged(entries: readonly HighScoreEntry[]): void;
 }
 
 const CANCELLED: BindingCapture = { kind: 'cancelled' };
@@ -30,4 +40,7 @@ export const NO_HOST: SceneHost = {
   captureNext: () => CANCELLED,
   cancelCapture: () => undefined,
   keyLabel: () => '',
+  countryOfLanguage: () => undefined,
+  today: () => '2026-01-01',
+  highScoresChanged: () => undefined,
 };

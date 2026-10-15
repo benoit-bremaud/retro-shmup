@@ -5,6 +5,7 @@ import type { Options } from '../../src/domain/options';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { BindingCapture, IntentFrame } from '../../src/domain/ports/input-port';
 import { ControlsScreen } from '../../src/domain/scenes/controls-screen';
+import { NO_HOST } from '../../src/domain/scenes/scene-host';
 import type { SceneHost } from '../../src/domain/scenes/scene-host';
 
 /** A host whose capture answers what the test queues; it records starts, cancels and saves. */
@@ -14,6 +15,15 @@ class CaptureHost implements SceneHost {
   readonly saved: Options[] = [];
   cancelled = 0;
   releaseMovement(): void {
+    // Not used by the controls screen.
+  }
+  countryOfLanguage(): undefined {
+    return undefined; // Not used by the controls screen, nor are today and highScoresChanged.
+  }
+  today(): string {
+    return NO_HOST.today();
+  }
+  highScoresChanged(): void {
     // Not used by the controls screen.
   }
   optionsChanged(options: Readonly<Options>): void {

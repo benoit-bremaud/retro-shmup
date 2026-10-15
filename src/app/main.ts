@@ -34,6 +34,18 @@ function hasLayoutMap(
   );
 }
 
+/**
+ * The region of a language tag (`FR` from `fr-FR`), else `undefined` (ADR-0021 decision 4): only
+ * the browser's first language is read; the domain keeps the code only if it is known.
+ */
+function regionOf(tag: string): string | undefined {
+  try {
+    return new Intl.Locale(tag).region;
+  } catch {
+    return undefined; // A malformed tag gives no country.
+  }
+}
+
 const found = document.querySelector<HTMLCanvasElement>('#screen');
 if (found === null) throw new Error('Canvas #screen is missing from index.html');
 const visible: HTMLCanvasElement = found;
@@ -144,6 +156,9 @@ input.setAutofire(options.autofire);
 // A saved fullscreen wish applies at the first click, tap or key press (ADR-0009).
 if (options.fullscreen) input.setFullscreenWanted(true);
 
+// The browser language is part of the startup snapshot (ADR-0009 decision 4): read once here.
+const country = regionOf(navigator.language);
+
 let fullscreenWanted = options.fullscreen;
 let bindings = options.bindings;
 /** The scene machine's outside world (meta/04-class-menus): save, then forward to the input. */
@@ -169,6 +184,16 @@ const host: SceneHost = {
     input.cancelCapture();
   },
   keyLabel: (code) => input.label(code),
+  countryOfLanguage: () => country,
+  today: () => {
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${String(now.getFullYear())}-${month}-${day}`;
+  },
+  highScoresChanged: (entries) => {
+    save.saveHighScores(entries); // false: the table still shows this session (UC3 3a)
+  },
 };
 
 // Presentation randomness is unseeded on purpose: it never touches the outcome (ADR-0010).

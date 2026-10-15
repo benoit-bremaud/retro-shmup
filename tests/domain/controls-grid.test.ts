@@ -4,7 +4,7 @@ import { CONTROLS_COLUMNS, MENU_ROW_HEIGHT } from '../../src/domain/presentation
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
 import { ControlsGrid } from '../../src/domain/scenes/controls-grid';
-import { MenuTuning } from '../../src/domain/scenes/menu';
+import { MenuTuning } from '../../src/domain/scenes/menu-input';
 
 const PAST_GUARD = toSteps(MenuTuning.rePressGuardSeconds);
 

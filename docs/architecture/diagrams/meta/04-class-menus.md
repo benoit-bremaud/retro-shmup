@@ -81,9 +81,9 @@ classDiagram
     +captureNext() BindingCapture
     +cancelCapture() void
     +keyLabel(code: string) string
-    +countryOfLanguage() string | undefined, planned G2-3
-    +today() string, planned G2-3
-    +highScoresChanged(entries) void, planned G2-3
+    +countryOfLanguage() string | undefined
+    +today() string
+    +highScoresChanged(entries) void
   }
   class InputPort {
     <<interface>>
@@ -167,17 +167,50 @@ classDiagram
     +qualifies(score: number) boolean
     +insert(entry: HighScoreEntry) number
   }
-  class LetterGrid {
-    <<planned G2-3>>
+  class PressGuard {
+    +open(now) void
+    +cancel() void
+    +press(target, now) void
+    +release(target, now) boolean
+  }
+  class GridCell {
+    +action: Action
+    +text: string
+    +label?: MessageKey
+    +row: number
+    +column: number
+    +span: number
+  }
+  class LetterGridView {
+    <<interface>>
     +cells: readonly GridCell[]
     +cursor: number
+    +available(index) boolean
+  }
+  class LetterGrid~Action~ {
+    +cells: readonly GridCell[]
+    +cursor: number, read-only
+    +constructor(cells, available?)
+    +available(index) boolean
+    +reset(now, opening, start = 0) void
+    +cellAt(x, y) number
     +step(frame, now) GridCell | undefined
+    +settle() void
+  }
+  class NameEntryView {
+    <<interface>>
+    +heading: MessageKey
+    +slotCount: number
+    +nextSlot: number
+    +slot(index) string
+    +grid: LetterGridView
   }
   class NameEntry {
-    <<planned G2-3>>
+    +stage: name | country, read-only
     +name: string
-    +country: string | undefined
-    +step(frame, now) HighScoreEntry | undefined
+    +open(now, opening, score, country) void
+    +step(frame, now) skipped | entered | undefined
+    +entry(date) HighScoreEntry
   }
   class SaveStore {
     +load() Options, parseBindings and parseHighScores
@@ -218,9 +251,15 @@ classDiagram
   SaveStore ..> SaveDocument : load parses, never throws
   SaveDocument *-- "0..10" HighScoreEntry
   HighScoreTable o-- "0..10" HighScoreEntry
-  NameEntry *-- LetterGrid
-  NameEntry ..> HighScoreEntry : builds
-  SceneMachine *-- NameEntry : planned G2-3
+  NameEntry *-- "2" LetterGrid
+  NameEntry ..|> NameEntryView
+  NameEntryView --> LetterGridView
+  LetterGrid ..|> LetterGridView
+  LetterGrid *-- "1..*" GridCell
+  LetterGrid *-- PressGuard
+  Menu *-- PressGuard
+  NameEntry ..> HighScoreEntry : builds with the host's date
+  SceneMachine *-- NameEntry
   SceneMachine *-- HighScoreTable
   SaveStore --> StoragePort
   LocalStorageStore ..|> StoragePort
@@ -322,7 +361,7 @@ classDiagram
 - **The stored top 10** (decision A3) reaches the scene machine as its constructor parameter
   `highScores` (`main.ts` passes `save.highScores`), built into a `HighScoreTable`.
   `SceneHost.countryOfLanguage`, `today` and `highScoresChanged`, `NameEntry` and `LetterGrid`
-  are planned, G2-3.
+  are built (G2-3).
 - **Menu members** (decision A4): `Menu` implements `OpenableMenu` (`reset(now, opening)`, what a
   scene needs to open and draw any menu); `ignore(frame)` is the title lock's step; `lastSideways`
   gives the controls grid its column; the constructor's `flips` predicate says which rows left and
@@ -344,8 +383,22 @@ classDiagram
   the actions *SPACE*, *DEL*, *OK*, *SKIP* and *NONE*. `NameEntry` builds the name (8 at most,
   `back` deletes; on *OK* trimmed; *SKIP*, or an empty or all-space name, records nothing) then the country (letters only, *OK* only for a code of
   `COUNTRY_CODES`, *NONE* for none), preselected by the host from the browser language
-  (ADR-0021 decision 4), and returns the `HighScoreEntry` with the date the host gives
-  (`SceneHost.today()`, the domain reads no clock). `HighScoreTable` keeps ten entries, best
+  (ADR-0021 decision 4), and builds the `HighScoreEntry` (`entry(date)`) once `step` returns
+  `entered`, with the score given to `open` and the date the host gives (`SceneHost.today()`,
+  the domain reads no clock); the level stored is 1, the slice having one level (owner,
+  2026-10-15, ADR-0022 decision 9).
+- **Name entry, as built (G2-3, owner-approved 2026-10-15)**: the cells are data (`NAME_CELLS`,
+  `COUNTRY_CELLS`, characters eight to a row, then the actions; an action never straddles two
+  rows). `PressGuard` (`src/domain/scenes/menu-input.ts`, with the direction thresholds) holds the
+  press, release and guard rules `Menu` and `LetterGrid` share. A mostly-vertical tilt moves up
+  or down, any other tilt sideways; left and right wrap within the row, up and down over the rows
+  in the cursor's column, skipping empty places and a hidden *OK*. A hover or a picking release
+  moves the cursor and its column to the pointer. When *OK* disappears under the cursor
+  (`settle`), the cursor steps to the previous cell of its row. The country step opens with a new
+  opening guard, on *OK* when the preselected code is known, else on `A`; there is no way back to
+  the name, and *NONE* ends at once. The view interfaces (`NameEntryView`, `LetterGridView`,
+  `GridCell`) live in `presentation/menu-layout.ts` with the grid geometry; `GridAction` is the
+  scene's (`name-entry.ts`). `HighScoreTable` keeps ten entries, best
   first, a score above 0 entering only above the tenth, ties after the older; `SaveStore` parses
   the stored entries by allowlist (ADR-0021 decisions 2, 3, 6) and saves the table with the
   options (`saveHighScores`). The entries first ship under the save's version 2 (G1b): the empty
