@@ -22,9 +22,9 @@ const WARNING_AT = 5;
 const WARNING_STEP = 301;
 /** Nothing else spawns in these scripts: the boss takes the run's first serial. */
 const BOSS_SERIAL = 1;
-/** The Cruiser's HP and its phase-2 threshold, 66 % of it (GDD v0.12 §6.1: 1 450 shots). */
-const CRUISER_HP = shots(1450);
-const PHASE_2_HP = shots(957);
+/** The Cruiser's HP and its phase-2 threshold, 66 % of it (GDD v0.18 §6.1: 1 800 shots). */
+const CRUISER_HP = shots(1800);
+const PHASE_2_HP = shots(1188);
 
 /** The Cruiser's stats and timings with no attack and no sway, so nothing hurts or moves. */
 function quiet(thresholds: number[] = [PHASE_2_HP]): BossDefinition {
@@ -144,8 +144,8 @@ describe('Run.damageBoss (ADR-0022 decision 5)', () => {
     const run = fighting();
     const log = logOf(run, [GameEventKind.EnemyHit, GameEventKind.BossPhaseChanged]);
     run.rules.damageBoss(shots(10));
-    // GDD v0.12 §6.1: 10 shots of 1 450 leave 1 440 / 1 450 of the HP.
-    expect(run.snapshot().boss.hpRatio).toBeCloseTo(1440 / 1450, 9);
+    // GDD v0.18 §6.1: 10 shots of 1 800 leave 1 790 / 1 800 of the HP.
+    expect(run.snapshot().boss.hpRatio).toBeCloseTo(1790 / 1800, 9);
     expect(log).toHaveLength(1);
     expect(log[0]?.subject).toBe(BOSS_SERIAL);
     expect(run.snapshot().score).toBe(0);
@@ -164,9 +164,9 @@ describe('Run.damageBoss (ADR-0022 decision 5)', () => {
   });
 
   it('publishes one BOSS_PHASE_CHANGED per threshold a single hit crosses', () => {
-    const run = fighting(quiet([PHASE_2_HP, shots(478.5)]));
+    const run = fighting(quiet([PHASE_2_HP, shots(594)]));
     const log = logOf(run, [GameEventKind.BossPhaseChanged]);
-    run.rules.damageBoss(shots(1000)); // 450 shots left, under both thresholds
+    run.rules.damageBoss(shots(1300)); // 500 shots left, under both thresholds
     expect(log.map((e) => e.detail)).toEqual([1, 2]);
     expect(run.snapshot().boss.phase).toBe(2);
   });
@@ -242,9 +242,9 @@ describe('Run — the bomb and the boss (02-sequence-bomb, GDD v0.10 §6)', () =
   it('advances a phase when the bomb crosses the threshold, and destroys at 0 HP', () => {
     const run = fighting();
     const log = logOf(run, [GameEventKind.BossPhaseChanged, GameEventKind.BossDestroyed]);
-    // GDD v0.12 §6.1: 480 shots leave 970 shots, 10 over the 957 threshold; the bomb (30 shots)
-    // crosses it.
-    const before = shots(480);
+    // GDD v0.18 §6.1: 602 shots leave 1 198 shots, 10 over the 1 188 threshold; the bomb (30
+    // shots) crosses it.
+    const before = shots(602);
     run.rules.damageBoss(before);
     expect(log).toHaveLength(0);
     steps(run, 1, pressing(Button.Bomb));

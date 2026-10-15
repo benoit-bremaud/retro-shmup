@@ -10,7 +10,6 @@ import type { Player } from '../../src/domain/game/player';
 import { Run, RunOutcome } from '../../src/domain/game/run';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
-import { shots } from '../support/shots';
 import { testScript } from '../support/script';
 
 const DT = 1 / 60;
@@ -82,7 +81,7 @@ describe('Run — the tally through a level (GDD v0.10 §8, ADR-0022 decision 7)
       run.step(DT, frame());
     }
     const beforeKill = run.snapshot().score;
-    run.rules.damageBoss(shots(1450)); // the Cruiser's 1 450 shots (GDD v0.12 §6.1)
+    run.rules.damageBoss(CRUISER.stats.hp); // the Cruiser's whole HP (GDD v0.18 §6.1)
     const withBossBonus = run.snapshot().score;
     expect(withBossBonus - beforeKill).toBeGreaterThanOrEqual(10000);
     run.events().subscribe(GameEventKind.LevelCleared, () => {

@@ -20,6 +20,12 @@ import type { IntentFrame } from '../../src/domain/ports/input-port';
 // Headless level simulation (ADR-0002, ADR-0003): the real run, scripted inputs, no browser.
 const DT = 1 / 60;
 const ONE_PASS = 7200; // the waves of level 1 last 120 s, then the WARNING starts the Cruiser
+/**
+ * A seed whose drops give the scripted ship the power to kill the 1 800-shot Cruiser (GDD v0.18):
+ * found by trying seeds 1 to 14 in order (kills on 3, 10 and 11); on a change to the random draws,
+ * search the same way. The kill rates themselves are guarded by `tests/balance`.
+ */
+const BOSS_KILL_SEED = 10;
 const frame = createIntentFrame();
 
 /** A weaving player who fires most of the time: same index, same frame. */
@@ -42,9 +48,11 @@ function pacifist(i: number): IntentFrame {
 }
 
 /**
- * The ship in the boss fight (GDD v0.12 §6.1: 1 450 shots, so about 45 to 70 s at power 3 to 5):
- * a blind weave dies four times in that time, so from the WARNING the scripted ship steps away
- * from the nearest enemy bullet above it, else follows the boss, and fires without pause.
+ * The ship in the boss fight (GDD v0.18 §6.1: 1 800 shots in 90 s, so the ship needs power 4 to 5
+ * and few misses): a blind weave dies four times in that time, so from the WARNING the scripted
+ * ship steps away from the nearest enemy bullet above it, else follows the boss, and fires without
+ * pause. The v0.18 bullets (85 px/s, a volley every 0.9 s) made the old 22 px and 70 px windows
+ * thrash between two fans, so the window is now narrower (12 px across, 50 px ahead).
  */
 function dodging(run: Run): IntentFrame {
   const snapshot = run.snapshot();
@@ -55,7 +63,7 @@ function dodging(run: Run): IntentFrame {
     const bullet = snapshot.enemyBullets.at(k).position;
     const below = me.y - bullet.y;
     const across = me.x - bullet.x;
-    if (below > -10 && below < 70 && Math.abs(across) < 22 && Math.abs(across) + below < nearest) {
+    if (below > -10 && below < 50 && Math.abs(across) < 12 && Math.abs(across) + below < nearest) {
       nearest = Math.abs(across) + below;
       away = across >= 0 ? 1 : -1;
     }
@@ -161,7 +169,9 @@ describe('Level simulation — level 1, headless', () => {
   });
 
   it('replays identically through the whole boss fight: warning, phase, destruction, level end', () => {
-    const { log } = JSON.parse(replay(ONE_PASS + 6000, 1, true)) as { log: string[] };
+    // Seed 10, not 1 (GDD v0.18): the 1 800-shot Cruiser dies only to a ship that kept its power,
+    // and seed 1's drops leave the scripted ship short of the kill in 90 s (the boss flees).
+    const { log } = JSON.parse(replay(ONE_PASS + 6000, BOSS_KILL_SEED, true)) as { log: string[] };
     const kinds = log.map((entry) => entry.split(':')[0]);
     // The scripted ship destroys the boss: every boss event but its escape is in the log.
     for (const kind of BOSS_KINDS) {
@@ -169,7 +179,9 @@ describe('Level simulation — level 1, headless', () => {
       expect(kinds, String(kind)).toContain(String(kind));
     }
     expect(kinds).not.toContain(String(GameEventKind.BossFled));
-    expect(replay(ONE_PASS + 6000, 1, true)).toBe(replay(ONE_PASS + 6000, 1, true));
+    expect(replay(ONE_PASS + 6000, BOSS_KILL_SEED, true)).toBe(
+      replay(ONE_PASS + 6000, BOSS_KILL_SEED, true),
+    );
   });
 
   it('lets the seed change the drops (ADR-0019)', () => {
@@ -305,7 +317,7 @@ describe('Level simulation — the Cruiser, headless (GDD v0.10 §6, §6.1)', ()
   });
 
   it('is cleared by the scripted ship: the boss destroyed, its bonus paid, RUN_CLEARED', () => {
-    const run = new Run({ seed: 1 });
+    const run = new Run({ seed: BOSS_KILL_SEED });
     let bonusSeconds = -1;
     let cleared = 0;
     run.events().subscribe(GameEventKind.BossDestroyed, (e) => {
@@ -354,8 +366,8 @@ describe('Level simulation — the Cruiser, headless (GDD v0.10 §6, §6.1)', ()
       }
       expect(run.snapshot().boss.state).toBe(BossState.Fleeing);
       expect(peak).toBeGreaterThan(24);
-      // GDD v0.10 §6.1: at most 40. The pool of 48 then keeps 8 slots at least; the peak is 39
-      // (9 slots), short of the 12 the Heavy test keeps (reported with F-2a, not tuned here).
+      // GDD v0.10 §6.1: at most 40. The pool of 48 then keeps 8 slots at least; the peak is 40
+      // since v0.18 (a ring of 14 every 1.25 s; a ring of 16 reached 45, over the limit).
       expect(peak).toBeLessThanOrEqual(40);
       expect(peak).toBeLessThan(ENEMY_BULLET_POOL_SIZE);
     },

@@ -92,7 +92,7 @@ describe('LEVEL_1 — the 120 s script of GDD v0.12 §7.2.1 and §7.2.2', () => 
     expect(rows).toEqual(GDD_ROWS);
   });
 
-  it('pins the P of each of the seven formations: only 8, 50 and 52 s pay none (GDD v0.12)', () => {
+  it('pins the P of each of the seven formations: only 8, 50, 52 and 70 s pay none (GDD v0.18)', () => {
     const formations = LEVEL_1.events.filter((e) => e.archetype.formation && e.count > 1);
     expect(formations.map((e) => [e.at, e.paysP !== false])).toEqual([
       [0, true],
@@ -100,12 +100,12 @@ describe('LEVEL_1 — the 120 s script of GDD v0.12 §7.2.1 and §7.2.2', () => 
       [32, true],
       [50, false],
       [52, false],
-      [70, true],
+      [70, false],
       [110, true],
     ]);
     // The flag lives on formation rows only (a load check), so no other row carries one.
     expect(LEVEL_1.events.filter((e) => e.paysP !== undefined).map((e) => e.at)).toEqual([
-      8, 50, 52,
+      8, 50, 52, 70,
     ]);
   });
 
@@ -117,7 +117,7 @@ describe('LEVEL_1 — the 120 s script of GDD v0.12 §7.2.1 and §7.2.2', () => 
       true,
       false,
       false,
-      true,
+      false,
       true,
     ]);
   });

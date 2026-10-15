@@ -573,7 +573,7 @@ classDiagram
 | Pools (v0.6 §5.2.1) | sizes from the GDD; a request on a full pool is dropped (ADR-0002) |
 | Game over time (v0.6 §4.4) | `SceneTuning` in the scene machine, not `Run` (meta/05-state-scenes) |
 | Spread and Laser levels (v0.5, v0.8 §4.3) | `WEAPONS.SPREAD[0]` is one `ShotSpec` from the nose (size, speed, rate: GDD §4.3); every level's velocities are computed once at load from the GDD angles; `Weapon.cooldown` in whole steps (6, then 4 at Spread level 5); bullets released once fully outside the field (any side) |
-| HP and damage in tenths (v0.8 §5.2.1, ADR-0019) | `EnemyStats.hp`, `ShotSpec.damage` and the bomb's damage are integers in tenths of a level-1 shot (Popcorn 10, Gunner 80, Carrier 40, bomb 300); `applyDamage` is unchanged |
+| HP and damage in tenths (v0.8 §5.2.1, ADR-0019) | `EnemyStats.hp`, `ShotSpec.damage` and the bomb's damage are integers in tenths of a level-1 shot (Popcorn 10, Gunner 100 and Heavy 500 since GDD v0.18 (80 and 400 before), Carrier 40, bomb 300); `applyDamage` is unchanged |
 | Seeded drops and spawn order (v0.8 §4.6, §7.1, ADR-0019) | `Run(config: RunConfig)` owns the `Random`, built by the optional `RunConfig.createRandom(levelSeed)` (default `new SeededRandom(levelSeed)`, the test seam for a scripted `Random`) with mix(seed, 0) for level 1 and mix(seed, levelIndex) by `startNextLevel` (`levelIndex` 0-based); `World.spawnPickup` returns false when the pool of 8 is full, and `PICKUP_SPAWNED` is published only for a pickup actually spawned; one draw per killed enemy with a rate above 0 and no cargo picks both the drop and its kind; `DropTable.rate` × `DifficultyProfile.dropRateScale` |
 | Pickup motion and lifetime (v0.8 §4.4, §4.6) | `Pickup.position` is a closed form of `age` and `motion` from `origin` (fall: 40 px/s with the 8 px, 2 s sway around x0 clamped to 16–224; release: up to max(y − 48, 24), then 20 px/s — the rise is linear over 0.8 s whatever its height (clamped at y 24 it simply rises less); x stays at the death x, with no sway, during the rise and the fall); `World.sweep` releases a spent pickup or one whose top edge reached y 320; a spawn on the full pool of 8 is dropped |
 | Shield (v0.8 §4.4) | `Player.shield`; `hit()` in `Vulnerable` with a charge clears it, sets 0.5 s of `Invulnerable` with the blink count restarted and returns `ABSORBED`; the resolver spends the bullet (a body survives) and calls `HitRules.shieldBroken()`, which publishes `PLAYER_HIT` |
@@ -588,8 +588,8 @@ classDiagram
   `NoAttack`; Gunner = `EnterHoldLeave` + `AimedAttack` + drop {P-red or P-blue, 10 % (GDD v0.11)}; Carrier =
   `CrossMovement` (a straight horizontal crossing) + `NoAttack` + cargo; Heavy = `EnterHoldLeave` (its own configuration, ADR-0022) + `RingAttack`
   or `FanAttack` + drop {Bomb or Shield, 30 % (GDD v0.11)}; the Cruiser's phases = `SwayMovement` +
-  `SequenceAttack` (fan, ring) in phase 1, `SwayMovement` + `SequenceAttack` (a ring of 16 on every
-  volley, the aimed triple on every second one) in phase 2. *(ADR-0023)* Every pattern has a
+  `SequenceAttack` (fan, ring) in phase 1, `SwayMovement` + `SequenceAttack` (a ring of 14 on every
+  volley (GDD v0.18; 16 before), the aimed triple on every second one) in phase 2. *(ADR-0023)* Every pattern has a
   `fire(count)` (one volley, no timing) and a `tick` (the timed wrapper); `sequenceAttack(groups,
   periodS)` fires one volley every `periodS`, volley i firing every pattern of group i mod n through
   their `fire` with the count `volleys` (the inner patterns' own `periodS` is ignored); a ring
