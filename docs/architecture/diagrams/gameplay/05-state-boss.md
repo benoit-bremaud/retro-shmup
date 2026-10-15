@@ -1,7 +1,7 @@
 # State machine diagram — gameplay — a boss fight (1.0)
 
 > **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.10 §3.3,
-> §4.5, §6, §6.1, §8, §9.2, §9.4
+> §4.5, §6, §6.1, §8, §9.2, §9.4; v0.18 for the Cruiser values
 > **Related ADRs**: ADR-0003 (boss phases as data), ADR-0010 (outcome vs presentation, time
 > scale), ADR-0022 (the boss outside the enemy pool, `startBoss`, `damageBoss`)
 > **Realizes**: UC1 steps 7–8 and extension 8a of [01-use-case](../system/01-use-case.md);
@@ -47,11 +47,11 @@ stateDiagram-v2
 
 | | Values |
 |---|---|
-| Box, HP | 112 × 48; 14 500 tenths (1 450 level-1 shots, GDD v0.12; 500 shots in v0.11); its box never goes below y 80 |
+| Box, HP | 112 × 48; 18 000 tenths (1 800 level-1 shots, GDD v0.18; 1 450 in v0.12, 500 in v0.11); its box never goes below y 80 |
 | Warning | 3 s, the boss off the field |
 | Entering | from (120, −24) to (120, 56) in 3 s, linear |
-| Phase 1 (100 % → 66 %) | `swayMovement({ amplitude: 56, periodS: 8 })` around x 120; `sequenceAttack([[fan], [ring]], 1)` — one volley every 1 s, the groups taking turns, their own `periodS` ignored (ADR-0023): a fan of 5, 15° apart, aimed, 75 px/s, then a ring of 12 at 60 px/s, one volley a second, the first (a fan) 1 s into the fight |
-| Phase 2 (from 66 %, 9 570 tenths, GDD v0.12; 3 300 in v0.11) | the forward turret breaks off (`brokenPart`, debris); `swayMovement({ amplitude: 72, periodS: 6 })`; `sequenceAttack([[ring], [ring, triple]], 1.5)` with `ring` = `ringAttack({ count: 16, speed: 60, rotateDeg: 11.25 })` and `triple` = `fanAttack({ count: 3, spreadDeg: 15, speed: 75 })` — one volley every 1.5 s, the ring on every volley (turned by 11.25° × the volley index, so by the number of rings fired), the triple on every second one: the first ring 1.5 s and the first triple 3 s after the change, `Body.volleys` and `fireTimer` restarted at the threshold, `age` at the movement swap (ADR-0023) |
+| Phase 1 (100 % → 66 %) | `swayMovement({ amplitude: 56, periodS: 8 })` around x 120; `sequenceAttack([[fan], [ring]], 0.9)` — one volley every 0.9 s (GDD v0.18; 1 s before), the groups taking turns, their own `periodS` ignored (ADR-0023): a fan of 5, 15° apart, aimed, 85 px/s (GDD v0.18; 75 before), then a ring of 12 at 60 px/s, the first volley (a fan) 0.9 s into the fight |
+| Phase 2 (from 66 %, 11 880 tenths, GDD v0.18; 9 570 in v0.12, 3 300 in v0.11) | the forward turret breaks off (`brokenPart`, debris); `swayMovement({ amplitude: 72, periodS: 6 })`; `sequenceAttack([[ring], [ring, triple]], 1.25)` with `ring` = `ringAttack({ count: 16, speed: 60, rotateDeg: 11.25 })` and `triple` = `fanAttack({ count: 3, spreadDeg: 15, speed: 85 })` — one volley every 1.25 s (GDD v0.18; 1.5 s and 75 px/s before), the ring on every volley (turned by 11.25° × the volley index, so by the number of rings fired), the triple on every second one: the first ring 1.25 s and the first triple 2.5 s after the change, `Body.volleys` and `fireTimer` restarted at the threshold, `age` at the movement swap (ADR-0023) |
 | Timer, bonus | 90 s; 10 000 + 100 × seconds left, flat |
 | Fleeing | straight up at 60 px/s |
 | Destroyed | 2 s, then `LEVEL_CLEARED` |

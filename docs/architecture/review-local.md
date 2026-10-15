@@ -1,50 +1,26 @@
-# Local review — retro-shmup (feat/presenter-sprites, G4-1b)
+# Local review — retro-shmup (docs/rebalance-v018)
 
-- Date: 2026-10-15
-- Commit: e2eebdd + review fixes
-- Scope: branch diff main...HEAD (`RunPresenter` sprites with shape fallback, `SPRITE_OF_ROLE`,
-  the Cruiser composite, the white flash silhouette, GDD/ADR/UML amendments, doc pass)
-- Checks run: design + drift (architecture-guardian) · tests (test-auditor) · security (read-only
-  `security-policy` pass) · correctness (manual mutations, headless captures)
-- Verdict: ship after fixes · Must 0 · Should 5 (fixed) · Nice 4
+- Date: 2026-10-16
+- Commit: see branch head
+- Scope: branch diff origin/main...HEAD (docs only: GDD v0.18 values, UML value tables, traceability row)
+- Checks run: docs · correctness (numbers) — design, tests, security not applicable (no code)
+- Verdict: ship as-is after fixes · Must 0 (2 fixed) · Should 1 · Nice 1
 
 ## 🔴 Must Have
 
-_None._
+_None._ (Fixed: `04-class-domain.md` Heavy and Gunner rows gave the old values as current.)
 
 ## 🟡 Should Have
 
-- `docs/architecture/diagrams/render/04-class-sprites.md` `[design]` · drift: the fallback is
-  decided by the first wing's draw, not the hull's · fixed.
-- `docs/architecture/diagrams/render/02-sequence-sprite-loading.md` `[design]` · drift: the flash
-  silhouette, the `frame` argument and the white-box fallback were missing · fixed.
-- `tests/domain/run-presenter.test.ts` `[tests]` · the cockpit's position and its order after
-  the sprite were unchecked · fixed (`RecordingRender.order`).
-- `tests/domain/run-presenter.test.ts` `[tests]` · a flashing Cruiser in phase 2 untested ·
-  fixed.
-- `tests/domain/run-presenter.test.ts` `[tests]` · the hit flash switched off with sprites loaded
-  untested (photosensitivity option) · fixed.
+- `README.md:26-31` `[docs]` · states the v0.12 balance, correct for the code today · update in the tuning PR
 
 ## 🔵 Nice to Have
 
-- `src/domain/presentation/run-presenter.ts` `[design]` · both wings use one unmirrored sprite;
-  the pack's ship is symmetric (headless capture) · left.
-- `src/adapters/canvas2d-renderer.ts` `[design]` · any `frame` but 1 draws the plain sprite; a
-  union type would be stricter (YAGNI) · left.
-- `tests/domain/run-presenter.test.ts` `[tests]` · the enemy cases use alpha 1 (interpolation is
-  covered by the ship case) · left.
-- `tests/domain/run-presenter.test.ts` `[tests]` · the role cases filter field rects with the
-  player dead; exact, since the dead ship draws nothing · fixed in passing.
+- `docs/design/game-design-document.md` decision record v0.6/v0.10 rows `[docs]` · tagged historical values, a "superseded by v0.18" pointer would help · optional
 
 ## ⚪ Disagree / Intentional
 
-- The flashing Cruiser keeps its turret silhouette on the sprite path while the box path drops
-  it · the sprite path draws what is there; matches the amended UML.
+_None._
 
 ## Per-dimension summary
-
-- Design: no over-engineering, dependency rule held, two doc drifts fixed · Tests: 1 241 green;
-  planted mutations in presenter, bank and renderer all caught (one equivalent: turret offsetX
-  is 0) · Security: no new input, sink or network call; same-origin images only · Correctness:
-  headless captures show the sprites at 9 s and 20 s, the Cruiser as white silhouettes under
-  fire, and the shapes when the sheets are blocked (one `console.warn`, no error to the player).
+- Design: n/a · Docs: consistent after fixes (arithmetic 18 000 × 66 % = 11 880, phase timings checked) · Tests: n/a (planned in the tuning PR) · Security: no secrets or sinks in docs · Correctness: numbers match the bot measurements
