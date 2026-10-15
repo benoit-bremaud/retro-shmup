@@ -1,45 +1,46 @@
-# Local review — retro-shmup (branch `docs/uml`)
+# Local review — retro-shmup (branch `refactor/engine`)
 
 - Date: 2026-10-15
 - Commit: see the branch tip
-- Scope: branch diff `main...docs/uml` — the UML of the planned scene machine refactor
-  (CD-menus `SceneHandler`, `handlers`, `sceneSteps`; STM-scenes implementation-shape note;
-  one traceability row). Docs only; the code follows in its own `refactor/engine` PR, which
-  records its own review.
-- Checks run: docs (doc-auditor) · design (architecture-guardian, UML against the owner-approved
-  option B and ADR-0003). Tests, security and correctness: not applicable, no code or test changed.
-- Verdict: ship after the fixes below (applied) · Must 1 · Should 3 · Nice 2
+- Scope: branch diff `origin/main...HEAD` — `src/domain/scenes/scene-machine.ts` (the dispatch
+  table and the single scene timer designed in #72), the *planned* tags lifted in CD-menus,
+  STM-scenes and the matrix, the `PROJECT_LOG.md` entry.
+- Checks run: design · correctness (architecture-guardian, step-for-step timer equivalence) ·
+  docs (UML against the code, comments on the new members) · tests (suite unchanged; SonarQube
+  new-code gate) · security (no input, storage or DOM surface touched)
+- Verdict: **ship** · Must 0 · Should 0 · Nice 2 (both applied)
 
 ## 🔴 Must Have
 
-- `docs/architecture/diagrams/meta/04-class-menus.md`, `05-state-scenes.md` `[docs]` · the refactor
-  read as already built while the code still has the `switch` and four timers · applied: the new
-  fields, the edge and both notes are tagged *planned refactor*, as `idleSteps` already is.
+_None._
 
 ## 🟡 Should Have
 
-- `docs/architecture/diagrams/meta/04-class-menus.md` `[docs]` · `SceneHandler.step(dt, frame)`
-  has no scene, while the routed Title / Pause steps need one · applied: the note says those steps
-  take their scene first and get it bound with `bind(this, scene)`.
-- `docs/architecture/diagrams/meta/04-class-menus.md` `[docs|design]` · `*--` composition drew
-  owned functions as parts · applied: a `..>` dependency labelled *handlers table, one entry per Scene*.
-- `docs/architecture/traceability-matrix.md` `[docs]` · "unchanged" claimed an outcome before the
-  code exists · applied: "must pass unchanged", row tagged planned.
+_None._
 
 ## 🔵 Nice to Have
 
-- `docs/architecture/diagrams/meta/04-class-menus.md` `[docs]` · "the count-in digit is derived"
-  was vague · applied: the drawing gets `COUNT_IN_STEPS - sceneSteps`.
-- `docs/architecture/diagrams/meta/04-class-menus.md` `[docs]` · the rejected-options sentence is
-  long · kept: it is the decision record.
+- `src/domain/scenes/scene-machine.ts` `[design]` · four closure factories for the routed
+  Title / Pause steps · applied: the steps take their scene first and are bound with
+  `bind(this, scene)`, as CD-menus describes.
+- `docs/architecture/diagrams/meta/05-state-scenes.md` `[docs]` · "share one handler" · applied in
+  #72: "share one step method".
 
 ## ⚪ Disagree / Intentional
 
-- `docs/architecture/diagrams/meta/04-class-menus.md` `[design]` · a bound-method table rather
-  than per-scene State objects · owner decision (option B, 2026-10-15); ADR-0003 allows both.
+- `src/domain/scenes/scene-machine.ts` `[design]` · a bound-method table rather than per-scene
+  State objects · owner decision (option B, 2026-10-15, CD-menus note).
+- `src/domain/scenes/scene-machine.ts` `[design]` · unused `_dt` on the frame-only steps · the
+  shared `SceneStep` signature.
+- `src/domain/scenes/scene-machine.ts` `[design]` · the file grows from 672 to about 730 lines ·
+  the gain is one compiler-checked extension point and one timer, not fewer lines.
 
 ## Per-dimension summary
 
-- Design: matches option B and ADR-0003 · Docs: planned status now explicit, Mermaid follows the
-  file's existing syntax · Tests: n/a (no test changed) · Security: n/a (docs only) · Correctness:
-  n/a (no code)
+- Design: no anti-pattern, no over-engineering; ADR-0003 respected; matches CD-menus and
+  STM-scenes.
+- Docs: the *planned* tags of #72 lifted with the code, so the UML and the code agree.
+- Tests: `tests/` untouched; 1190 tests passing; the SonarQube quality gate passed.
+- Security: no surface changed; gitleaks and `pnpm audit` clean.
+- Correctness: count-in, game over, Results and Ending timers equivalent step for step; every
+  scene change goes through `enter()`; the handlers are built once, so a step allocates nothing.

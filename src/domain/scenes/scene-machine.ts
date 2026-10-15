@@ -146,6 +146,16 @@ interface MenuScene extends MenuScreen {
   readonly menu: OpenableMenu;
 }
 
+type SceneStep = (dt: number, frame: Readonly<IntentFrame>) => void;
+
+/** What one scene does each fixed step and draws over the field (meta/04-class-menus). */
+interface SceneHandler {
+  readonly step: SceneStep;
+  readonly overlay: () => void;
+}
+
+const NO_OVERLAY = (): void => undefined;
+
 /** What the scene machine holds of a run: it steps it and reads it, nothing more. */
 type InRun = Simulation & RunView;
 
@@ -160,10 +170,11 @@ export class SceneMachine {
   private current: Scene = Scene.Boot;
   private run: InRun | undefined;
   private backgroundSteps = 0;
-  private countInLeft = 0;
-  private gameOverLeft = 0;
-  /** Steps since `Results` was entered (0 on the entering step): the lines shown and the 8 s exit. */
-  private resultsSteps = 0;
+  /**
+   * Steps since the current scene was entered (0 on the entering step): the count-in digit, the
+   * Game over, Results and Ending timers, and the Results lines shown.
+   */
+  private sceneSteps = 0;
   /** The Results values, formatted once on entry so no string is built per frame. */
   private resultsValues: readonly string[] = [];
   /**
@@ -231,11 +242,11 @@ export class SceneMachine {
   private readonly controls: ControlsScreen;
   private readonly table: HighScoreTable;
   private readonly highScores = new HighScoresScreen();
-  /** Steps since the Ending card opened. */
-  private endingSteps = 0;
   /** The final score on the Ending card, formatted once on entry. */
   private endingScore = '';
   private readonly nameEntry = new NameEntry();
+  /** Every scene's step and overlay, bound once: the one place a scene is dispatched. */
+  private readonly handlers: Readonly<Record<Scene, SceneHandler>>;
 
   /**
    * `options` are the saved ones, copied into the live options; `createRun` builds each new run
@@ -256,6 +267,72 @@ export class SceneMachine {
     this.host = host;
     this.options = new LiveOptions(options);
     this.controls = new ControlsScreen(this.options, host);
+    this.handlers = this.buildHandlers();
+  }
+
+  private buildHandlers(): Record<Scene, SceneHandler> {
+    const menu = this.overlayMenu.bind(this);
+    const controls = this.overlayControls.bind(this);
+    return {
+      [Scene.Boot]: { step: this.stepBoot.bind(this), overlay: NO_OVERLAY },
+      [Scene.Title]: { step: this.stepTitle.bind(this), overlay: menu },
+      [Scene.Playing]: { step: this.stepPlaying.bind(this), overlay: NO_OVERLAY },
+      [Scene.Paused]: { step: this.stepPaused.bind(this), overlay: menu },
+      [Scene.CountIn]: {
+        step: this.stepCountIn.bind(this),
+        overlay: this.overlayCountIn.bind(this),
+      },
+      [Scene.GameOver]: {
+        step: this.stepGameOver.bind(this),
+        overlay: this.overlayGameOver.bind(this),
+      },
+      [Scene.Results]: {
+        step: this.stepResults.bind(this),
+        overlay: this.overlayResults.bind(this),
+      },
+      [Scene.ConfirmQuit]: { step: this.stepConfirmQuit.bind(this), overlay: menu },
+      [Scene.TitleOptions]: {
+        step: this.stepOptions.bind(this, Scene.TitleOptions),
+        overlay: menu,
+      },
+      [Scene.PauseOptions]: {
+        step: this.stepOptions.bind(this, Scene.PauseOptions),
+        overlay: menu,
+      },
+      [Scene.TitleEffects]: {
+        step: this.stepEffects.bind(this, Scene.TitleEffects),
+        overlay: menu,
+      },
+      [Scene.PauseEffects]: {
+        step: this.stepEffects.bind(this, Scene.PauseEffects),
+        overlay: menu,
+      },
+      [Scene.TitleControls]: {
+        step: this.stepControls.bind(this, Scene.TitleControls),
+        overlay: controls,
+      },
+      [Scene.PauseControls]: {
+        step: this.stepControls.bind(this, Scene.PauseControls),
+        overlay: controls,
+      },
+      [Scene.TitleRestore]: {
+        step: this.stepRestore.bind(this, Scene.TitleRestore),
+        overlay: menu,
+      },
+      [Scene.PauseRestore]: {
+        step: this.stepRestore.bind(this, Scene.PauseRestore),
+        overlay: menu,
+      },
+      [Scene.HighScores]: {
+        step: this.stepHighScores.bind(this),
+        overlay: this.overlayHighScores.bind(this),
+      },
+      [Scene.Ending]: { step: this.stepEnding.bind(this), overlay: this.overlayEnding.bind(this) },
+      [Scene.NameEntry]: {
+        step: this.stepNameEntry.bind(this),
+        overlay: this.overlayNameEntry.bind(this),
+      },
+    };
   }
 
   private optionsScreen(): MenuScene {
@@ -302,65 +379,19 @@ export class SceneMachine {
     if (traits.scrolls && !traits.drawsRun) this.backgroundSteps += 1;
     this.steps += 1;
     this.lastDevice = frame.device;
-    switch (this.current) {
-      case Scene.Boot:
-        // Nothing to load yet (no assets, no save document). The title takes this step's frame,
-        // so a press latched before the first step is not lost.
-        this.openMenu(Scene.Title, frame);
-        this.stepTitle(frame);
-        return;
-      case Scene.Title:
-        this.stepTitle(frame);
-        return;
-      case Scene.Playing:
-        this.stepPlaying(dt, frame);
-        return;
-      case Scene.Paused:
-        this.stepPaused(frame);
-        return;
-      case Scene.CountIn:
-        this.stepCountIn(dt, frame);
-        return;
-      case Scene.GameOver:
-        this.stepGameOver(dt, frame);
-        return;
-      case Scene.Results:
-        this.stepResults(frame);
-        return;
-      case Scene.ConfirmQuit:
-        this.stepConfirmQuit(frame);
-        return;
-      case Scene.TitleOptions:
-      case Scene.PauseOptions:
-        this.stepOptions(frame, this.current);
-        return;
-      case Scene.TitleEffects:
-      case Scene.PauseEffects:
-        this.stepEffects(frame, this.current);
-        return;
-      case Scene.TitleControls:
-      case Scene.PauseControls:
-        this.stepControls(frame, this.current);
-        return;
-      case Scene.TitleRestore:
-      case Scene.PauseRestore:
-        this.stepRestore(frame, this.current);
-        return;
-      case Scene.HighScores:
-        this.stepHighScores(frame);
-        return;
-      case Scene.Ending:
-        this.stepEnding(frame);
-        return;
-      case Scene.NameEntry:
-        this.stepNameEntry(frame);
-        return;
-    }
+    this.handlers[this.current].step(dt, frame);
+  }
+
+  // Nothing to load yet (no assets, no save document). The title takes this step's frame, so a
+  // press latched before the first step is not lost.
+  private stepBoot(dt: number, frame: Readonly<IntentFrame>): void {
+    this.openMenu(Scene.Title, frame);
+    this.stepTitle(dt, frame);
   }
 
   // Pause is ignored on the title, as in every scene but play (pause rules). The lock ignores
   // the whole menu; Play starts a run, Options opens the options (GDD v0.14 §9.1).
-  private stepTitle(frame: Readonly<IntentFrame>): void {
+  private stepTitle(_dt: number, frame: Readonly<IntentFrame>): void {
     if (this.locked()) {
       // The lock ignores the whole menu: what is held now counts as held when it ends.
       this.titleMenu.ignore(frame);
@@ -375,14 +406,18 @@ export class SceneMachine {
       const run = this.createRun(); // InRun entry creates the run and its presenter.
       this.run = run;
       this.presenter = new RunPresenter(this.renderer, this.options.effects, run.events());
-      this.current = Scene.Playing;
+      this.enter(Scene.Playing);
       this.host.releaseMovement();
     }
   }
 
   // Each change applies at once and reaches the host; Back and the Back row return to the
   // parent, Visual effects opens its sub-screen (GDD v0.14 §9.1, §9.3).
-  private stepOptions(frame: Readonly<IntentFrame>, scene: keyof typeof OPTIONS_ROUTES): void {
+  private stepOptions(
+    scene: keyof typeof OPTIONS_ROUTES,
+    _dt: number,
+    frame: Readonly<IntentFrame>,
+  ): void {
     const menu = this.optionsTouch ? this.touchOptionsMenu : this.fullOptionsMenu;
     const row = menu.step(frame, this.steps);
     if (this.backTo(row, frame, OPTIONS_ROUTES[scene].parent)) return;
@@ -391,28 +426,40 @@ export class SceneMachine {
     else this.change(row);
   }
 
-  private stepEffects(frame: Readonly<IntentFrame>, scene: keyof typeof EFFECTS_PARENT): void {
+  private stepEffects(
+    scene: keyof typeof EFFECTS_PARENT,
+    _dt: number,
+    frame: Readonly<IntentFrame>,
+  ): void {
     const row = this.effectsMenu.step(frame, this.steps);
     if (this.backTo(row, frame, EFFECTS_PARENT[scene])) return;
     this.change(row);
   }
 
   // The controls screen does its own work; it hands back only its two exits (GDD v0.15 §4.2).
-  private stepControls(frame: Readonly<IntentFrame>, scene: keyof typeof CONTROLS_ROUTES): void {
+  private stepControls(
+    scene: keyof typeof CONTROLS_ROUTES,
+    _dt: number,
+    frame: Readonly<IntentFrame>,
+  ): void {
     const exit = this.controls.step(frame, this.steps);
     if (exit === 'back') this.openMenu(CONTROLS_ROUTES[scene].parent, frame);
     else if (exit === 'restore') this.openMenu(CONTROLS_ROUTES[scene].restore, frame);
   }
 
   // No is first, like Quit; Yes restores the device edited only, then back to the controls.
-  private stepRestore(frame: Readonly<IntentFrame>, scene: keyof typeof RESTORE_PARENT): void {
+  private stepRestore(
+    scene: keyof typeof RESTORE_PARENT,
+    _dt: number,
+    frame: Readonly<IntentFrame>,
+  ): void {
     const row = this.restoreMenu.step(frame, this.steps);
     if (row === 'yes') this.controls.restoreDefaults();
     if (row !== undefined || this.backed(frame)) this.openControls(RESTORE_PARENT[scene], frame);
   }
 
   private openControls(scene: Scene, frame: Readonly<IntentFrame>): void {
-    this.current = scene;
+    this.enter(scene);
     this.controls.open(this.steps, frame);
   }
 
@@ -441,14 +488,12 @@ export class SceneMachine {
     if (this.run === undefined) return;
     this.run.step(dt, frame);
     if (this.run.outcome() === RunOutcome.GameOver) {
-      this.current = Scene.GameOver;
-      this.gameOverLeft = GAME_OVER_STEPS;
+      this.enter(Scene.GameOver);
       this.lockLeft = LOCK_STEPS;
     } else if (this.run.outcome() === RunOutcome.RunCleared) {
       // `LevelCleared` (a list of several levels) is not handled: the slice has one level, and the
       // next-level flow belongs to the screens brick (ADR-0022 decision 9).
-      this.current = Scene.Results;
-      this.resultsSteps = 0;
+      this.enter(Scene.Results);
       this.resultsValues = formatTallyValues(this.run.tally());
       this.lockLeft = RESULTS_LOCK_STEPS;
     }
@@ -461,28 +506,27 @@ export class SceneMachine {
     if (scene === Scene.TitleOptions || scene === Scene.PauseOptions) {
       this.optionsTouch = this.lastDevice === 'touch';
     }
-    this.current = scene;
+    this.enter(scene);
     this.screenOf(scene)?.menu.reset(this.steps, frame);
   }
 
   // Pause does nothing here: an automatic trigger can only enter the pause, never leave it. Back
   // and the pause button resume like the Resume row; Quit asks first (GDD v0.13 §9.1).
-  private stepPaused(frame: Readonly<IntentFrame>): void {
+  private stepPaused(_dt: number, frame: Readonly<IntentFrame>): void {
     const row = this.pauseMenu.step(frame, this.steps);
     if (row === 'quit') {
       this.openMenu(Scene.ConfirmQuit, frame);
     } else if (row === 'options') {
       this.openMenu(Scene.PauseOptions, frame);
     } else if (row === 'resume' || this.pauseButtonTapped(frame) || this.backed(frame)) {
-      this.current = Scene.CountIn;
-      this.countInLeft = COUNT_IN_STEPS;
+      this.enter(Scene.CountIn);
       this.host.releaseMovement();
     }
   }
 
   // No is first, so a hurried Confirm never loses the run; Back returns to the pause, Pause is
   // ignored. Yes discards the run: no name entry, and the title is locked like after Game over.
-  private stepConfirmQuit(frame: Readonly<IntentFrame>): void {
+  private stepConfirmQuit(_dt: number, frame: Readonly<IntentFrame>): void {
     const row = this.quitMenu.step(frame, this.steps);
     if (row === 'yes') {
       this.toTitle(frame);
@@ -498,9 +542,9 @@ export class SceneMachine {
       this.openMenu(Scene.Paused, frame);
       return;
     }
-    this.countInLeft -= 1;
-    if (this.countInLeft > 0) return;
-    this.current = Scene.Playing;
+    this.sceneSteps += 1;
+    if (this.sceneSteps < COUNT_IN_STEPS) return;
+    this.enter(Scene.Playing);
     this.stepPlaying(dt, frame);
   }
 
@@ -509,34 +553,33 @@ export class SceneMachine {
   private stepGameOver(dt: number, frame: Readonly<IntentFrame>): void {
     this.backgroundSteps += 1;
     this.run?.step(dt, frame);
-    this.gameOverLeft -= 1;
+    this.sceneSteps += 1;
     const confirmed = !this.locked() && isConfirmOrTap(frame);
-    if (!confirmed && this.gameOverLeft > 0) return;
+    if (!confirmed && this.sceneSteps < GAME_OVER_STEPS) return;
     this.endRun(frame);
   }
 
   // Confirm or a tap after the 1 s lock, or the 8 s timer, leads a cleared run to the Ending
   // card (GDD v0.16 §9.1). Pause is ignored: the slice's Results never lead back to play.
-  private stepResults(frame: Readonly<IntentFrame>): void {
+  private stepResults(_dt: number, frame: Readonly<IntentFrame>): void {
     this.backgroundSteps += 1;
-    this.resultsSteps += 1;
+    this.sceneSteps += 1;
     const confirmed = !this.locked() && isConfirmOrTap(frame);
-    if (!confirmed && this.resultsSteps < RESULTS_STEPS) return;
+    if (!confirmed && this.sceneSteps < RESULTS_STEPS) return;
     this.resultsValues = [];
     // A cleared run goes to the Ending card (GDD v0.16 §9.1); the slice-end interim is lifted.
-    this.current = Scene.Ending;
-    this.endingSteps = 0;
+    this.enter(Scene.Ending);
     this.endingScore = String(this.run?.snapshot().score ?? 0);
     this.lockLeft = ENDING_LOCK_STEPS;
   }
 
   // Confirm or a tap after the 1 s lock, or 6 s, leaves the card (GDD v0.16 §9.1).
-  private stepEnding(frame: Readonly<IntentFrame>): void {
+  private stepEnding(_dt: number, frame: Readonly<IntentFrame>): void {
     // The stars keep moving over the frozen run, as on the Results.
     this.backgroundSteps += 1;
-    this.endingSteps += 1;
+    this.sceneSteps += 1;
     const confirmed = !this.locked() && isConfirmOrTap(frame);
-    if (!confirmed && this.endingSteps < ENDING_STEPS) return;
+    if (!confirmed && this.sceneSteps < ENDING_STEPS) return;
     this.endingScore = '';
     this.endRun(frame);
   }
@@ -548,13 +591,13 @@ export class SceneMachine {
       this.toTitle(frame);
       return;
     }
-    this.current = Scene.NameEntry;
+    this.enter(Scene.NameEntry);
     this.nameEntry.open(this.steps, frame, score, this.host.countryOfLanguage());
   }
 
   // Pause is ignored: no run steps here. SKIP, or OK on an empty name, records nothing; an entry
   // is inserted, saved through the host and shown highlighted (SD-score).
-  private stepNameEntry(frame: Readonly<IntentFrame>): void {
+  private stepNameEntry(_dt: number, frame: Readonly<IntentFrame>): void {
     // The stars keep moving over the frozen run, as on the Results and the Ending.
     this.backgroundSteps += 1;
     const exit = this.nameEntry.step(frame, this.steps);
@@ -570,12 +613,12 @@ export class SceneMachine {
   }
 
   private openHighScores(highlighted: number): void {
-    this.current = Scene.HighScores;
+    this.enter(Scene.HighScores);
     this.highScores.open(this.table, highlighted);
   }
 
   // Back, confirm or a tap started here returns to the title, locked as after Game over.
-  private stepHighScores(frame: Readonly<IntentFrame>): void {
+  private stepHighScores(_dt: number, frame: Readonly<IntentFrame>): void {
     if (this.highScores.step(frame)) this.toTitle(frame);
   }
 
@@ -585,6 +628,12 @@ export class SceneMachine {
     this.presenter = undefined;
     this.openMenu(Scene.Title, frame);
     this.lockLeft = LOCK_STEPS;
+  }
+
+  /** Every scene change goes through here, so each scene's timer starts at 0. */
+  private enter(scene: Scene): void {
+    this.current = scene;
+    this.sceneSteps = 0;
   }
 
   /** The menu screen of a scene: the table's, or the options without *Controls* on touch. */
@@ -644,29 +693,41 @@ export class SceneMachine {
       }
     }
     if (traits.pauseButton) drawPauseButton(r);
-    this.drawOverlays();
+    this.handlers[this.current].overlay();
     r.present();
   }
 
-  private drawOverlays(): void {
+  private overlayMenu(): void {
     const menuScreen = this.screenOf(this.current);
-    if (this.current === Scene.HighScores) {
-      drawHighScores(this.renderer, this.highScores, this.options.language);
-    } else if (this.current === Scene.Ending) {
-      drawEnding(this.renderer, this.endingScore, this.options.language);
-    } else if (this.current === Scene.NameEntry) {
-      drawNameEntry(this.renderer, this.nameEntry, this.options.language);
-    } else if (this.current === Scene.TitleControls || this.current === Scene.PauseControls) {
-      drawControlsScreen(this.renderer, this.controls, this.options.language);
-    } else if (menuScreen !== undefined) {
-      drawMenuScreen(this.renderer, menuScreen, this.options.language);
-    } else if (this.current === Scene.GameOver) {
-      drawVeil(this.renderer);
-      drawBanner(this.renderer, message('gameOver', this.options.language));
-    } else if (this.current === Scene.Results) {
-      drawResults(this.renderer, this.resultsValues, this.resultsSteps, this.options.language);
-    } else if (this.current === Scene.CountIn) {
-      drawCountIn(this.renderer, this.countInLeft);
-    }
+    if (menuScreen !== undefined) drawMenuScreen(this.renderer, menuScreen, this.options.language);
+  }
+
+  private overlayControls(): void {
+    drawControlsScreen(this.renderer, this.controls, this.options.language);
+  }
+
+  private overlayCountIn(): void {
+    drawCountIn(this.renderer, COUNT_IN_STEPS - this.sceneSteps);
+  }
+
+  private overlayGameOver(): void {
+    drawVeil(this.renderer);
+    drawBanner(this.renderer, message('gameOver', this.options.language));
+  }
+
+  private overlayResults(): void {
+    drawResults(this.renderer, this.resultsValues, this.sceneSteps, this.options.language);
+  }
+
+  private overlayHighScores(): void {
+    drawHighScores(this.renderer, this.highScores, this.options.language);
+  }
+
+  private overlayEnding(): void {
+    drawEnding(this.renderer, this.endingScore, this.options.language);
+  }
+
+  private overlayNameEntry(): void {
+    drawNameEntry(this.renderer, this.nameEntry, this.options.language);
   }
 }

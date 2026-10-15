@@ -8,6 +8,18 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-15
 
+### Scene machine refactor: one dispatch table (branches `docs/uml`, `refactor/engine`)
+
+- Architecture-guardian (G2-3b review) rated `scene-machine.ts` a God-object trend: a 19-case
+  `switch` in `step`, an `if` chain for the overlays, four per-scene timers. Owner choice B (scored
+  against per-scene State objects, extracting the run-end flow, and no change): one
+  `Record<Scene, SceneHandler>` of bound methods built once, the routed Title / Pause steps with
+  their scene bound first, and one `sceneSteps` reset by `enter()`; `lockLeft` stays apart.
+- UML first in #72 (CD-menus, STM-scenes, matrix, tagged *planned*); Codex P2 there (the review
+  record described code absent from the PR) fixed by scoping the record to the docs diff, after a
+  doc-auditor pass (owner choice B after a deeper analysis).
+- No behaviour change: `scene-machine.test.ts` and the whole suite (1190 tests) pass unchanged.
+
 ### G2-3b design: the attract mode (branch `docs/g2-attract-design`) — Refs #46
 
 - GDD v0.16 §9.1 (amended): after 10 s on the title without input, the High scores show for 6 s,
