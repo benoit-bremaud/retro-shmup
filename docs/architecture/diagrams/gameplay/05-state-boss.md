@@ -73,7 +73,7 @@ stateDiagram-v2
   destruction wins. The HUD shows `secondsLeft()` — the steps left rounded up — from `Entering`
   (90) until the `Destroyed` or `Fleeing` sequence ends.
 - **Phase change and sway continuity** (ADR-0023): at the HP threshold the attack switches at once
-  and `fireTimer` and `volleys` restart (the first ring 1.5 s later, counted from 0); the movement
+  and `fireTimer` and `volleys` restart (the first ring 1.25 s later, counted from 0; GDD v0.18, 1.5 s before); the movement
   keeps the old sway until `x − 120` changes sign, then the boss swaps the movement, restarts
   `age` and sets `mirror` to its direction, so the new sway starts at x 120 in the same direction
   and the body does not visibly jump (GDD v0.10 §6.1).

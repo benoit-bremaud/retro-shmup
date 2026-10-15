@@ -20,7 +20,11 @@ import type { IntentFrame } from '../../src/domain/ports/input-port';
 // Headless level simulation (ADR-0002, ADR-0003): the real run, scripted inputs, no browser.
 const DT = 1 / 60;
 const ONE_PASS = 7200; // the waves of level 1 last 120 s, then the WARNING starts the Cruiser
-/** A seed whose drops give the scripted ship the power to kill the 1 800-shot Cruiser (GDD v0.18). */
+/**
+ * A seed whose drops give the scripted ship the power to kill the 1 800-shot Cruiser (GDD v0.18):
+ * found by trying seeds 1 to 14 in order (kills on 3, 10 and 11); on a change to the random draws,
+ * search the same way. The kill rates themselves are guarded by `tests/balance`.
+ */
 const BOSS_KILL_SEED = 10;
 const frame = createIntentFrame();
 

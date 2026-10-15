@@ -47,10 +47,10 @@ const PHASE_2_TRIPLE = fanAttack({
 export const CRUISER_TURRET: BrokenPart = { offsetX: 0, offsetY: 16, width: 24, height: 16 };
 
 /**
- * Level 1's boss (GDD v0.10 §6.1, initial; 05-state-boss, the Cruiser table): alone, 112 × 48, 300
- * level-1 shots. Phase 1 sways ±56 over 8 s and alternates a fan aimed at the ship with a ring, one
- * volley a second; from 66 % HP phase 2 sways ±72 over 6 s, fires a turning ring every 1.5 s and an
- * aimed triple on every second volley. Its box never goes below y 80.
+ * Level 1's boss (GDD v0.10 §6.1; values in `CruiserTuning`, 05-state-boss, the Cruiser table):
+ * alone, 112 × 48. Phase 1 sways and alternates a fan aimed at the ship with a ring; from 66 % HP
+ * phase 2 sways wider, fires a turning ring on every volley and an aimed triple on every second
+ * one. Its box never goes below y 80.
  */
 export const CRUISER: BossDefinition = {
   stats: {

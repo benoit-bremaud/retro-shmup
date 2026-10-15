@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { AVERAGE, BEGINNER, GOOD, measureRun } from '../support/average-player';
 import type { PlayerProfile, RunMeasure } from '../support/average-player';
 
@@ -6,7 +6,8 @@ import type { PlayerProfile, RunMeasure } from '../support/average-player';
 // number replays. `BALANCE_SEEDS=300 BALANCE_REPORT=1 pnpm vitest run tests/balance` prints the
 // full report; the bands below hold on the default 100 seeds.
 const env: Readonly<Record<string, unknown>> = import.meta.env;
-const SEEDS = typeof env.BALANCE_SEEDS === 'string' ? Number(env.BALANCE_SEEDS) : 100;
+const parsedSeeds = Number(env.BALANCE_SEEDS);
+const SEEDS = Number.isInteger(parsedSeeds) && parsedSeeds > 0 ? parsedSeeds : 100;
 
 interface Summary {
   readonly deathsPerRun: number;
@@ -14,7 +15,8 @@ interface Summary {
   readonly bossKillRate: number;
   readonly medianFightS: number;
   readonly medianScore: number;
-  readonly medianPower5S: number;
+  readonly fullPowerRate: number;
+  readonly medianFullPowerS: number;
   readonly bombsPerRun: number;
 }
 
@@ -33,43 +35,54 @@ function summarize(profile: PlayerProfile): Summary {
     bossKillRate: share((m) => m.bossKilled),
     medianFightS: median(runs.map((m) => m.bossFightS)),
     medianScore: median(runs.map((m) => m.score)),
-    medianPower5S: median(runs.map((m) => m.powerAtS[2] ?? NaN)),
+    fullPowerRate: share((m) => !Number.isNaN(m.fullPowerS)),
+    medianFullPowerS: median(runs.map((m) => m.fullPowerS)),
     bombsPerRun: runs.reduce((s, m) => s + m.bombsUsed, 0) / SEEDS,
   };
 }
 
 describe('level 1 balance (measurement bot, GDD v0.18)', () => {
-  const report = [GOOD, AVERAGE, BEGINNER].map((p) => ({ profile: p.name, ...summarize(p) }));
-  if (env.BALANCE_REPORT === '1') console.info(JSON.stringify(report, null, 1));
-  const [good, average, beginner] = report;
+  // 300 full runs: played once, before the assertions, inside the hook's own timeout.
+  let good: Summary;
+  let average: Summary;
+  let beginner: Summary;
+  beforeAll(() => {
+    good = summarize(GOOD);
+    average = summarize(AVERAGE);
+    beginner = summarize(BEGINNER);
+    if (env.BALANCE_REPORT === '1')
+      console.info(JSON.stringify({ good, average, beginner }, null, 1));
+  }, 120_000);
 
   // Measured 18 % game over, 82 % boss killed: a good player wins most runs.
   it('lets the good player win most runs', () => {
-    expect(good?.gameOverRate).toBeLessThanOrEqual(0.3);
-    expect(good?.bossKillRate).toBeGreaterThanOrEqual(0.7);
+    expect(good.gameOverRate).toBeLessThanOrEqual(0.3);
+    expect(good.bossKillRate).toBeGreaterThanOrEqual(0.7);
   });
 
   // Measured 2.3 deaths, 28 % game over, 73 % boss killed (v0.12: 0.56, 2 %, 98 %).
   it('makes the average player lose lives and sometimes the run', () => {
-    expect(average?.deathsPerRun).toBeGreaterThanOrEqual(1.5);
-    expect(average?.deathsPerRun).toBeLessThanOrEqual(3);
-    expect(average?.gameOverRate).toBeGreaterThanOrEqual(0.15);
-    expect(average?.gameOverRate).toBeLessThanOrEqual(0.45);
+    expect(average.deathsPerRun).toBeGreaterThanOrEqual(1.5);
+    expect(average.deathsPerRun).toBeLessThanOrEqual(3);
+    expect(average.gameOverRate).toBeGreaterThanOrEqual(0.15);
+    expect(average.gameOverRate).toBeLessThanOrEqual(0.45);
   });
 
-  // Measured 39 s of the 90 s timer (v0.12: 27 s).
+  // Measured 39 s from the WARNING (3 s warning and 3 s entry included), of a 90 s timer; only the
+  // runs that kill the boss count, the kill rate being guarded above (v0.12: 27 s).
   it('keeps the Cruiser fight between 30 and 50 s for the average player', () => {
-    expect(average?.medianFightS).toBeGreaterThanOrEqual(30);
-    expect(average?.medianFightS).toBeLessThanOrEqual(50);
+    expect(average.medianFightS).toBeGreaterThanOrEqual(30);
+    expect(average.medianFightS).toBeLessThanOrEqual(50);
   });
 
   // Measured 118 s: full power only just before the WARNING at 120 s (v0.12: 88 s).
   it('gives full power only near the boss', () => {
-    expect(average?.medianPower5S).toBeGreaterThanOrEqual(110);
+    expect(average.fullPowerRate).toBeGreaterThanOrEqual(0.4); // measured 54 %: a Gunner P is needed
+    expect(average.medianFullPowerS).toBeGreaterThanOrEqual(110);
   });
 
   // Measured 41 %: the beginner still beats the boss now and then.
   it('leaves the beginner a chance at the boss', () => {
-    expect(beginner?.bossKillRate).toBeGreaterThanOrEqual(0.25);
+    expect(beginner.bossKillRate).toBeGreaterThanOrEqual(0.25);
   });
 });

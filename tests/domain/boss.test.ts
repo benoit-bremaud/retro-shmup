@@ -242,6 +242,10 @@ describe('Boss — phases (ADR-0023 decision 3)', () => {
     tick(boss, world);
     expect(world.step - changedAt).toBe(75);
     expect(world.bullets).toHaveLength(14); // a ring of 14 (GDD v0.18)
+    // The second volley adds the aimed triple at 85 px/s (GDD v0.18 §6.1).
+    ticks(boss, world, 75);
+    expect(world.bullets).toHaveLength(14 + 14 + 3);
+    for (const b of world.bullets.slice(28)) expect(Math.hypot(b.vx, b.vy)).toBeCloseTo(85, 9);
   });
 
   it('does not enter phase 2 one tenth above its threshold', () => {
@@ -403,8 +407,11 @@ describe('Boss — the Cruiser at 0.9 s (GDD v0.18 §6.1)', () => {
     expect(world.bullets).toHaveLength(0);
     tick(boss, world);
     expect(world.bullets).toHaveLength(5);
+    // GDD v0.18 §6.1: the fan flies at 85 px/s, the ring at 60.
+    for (const b of world.bullets) expect(Math.hypot(b.vx, b.vy)).toBeCloseTo(85, 9);
     ticks(boss, world, 54);
     expect(world.bullets).toHaveLength(5 + 12);
+    for (const b of world.bullets.slice(5)) expect(Math.hypot(b.vx, b.vy)).toBeCloseTo(60, 9);
     ticks(boss, world, 54);
     expect(world.bullets).toHaveLength(5 + 12 + 5);
   });

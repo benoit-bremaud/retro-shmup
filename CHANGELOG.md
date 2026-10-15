@@ -40,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ramps up to a pair of Heavies at 102 s, with one 1-UP Carrier at 78 s (it still loops at 120 s
   until the boss arrives).
 - The Cruiser, level 1's boss: the waves stop at 120 s, a 3 s warning, a slide-in, then a 90 s
-  fight in two phases (a fan and a ring in turn, then a turning ring of 16 and an aimed triple
+  fight in two phases (a fan and a ring in turn, then a turning ring of 16 (14 since GDD v0.18) and an aimed triple
   from 66 % HP), destroyed in a 2 s sequence or fleeing when the timer runs out; the bonus is
   10 000 + 100 per second left. Shots and the bomb hurt it only while it fights. The level ends
   on its destruction or escape and a "LEVEL CLEAR" banner (EN / FR) shows for 3 s before the
@@ -89,7 +89,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Level 1 is rebalanced a third time, much harder (GDD v0.18, #56): aimed, fan and triple enemy
   bullets at 85 px/s (was 75), Gunners take 10 shots (was 8) and fire every 0.8 s (was 1 s),
   Heavies take 50 shots (was 40), the Cruiser takes 1 800 shots (was 1 450; phase 2 from 11 880
-  tenths) and fires every 0.9 s then 1.25 s (was 1 s then 1.5 s), and the 70 s formation no
+  tenths) and fires every 0.9 s then 1.25 s (was 1 s then 1.5 s) with a phase-2 ring of 14 (was 16), and the 70 s formation no
   longer drops a P. A seeded measurement bot (`tests/balance`) now guards the balance.
 - Level 1 is rebalanced a second time (GDD v0.12, #45): the Cruiser takes 1 450 level-1 shots
   (was 500; phase 2 from 9 570 tenths) and the formations at 8 s, 50 s and 52 s no longer drop a
