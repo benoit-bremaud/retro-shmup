@@ -555,6 +555,8 @@ export class SceneMachine {
   // Pause is ignored: no run steps here. SKIP, or OK on an empty name, records nothing; an entry
   // is inserted, saved through the host and shown highlighted (SD-score).
   private stepNameEntry(frame: Readonly<IntentFrame>): void {
+    // The stars keep moving over the frozen run, as on the Results and the Ending.
+    this.backgroundSteps += 1;
     const exit = this.nameEntry.step(frame, this.steps);
     if (exit === 'skipped') {
       this.toTitle(frame);

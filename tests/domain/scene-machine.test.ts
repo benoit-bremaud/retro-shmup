@@ -1439,6 +1439,15 @@ describe('SceneMachine — the name entry (GDD v0.16 §9.1, SD-score, G2-3)', ()
     expect(render.drew(Palette.menuHighlight)).toBe(true);
   });
 
+  it('keeps the starfield moving behind the grid', () => {
+    const { machine, render } = afterGameOver(500);
+    machine.render(1, 16);
+    const stars = render.rectsOf(Palette.starNear).map((rect) => rect.y);
+    for (let i = 0; i < 30; i += 1) machine.step(DT, createIntentFrame());
+    machine.render(1, 16);
+    expect(render.rectsOf(Palette.starNear).map((rect) => rect.y)).not.toEqual(stars);
+  });
+
   it('goes to the title when the score does not enter the table', () => {
     const { machine } = afterGameOver(0);
     expect(machine.scene).toBe(Scene.Title);
