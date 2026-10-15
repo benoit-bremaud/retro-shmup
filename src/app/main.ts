@@ -72,9 +72,8 @@ function newCanvas(width: number, height: number): BakeCanvas {
 }
 
 /**
- * Loads both sheets beside the first frames and bakes them once both decoded
- * (render/02-sequence-sprite-loading); on any failure the game keeps its shapes, the player sees no
- * error (GDD v0.17 §3.2.1).
+ * Loads both sheets and bakes them once both decoded (render/02-sequence-sprite-loading); on any
+ * failure the game keeps its shapes, the player sees no error (GDD v0.17 §3.2.1).
  */
 async function loadSprites(): Promise<void> {
   try {
@@ -87,7 +86,6 @@ async function loadSprites(): Promise<void> {
     console.warn('Sprites not loaded, drawing the placeholder shapes', error);
   }
 }
-void loadSprites();
 
 // The input adapter never touches a browser global: it gets these narrow hooks (ADR-0015).
 const environment: InputEnvironment = {
@@ -247,3 +245,6 @@ const loop = new FrameLoop(new PerformanceClock(), input, scenes, (callback) => 
   requestAnimationFrame(callback);
 });
 loop.start();
+
+// Awaited after the loop started: the first frames draw the shapes while the sheets load.
+await loadSprites();
