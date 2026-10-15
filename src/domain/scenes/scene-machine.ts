@@ -291,14 +291,38 @@ export class SceneMachine {
         overlay: this.overlayResults.bind(this),
       },
       [Scene.ConfirmQuit]: { step: this.stepConfirmQuit.bind(this), overlay: menu },
-      [Scene.TitleOptions]: { step: this.optionsStep(Scene.TitleOptions), overlay: menu },
-      [Scene.PauseOptions]: { step: this.optionsStep(Scene.PauseOptions), overlay: menu },
-      [Scene.TitleEffects]: { step: this.effectsStep(Scene.TitleEffects), overlay: menu },
-      [Scene.PauseEffects]: { step: this.effectsStep(Scene.PauseEffects), overlay: menu },
-      [Scene.TitleControls]: { step: this.controlsStep(Scene.TitleControls), overlay: controls },
-      [Scene.PauseControls]: { step: this.controlsStep(Scene.PauseControls), overlay: controls },
-      [Scene.TitleRestore]: { step: this.restoreStep(Scene.TitleRestore), overlay: menu },
-      [Scene.PauseRestore]: { step: this.restoreStep(Scene.PauseRestore), overlay: menu },
+      [Scene.TitleOptions]: {
+        step: this.stepOptions.bind(this, Scene.TitleOptions),
+        overlay: menu,
+      },
+      [Scene.PauseOptions]: {
+        step: this.stepOptions.bind(this, Scene.PauseOptions),
+        overlay: menu,
+      },
+      [Scene.TitleEffects]: {
+        step: this.stepEffects.bind(this, Scene.TitleEffects),
+        overlay: menu,
+      },
+      [Scene.PauseEffects]: {
+        step: this.stepEffects.bind(this, Scene.PauseEffects),
+        overlay: menu,
+      },
+      [Scene.TitleControls]: {
+        step: this.stepControls.bind(this, Scene.TitleControls),
+        overlay: controls,
+      },
+      [Scene.PauseControls]: {
+        step: this.stepControls.bind(this, Scene.PauseControls),
+        overlay: controls,
+      },
+      [Scene.TitleRestore]: {
+        step: this.stepRestore.bind(this, Scene.TitleRestore),
+        overlay: menu,
+      },
+      [Scene.PauseRestore]: {
+        step: this.stepRestore.bind(this, Scene.PauseRestore),
+        overlay: menu,
+      },
       [Scene.HighScores]: {
         step: this.stepHighScores.bind(this),
         overlay: this.overlayHighScores.bind(this),
@@ -389,13 +413,11 @@ export class SceneMachine {
 
   // Each change applies at once and reaches the host; Back and the Back row return to the
   // parent, Visual effects opens its sub-screen (GDD v0.14 §9.1, §9.3).
-  private optionsStep(scene: keyof typeof OPTIONS_ROUTES): SceneStep {
-    return (_dt, frame) => {
-      this.stepOptions(frame, scene);
-    };
-  }
-
-  private stepOptions(frame: Readonly<IntentFrame>, scene: keyof typeof OPTIONS_ROUTES): void {
+  private stepOptions(
+    scene: keyof typeof OPTIONS_ROUTES,
+    _dt: number,
+    frame: Readonly<IntentFrame>,
+  ): void {
     const menu = this.optionsTouch ? this.touchOptionsMenu : this.fullOptionsMenu;
     const row = menu.step(frame, this.steps);
     if (this.backTo(row, frame, OPTIONS_ROUTES[scene].parent)) return;
@@ -404,39 +426,33 @@ export class SceneMachine {
     else this.change(row);
   }
 
-  private effectsStep(scene: keyof typeof EFFECTS_PARENT): SceneStep {
-    return (_dt, frame) => {
-      this.stepEffects(frame, scene);
-    };
-  }
-
-  private stepEffects(frame: Readonly<IntentFrame>, scene: keyof typeof EFFECTS_PARENT): void {
+  private stepEffects(
+    scene: keyof typeof EFFECTS_PARENT,
+    _dt: number,
+    frame: Readonly<IntentFrame>,
+  ): void {
     const row = this.effectsMenu.step(frame, this.steps);
     if (this.backTo(row, frame, EFFECTS_PARENT[scene])) return;
     this.change(row);
   }
 
   // The controls screen does its own work; it hands back only its two exits (GDD v0.15 §4.2).
-  private controlsStep(scene: keyof typeof CONTROLS_ROUTES): SceneStep {
-    return (_dt, frame) => {
-      this.stepControls(frame, scene);
-    };
-  }
-
-  private stepControls(frame: Readonly<IntentFrame>, scene: keyof typeof CONTROLS_ROUTES): void {
+  private stepControls(
+    scene: keyof typeof CONTROLS_ROUTES,
+    _dt: number,
+    frame: Readonly<IntentFrame>,
+  ): void {
     const exit = this.controls.step(frame, this.steps);
     if (exit === 'back') this.openMenu(CONTROLS_ROUTES[scene].parent, frame);
     else if (exit === 'restore') this.openMenu(CONTROLS_ROUTES[scene].restore, frame);
   }
 
   // No is first, like Quit; Yes restores the device edited only, then back to the controls.
-  private restoreStep(scene: keyof typeof RESTORE_PARENT): SceneStep {
-    return (_dt, frame) => {
-      this.stepRestore(frame, scene);
-    };
-  }
-
-  private stepRestore(frame: Readonly<IntentFrame>, scene: keyof typeof RESTORE_PARENT): void {
+  private stepRestore(
+    scene: keyof typeof RESTORE_PARENT,
+    _dt: number,
+    frame: Readonly<IntentFrame>,
+  ): void {
     const row = this.restoreMenu.step(frame, this.steps);
     if (row === 'yes') this.controls.restoreDefaults();
     if (row !== undefined || this.backed(frame)) this.openControls(RESTORE_PARENT[scene], frame);
