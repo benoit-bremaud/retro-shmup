@@ -26,7 +26,7 @@ Diagram abbreviations: **UC** [01-use-case](diagrams/system/01-use-case.md) · *
 |---|---|---|---|---|
 | UC1 Play a run | FrameLoop, SceneMachine, Run, RunPresenter, LevelScripts, SeededRandom, all ports | SD-tick, SD-kill, SD-hit, SD-bomb, SD-boss, STM-player, STM-boss, STM-scenes (`InRun`, `Results`) | every class of CD | intro and level cards (STM-scenes); the slice end (UC1 9a, the Ending since G2) |
 | UC2 Pause the run | FrameLoop, SceneMachine, DeviceInput, WebAudioPlayer | SD-tick (pause decided before the step), STM-scenes (`Paused`, `Count-in`, `Confirm quit`) | — (scene level, no run class) | music ducking (ADR-0009) |
-| UC3 Record a high score | SceneMachine, SaveDocument, LocalStorageStore | SD-score, STM-scenes (G2: `Ending`, `Name entry` → `High scores`, planned G2-3; until then `Ending` and `Game over` → `Title`, owner 2026-10-15) | `RunView.snapshot().score`; CD-menus (`HighScoreTable`; `NameEntry`, `LetterGrid` planned G2-3) | insertion rule and storage failure (UC3 text, ADR-0006) |
+| UC3 Record a high score | SceneMachine, SaveDocument, LocalStorageStore | SD-score, STM-scenes (G2: `Ending`, `Name entry` → `High scores`, built G2-3) | `RunView.snapshot().score`; CD-menus (`HighScoreTable`, `NameEntry`, `LetterGrid`, `PressGuard`) | insertion rule and storage failure (UC3 text, ADR-0006) |
 | UC4 Consult the high scores | SceneMachine, SaveDocument, LocalStorageStore | STM-scenes (`High scores`, left on `back`, `confirm` or a tap) | CD-menus (`HighScoresScreen`, `HighScoresView`, `HighScoreTable`; the stored top 10 as the scene machine's `highScores` parameter) | unreadable or newer document (UC4 text, ADR-0006) |
 | UC5 Configure the game | SceneMachine, SaveDocument, LocalStorageStore, WebAudioPlayer, DeviceInput | STM-scenes (`Options` and `Visual effects` from title and pause) | CD-menus (`Menu`, `MenuScreen`, `SceneHost`, `Options`, `SaveStore`) | each option (GDD §9.3); fullscreen in the gesture handler (ADR-0009) |
 | UC6 Remap the controls | SceneMachine, DeviceInput, SaveDocument | SD-remap, STM-scenes (G1b `Controls`, `Confirm restore`) | CD-menus (`ControlsScreen`, `ControlsGrid`, `BindingsEditor`, `ButtonNames`, `KeyLabels`, the `SceneHost` capture) | slots, swap, capture (UC6 text, GDD §4.2, ADR-0009) |
@@ -64,10 +64,10 @@ SD-boss (added with the level brick) uses `Run`, `RunRules`, `World`, `LevelDire
 | `Formation` | | ✓ | | ✓ (bomb kills count) | | §5.2, §4.6 |
 | `Boss`, `BossState`, `BossDefinition`, `BossPhaseSpec` | | (via `damageBoss`) | ✓ (boss contact, pass 3) | ✓ (`damageBoss` while `FIGHTING`) | STM-boss, SD-boss | §6, §6.1 |
 | Menu, MenuScreen (G1a; the press and release rule inside `Menu`, values through `MenuScreen.value`) | CD-menus; STM-scenes (title, pause, `Options`, `Visual effects`, `Confirm quit`); UC5 text |
-| SceneHost (G1a-3: options changed, movement released; G1b: `startCapture`, `captureNext`, `cancelCapture`, `keyLabel`; `countryOfLanguage`, `today`, `highScoresChanged` planned G2-3; implemented by the composition root) | CD-menus; SD-remap; STM-scenes (G1a-3 additions); UC5, UC6 text |
+| SceneHost (G1a-3: options changed, movement released; G1b: `startCapture`, `captureNext`, `cancelCapture`, `keyLabel`; G2-3: `countryOfLanguage`, `today`, `highScoresChanged`; implemented by the composition root) | CD-menus; SD-remap; STM-scenes (G1a-3 additions); UC5, UC6 text |
 | ControlsScreen, ControlsGrid (G1b; the grid, device, capture and cell texts, owner 2026-10-15) | CD-menus; SD-remap; STM-scenes (G1b); UC6 text |
 | HighScoresScreen, HighScoreTable (G2-2) | CD-menus; STM-scenes (G2); UC3, UC4 text |
-| NameEntry, LetterGrid (planned, G2-3) | CD-menus; SD-score; STM-scenes (G2); UC3 text |
+| NameEntry, LetterGrid, PressGuard (G2-3) | CD-menus; SD-score; STM-scenes (G2); UC3 text |
 | Options, SaveStore, StoragePort (G1a) | CD-menus; STM-scenes (`Boot` reads, each option change writes); UC5 text |
 
 Every class is used by at least one behaviour diagram or by the GDD rule table of CD. The
@@ -125,7 +125,7 @@ is a calculation covered by unit tests (ADR-0003), not by a diagram.
 | GDD v0.13 menus and options (G1a): §9.1 menu rows and pointer activation, §9.3 options layout | STM-scenes (G1a additions, build order), CD-menus, UC5 text (extensions 2b, 2c); tests with the G1a code PR |
 | GDD v0.14 options screens (G1a-3): §9.1 title menu, values, leaving a menu frees the movement; §9.3 row texts | CD-menus (`SceneHost`, `InputPort.setAutofire` and `releaseMovement`, `MenuScreen.value`), STM-scenes (G1a-3 design), UC5 text (2d); tests with the G1a-3 code PR |
 | GDD v0.15 controls screen (G1b): §4.2 layout, capture, labels, device, restore, save v2 | SD-remap, STM-scenes (G1b), CD-menus, UC6 text (1a, 3c); tests with the G1b code PRs |
-| GDD v0.16 hall of fame (G2): §9.1 letter grid, table, High scores, Ending | SD-score, STM-scenes (G2), CD-menus (`LetterGrid`, `NameEntry`, `HighScoreTable`, `HighScoreEntry`), UC3, UC4; tests with the G2 code PRs |
+| GDD v0.16 hall of fame (G2): §9.1 letter grid, table, High scores, Ending | SD-score, STM-scenes (G2), CD-menus (`LetterGrid`, `NameEntry`, `HighScoreTable`, `HighScoreEntry`), UC3, UC4; tests `high-scores.test.ts`, `high-scores-screen.test.ts`, `letter-grid.test.ts`, `name-entry.test.ts`, `scene-machine.test.ts` |
 
 ## 5. Known gaps (accepted)
 

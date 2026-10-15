@@ -145,9 +145,9 @@ The enemies brick adds `Paused`, `Count-in` and `Game over`, and removes the pau
 - **Count-in** shows a 3-2-1 with the HUD digits, centred on the field, for 1 s (GDD §9.1), the
   run still frozen. On its last step it hands over to `Playing` and the run steps in that
   same step, so the first resumed frame interpolates forward from the frozen picture, never back.
-- **Game over**: `InRun --> GameOver` when the outcome is `GAME_OVER`. **Interim deviation,
-  name entry**: `GameOver --> Title` on `Confirm` or after the game-over time (GDD §4.4), with no
-  `NameEntry` branch until the high scores exist (screens brick). Arcade style (GDD v0.6 §4.4):
+- **Game over**: `InRun --> GameOver` when the outcome is `GAME_OVER`. ~~Interim deviation,
+  name entry~~ (lifted by G2-3: `Game over --> Name entry` when the score enters the table, else
+  `Game over --> Title`, on `Confirm` or after the game-over time, GDD §4.4). Arcade style (GDD v0.6 §4.4):
   the run keeps stepping without the ship — the script, enemies and their bullets go on, the
   player's last bullets are spent so the score never moves — the starfield scrolls, and a large
   "GAME OVER" from the message catalogue (`title` font) is drawn over a dim veil. The HUD keeps
@@ -486,7 +486,7 @@ stateDiagram-v2
   state "Level results" as Results
   state "Game over" as GameOver
   state "Ending" as Ending
-  state "Name entry (planned, G2-3)" as NameEntry {
+  state "Name entry" as NameEntry {
     state "Name" as NameStep
     state "Country" as CountryStep
     [*] --> NameStep
@@ -506,18 +506,19 @@ stateDiagram-v2
 ```
 
 - **Lifts the slice-end interim**: a cleared run goes Results → Ending, no longer to the title.
-- **Interim deviation, no name entry until G2-3** (owner, 2026-10-15): `Ending` and `Game over`
-  both go to `Title` (released run, 60-step lock) whatever the score, until the name entry of
-  G2-3 lands; the `[score enters the table]` branches and `Name entry --> High scores` are
-  planned, G2-3. `Title --> High scores` and `High scores --> Title` (on `back`, `confirm` or a
+- ~~**Interim deviation, no name entry until G2-3**~~ (lifted by G2-3: the `[score enters the
+  table]` branches and `Name entry --> High scores` are built; recording releases the run). `Title --> High scores` and `High scores --> Title` (on `back`, `confirm` or a
   tap started on the screen) are built (G2-2, `HighScoresScreen`).
-- **Name entry** keeps the finished run read-only for its score and level; the `back` intent
+- **Name entry** keeps the finished run frozen and drawn behind its veil, read for its score only
+  (the level stored is 1 in the one-level slice); the `back` intent
   deletes, it never leaves (only *SKIP*, or *OK* on an empty name, leaves without recording). `Pause` and the automatic pause
   triggers are ignored in `Ending`, `Name entry` and `High scores` (no run steps). The `Escape`
   key sends `back` too, so it deletes like the gamepad's `B`.
 - **Opening guard**: the press that opens `Name entry` or `High scores` never acts there (a tap
   must start on the new screen, §9.1); the title reached from `High scores` is locked for 1 s, as
   after Game over.
+- The country step opens with its own opening guard: the press that confirmed the name never acts
+  on it; it opens on *OK* when the preselected code is known.
 - **The letter grid** is one model for both steps (the country step shows the letters only, with
   *DEL*, *NONE* and *OK*), sharing `Menu`'s press, release and opening-guard rules; the cursor
   moves in two dimensions and wraps.

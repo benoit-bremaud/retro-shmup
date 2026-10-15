@@ -14,6 +14,7 @@ import { swayMovement } from '../../src/domain/game/movements';
 import { Run, RunOutcome } from '../../src/domain/game/run';
 import { MENU_ROW_HEIGHT, menuTop } from '../../src/domain/presentation/menu-layout';
 import { Scene, SceneMachine } from '../../src/domain/scenes/scene-machine';
+import type { HighScoreEntry } from '../../src/domain/hall-of-fame/high-scores';
 import { NO_HOST } from '../../src/domain/scenes/scene-host';
 import type { SceneHost } from '../../src/domain/scenes/scene-host';
 import { PORTRAIT } from '../../src/domain/presentation/screen';
@@ -22,6 +23,14 @@ import type { RecordedRect } from '../support/recording-render';
 import { STUB_BOSS, testScript } from '../support/script';
 
 const DT = 1 / 60;
+
+/** Ten scores no test run reaches: a finished run goes straight to the title. */
+const FULL_TABLE: readonly HighScoreEntry[] = Array.from({ length: 10 }, () => ({
+  name: 'ACE',
+  score: 99_000_000,
+  level: 1,
+  date: '2026-10-15',
+}));
 
 /** The options a test needs: these effect switches, the rest at its defaults. */
 function withEffects(effects: EffectSettings): Options {
@@ -476,6 +485,8 @@ describe('SceneMachine — effects per run (ADR-0010, 02-sequence-fixed-step-tic
         slowMotion: true,
       }),
       () => new Run({ levels: [script] }),
+      NO_HOST,
+      FULL_TABLE,
     );
     machine.step(DT, createIntentFrame());
     machine.step(DT, pressed(Button.Confirm));
@@ -636,7 +647,10 @@ describe('SceneMachine — Results (meta/05-state-scenes, GDD v0.10 §8, F-3)', 
     entryS: 1,
   };
 
-  function clearedFixture(): ReturnType<typeof setup> {
+  function clearedFixture(
+    host: SceneHost = NO_HOST,
+    highScores: readonly HighScoreEntry[] = FULL_TABLE,
+  ): ReturnType<typeof setup> {
     const render = new RecordingRender();
     const machine = new SceneMachine(
       render,
@@ -650,6 +664,8 @@ describe('SceneMachine — Results (meta/05-state-scenes, GDD v0.10 §8, F-3)', 
         slowMotion: true,
       }),
       () => new Run({ levels: [testScript([], { warningAt: 5, boss: GLASS })] }),
+      host,
+      highScores,
     );
     machine.step(DT, createIntentFrame());
     machine.step(DT, pressed(Button.Confirm));
@@ -1006,7 +1022,18 @@ describe('SceneMachine — the pause menu and Confirm quit (GDD v0.13 §9.1, G1a
 /** A scene host that records what the scene machine told it. */
 class RecordingHost implements SceneHost {
   readonly saved: Options[] = [];
+  readonly tables: (readonly HighScoreEntry[])[] = [];
   released = 0;
+  country: string | undefined = undefined;
+  countryOfLanguage(): string | undefined {
+    return this.country;
+  }
+  today(): string {
+    return '2026-10-15';
+  }
+  highScoresChanged(entries: readonly HighScoreEntry[]): void {
+    this.tables.push(entries);
+  }
   startCapture(): void {
     // This host captures nothing.
   }
@@ -1342,4 +1369,166 @@ describe('SceneMachine — the High scores screen (GDD v0.16 §9.1, G2-2)', () =
     machine.step(DT, pressed(Button.Pause));
     expect(machine.scene).toBe(Scene.HighScores);
   });
+});
+
+describe('SceneMachine — the name entry (GDD v0.16 §9.1, SD-score, G2-3)', () => {
+  const ACE: HighScoreEntry = { name: 'ACE', score: 9000, level: 1, date: '2026-10-14' };
+
+  /** A run that ends in Game over on its first step with `score` points. */
+  function losing(score: number): InRunStub {
+    const real = new Run();
+    return {
+      step: (): void => undefined,
+      outcome: (): RunOutcome => RunOutcome.GameOver,
+      snapshot: () => ({ ...real.snapshot(), score }),
+      events: () => real.events(),
+      tally: () => real.tally(),
+    };
+  }
+  type InRunStub = ConstructorParameters<typeof SceneMachine>[3] extends () => infer R ? R : never;
+
+  /** Plays a run of `score` points to its Game over, then confirms past the 1 s lock. */
+  function afterGameOver(score: number): {
+    machine: SceneMachine;
+    render: RecordingRender;
+    host: RecordingHost;
+  } {
+    const render = new RecordingRender();
+    const host = new RecordingHost();
+    host.country = 'FR';
+    const machine = new SceneMachine(
+      render,
+      new Starfield(() => 0.5),
+      withEffects(ALL_ON),
+      () => losing(score),
+      host,
+      [ACE],
+    );
+    machine.step(DT, createIntentFrame());
+    machine.step(DT, pressed(Button.Confirm)); // Play
+    machine.step(DT, createIntentFrame()); // Game over
+    for (let i = 0; i < 61; i += 1) machine.step(DT, pressed(Button.Confirm));
+    return { machine, render, host };
+  }
+
+  /** Presses Confirm on each step, released in between: the grid picks the highlighted cell. */
+  function confirm(machine: SceneMachine, times = 1): void {
+    for (let i = 0; i < times; i += 1) {
+      machine.step(DT, pressed(Button.Confirm));
+      machine.step(DT, createIntentFrame());
+    }
+  }
+
+  function upBy(machine: SceneMachine, rows: number): void {
+    for (let i = 0; i < rows; i += 1) {
+      const step = createIntentFrame();
+      step.moveKind = 'direction';
+      step.moveY = -1;
+      machine.step(DT, step);
+      machine.step(DT, createIntentFrame());
+    }
+  }
+
+  it('opens after Game over when the score enters the table, with the heading and the grid', () => {
+    const { machine, render } = afterGameOver(500);
+    expect(machine.scene).toBe(Scene.NameEntry);
+    machine.render(1, 16);
+    const texts = fieldTextsOf(render);
+    expect(texts.slice(0, 2)).toEqual(['YOUR NAME', '-']);
+    expect(texts).toContain('SKIP');
+    expect(render.drew(Palette.menuHighlight)).toBe(true);
+  });
+
+  it('keeps the starfield moving behind the grid', () => {
+    const { machine, render } = afterGameOver(500);
+    machine.render(1, 16);
+    const stars = render.rectsOf(Palette.starNear).map((rect) => rect.y);
+    for (let i = 0; i < 30; i += 1) machine.step(DT, createIntentFrame());
+    machine.render(1, 16);
+    expect(render.rectsOf(Palette.starNear).map((rect) => rect.y)).not.toEqual(stars);
+  });
+
+  it('goes to the title when the score does not enter the table', () => {
+    const { machine } = afterGameOver(0);
+    expect(machine.scene).toBe(Scene.Title);
+  });
+
+  it('records the entry with the preselected country, saves the table, shows it highlighted', () => {
+    const { machine, render, host } = afterGameOver(12000);
+    confirm(machine, 2); // AA
+    upBy(machine, 2); // SKIP, then the last grid row
+    const left = createIntentFrame();
+    left.moveKind = 'direction';
+    left.moveX = -1;
+    machine.step(DT, left); // wraps to OK, the row's last cell
+    machine.step(DT, createIntentFrame());
+    confirm(machine); // the name
+    expect(machine.scene).toBe(Scene.NameEntry);
+    // The country grid's OK (row 3, column 5), shown for the preselected FR: hovered.
+    const hover = createIntentFrame();
+    hover.hovered = true;
+    hover.hoverX = 5 * 30 + 15;
+    hover.hoverY = 120 + 3 * 20 + 10;
+    machine.step(DT, hover);
+    confirm(machine);
+    expect(machine.scene).toBe(Scene.HighScores);
+    expect(host.tables).toEqual([
+      [{ name: 'AA', score: 12000, level: 1, date: '2026-10-15', country: 'FR' }, ACE],
+    ]);
+    machine.render(1, 16);
+    expect(fieldTextsOf(render).slice(0, 6)).toEqual([
+      'HIGH SCORES',
+      '1',
+      'AA',
+      'FR',
+      '12000',
+      '1',
+    ]);
+    expect(render.rectsOf(Palette.menuHighlight).map((rect) => rect.y)).toEqual([80]);
+  });
+
+  it('records nothing on SKIP and returns to a locked title', () => {
+    const { machine, host } = afterGameOver(500);
+    upBy(machine, 1); // SKIP
+    confirm(machine);
+    expect(machine.scene).toBe(Scene.Title);
+    expect(host.tables).toEqual([]);
+    // The step after SKIP's (its release) spent one of the 60 locked steps.
+    for (let i = 0; i < 59; i += 1) machine.step(DT, pressed(Button.Confirm));
+    expect(machine.scene).toBe(Scene.Title);
+  });
+
+  it('ignores Pause; back deletes and never leaves', () => {
+    const { machine } = afterGameOver(500);
+    machine.step(DT, pressed(Button.Pause | Button.Back));
+    machine.step(DT, createIntentFrame());
+    expect(machine.scene).toBe(Scene.NameEntry);
+  });
+
+  it('follows the Ending card when a cleared run enters the table', () => {
+    const { machine } = afterEnding();
+    expect(machine.scene).toBe(Scene.NameEntry);
+  });
+
+  /** A run cleared at once (its score from the tally bonuses), past the Results and the card. */
+  function afterEnding(): { machine: SceneMachine } {
+    const real = new Run();
+    const machine = new SceneMachine(
+      new RecordingRender(),
+      new Starfield(() => 0.5),
+      withEffects(ALL_ON),
+      () => ({
+        step: (): void => undefined,
+        outcome: (): RunOutcome => RunOutcome.RunCleared,
+        snapshot: () => ({ ...real.snapshot(), score: 3000 }),
+        events: () => real.events(),
+        tally: () => real.tally(),
+      }),
+    );
+    machine.step(DT, createIntentFrame());
+    machine.step(DT, pressed(Button.Confirm));
+    machine.step(DT, createIntentFrame()); // Results
+    for (let i = 0; i < 480 + 360; i += 1) machine.step(DT, createIntentFrame());
+    return { machine };
+  }
 });

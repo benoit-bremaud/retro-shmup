@@ -4,6 +4,7 @@ import {
   drawControlsScreen,
   drawCountIn,
   drawMenu,
+  drawNameEntry,
   drawVeil,
 } from '../../src/domain/presentation/overlays';
 import {
@@ -13,6 +14,8 @@ import {
 } from '../../src/domain/presentation/menu-layout';
 import type { ControlsView } from '../../src/domain/presentation/menu-layout';
 import { Menu } from '../../src/domain/scenes/menu';
+import { NameEntry } from '../../src/domain/scenes/name-entry';
+import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import { Palette } from '../../src/domain/presentation/palette';
 import { FIELD_HEIGHT, FIELD_WIDTH } from '../../src/domain/presentation/screen';
 import { RecordingRender } from '../support/recording-render';
@@ -130,6 +133,47 @@ describe('drawControlsScreen (GDD v0.15 §4.2)', () => {
         h: MENU_ROW_HEIGHT,
         colour: Palette.menuHighlight,
       },
+    ]);
+  });
+});
+
+describe('drawNameEntry (GDD v0.16 §9.1)', () => {
+  /** A name entry on its country step, the code preselected from `country`. */
+  function onCountry(country: string | undefined): NameEntry {
+    const entry = new NameEntry();
+    entry.open(0, createIntentFrame(), 500, country);
+    const confirm = createIntentFrame();
+    confirm.pressed = Button.Confirm;
+    entry.step(confirm, 100); // A
+    const ok = createIntentFrame(); // hovers the name grid's OK (row 4, column 7)
+    ok.hovered = true;
+    ok.hoverX = 7 * 30 + 15;
+    ok.hoverY = 120 + 4 * 20 + 10;
+    entry.step(ok, 101);
+    entry.step(confirm, 102);
+    return entry;
+  }
+
+  function texts(entry: NameEntry): string[] {
+    const render = new RecordingRender();
+    drawNameEntry(render, entry, 'fr');
+    return render.texts.map((text) => text.text);
+  }
+
+  it('draws the heading, the slots and the cells in the language, OK for a known code only', () => {
+    const known = texts(onCountry('FR'));
+    expect(known.slice(0, 3)).toEqual(['PAYS', 'F', 'R']);
+    expect(known).toEqual(expect.arrayContaining(['EFF', 'AUCUN', 'OK']));
+    expect(texts(onCountry(undefined))).not.toContain('OK');
+  });
+
+  it('puts the next slot and the highlighted cell on bars', () => {
+    const render = new RecordingRender();
+    drawNameEntry(render, onCountry(undefined), 'en');
+    const bars = render.rectsOf(Palette.menuHighlight).map((rect) => [rect.x, rect.y, rect.w]);
+    expect(bars).toEqual([
+      [104, 88, 16],
+      [0, 120, 30],
     ]);
   });
 });

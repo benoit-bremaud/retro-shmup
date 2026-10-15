@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MENU_ROW_HEIGHT } from '../../src/domain/presentation/menu-layout';
-import { Menu, MenuTuning, NO_ROW } from '../../src/domain/scenes/menu';
+import { Menu } from '../../src/domain/scenes/menu';
+import { MenuTuning, NO_ROW } from '../../src/domain/scenes/menu-input';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
 import { toSteps } from '../../src/domain/game/tuning';

@@ -1,39 +1,13 @@
-import { toSteps } from '../game/tuning';
 import { Button } from '../ports/input-port';
 import type { IntentFrame } from '../ports/input-port';
 import type { MessageKey } from '../i18n/messages';
 import { MENU_ROW_HEIGHT, menuTop } from '../presentation/menu-layout';
 import type { MenuView } from '../presentation/menu-layout';
-
-/** Menu timing and input thresholds (GDD v0.13 §9.1); the geometry is the presentation's. */
-export const MenuTuning = {
-  /** A new press on the row just activated is ignored this long (a bouncing or doubled contact). */
-  rePressGuardSeconds: 0.15,
-  /** A stick tilt beyond this moves the highlight; below it is a hand resting on the stick. */
-  directionThreshold: 0.5,
-} as const;
-
-/** `rowAt` returns it when no row is under the point. */
-export const NO_ROW = -1;
+import { axis, NO_ROW, PressGuard, sidewaysOf } from './menu-input';
 
 /** What a scene needs of a menu it opens and draws, whatever its row ids. */
 export interface OpenableMenu extends MenuView {
   reset(now: number, opening: Readonly<IntentFrame>): void;
-}
-
-const GUARD_STEPS = toSteps(MenuTuning.rePressGuardSeconds);
-
-/** The horizontal direction, or 0 when the tilt is mostly vertical. */
-function sidewaysOf(frame: Readonly<IntentFrame>): number {
-  return Math.abs(frame.moveY) > Math.abs(frame.moveX) ? 0 : axis(frame, frame.moveX);
-}
-
-/** −1, 0 or 1 for one axis of a keyboard or stick direction beyond the threshold. */
-function axis(frame: Readonly<IntentFrame>, value: number): number {
-  if (frame.moveKind !== 'direction') return 0;
-  if (value >= MenuTuning.directionThreshold) return 1;
-  if (value <= -MenuTuning.directionThreshold) return -1;
-  return 0;
 }
 
 /**
@@ -54,12 +28,7 @@ export class Menu<Id extends MessageKey> implements OpenableMenu {
   private sideways = 0;
   /** The new horizontal direction of the last step (−1, 0 or 1): the controls grid's column. */
   private turned = 0;
-  /** The row the current press started on, or `NO_ROW`. */
-  private pressedRow = NO_ROW;
-  private lastActivatedRow = NO_ROW;
-  private lastActivationStep = 0;
-  /** The step the menu last opened at; no press counts during the guard after it. */
-  private openedAt = Number.NEGATIVE_INFINITY;
+  private readonly guard = new PressGuard();
   /** Which rows left and right flip (rows with a value, GDD v0.14 §9.1); none by default. */
   private readonly flips: (row: Id) => boolean;
 
@@ -81,8 +50,7 @@ export class Menu<Id extends MessageKey> implements OpenableMenu {
     // held while the menu opens (Pause pressed with an arrow down) moves and flips nothing.
     this.direction = axis(opening, opening.moveY);
     this.sideways = sidewaysOf(opening);
-    this.pressedRow = NO_ROW;
-    this.openedAt = now;
+    this.guard.open(now);
   }
 
   /**
@@ -92,7 +60,7 @@ export class Menu<Id extends MessageKey> implements OpenableMenu {
   ignore(frame: Readonly<IntentFrame>): void {
     this.direction = axis(frame, frame.moveY);
     this.sideways = sidewaysOf(frame);
-    this.pressedRow = NO_ROW;
+    this.guard.cancel();
   }
 
   /**
@@ -119,10 +87,13 @@ export class Menu<Id extends MessageKey> implements OpenableMenu {
       const hovered = this.rowAt(frame.hoverY);
       if (hovered !== NO_ROW) this.highlighted = hovered;
     }
-    if (frame.tapRegion === 'field') this.press(this.rowAt(frame.tapY), now);
+    if (frame.tapRegion === 'field') this.guard.press(this.rowAt(frame.tapY), now);
     if (frame.releaseRegion !== 'none') {
       const released = frame.releaseRegion === 'field' ? this.rowAt(frame.releaseY) : NO_ROW;
-      if (this.release(released, now)) return this.rows[released];
+      if (this.guard.release(released, now)) {
+        this.highlighted = released;
+        return this.rows[released];
+      }
     }
     if ((frame.pressed & Button.Confirm) !== 0 || flipped) return this.rows[this.highlighted];
     return undefined;
@@ -143,22 +114,5 @@ export class Menu<Id extends MessageKey> implements OpenableMenu {
     this.sideways = sideways;
     this.turned = flipped ? sideways : 0;
     return flipped;
-  }
-
-  private press(row: number, now: number): void {
-    const justOpened = now - this.openedAt < GUARD_STEPS;
-    const repeated = row === this.lastActivatedRow && now - this.lastActivationStep < GUARD_STEPS;
-    const guarded = justOpened || repeated;
-    this.pressedRow = guarded ? NO_ROW : row;
-  }
-
-  private release(row: number, now: number): boolean {
-    const activated = row !== NO_ROW && row === this.pressedRow;
-    this.pressedRow = NO_ROW;
-    if (!activated) return false;
-    this.highlighted = row;
-    this.lastActivatedRow = row;
-    this.lastActivationStep = now;
-    return true;
   }
 }

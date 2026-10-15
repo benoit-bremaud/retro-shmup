@@ -70,6 +70,13 @@ export const MESSAGES = {
   highScores: { en: 'HIGH SCORES', fr: 'MEILLEURS SCORES' },
   victory: { en: 'VICTORY', fr: 'VICTOIRE' },
   score: { en: 'SCORE', fr: 'SCORE' },
+  /** The name entry (GDD v0.16 §9.1): its two headings and the grid's actions. */
+  yourName: { en: 'YOUR NAME', fr: 'TON NOM' },
+  country: { en: 'COUNTRY', fr: 'PAYS' },
+  delete: { en: 'DEL', fr: 'EFF' },
+  ok: { en: 'OK', fr: 'OK' },
+  skip: { en: 'SKIP', fr: 'PASSER' },
+  noCountry: { en: 'NONE', fr: 'AUCUN' },
   /** A language is always named in itself (GDD v0.14 §9.1). */
   english: { en: 'ENGLISH', fr: 'ENGLISH' },
   francais: { en: 'FRANCAIS', fr: 'FRANCAIS' },

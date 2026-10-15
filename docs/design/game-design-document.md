@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Vertical slice — v0.16 (2026-10-14; amended 2026-10-15 by the owner after a design-versus-code audit: the High scores columns as built, the browser-shortcut rule of the capture): v0.16 settles the hall of fame of G2 (the letter grid for the name and the country, the high-score table and screen, the Ending card, leaving the slice-end interim). v0.15 (2026-10-14): v0.15 settles the controls screen of G1b (layout, key labels, the device edited, restore confirmation, save version 2). v0.14 (2026-10-14): v0.14 settles the options screens of G1a-3 (row texts and values, the title menu replacing tap-to-start, leaving a menu frees the ship's movement). v0.13 (2026-10-14): v0.13 designs the menus and the options of the screens brick, first part (G1a: title and pause menus, the options screen and its visual-effects sub-screen, menu navigation by touch and mouse, the save document's options). v0.12 (2026-10-14): v0.12 is the second rebalance iteration of level 1 (#45): the Cruiser takes 1 450 level-1 shots and three of the seven formations no longer pay the formation P. v0.11 (2026-10-13): v0.11 rebalances level 1 after the friends' playtest (harder, fewer drops, the ship slightly weaker than the attack; #45). v0.10 (2026-10-12): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot); v0.6 adds the initial values of the enemies brick; v0.7 settles the devices brick (portrait HUD strip, touch pause button, resuming and leaving Game over by tap or Start, mouse takeover, rotation pause); v0.8 settles the player kit (Spread and Laser tables, the death release hop, bomb, shield and pickup rules, P colours, the Carrier, HUD icons); v0.9 follows the brick-E playtest (difficulty ramp by script, a named top 10 with an optional country, pointer fire held by the left button or a steering finger with an autofire option, shot proportions for readability); v0.10 settles the level brick (the 120 s level-1 script, the Heavy, the Cruiser, the WARNING, the boss HP bar and timer, the end-of-level tally and the Results screen, a vertical slice ending after level 1) |
+| **Status** | Vertical slice — v0.16 (2026-10-14; amended 2026-10-15 by the owner after a design-versus-code audit: the High scores columns as built, the browser-shortcut rule of the capture, the name entry as built in G2-3): v0.16 settles the hall of fame of G2 (the letter grid for the name and the country, the high-score table and screen, the Ending card, leaving the slice-end interim). v0.15 (2026-10-14): v0.15 settles the controls screen of G1b (layout, key labels, the device edited, restore confirmation, save version 2). v0.14 (2026-10-14): v0.14 settles the options screens of G1a-3 (row texts and values, the title menu replacing tap-to-start, leaving a menu frees the ship's movement). v0.13 (2026-10-14): v0.13 designs the menus and the options of the screens brick, first part (G1a: title and pause menus, the options screen and its visual-effects sub-screen, menu navigation by touch and mouse, the save document's options). v0.12 (2026-10-14): v0.12 is the second rebalance iteration of level 1 (#45): the Cruiser takes 1 450 level-1 shots and three of the seven formations no longer pay the formation P. v0.11 (2026-10-13): v0.11 rebalances level 1 after the friends' playtest (harder, fewer drops, the ship slightly weaker than the attack; #45). v0.10 (2026-10-12): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot); v0.6 adds the initial values of the enemies brick; v0.7 settles the devices brick (portrait HUD strip, touch pause button, resuming and leaving Game over by tap or Start, mouse takeover, rotation pause); v0.8 settles the player kit (Spread and Laser tables, the death release hop, bomb, shield and pickup rules, P colours, the Carrier, HUD icons); v0.9 follows the brick-E playtest (difficulty ramp by script, a named top 10 with an optional country, pointer fire held by the left button or a steering finger with an autofire option, shot proportions for readability); v0.10 settles the level brick (the 120 s level-1 script, the Heavy, the Cruiser, the WARNING, the boss HP bar and timer, the end-of-level tally and the Results screen, a vertical slice ending after level 1) |
 | **Working title** | *retro-shmup* (codename; the commercial title is still open) |
 | **Genre** | Retro vertical-scrolling shoot'em up (shmup), 16-bit aesthetic |
 | **Platform** | Web browser (desktop first, mobile playable), TypeScript + native Canvas 2D |
@@ -778,7 +778,7 @@ row, under the name being built: eight slots, an empty one showing `-`, the next
 The menu font gains `?` and `-` for this. The headings are drawn in the title font, the grid and
 everything else in the menu font.
 - **Name**: `A`–`Z`, `0`–`9` (36 cells), then *SPACE* / *ESPACE* (two cells wide), *DEL* / *EFF*
-  and *OK* (40 cells, 5 rows); under the grid, *SKIP* / *PASSER*, a row of its own the cursor
+  and *OK* (40 places, 5 rows); under the grid, *SKIP* / *PASSER*, a row of its own the cursor
   reaches from the grid's last row, records nothing *(owner, 2026-10-14: the player is never made
   to appear in the table)* and returns to the title. The directions move the cursor, wrapping; a two-
   cell-wide cell is reached from either of its columns, and leaving it up or down keeps the column
@@ -788,11 +788,21 @@ everything else in the menu font.
   characters. On *OK* the name is trimmed at both ends; an empty name, or one of spaces only,
   records nothing, like *SKIP* (ADR-0021, amended). The heading is *YOUR NAME* / *TON NOM*.
 - **Country**, the next step: the same grid with the letters only, then *DEL* / *EFF*, *NONE* /
-  *AUCUN* (two cells wide: no country) and *OK* (30 cells, 4 rows), under the two-letter code
+  *AUCUN* (two cells wide: no country) and *OK* (30 places, 4 rows), under the two-letter code
   being built, preselected from the browser language (ADR-0021 decision 4). *OK* shows, and the
   cursor stops on it, only when the code is complete and in the allowlist; until then the cursor
   passes over its cell. *NONE* stores the entry without a country. The heading is *COUNTRY* /
-  *PAYS*.
+  *PAYS*. The country step opens with the cursor on *OK* when the preselected code is known,
+  else on `A` *(owner, 2026-10-15)*; there is no way back to the name, and *NONE* ends the entry
+  at once.
+- **As built** *(G2-3, owner 2026-10-15)*: the heading at y 48, the eight (or two) slots 16 px
+  wide centred at y 88, the grid from y 120 (rows 20 px, *SKIP* ending at y 240); the name grid
+  is 39 cells on 40 places, the country grid 29 cells on 30 places, the last two empty. A
+  mostly-vertical tilt moves up or down, any other (a diagonal) sideways; left and right wrap
+  within the row, up and down over the rows (so *SKIP* is also reached up from the first row),
+  skipping empty places and a hidden *OK*; when *OK* disappears under the cursor, the cursor
+  steps to the previous cell of its row. Spaces fill slots like characters; trimming happens on
+  *OK*. The stored level is 1 while the slice has one level.
 - Then the entry is stored (ADR-0021: name, optional country, score, the last level played, and
   the date as `YYYY-MM-DD`, given by the host — the domain reads no clock) and the high scores
   show it highlighted.
