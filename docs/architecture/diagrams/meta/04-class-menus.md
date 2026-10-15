@@ -123,6 +123,7 @@ classDiagram
     -menuScreens: table of menu scenes
     -optionsTouch: boolean
     -table: HighScoreTable
+    -idleSteps: number, planned G2-3b
     +constructor(..., host, highScores)
     -openMenu(scene, frame) void
     -screenOf(scene) MenuScene | undefined
@@ -136,6 +137,7 @@ classDiagram
     +tapRegion, tapX, tapY
     +releaseRegion, releaseX, releaseY
     +hovered, hoverX, hoverY
+    +active, planned G2-3b
   }
   class Options {
     <<interface>>
@@ -387,6 +389,14 @@ classDiagram
   `entered`, with the score given to `open` and the date the host gives (`SceneHost.today()`,
   the domain reads no clock); the level stored is 1, the slice having one level (owner,
   2026-10-15, ADR-0022 decision 9).
+- **Attract mode (planned, G2-3b, GDD v0.16 §9.1)**: `IntentFrame.active` (ADR-0009, amended)
+  says the step saw any physical input; `DeviceInput` fills it from the browser events (any
+  `keydown` or a key still down, any pointer event on the page, a gamepad button or a stick
+  beyond the dead zone), never from the intent bits, so the automatic pause triggers are not
+  inputs. The scene machine counts `idleSteps` on `Title` (`SceneTuning.attractIdleSeconds` 10) and enters the
+  `Attract` scene, which reuses `HighScoresScreen` (`open(table, -1)`) and `drawHighScores`, and
+  leaves it on any input or after `SceneTuning.attractSeconds` (6) through `openMenu`, with no
+  lock.
 - **Name entry, as built (G2-3, owner-approved 2026-10-15)**: the cells are data (`NAME_CELLS`,
   `COUNTRY_CELLS`, characters eight to a row, then the actions; an action never straddles two
   rows). `PressGuard` (`src/domain/scenes/menu-input.ts`, with the direction thresholds) holds the

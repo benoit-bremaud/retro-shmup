@@ -122,6 +122,16 @@ stay accepted for everything else (back-links added in a dedicated PR).
   normalization and the touch offset; a domain test for pointer / key speed parity; a scene test
   proving that an automatic `Pause` never resumes.
 
+## Amendment (2026-10-15, GDD v0.16 attract mode)
+
+The frame gains one field, `active: boolean`: this step saw any physical input — a `keydown` of
+any key (bound or not) or a key still down, a pointer down, move or up anywhere on the page, a
+gamepad button down or a stick beyond its dead zone. It is filled by the input adapter from the
+browser events, never from the intent bits, so the automatic pause triggers (focus loss, layout
+change, gamepad lost), which only set `Pause`, never make a frame active. It carries no key, no
+position: a boolean only. Its one reader is the title's idle count of the attract mode (owner
+choices B then A on the two Codex findings of PR #70, 2026-10-15); no pause-source field is added.
+
 ## References
 
 - GDD v0.3 §4.1, §4.2, §7.3, §9.1, §9.3; ADR-0002, ADR-0003; ADR-0010 (presentation outside the

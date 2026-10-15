@@ -67,6 +67,7 @@ SD-boss (added with the level brick) uses `Run`, `RunRules`, `World`, `LevelDire
 | SceneHost (G1a-3: options changed, movement released; G1b: `startCapture`, `captureNext`, `cancelCapture`, `keyLabel`; G2-3: `countryOfLanguage`, `today`, `highScoresChanged`; implemented by the composition root) | CD-menus; SD-remap; STM-scenes (G1a-3 additions); UC5, UC6 text |
 | ControlsScreen, ControlsGrid (G1b; the grid, device, capture and cell texts, owner 2026-10-15) | CD-menus; SD-remap; STM-scenes (G1b); UC6 text |
 | HighScoresScreen, HighScoreTable (G2-2) | CD-menus; STM-scenes (G2); UC3, UC4 text |
+| `IntentFrame.active`, the `Attract` scene (planned, G2-3b) | CD-menus; STM-scenes (G2); GDD v0.16 §9.1 attract mode; ADR-0009 amendment |
 | NameEntry, LetterGrid, PressGuard (G2-3) | CD-menus; SD-score; STM-scenes (G2); UC3 text |
 | Options, SaveStore, StoragePort (G1a) | CD-menus; STM-scenes (`Boot` reads, each option change writes); UC5 text |
 

@@ -8,6 +8,22 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-15
 
+### G2-3b design: the attract mode (branch `docs/g2-attract-design`) — Refs #46
+
+- GDD v0.16 §9.1 (amended): after 10 s on the title without input, the High scores show for 6 s,
+  then the title, in a loop; any input (mouse moves included) restarts the 10 s; from the title
+  only; shown even with an empty table; any input returns to the title with the opening guard and
+  no lock (owner choices A/A, 2026-10-15). STM-scenes gains the planned `Attract` state;
+  CD-menus the scene machine's idle count. Codex (two P2 on #70): the frame could not see every
+  input (unbound keys, a held Enter, the mouse over the side bands) and the automatic pause
+  triggers share the `Pause` bit. Owner choices B then A: a raw `IntentFrame.active` filled by
+  the adapter from physical events (ADR-0009 amended), the only signal of the idle count; no
+  pause-source field.
+- G2-3a follow-up: Codex P2 on #69 (the starfield froze behind the name entry) fixed before the
+  merge (`7284c20`).
+- Owner decision: a Telegram notification on a new hall-of-fame name goes with the v2 online
+  leaderboard (a Worker relay; no token in the client, no network in 1.0, one GDPR pass).
+
 ### G2-3a: the name entry (branch `feat/g2-name-entry`) — Refs #46
 
 - After Game over or the Ending card, a score that enters the top 10 opens the name entry; else
