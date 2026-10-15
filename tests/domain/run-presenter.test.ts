@@ -16,6 +16,7 @@ import {
 } from '../../src/domain/game/enemy';
 import { Palette } from '../../src/domain/presentation/palette';
 import { RunPresenter } from '../../src/domain/presentation/run-presenter';
+import { SPRITE_FLASH_FRAME } from '../../src/domain/ports/render-port';
 import type { EffectSettings } from '../../src/domain/options';
 import { CRUISER_TURRET } from '../../src/domain/game/cruiser';
 import { BossState } from '../../src/domain/game/boss';
@@ -571,5 +572,117 @@ describe('RunPresenter — the boss fight game feel (GDD v0.10 §9.4, F-2c)', ()
     const view = presenter(new RecordingRender(), false, bus, { slowMotion: false });
     publish(bus, GameEventKind.BossDestroyed, 120, 60);
     expect(view.timeScale()).toBe(1);
+  });
+});
+
+describe('RunPresenter — placeholder sprites (GDD v0.17 §3.2.1, render/04-class-sprites)', () => {
+  const FIGHTING = { ...IDLE_BOSS, state: BossState.Fighting, serial: 5 };
+
+  function loaded(): RecordingRender {
+    const render = new RecordingRender();
+    render.spritesLoaded = true;
+    return render;
+  }
+
+  it('draws the ship as its sprite on the interpolated position, the cockpit still on the hitbox', () => {
+    const render = loaded();
+    const moved = ship({ previousPosition: { x: 100, y: 200 }, position: { x: 110, y: 200 } });
+    presenter(render, false).draw(snapshot(moved), 0.5, 16);
+    expect(render.sprites).toEqual([{ region: 'field', id: 'player', x: 105, y: 200, frame: 0 }]);
+    expect(hullRects(render)).toEqual([]);
+    expect(render.drew(Palette.shipWing)).toBe(false);
+    expect(render.rectsOf(Palette.shipCockpit)).toHaveLength(1);
+  });
+
+  it.each([
+    [POPCORN, 'popcorn'],
+    [DIVER, 'diver'],
+    [GUNNER, 'gunner'],
+    [CARRIER, 'carrier'],
+    [HEAVY_RING, 'heavy'],
+    [HEAVY_FAN, 'heavy'],
+  ] as const)('draws the %o role as the %s sprite, centred, with no box', (archetype, id) => {
+    const render = loaded();
+    presenter(render, false).draw(
+      snapshot(ship({ state: PlayerState.Dead }), [], {
+        enemies: listOf([enemyAt(archetype, 60, 70)]),
+      }),
+      1,
+      16,
+    );
+    expect(render.sprites).toEqual([{ region: 'field', id, x: 60, y: 70, frame: 0 }]);
+    expect(render.rects.filter((r) => r.region === 'field' && r.w >= 16)).toEqual([]);
+  });
+
+  it('draws a flashing enemy as its white silhouette, the flash frame of its sprite (§9.4)', () => {
+    const bus = new EventBus();
+    const render = loaded();
+    const view = presenter(render, false, bus);
+    const enemy = enemyAt(POPCORN, 60, 70);
+    const hit = createGameEvent(GameEventKind.EnemyHit);
+    hit.subject = enemy.serial;
+    bus.publish(hit);
+    view.draw(snapshot(ship({ state: PlayerState.Dead }), [], { enemies: listOf([enemy]) }), 1, 16);
+    expect(render.sprites).toEqual([
+      { region: 'field', id: 'popcorn', x: 60, y: 70, frame: SPRITE_FLASH_FRAME },
+    ]);
+    expect(render.drew(Palette.hitFlash)).toBe(false);
+  });
+
+  it('builds the Cruiser from two wings at x ∓ 44, the hull, then the turret in phase 0', () => {
+    const render = loaded();
+    const boss = { ...FIGHTING, position: { x: 100, y: 56 }, previousPosition: { x: 100, y: 56 } };
+    presenter(render, false).draw(snapshot(ship({ state: PlayerState.Dead }), [], { boss }), 1, 16);
+    expect(render.sprites).toEqual([
+      { region: 'field', id: 'cruiserWing', x: 56, y: 56, frame: 0 },
+      { region: 'field', id: 'cruiserWing', x: 144, y: 56, frame: 0 },
+      { region: 'field', id: 'cruiserHull', x: 100, y: 56, frame: 0 },
+      {
+        region: 'field',
+        id: 'cruiserTurret',
+        x: 100 + CRUISER_TURRET.offsetX,
+        y: 56 + CRUISER_TURRET.offsetY,
+        frame: 0,
+      },
+    ]);
+    expect(render.drew(Palette.boss)).toBe(false);
+    expect(render.drew(Palette.bossTurret)).toBe(false);
+  });
+
+  it('keeps the wings and drops the turret once phase 2 broke it off', () => {
+    const render = loaded();
+    presenter(render, false).draw(
+      snapshot(ship({ state: PlayerState.Dead }), [], { boss: { ...FIGHTING, phase: 1 } }),
+      1,
+      16,
+    );
+    expect(render.sprites.map((sprite) => sprite.id)).toEqual([
+      'cruiserWing',
+      'cruiserWing',
+      'cruiserHull',
+    ]);
+  });
+
+  it('draws a flashing Cruiser as the white silhouettes of its parts', () => {
+    const bus = new EventBus();
+    const render = loaded();
+    const view = presenter(render, false, bus);
+    const hit = createGameEvent(GameEventKind.EnemyHit);
+    hit.subject = 5;
+    bus.publish(hit);
+    view.draw(snapshot(ship({ state: PlayerState.Dead }), [], { boss: FIGHTING }), 1, 16);
+    expect(render.sprites.map((sprite) => sprite.frame)).toEqual([
+      SPRITE_FLASH_FRAME,
+      SPRITE_FLASH_FRAME,
+      SPRITE_FLASH_FRAME,
+      SPRITE_FLASH_FRAME,
+    ]);
+    expect(render.drew(Palette.hitFlash)).toBe(false);
+  });
+
+  it('draws nothing of an idle Cruiser', () => {
+    const render = loaded();
+    presenter(render, false).draw(snapshot(ship({ state: PlayerState.Dead })), 1, 16);
+    expect(render.sprites).toEqual([]);
   });
 });

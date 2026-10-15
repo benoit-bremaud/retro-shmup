@@ -129,7 +129,10 @@ whole on its shapes if the image never arrives (owner, MCDA A 475/500, against a
 `hasSprite` query, 440, and a fallback drawn inside the adapter, 270: the adapter would copy the
 game's shapes). `SpriteId` becomes the closed union of the ids the presentation draws, so an
 unknown id fails to compile and the adapter's lookup table is a `Record<SpriteId, …>` checked for
-completeness. `frame` and `flipX` are unchanged and still unused.
+completeness. `flipX` is unchanged and still unused; `frame` gets its first value in G4-1b:
+`SPRITE_FLASH_FRAME` (1) draws the sprite's white flash silhouette, a pre-baked variant as this
+ADR's rule on hit flashes foresaw (owner, MCDA B 460/500: a white box hid the Cruiser for the
+whole fight under sustained fire).
 
 The amended signatures (the authoritative version stays the UML class diagram
 `render/04-class-sprites`):
@@ -140,7 +143,8 @@ export type SpriteId =
   | 'cruiserHull' | 'cruiserWing' | 'cruiserTurret';
 
 export interface RenderPort {
-  // (x, y) is the sprite's centre; true when drawn, false while the sheets are not baked
+  // (x, y) is the sprite's centre; frame 1 = the white flash silhouette;
+  // true when drawn, false while the sheets are not baked
   drawSprite(id: SpriteId, x: number, y: number, frame?: number, flipX?: boolean): boolean;
   // other methods unchanged
 }

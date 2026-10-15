@@ -26,6 +26,10 @@ classDiagram
     player | popcorn | diver | gunner | carrier | heavy
     cruiserHull | cruiserWing | cruiserTurret
   }
+  class SPRITE_FLASH_FRAME {
+    <<const, domain/ports/render-port>>
+    1, the white flash silhouette
+  }
   class RenderPort {
     <<interface, domain>>
     +drawSprite(id: SpriteId, x: number, y: number, frame?: number, flipX?: boolean) boolean
@@ -62,13 +66,14 @@ classDiagram
   class BakedSprite {
     <<type, adapters/sprite-bank>>
     +image: CanvasImageSource
+    +flash: CanvasImageSource
     +width: number
     +height: number
   }
   class Canvas2DRenderer {
     <<adapters>>
     -sprites: SpriteBank
-    +drawSprite(id, x, y) boolean
+    +drawSprite(id, x, y, frame) boolean
   }
   class main {
     <<app/main.ts>>
@@ -78,6 +83,7 @@ classDiagram
   RunPresenter --> RenderPort : drawSprite, else drawRect shapes
   RunPresenter ..> SPRITE_OF_ROLE
   RunPresenter ..> SpriteId
+  RunPresenter ..> SPRITE_FLASH_FRAME
   Canvas2DRenderer --> SpriteBank : get
   SpriteBank ..> BakedSprite
   SpriteBank ..> SPRITE_CELLS
@@ -107,15 +113,16 @@ classDiagram
   the canvas with its size, which `drawSprite` needs to centre it; `get` and `drawSprite`
   allocate nothing. `heavy` and `cruiserHull` are the 2× cells.
 - **The Cruiser** is three `drawSprite` calls: the wings at x ∓ 44, the hull at x, then the
-  turret at the turret's offset (`CRUISER_TURRET`) while phase 0 and not flashing. If the hull
+  turret at the turret's offset (`CRUISER_TURRET`) while phase 0, all four with the flash frame
+  while it flashes. If the hull
   draw returns `false`, the presenter draws the current boxes instead.
-- **Hit flash** (§9.4): a flashing entity is drawn as its box in the flash colour, before any
-  sprite lookup — unchanged.
-- **G4-1b**: `RunPresenter`'s sprite drawing and `SPRITE_OF_ROLE` arrive in the second code PR;
-  until then every `drawSprite` caller is absent and the shapes are drawn as before.
+- **Hit flash** (§9.4, amended in G4-1b): a flashing entity is drawn with
+  `frame = SPRITE_FLASH_FRAME`, its white silhouette `BakedSprite.flash`, baked from the sprite's
+  own canvas (`source-in` fill in `Palette.hitFlash`); while the sheets are not loaded it stays its
+  box in the flash colour.
 - **`SPRITE_OF_ROLE`** maps the archetype id (`popcorn` … `heavy-ring`, `heavy-fan`) to a sprite,
   as `enemyColour` maps it to a colour today (ADR-0010: never stored in archetype data).
-- `frame` and `flipX` stay unused (ADR-0001); the `Canvas2DRenderer` box abbreviates the
+- `flipX` stays unused (ADR-0001); the `Canvas2DRenderer` box abbreviates the
   parameters. `baked` is a `Map` because an id has no entry until the bake, unlike the complete
   `SPRITE_CELLS`.
 - **Code changes this implies**: the renderer's `drawSprite` returns `false` instead of throwing;

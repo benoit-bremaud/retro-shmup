@@ -4,7 +4,7 @@ import type { RenderSurface } from '../../src/adapters/canvas2d-renderer';
 import { SpriteBank } from '../../src/adapters/sprite-bank';
 import type { BakeSurface } from '../../src/adapters/sprite-bank';
 import { computeViewport } from '../../src/adapters/viewport';
-import { HUD_FONT_CELL, SPRITE_IDS } from '../../src/domain/ports/render-port';
+import { HUD_FONT_CELL, SPRITE_FLASH_FRAME, SPRITE_IDS } from '../../src/domain/ports/render-port';
 import type { SpriteId } from '../../src/domain/ports/render-port';
 import { Palette } from '../../src/domain/presentation/palette';
 
@@ -45,6 +45,9 @@ const image = {} as CanvasImageSource;
 // The bake's own calls are not under test here (sprite-bank.test.ts covers them).
 const bakeSurface: BakeSurface = {
   imageSmoothingEnabled: false,
+  globalCompositeOperation: 'source-over',
+  fillStyle: '',
+  fillRect: () => undefined,
   drawImage: () => undefined,
   translate: () => undefined,
   scale: () => undefined,
@@ -166,6 +169,17 @@ describe('Canvas2DRenderer (ADR-0001, ADR-0010, ADR-0014)', () => {
     expect(renderer.drawSprite('heavy', 100.4, 50.6)).toBe(true);
     // 120 + 1 + 100.4 − 32 = 189.4 and 0 − 2 + 50.6 − 32 = 16.6, rounded.
     expect(offscreen.calls.at(-1)).toBe('drawImage smoothing=true 189,17,64,64');
+  });
+
+  it('draws the white flash silhouette for the flash frame, else the sprite', () => {
+    const { renderer, offscreen, sprites } = setup();
+    bakeOwnCanvases(sprites);
+    const baked = sprites.get('gunner');
+
+    renderer.drawSprite('gunner', 50, 50, SPRITE_FLASH_FRAME);
+    expect(offscreen.images.at(-1)).toBe(baked?.flash);
+    renderer.drawSprite('gunner', 50, 50);
+    expect(offscreen.images.at(-1)).toBe(baked?.image);
   });
 
   it('centres a HUD sprite on (x, y) with no field origin and no camera', () => {
