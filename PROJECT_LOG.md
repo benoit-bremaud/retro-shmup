@@ -6,6 +6,38 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ---
 
+## 2026-10-16
+
+### Level-1 rebalance v0.18 applied, the balance bot committed (branch `feat/balance-bot`) — Refs #56
+
+- `tests/support/average-player.ts`: a seeded model player (looks every 0.15 / 0.25 / 0.40 s and
+  holds its choice, a miss chance, a dodge that reads every bullet's path over 0.8 s and picks
+  the safest of 9 moves, pickups first, then the boss or the lowest enemy).
+  `tests/balance/level-1-balance.test.ts` measures 100 seeds per profile (~5 s) and guards five
+  bands (good wins most runs, average 1.5–3 deaths and 15–45 % game over, fight 30–50 s, power 5
+  at 110 s or later, beginner boss kills ≥ 25 %). `BALANCE_SEEDS` / `BALANCE_REPORT=1` print the
+  full report. Mutation checks: the 70 s formation paying its P again fails the power band, the
+  ring of 16 fails the beginner band; the Cruiser HP alone (1 450 vs 1 800) is within the bot's
+  noise and is pinned by the unit tests instead.
+- Values of GDD v0.18 (#79) in `tuning.ts`, `enemy.ts`, `level-script.ts`. Owner amendment the
+  same day (465/500): the phase-2 ring 16 → 14 bullets, since 16 at 1.25 s peaked at 45 enemy
+  bullets, over the 40 of §6.1; now 40. GDD, UML and decision record amended in this PR.
+- 56 tests re-derived from v0.18 (`shots(n)`; collision tests read `GUNNER.stats.hp`); the
+  boss-fight replay uses seed 10 and a narrower dodge window, as the scripted ship no longer kills
+  a 1 800-shot Cruiser on seed 1.
+- Measured (100 seeds, good / average / beginner): game over 18 / 28 / 59 %, boss killed 82 / 73 /
+  41 %, average deaths 2.3, fight 38 / 39 / 41 s, power 5 near 118 s (v0.12: average 0.56 deaths,
+  2 % game over, fight 27 s, power 5 at 88 s).
+
+### GDD v0.18, the third level-1 rebalance (#79 → `10ceacd`)
+
+- Owner: the game is far too easy (waves, boss, ship power, the whole level). Lever package E,
+  mixed and attenuated (MCDA 405/500), values V7 (415/500) after a lever-by-lever study with the
+  bot. Docs only. Codex at its usage limit: merged on the local review with owner approval.
+- Owner wishes recorded for later (after this brick): more content for a young player (levels 2
+  and 3, bosses, new weapons or roles, maybe an Easy mode), denser waves (empty seconds in level
+  1), and the shield fix #74 (a bullet crossing the ring must break it).
+
 ## 2026-10-15
 
 ### G4-1b: the ships drawn as sprites (#77 → `87a2d5b`) — G4-1 done

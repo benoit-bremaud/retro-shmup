@@ -69,7 +69,7 @@ describe('Boss — warning and entry (GDD v0.10 §6, 05-state-boss)', () => {
     const { boss } = started();
     expect(boss.state).toBe(BossState.Warning);
     expect(boss.serial).toBe(7);
-    expect(boss.hp).toBe(shots(1450)); // GDD v0.12 §6.1: 1 450 level-1 shots
+    expect(boss.hp).toBe(shots(1800)); // GDD v0.18 §6.1: 1 800 level-1 shots
     expect(boss.width).toBe(112);
     expect(boss.height).toBe(48);
     expect(overlapsField(boss.position.x, boss.position.y, boss.width, boss.height)).toBe(false);
@@ -198,7 +198,7 @@ describe('Boss — the fight timer (GDD v0.10 §6)', () => {
     // Step 5 of the last step: the kill; step 7 then finds a destroyed boss, not a fighting one.
     world.step += 1;
     boss.move(world, DT);
-    expect(applyDamage(boss, shots(1450))).toBe(true);
+    expect(applyDamage(boss, shots(1800))).toBe(true);
     boss.destroy();
     expect(boss.advance(world)).toBe(BossAdvance.None);
     expect(boss.state).toBe(BossState.Destroyed);
@@ -224,29 +224,29 @@ describe('Boss — destroyed (GDD v0.10 §6)', () => {
 });
 
 describe('Boss — phases (ADR-0023 decision 3)', () => {
-  it('enters phase 2 at 66 % HP: the attack switches at once, the first ring 1.5 s later', () => {
+  it('enters phase 2 at 66 % HP: the attack switches at once, the first ring 1.25 s later', () => {
     const { boss, world } = fighting();
     ticks(boss, world, 30);
     const before = world.bullets.length;
     expect(before).toBe(0);
-    // GDD v0.12 §6.1: 1 450 − 957 = 493 shots bring the Cruiser to its 66 % threshold.
-    applyDamage(boss, shots(493));
+    // GDD v0.18 §6.1: 1 800 − 1 188 = 612 shots bring the Cruiser to its 66 % threshold.
+    applyDamage(boss, shots(612));
     expect(boss.hpRatio()).toBeCloseTo(0.66, 9);
     expect(boss.advancePhase(world)).toBe(true);
     expect(boss.phaseIndex).toBe(1);
     expect(boss.advancePhase(world)).toBe(false);
     expect(boss.volleys).toBe(0);
     const changedAt = world.step;
-    ticks(boss, world, 89);
+    ticks(boss, world, 74);
     expect(world.bullets).toHaveLength(0);
     tick(boss, world);
-    expect(world.step - changedAt).toBe(90);
-    expect(world.bullets).toHaveLength(16);
+    expect(world.step - changedAt).toBe(75);
+    expect(world.bullets).toHaveLength(14); // a ring of 14 (GDD v0.18)
   });
 
   it('does not enter phase 2 one tenth above its threshold', () => {
     const { boss, world } = fighting();
-    applyDamage(boss, shots(493) - 1);
+    applyDamage(boss, shots(612) - 1);
     expect(boss.advancePhase(world)).toBe(false);
     expect(boss.phaseIndex).toBe(0);
   });
@@ -269,7 +269,7 @@ describe('Boss — phases (ADR-0023 decision 3)', () => {
     (_label, hitAt, expectMirror) => {
       const { boss, world } = fighting();
       ticks(boss, world, hitAt);
-      applyDamage(boss, shots(493));
+      applyDamage(boss, shots(612));
       expect(boss.advancePhase(world)).toBe(true);
       let previousX = boss.position.x;
       let swapped = false;
@@ -396,16 +396,16 @@ describe('Boss — the Cruiser definition is well formed (data checked once, not
   });
 });
 
-describe('Boss — the Cruiser at 1 s (GDD v0.10 §6.1)', () => {
-  it('fires its first volley, a fan of 5 at the ship, 1 s into the fight', () => {
+describe('Boss — the Cruiser at 0.9 s (GDD v0.18 §6.1)', () => {
+  it('fires its first volley, a fan of 5 at the ship, 0.9 s into the fight', () => {
     const { boss, world } = fighting();
-    ticks(boss, world, 59);
+    ticks(boss, world, 53);
     expect(world.bullets).toHaveLength(0);
     tick(boss, world);
     expect(world.bullets).toHaveLength(5);
-    ticks(boss, world, 60);
+    ticks(boss, world, 54);
     expect(world.bullets).toHaveLength(5 + 12);
-    ticks(boss, world, 60);
+    ticks(boss, world, 54);
     expect(world.bullets).toHaveLength(5 + 12 + 5);
   });
 

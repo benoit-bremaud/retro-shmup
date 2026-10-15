@@ -44,7 +44,7 @@ export interface LevelScript {
 const POPCORN_INTERVAL = 1 / 3;
 
 /**
- * Level 1 (GDD v0.12 §7.2.1, §7.2.2; the formations at 8, 50 and 52 s pay no P): the opening,
+ * Level 1 (GDD v0.18 §7.2.1, §7.2.2; the formations at 8, 50, 52 and 70 s pay no P): the opening,
  * then the ramp to the 102 s Heavy pair, the last spawn at 112.3 s and the field draining until
  * the WARNING at 120 s, then the Cruiser.
  */
@@ -104,7 +104,15 @@ export const LEVEL_1: LevelScript = {
     { at: 59, archetype: DIVER, count: 1, spawn: { x: 140, y: -8 } },
     { at: 64, archetype: GUNNER, count: 1, spawn: { x: 60, y: -16 }, hover: { x: 60, y: 64 } },
     { at: 64, archetype: GUNNER, count: 1, spawn: { x: 180, y: -16 }, hover: { x: 180, y: 64 } },
-    { at: 70, archetype: POPCORN, count: 8, interval: POPCORN_INTERVAL, spawn: { x: 120, y: -8 } },
+    // GDD v0.18: the 70 s formation no longer pays its P.
+    {
+      at: 70,
+      archetype: POPCORN,
+      count: 8,
+      interval: POPCORN_INTERVAL,
+      spawn: { x: 120, y: -8 },
+      paysP: false,
+    },
     { at: 70, archetype: DIVER, count: 1, spawn: { x: 40, y: -8 } },
     { at: 70, archetype: DIVER, count: 1, spawn: { x: 200, y: -8 } },
     { at: 78, archetype: CARRIER, count: 1, spawn: { x: -16, y: 48 }, cargo: PickupKind.OneUp },

@@ -588,8 +588,8 @@ classDiagram
   `NoAttack`; Gunner = `EnterHoldLeave` + `AimedAttack` + drop {P-red or P-blue, 10 % (GDD v0.11)}; Carrier =
   `CrossMovement` (a straight horizontal crossing) + `NoAttack` + cargo; Heavy = `EnterHoldLeave` (its own configuration, ADR-0022) + `RingAttack`
   or `FanAttack` + drop {Bomb or Shield, 30 % (GDD v0.11)}; the Cruiser's phases = `SwayMovement` +
-  `SequenceAttack` (fan, ring) in phase 1, `SwayMovement` + `SequenceAttack` (a ring of 16 on every
-  volley, the aimed triple on every second one) in phase 2. *(ADR-0023)* Every pattern has a
+  `SequenceAttack` (fan, ring) in phase 1, `SwayMovement` + `SequenceAttack` (a ring of 14 on every
+  volley (GDD v0.18; 16 before), the aimed triple on every second one) in phase 2. *(ADR-0023)* Every pattern has a
   `fire(count)` (one volley, no timing) and a `tick` (the timed wrapper); `sequenceAttack(groups,
   periodS)` fires one volley every `periodS`, volley i firing every pattern of group i mod n through
   their `fire` with the count `volleys` (the inner patterns' own `periodS` is ignored); a ring

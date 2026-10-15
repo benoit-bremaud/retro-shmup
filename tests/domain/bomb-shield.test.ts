@@ -224,7 +224,7 @@ describe('Run — the bomb in step slot 3 (02-sequence-bomb)', () => {
   });
 
   it('damages a Heavy that has more HP than the bomb deals, without destroying it', () => {
-    // 40 shots of HP against the bomb's 30: 10 shots are left.
+    // 50 shots of HP against the bomb's 30: 20 shots are left (GDD v0.18).
     const run = new Run({
       levels: [
         testScript([
@@ -243,12 +243,12 @@ describe('Run — the bomb in step slot 3 (02-sequence-bomb)', () => {
     run.step(DT, idle());
     for (let i = 0; i < 600 && heavy().position.y < 72; i += 1) run.step(DT, idle());
     expect(heavy().position.y).toBeCloseTo(72, 6);
-    expect(run.snapshot().enemies.at(0).hp).toBe(shots(40));
+    expect(run.snapshot().enemies.at(0).hp).toBe(shots(50));
     const log = logOf(run, [GameEventKind.EnemyHit, GameEventKind.EnemyDestroyed]);
     run.step(DT, pressing(Button.Bomb));
     expect(log).toEqual([`${String(GameEventKind.EnemyHit)}:0`]);
     expect(run.snapshot().enemies.count).toBe(1);
-    expect(run.snapshot().enemies.at(0).hp).toBe(shots(10));
+    expect(run.snapshot().enemies.at(0).hp).toBe(shots(20));
     expect(run.snapshot().score).toBe(0);
   });
 

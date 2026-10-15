@@ -72,10 +72,10 @@ export const DIVER: EnemyArchetype = {
   carriesCargo: false,
 };
 
-/** GDD v0.8 §5.2.1: 8 shots (`hp` in tenths, ADR-0019); enters, holds, fires aimed bullets. */
+/** GDD v0.18 §5.2.1: 10 shots (`hp` in tenths, ADR-0019); enters, holds, fires aimed bullets. */
 export const GUNNER: EnemyArchetype = {
   id: 'gunner',
-  stats: { hp: 80, width: 32, height: 32, score: 300, tier: SizeTier.Medium },
+  stats: { hp: 100, width: 32, height: 32, score: 300, tier: SizeTier.Medium },
   movement: enterHoldLeave({
     travelS: GunnerTuning.travelSeconds,
     holdS: GunnerTuning.holdSeconds,
@@ -101,8 +101,8 @@ export const CARRIER: EnemyArchetype = {
 };
 
 const HEAVY_STATS: EnemyStats = {
-  // 40 level-1 shots, in tenths (ADR-0019).
-  hp: 400,
+  // 50 level-1 shots, in tenths (GDD v0.18, ADR-0019).
+  hp: 500,
   width: 56,
   height: 48,
   score: 1000,

@@ -101,8 +101,8 @@ export const ResultsTuning = {
 /** Enemy bullets (GDD v0.6 §5.2.1): never faster than the ship. */
 export const EnemyBulletTuning = {
   size: 4,
-  /** Pixels per second. */
-  speed: 75,
+  /** Pixels per second (GDD v0.18; 75 before). */
+  speed: 85,
 } as const;
 
 /** Popcorn S curve (GDD v0.6 §5.2.1): x = x0 ± amplitude · sin(2π · y / wavelength). */
@@ -120,12 +120,12 @@ export const DiverTuning = {
   diveSpeed: 180,
 } as const;
 
-/** Gunner (GDD v0.6 §5.2.1; one aimed bullet every 1 s, GDD v0.11). */
+/** Gunner (GDD v0.6 §5.2.1; one aimed bullet every 0.8 s, GDD v0.18). */
 export const GunnerTuning = {
   travelSeconds: 1,
   holdSeconds: 3.5,
   leaveSpeed: 60,
-  firePeriodSeconds: 1,
+  firePeriodSeconds: 0.8,
 } as const;
 
 /** Heavy (GDD v0.10 §5.2.1): the Gunner's movement with its own values, a ring or a fan. */
@@ -140,7 +140,8 @@ export const HeavyTuning = {
   ringRotateDegrees: 15,
   fanCount: 5,
   fanSpreadDegrees: 15,
-  fanSpeed: 75,
+  /** GDD v0.18; 75 before. */
+  fanSpeed: 85,
 } as const;
 
 /** Carrier (GDD v0.8 §5.2.1): a straight horizontal crossing that never stops. */
@@ -172,7 +173,10 @@ export const TallyTuning = {
 
 /** Pools of the enemies brick (GDD v0.6 §5.2.1). */
 export const ENEMY_POOL_SIZE = 16;
-/** 48 leaves at least 12 slots over the level-1 script's peak (about 30, pinned by the level-simulation test). */
+/**
+ * 48 leaves at least 12 slots over the level-1 waves' peak (about 30) and 8 over the Cruiser's
+ * phase 2 (40, GDD v0.18), both pinned by the level-simulation test.
+ */
 export const ENEMY_BULLET_POOL_SIZE = 48;
 
 /**
@@ -241,12 +245,12 @@ export const BossHudTuning = {
   barTickRatio: 0.66,
 } as const;
 
-/** The Cruiser, level 1's boss (GDD v0.10 §6.1, initial): values in seconds, px and px/s. */
+/** The Cruiser, level 1's boss (GDD v0.10 §6.1; values of v0.18): values in seconds, px and px/s. */
 export const CruiserTuning = {
   width: 112,
   height: 48,
-  /** 1 450 level-1 shots, in tenths (GDD v0.12 §6.1, ADR-0019). */
-  hp: 14_500,
+  /** 1 800 level-1 shots, in tenths (GDD v0.18 §6.1, ADR-0019). */
+  hp: 18_000,
   timeLimitSeconds: 90,
   warningSeconds: 3,
   entryFromY: -24,
@@ -254,27 +258,28 @@ export const CruiserTuning = {
   entrySeconds: 3,
   fleeSpeed: 60,
   destroyedSeconds: 2,
-  /** Phase 2 starts at 66 % HP: 9 570 tenths (GDD v0.12). */
-  phase2HpThreshold: 9570,
+  /** Phase 2 starts at 66 % HP: 11 880 tenths (GDD v0.18). */
+  phase2HpThreshold: 11_880,
   phase1: {
     swayAmplitude: 56,
     swayPeriodSeconds: 8,
-    volleyPeriodSeconds: 1,
+    volleyPeriodSeconds: 0.9,
     fanCount: 5,
     fanSpreadDegrees: 15,
-    fanSpeed: 75,
+    fanSpeed: 85,
     ringCount: 12,
     ringSpeed: 60,
   },
   phase2: {
     swayAmplitude: 72,
     swayPeriodSeconds: 6,
-    volleyPeriodSeconds: 1.5,
-    ringCount: 16,
+    volleyPeriodSeconds: 1.25,
+    /** GDD v0.18: 14 (was 16), so phase 2 stays within 40 enemy bullets. */
+    ringCount: 14,
     ringSpeed: 60,
     ringRotateDegrees: 11.25,
     tripleCount: 3,
     tripleSpreadDegrees: 15,
-    tripleSpeed: 75,
+    tripleSpeed: 85,
   },
 } as const;

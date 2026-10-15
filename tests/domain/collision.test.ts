@@ -16,6 +16,8 @@ import { createIntentFrame } from '../../src/domain/ports/input-port';
 import { shots } from '../support/shots';
 
 const DT = 1 / 60;
+/** Read from the archetype so a rebalance of its HP does not break the damage arithmetic below. */
+const GUNNER_HP = GUNNER.stats.hp;
 const SHOT: ShotSpec = {
   offsetX: 0,
   offsetY: 0,
@@ -83,7 +85,7 @@ describe('CollisionResolver — shots against enemies (GDD §5.2, class diagram)
     world.spawnPlayerBullet(100, 100, SHOT);
     const rules = new Rules();
     CollisionResolver.resolve(world, rules);
-    expect(gunner.hp).toBe(shots(7));
+    expect(gunner.hp).toBe(GUNNER_HP - shots(1));
     expect(world.playerBullets.at(0).spent).toBe(true);
     expect(rules.hits).toBe(1);
   });
@@ -174,7 +176,7 @@ describe('CollisionResolver — hazards against the 4 × 4 hitbox (GDD §4.1, §
     const gunner = enemyAt(world, GUNNER, 120, 272);
     CollisionResolver.resolve(world, new Rules());
     expect(world.player.state).toBe(PlayerState.Dead);
-    expect(gunner.hp).toBe(shots(8));
+    expect(gunner.hp).toBe(GUNNER_HP);
   });
 });
 
@@ -198,7 +200,12 @@ describe('CollisionResolver — Laser pass-throughs (GDD v0.8 §4.3)', () => {
     const rules = new Rules();
     CollisionResolver.resolve(world, rules);
     // Travel order: d, c and b, the nearest to the ship; a, the farthest, is never reached.
-    expect([a.hp, b.hp, c.hp, d.hp]).toEqual([shots(8), shots(5), shots(5), shots(5)]);
+    expect([a.hp, b.hp, c.hp, d.hp]).toEqual([
+      GUNNER_HP,
+      GUNNER_HP - shots(3),
+      GUNNER_HP - shots(3),
+      GUNNER_HP - shots(3),
+    ]);
     expect(world.playerBullets.at(0).spent).toBe(true);
     expect(rules.hits).toBe(3);
   });
@@ -209,7 +216,7 @@ describe('CollisionResolver — Laser pass-throughs (GDD v0.8 §4.3)', () => {
     world.spawnPlayerBullet(100, 100, BOLT);
     const rules = new Rules();
     for (let i = 0; i < 3; i += 1) CollisionResolver.resolve(world, rules);
-    expect(gunner.hp).toBe(50);
+    expect(gunner.hp).toBe(GUNNER_HP - shots(3));
     expect(world.playerBullets.at(0).spent).toBe(false);
   });
 
@@ -235,10 +242,10 @@ describe('CollisionResolver — bullet memory and every level (GDD v0.8 §4.3)',
     CollisionResolver.resolve(world, rules);
     for (let i = 0; i < world.playerBullets.count; i += 1) world.playerBullets.at(i).spent = true;
     world.sweep();
-    expect(gunner.hp).toBe(shots(8));
+    expect(gunner.hp).toBe(GUNNER_HP);
     world.spawnPlayerBullet(100, 100, SHOT);
     CollisionResolver.resolve(world, rules);
-    expect(gunner.hp).toBe(shots(7));
+    expect(gunner.hp).toBe(GUNNER_HP - shots(1));
   });
 
   it.each([WeaponKind.Spread, WeaponKind.Laser])(
@@ -270,7 +277,11 @@ describe('CollisionResolver — Laser hits in travel order (GDD v0.8 §4.3)', ()
     world.playerBullets.at(0).velocity.y = -600;
     const rules = new Rules();
     CollisionResolver.resolve(world, rules);
-    expect([near.hp, middle.hp, far.hp]).toEqual([shots(7), shots(7), shots(8)]);
+    expect([near.hp, middle.hp, far.hp]).toEqual([
+      GUNNER_HP - shots(1),
+      GUNNER_HP - shots(1),
+      GUNNER_HP,
+    ]);
     expect(world.playerBullets.at(0).spent).toBe(true);
   });
 });
@@ -362,7 +373,7 @@ describe('CollisionResolver — the boss (ADR-0022 decision 5, GDD v0.10 §6)', 
     CollisionResolver.resolve(world, rules);
     // The bolt flies up: the boss (y 100) is met after the gunner (y 130), which is nearer.
     expect(rules.hits).toBe(1);
-    expect(gunner.hp).toBe(shots(8) - SHOT.damage);
+    expect(gunner.hp).toBe(GUNNER_HP - SHOT.damage);
     expect(rules.bossDamage).toHaveLength(1);
   });
 
@@ -404,7 +415,7 @@ describe('CollisionResolver — the shot box is strict on both axes (overlap rul
     const rules = new Rules();
     CollisionResolver.resolve(world, rules);
     expect(rules.hits).toBe(hits ? 1 : 0);
-    expect(gunner.hp).toBe(hits ? shots(7) : shots(8));
+    expect(gunner.hp).toBe(hits ? GUNNER_HP - shots(1) : GUNNER_HP);
     expect(world.playerBullets.at(0).spent).toBe(hits);
   });
 });
@@ -509,7 +520,7 @@ describe('CollisionResolver — the boss and a Laser bolt (GDD v0.8 §4.3, ADR-0
       const rules = new Rules();
       CollisionResolver.resolve(world, rules);
       expect(rules.hits).toBe(enemyFirst ? 1 : 0);
-      expect(gunner.hp).toBe(enemyFirst ? shots(8) - SHOT.damage : shots(8));
+      expect(gunner.hp).toBe(enemyFirst ? GUNNER_HP - SHOT.damage : GUNNER_HP);
       expect(rules.bossDamage).toHaveLength(enemyFirst ? 0 : 1);
       expect(world.playerBullets.at(0).spent).toBe(true);
     });

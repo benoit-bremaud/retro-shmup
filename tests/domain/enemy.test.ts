@@ -41,7 +41,7 @@ function run(enemy: Enemy, world: WorldView, steps: number, shots = new Recordin
 describe('applyDamage — destroyed at most once (class diagram notes)', () => {
   it('is true only on the step the HP crosses to 0', () => {
     const gunner = spawned(GUNNER, { spawn: { x: 0, y: 0 } });
-    expect(applyDamage(gunner, shots(7))).toBe(false);
+    expect(applyDamage(gunner, shots(9))).toBe(false);
     expect(applyDamage(gunner, shots(1))).toBe(true);
     expect(applyDamage(gunner, shots(1))).toBe(false);
   });
@@ -71,7 +71,7 @@ describe('Enemy.spawn — resets every field (class diagram notes)', () => {
       [
         [16, shots(1), 100],
         [16, shots(1), 150],
-        [32, shots(8), 300],
+        [32, shots(10), 300],
       ],
     );
   });
@@ -147,9 +147,9 @@ describe('EnterHoldLeave and AimedAttack — Gunner (GDD v0.6 §5.2.1)', () => {
     expect(gunner.velocity.y).toBeCloseTo(0, 9);
   });
 
-  // GDD v0.11 §5.2.1: it stops at 1 s (frame 60) and holds 3.5 s (to frame 270); one bullet
-  // every 1 s from the stop gives frames 120, 180 and 240 — the next (300) falls after the hold.
-  it('fires 3 aimed bullets per hold: 1 s, 2 s and 3 s after it stops', () => {
+  // GDD v0.18 §5.2.1: it stops at 1 s (frame 60) and holds 3.5 s (to frame 270); one bullet
+  // every 0.8 s from the stop gives frames 108, 156, 204 and 252 — the next (300) falls after the hold.
+  it('fires 4 aimed bullets per hold: 0.8, 1.6, 2.4 and 3.2 s after it stops', () => {
     const gunner = spawned(GUNNER, { spawn: { x: 120, y: -16 }, hover: { x: 120, y: 80 } });
     const shots = new RecordingShots();
     const firedAt: number[] = [];
@@ -158,15 +158,15 @@ describe('EnterHoldLeave and AimedAttack — Gunner (GDD v0.6 §5.2.1)', () => {
       run(gunner, shipAt(120, 272), 1, shots);
       if (shots.shots.length > before) firedAt.push(gunner.age);
     }
-    expect(firedAt).toEqual([120, 180, 240]);
+    expect(firedAt).toEqual([108, 156, 204, 252]);
   });
 
-  it('aims at the ship at 75 px/s, slower than the ship (150 px/s)', () => {
+  it('aims at the ship at 85 px/s, slower than the ship (150 px/s)', () => {
     const gunner = spawned(GUNNER, { spawn: { x: 120, y: -16 }, hover: { x: 120, y: 80 } });
     const shots = new RecordingShots();
     run(gunner, shipAt(180, 160), 150, shots);
     const shot = shots.shots[0];
-    expect(Math.hypot(shot?.vx ?? 0, shot?.vy ?? 0)).toBeCloseTo(75, 9);
+    expect(Math.hypot(shot?.vx ?? 0, shot?.vy ?? 0)).toBeCloseTo(85, 9);
     expect((shot?.vx ?? 0) / (shot?.vy ?? 1)).toBeCloseTo(60 / 80, 9);
   });
 
@@ -174,7 +174,7 @@ describe('EnterHoldLeave and AimedAttack — Gunner (GDD v0.6 §5.2.1)', () => {
     const gunner = spawned(GUNNER, { spawn: { x: 120, y: -16 }, hover: { x: 120, y: 80 } });
     const shots = new RecordingShots();
     run(gunner, shipAt(120, 80), 150, shots);
-    expect(shots.shots[0]).toMatchObject({ vx: 0, vy: 75 });
+    expect(shots.shots[0]).toMatchObject({ vx: 0, vy: 85 });
   });
 
   it('never fires while disarmed (entering or leaving)', () => {

@@ -86,6 +86,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Versioning policy (ADR-0025): SemVer 2.0.0, the save document and the URL parameters as
   public surface, manual signed releases from `v0.1.0` on.
+- Level 1 is rebalanced a third time, much harder (GDD v0.18, #56): aimed, fan and triple enemy
+  bullets at 85 px/s (was 75), Gunners take 10 shots (was 8) and fire every 0.8 s (was 1 s),
+  Heavies take 50 shots (was 40), the Cruiser takes 1 800 shots (was 1 450; phase 2 from 11 880
+  tenths) and fires every 0.9 s then 1.25 s (was 1 s then 1.5 s), and the 70 s formation no
+  longer drops a P. A seeded measurement bot (`tests/balance`) now guards the balance.
 - Level 1 is rebalanced a second time (GDD v0.12, #45): the Cruiser takes 1 450 level-1 shots
   (was 500; phase 2 from 9 570 tenths) and the formations at 8 s, 50 s and 52 s no longer drop a
   P, so full power comes just before the boss.

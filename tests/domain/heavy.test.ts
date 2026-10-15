@@ -91,9 +91,9 @@ describe('enterHoldLeave — one movement, two configurations (ADR-0022)', () =>
 });
 
 describe('Heavy archetypes (GDD v0.10 §5.2, §5.2.1)', () => {
-  it.each([HEAVY_RING, HEAVY_FAN])('$id: 56 × 48, Large, 40 shots, 1 000 points', (heavy) => {
+  it.each([HEAVY_RING, HEAVY_FAN])('$id: 56 × 48, Large, 50 shots, 1 000 points', (heavy) => {
     expect(heavy.stats).toEqual({
-      hp: shots(40),
+      hp: shots(50),
       width: 56,
       height: 48,
       score: 1000,
@@ -181,14 +181,14 @@ describe('ringAttack — 12 bullets 30° apart at 60 px/s (GDD v0.10 §5.2.1)', 
   });
 });
 
-describe('fanAttack — 5 bullets 15° apart, centred on the aim, at 75 px/s', () => {
+describe('fanAttack — 5 bullets 15° apart, centred on the aim, at 85 px/s', () => {
   it('centres the fan on the ship', () => {
     const [first] = volleysOf(HEAVY_FAN, shipAt(120 + 100, 72 + 100));
     expect(first).toHaveLength(5);
     const angles = (first ?? []).map((s) => angleOf(s.vx, s.vy)).sort((a, b) => a - b);
     expect(angles.map((a) => Math.round(a * 1e6) / 1e6)).toEqual([15, 30, 45, 60, 75]);
     for (const shot of first ?? []) {
-      expect(Math.hypot(shot.vx, shot.vy)).toBeCloseTo(75, 9);
+      expect(Math.hypot(shot.vx, shot.vy)).toBeCloseTo(85, 9);
       expect(shot).toMatchObject({ x: 120, y: 72 });
     }
   });
