@@ -120,6 +120,22 @@ Follow-ups and review rules:
 - The port signatures above are frozen once the UML class and sequence diagrams for the render
   seam are validated (CLAUDE.md "Design before code"); until then this ADR fixes intent and rules.
 
+## Amendment (2026-10-15, GDD v0.17 sprites)
+
+`drawSprite` returns `boolean`: `true` when the sprite was drawn, `false` when its sheet is not
+loaded (still loading, or the load failed). It never throws for a known id. The caller — the
+presentation — draws its own placeholder shape on `false`, so the game starts at once and runs
+whole on its shapes if the image never arrives (owner, MCDA A 475/500, against a separate
+`hasSprite` query, 440, and a fallback drawn inside the adapter, 270: the adapter would copy the
+game's shapes). `SpriteId` becomes the closed union of the ids the presentation draws, so an
+unknown id fails to compile and the adapter's lookup table is a `Record<SpriteId, …>` checked for
+completeness. `frame` and `flipX` are unchanged and still unused.
+
+Sizes other than the sheet's 32 × 32 cell, and the player's upward-facing copy, are baked once at
+load into off-screen canvases, each under its own id (owner, MCDA B 430/500 against a `flipY`
+parameter, 360): the port gains no scale or flip parameter, and a frame's draw calls stay
+allocation-free.
+
 ## References
 
 - GDD §1.2 (goals), §3.1 (screen and scale), §3.2 (art direction), §5.2 (hit flash), §9.2 (HUD),

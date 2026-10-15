@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Vertical slice — v0.16 (2026-10-14; amended 2026-10-15 by the owner after a design-versus-code audit: the High scores columns as built, the browser-shortcut rule of the capture, the name entry as built in G2-3, the attract mode of G2-3b): v0.16 settles the hall of fame of G2 (the letter grid for the name and the country, the high-score table and screen, the Ending card, leaving the slice-end interim). v0.15 (2026-10-14): v0.15 settles the controls screen of G1b (layout, key labels, the device edited, restore confirmation, save version 2). v0.14 (2026-10-14): v0.14 settles the options screens of G1a-3 (row texts and values, the title menu replacing tap-to-start, leaving a menu frees the ship's movement). v0.13 (2026-10-14): v0.13 designs the menus and the options of the screens brick, first part (G1a: title and pause menus, the options screen and its visual-effects sub-screen, menu navigation by touch and mouse, the save document's options). v0.12 (2026-10-14): v0.12 is the second rebalance iteration of level 1 (#45): the Cruiser takes 1 450 level-1 shots and three of the seven formations no longer pay the formation P. v0.11 (2026-10-13): v0.11 rebalances level 1 after the friends' playtest (harder, fewer drops, the ship slightly weaker than the attack; #45). v0.10 (2026-10-12): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot); v0.6 adds the initial values of the enemies brick; v0.7 settles the devices brick (portrait HUD strip, touch pause button, resuming and leaving Game over by tap or Start, mouse takeover, rotation pause); v0.8 settles the player kit (Spread and Laser tables, the death release hop, bomb, shield and pickup rules, P colours, the Carrier, HUD icons); v0.9 follows the brick-E playtest (difficulty ramp by script, a named top 10 with an optional country, pointer fire held by the left button or a steering finger with an autofire option, shot proportions for readability); v0.10 settles the level brick (the 120 s level-1 script, the Heavy, the Cruiser, the WARNING, the boss HP bar and timer, the end-of-level tally and the Results screen, a vertical slice ending after level 1) |
+| **Status** | Vertical slice — v0.17 (2026-10-15): v0.17 draws the ships with the CC0 placeholder sprites of G4-1 (§3.2.1: the sprite per role, the small enemies drawn at 1× over their 16 × 16 hitbox, the Cruiser built from three ships, the shapes kept as the fallback). v0.16 (2026-10-14; amended 2026-10-15 by the owner after a design-versus-code audit: the High scores columns as built, the browser-shortcut rule of the capture, the name entry as built in G2-3, the attract mode of G2-3b): v0.16 settles the hall of fame of G2 (the letter grid for the name and the country, the high-score table and screen, the Ending card, leaving the slice-end interim). v0.15 (2026-10-14): v0.15 settles the controls screen of G1b (layout, key labels, the device edited, restore confirmation, save version 2). v0.14 (2026-10-14): v0.14 settles the options screens of G1a-3 (row texts and values, the title menu replacing tap-to-start, leaving a menu frees the ship's movement). v0.13 (2026-10-14): v0.13 designs the menus and the options of the screens brick, first part (G1a: title and pause menus, the options screen and its visual-effects sub-screen, menu navigation by touch and mouse, the save document's options). v0.12 (2026-10-14): v0.12 is the second rebalance iteration of level 1 (#45): the Cruiser takes 1 450 level-1 shots and three of the seven formations no longer pay the formation P. v0.11 (2026-10-13): v0.11 rebalances level 1 after the friends' playtest (harder, fewer drops, the ship slightly weaker than the attack; #45). v0.10 (2026-10-12): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot); v0.6 adds the initial values of the enemies brick; v0.7 settles the devices brick (portrait HUD strip, touch pause button, resuming and leaving Game over by tap or Start, mouse takeover, rotation pause); v0.8 settles the player kit (Spread and Laser tables, the death release hop, bomb, shield and pickup rules, P colours, the Carrier, HUD icons); v0.9 follows the brick-E playtest (difficulty ramp by script, a named top 10 with an optional country, pointer fire held by the left button or a steering finger with an autofire option, shot proportions for readability); v0.10 settles the level brick (the 120 s level-1 script, the Heavy, the Cruiser, the WARNING, the boss HP bar and timer, the end-of-level tally and the Results screen, a vertical slice ending after level 1) |
 | **Working title** | *retro-shmup* (codename; the commercial title is still open) |
 | **Genre** | Retro vertical-scrolling shoot'em up (shmup), 16-bit aesthetic |
 | **Platform** | Web browser (desktop first, mobile playable), TypeScript + native Canvas 2D |
@@ -108,6 +108,37 @@ only: after its results the run is cleared and the game returns to the title (§
   | Laser bolt | its §4.3 size, at 60 % opacity | its §4.3 size |
 
   The sprites of the assets brick keep these proportions.
+
+### 3.2.1 Placeholder sprites *(v0.17, G4-1)*
+
+The ships come from Kenney's **Pixel Shmup** pack (CC0, credited in `CREDITS.md`): one sheet of
+24 ships, 32 × 32 cells, drawn nose down. Bullets, pickups and effects keep their shapes until a
+later G4 step. Every sprite is centred on its entity's position; **hitboxes do not change**.
+
+| Entity | Hitbox | Sprite (pack cell, drawn size) |
+|---|---|---|
+| Player | 4 × 4 (ship box 32 × 32) | `ship_0000`, blue, turned nose up; 32 × 24 drawn. The bright cockpit square stays drawn on the hitbox (§4.1) |
+| Popcorn | 16 × 16 | `ship_0010`, green small, at 1× (20 × 17 drawn) |
+| Diver | 16 × 16 | `ship_0009`, red small, at 1× (24 × 17 drawn) |
+| Gunner | 32 × 32 | `ship_0007`, yellow, at 1× (28 × 23 drawn) |
+| Carrier | 32 × 32 | `ship_0004`, blue, at 1× (24 × 19 drawn) |
+| Heavy (ring and fan) | 56 × 48 | `ship_0002`, green large, at 2× (64 × 48 drawn) |
+| Cruiser | 112 × 48 | a hull, `ship_0012` grey large at 2× (64 × 48), between two wings, `ship_0016` grey at 1× (24 × 19) each, side by side: 24 + 64 + 24 = 112 wide. The forward turret is the 16 × 16 grey turret tile (`tile_0016`) on the hull, at the turret's place (§6.1); it breaks off in phase 2 as before, the wings stay |
+
+- **Small enemies at 1×** (owner, MCDA B 380/500): the pack has no 16 px ship; a 1× sprite
+  overhangs its 16 × 16 hitbox by 2–4 px at the wing tips, so a shot on a wing tip passes through
+  (in the player's favour, never the reverse). Halving the sprite to 16 (260/500) drew a 10 × 9
+  ship inside a 16 × 16 hitbox — hits on empty space, against pillar *Readable tension*; growing the
+  hitboxes (280/500) is a balance change left to the rebalance.
+- **The Cruiser as a composite** (owner, MCDA A 410/500): it fills its 112 × 48 box; a single
+  ship at 3× (96 × 72, 370/500) overhangs the box 12 px above and below while its wing tips
+  leave the box partly empty, so the dangerous area would read wrong.
+- **Hit flash**: a flashing enemy or boss is drawn as its box in the flash colour, as before
+  (§9.4), not as its sprite; the switch keeps its meaning.
+- **Fallback**: the game starts at once on the shapes it draws today; each sprite replaces its
+  shape as soon as the sheet is loaded, and if the sheet never loads the whole run stays on the
+  shapes, with no error shown to the player (ADR-0001 amendment).
+- **No palette swap yet**: the per-level palettes (§3.2) wait for level 2.
 
 ### 3.3 Universe
 
@@ -442,7 +473,8 @@ roles on three size tiers cover every wave the three levels need.
 
 ### 5.2.1 Initial values of the first roles *(v0.6)*
 
-All values *(initial)*, tuned in playtests. Hitboxes are the full sprite box of each size tier;
+All values *(initial)*, tuned in playtests. Hitboxes are the box of each size tier, centred on
+the sprite, which may overhang it by a few pixels *(v0.17, §3.2.1; was "the full sprite box")*;
 the player's tiny hitbox already carries the fairness (§4.1). HP and damage stay expressed in
 level-1 shots (§4.3); the code counts them in tenths of a shot so that 1.4 or 2.5 leave no
 rounding residue (ADR-0019).
@@ -1184,3 +1216,4 @@ fully playable at release quality, used to validate the design before producing 
 | Controls screen *(v0.15)* | G1b (owner, 2026-10-14): one row per intent with two slot columns, one cell highlighted, the capture shown as *PRESS* (45→46/50); key labels learned from the session's key events, then the browser layout map, then US, with fixed names and arrow glyphs (46/50); the device edited is the last of keyboard and gamepad, followed live while choosing and fixed during a capture, the row hidden on touch only; restore defaults asks first; a closed set of capturable keys (labels of 10 characters at most, the rest refused) and buttons 0–15; an exchange that would empty a primary promotes the secondary or is refused; the answering step reads no menu action; save version 2 with a v1 migration and allowlist parsing of the bindings | One row per slot on two pages (31/50, no scrolling rule); a sub-screen per intent (34/50, two screens per capture); the layout map then US only (38/50: wrong on Firefox and Safari with AZERTY); US names always (30/50, contrary to "labels use the active layout"); a full font now (30/50, part of G4) |
 | Hall of fame *(v0.16)* | G2 (owner, 2026-10-14): the name on a letter grid (43/50: 6 taps for a 6-letter name on a phone, the directions and `confirm` elsewhere, `back` deletes); the country on the same grid with the letters only, *OK* shown only for a complete code in the allowlist (44/50, revised up from the first analysis: a big-cell grid already built, 3 taps to change it); a score enters above the tenth only, ties keep the older entry first; *High scores* in the title menu; the Ending card *VICTORY* with the score, its two story sentences deferred to the assets brick | The arcade letter wheel (30/50: about 80 presses for a name, small arrows on a phone); the grid plus typing on a physical keyboard (42/50: a text capture in the adapter for little gain, kept for later if testers ask); the country as a two-letter spinner over valid codes (37/50) or a scrolling list (31/50, no-scrolling rule); *MISSION COMPLETE* in the title font (252 px, wider than the field) |
 | Skipping the name entry *(v0.16, amended)* | Owner, 2026-10-14: *SKIP*, or *OK* on an empty name, records nothing and returns to the title — the player is never made to appear in the table (42/50) | Store the score as `???` (44/50 on paper, the v0.2 arcade rule, but against the owner's intent); both buttons, *SKIP* and *ANONYMOUS* (40/50) |
+| Placeholder sprites *(v0.17)* | G4-1 (owner, 2026-10-15): Kenney *Pixel Shmup* (CC0) for the player, the five roles and the Cruiser; small enemies at 1× over their 16 × 16 hitbox (380/500); the Cruiser as hull ×2 between two 1× wings with the turret tile (410/500); the player's nose-up copy and the 2× sizes baked at load (430/500); `drawSprite` returns whether it drew, the presentation draws its shape otherwise (475/500) | Halving the small ships to 16 (260/500: hitbox larger than the drawing); hitboxes grown to the sprites (280/500, a balance change); the Cruiser as one ship ×3 (370/500) or kept as shapes (300/500); a `flipY` port parameter (360/500); a `hasSprite` query (440/500); the fallback drawn inside the adapter (270/500) |
