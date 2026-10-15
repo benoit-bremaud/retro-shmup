@@ -39,12 +39,12 @@ Sketch of the port (signatures only; the authoritative version is the UML class 
 before implementation, per CLAUDE.md "Design before code"):
 
 ```ts
-export type SpriteId = string;          // key into the loaded sprite sheet(s)
+export type SpriteId = string;          // key into the loaded sprite sheet(s) — a closed union since the 2026-10-15 amendment
 export type FontId = 'hud' | 'title';   // bitmap fonts, no system text
 
 export interface RenderPort {
   clear(): void;
-  drawSprite(id: SpriteId, x: number, y: number, frame?: number, flipX?: boolean): void;
+  drawSprite(id: SpriteId, x: number, y: number, frame?: number, flipX?: boolean): void; // boolean since the 2026-10-15 amendment
   drawRect(x: number, y: number, w: number, h: number, colour: string): void;
   drawText(text: string, x: number, y: number, font: FontId): void;
   setCameraOffset(dx: number, dy: number): void;   // screen shake; (0, 0) when disabled
@@ -122,8 +122,8 @@ Follow-ups and review rules:
 
 ## Amendment (2026-10-15, GDD v0.17 sprites)
 
-`drawSprite` returns `boolean`: `true` when the sprite was drawn, `false` when its sheet is not
-loaded (still loading, or the load failed). It never throws for a known id. The caller — the
+`drawSprite` returns `boolean`: `true` when the sprite was drawn, `false` while the sheets are not
+baked (still loading, or a load failed). It never throws for a known id. The caller — the
 presentation — draws its own placeholder shape on `false`, so the game starts at once and runs
 whole on its shapes if the image never arrives (owner, MCDA A 475/500, against a separate
 `hasSprite` query, 440, and a fallback drawn inside the adapter, 270: the adapter would copy the

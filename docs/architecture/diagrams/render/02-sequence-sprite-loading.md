@@ -18,17 +18,17 @@ sequenceDiagram
   participant Main as main.ts
   participant Img as HTMLImageElement ×2
   participant Bank as SpriteBank
-  participant Loop as frame loop
+  participant Frames as frame loop
   participant Pres as RunPresenter
   participant R as Canvas2DRenderer
   Main->>Img: src = assets/sprites/ships.png, tiles.png
-  Main->>Loop: start (does not wait for the images)
+  Main->>Frames: start (does not wait for the images)
   par the images decode
     Img-->>Main: decode() resolves (both)
     Main->>Bank: bake(ships, tiles, newCanvas)
     Note over Bank: one off-screen canvas per SpriteId,<br/>2× and nose-up copies made here
   and frames run
-    Loop->>Pres: draw(snapshot, alpha)
+    Frames->>Pres: draw(snapshot, alpha)
     Pres->>R: drawSprite(popcorn, x, y)
     R->>Bank: get(popcorn)
     alt baked
@@ -43,7 +43,7 @@ sequenceDiagram
   opt either decode() rejects
     Img-->>Main: rejected
     Main->>Main: console.warn, nothing baked
-    Note over Pres,R: every frame keeps the shapes;<br/>no message to the player
+    Note over Pres,R: every frame keeps the shapes,<br/>no message to the player
   end
 ```
 

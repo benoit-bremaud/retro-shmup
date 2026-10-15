@@ -365,7 +365,6 @@ classDiagram
     <<data>>
     +hp: number
     +hitbox: Rect
-    +sprite: SpriteId
     +score: number
     +tier: SizeTier
   }
@@ -458,7 +457,7 @@ classDiagram
   class BossPhaseSpec {
     <<data>>
     +hpThreshold: number
-    +brokenPart: SpriteId
+    +brokenPart: BrokenPart
   }
   class LevelScript {
     <<data>>

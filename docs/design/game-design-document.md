@@ -125,6 +125,8 @@ later G4 step. Every sprite is centred on its entity's position; **hitboxes do n
 | Heavy (ring and fan) | 56 × 48 | `ship_0002`, green large, at 2× (64 × 48 drawn) |
 | Cruiser | 112 × 48 | a hull, `ship_0012` grey large at 2× (64 × 48), between two wings, `ship_0016` grey at 1× (24 × 19) each, side by side: 24 + 64 + 24 = 112 wide. The forward turret is the 16 × 16 grey turret tile (`tile_0016`) on the hull, at the turret's place (§6.1); it breaks off in phase 2 as before, the wings stay |
 
+- **Overhang**: a sprite may overhang its hitbox by a few pixels — the small enemies' wing tips
+  (below) and the Heavy's 64 px wings over its 56 px box (4 px a side).
 - **Small enemies at 1×** (owner, MCDA B 380/500): the pack has no 16 px ship; a 1× sprite
   overhangs its 16 × 16 hitbox by 2–4 px at the wing tips, so a shot on a wing tip passes through
   (in the player's favour, never the reverse). Halving the sprite to 16 (260/500) drew a 10 × 9
@@ -390,7 +392,7 @@ is held or not, so tapping never fires faster than holding. One level-1 shot dea
 ### 4.6 Pickups
 
 All pickups fall straight down at a slow speed *(initial: 40 px/s)* with a slight horizontal sway,
-and are collected by touching them with the ship's full sprite (generous: 32 × 32). A pickup that
+and are collected by touching them with the ship's sprite box (generous: 32 × 32). A pickup that
 leaves the bottom of the screen is lost.
 
 | Pickup | Visual | Effect | Typical source |

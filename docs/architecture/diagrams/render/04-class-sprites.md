@@ -38,7 +38,7 @@ classDiagram
   }
   class SPRITE_OF_ROLE {
     <<const, domain/presentation>>
-    Record~ArchetypeId, SpriteId~
+    archetype id to SpriteId
   }
   class SpriteCell {
     <<type, adapters>>
@@ -50,11 +50,11 @@ classDiagram
   }
   class SPRITE_CELLS {
     <<const, adapters/sprite-atlas>>
-    Record~SpriteId, SpriteCell~
+    SpriteId to SpriteCell, every id
   }
   class SpriteBank {
     <<adapters/sprite-bank>>
-    -baked: Map~SpriteId, CanvasImageSource~
+    -baked: Map of SpriteId to CanvasImageSource
     +bake(ships, tiles, newCanvas) void
     +get(id: SpriteId) CanvasImageSource | undefined
   }
@@ -79,10 +79,16 @@ classDiagram
 
 ## Notes
 
-- **Coordinates**: `drawSprite`'s (x, y) is the **centre** of the sprite in the selected region,
-  rounded to whole logical pixels like every draw; the field camera offset applies. Every
-  entity's position is already its centre, so no caller computes a corner.
-- **Return value**: `true` when drawn; `false` while the sheet is not baked (loading, or failed).
+- **Coordinates**: unlike `drawRect` and `drawText` (top-left), `drawSprite`'s (x, y) is the
+  **centre** of the sprite — the port's JSDoc says so. The adapter computes the top-left
+  `x - w / 2`, `y - h / 2` with `w`, `h` the baked canvas size (32, or 64 at 2×; 16 for the turret)
+  and rounds it as `fillLogical` does; the field camera offset applies. Every entity's position is
+  already its centre, so no caller computes a corner.
+- **Whole cells**: each sprite is its whole cell, never trimmed: the pack centres every ship in its
+  32 × 32 cell (content centre at x 16, y 15.5–16.5, measured on the sheet), so the drawn ship
+  is centred on the entity within half a pixel; a bake test checks the cell of each id against
+  the sheet's grid.
+- **Return value**: `true` when drawn; `false` while the sheets are not baked (loading, or a load failed).
   The presenter then draws the shape it draws today — the shapes stay in the domain, never
   copied into the adapter. An id is a member of the `SpriteId` union, so an unknown id does not
   compile; `SPRITE_CELLS` is a `Record<SpriteId, SpriteCell>`, so a missing cell does not either.
@@ -96,4 +102,11 @@ classDiagram
   sprite lookup — unchanged.
 - **`SPRITE_OF_ROLE`** maps the archetype id (`popcorn` … `heavy-ring`, `heavy-fan`) to a sprite,
   as `enemyColour` maps it to a colour today (ADR-0010: never stored in archetype data).
-- `frame` and `flipX` stay unused (ADR-0001).
+- `frame` and `flipX` stay unused (ADR-0001); the `Canvas2DRenderer` box abbreviates the
+  parameters. `baked` is a `Map` because an id has no entry until the bake, unlike the complete
+  `SPRITE_CELLS`.
+- **Code changes this implies**: the renderer's `drawSprite` returns `false` instead of throwing;
+  the recording test double returns a configurable `boolean`, so both the sprite and the
+  shape paths are tested; the renderer test's `'ship'` id becomes a union member.
+- **The turret tile** (16 × 16) is drawn over the hull inside the Cruiser's 112 × 48 hitbox;
+  `CRUISER_TURRET`'s 24 × 16 is only where the debris appears, never a hitbox of its own.
