@@ -2,7 +2,7 @@ import type { ReadonlyActiveList } from '../game/active-list';
 import { BossState } from '../game/boss';
 import type { Bullet } from '../game/bullet';
 import { CRUISER_TURRET } from '../game/cruiser';
-import type { Enemy } from '../game/enemy';
+import type { Enemy, EnemyArchetype } from '../game/enemy';
 import { PickupKind } from '../game/pickup';
 import type { Pickup } from '../game/pickup';
 import { GameEventKind } from '../game/events';
@@ -12,7 +12,8 @@ import type { BossSnapshot, PlayerSnapshot, WorldSnapshot } from '../game/run';
 import { FIELD_HEIGHT, FIELD_WIDTH } from '../game/geometry';
 import { PlayerTuning, STEPS_PER_SECOND } from '../game/tuning';
 import { WeaponKind } from '../game/weapon';
-import type { RenderPort } from '../ports/render-port';
+import { SPRITE_FLASH_FRAME } from '../ports/render-port';
+import type { RenderPort, SpriteId } from '../ports/render-port';
 import {
   BombFlash,
   BossChain,
@@ -33,6 +34,22 @@ import type { PaletteColour } from './palette';
 const ENEMY_SHOT_DRAWN = 6;
 const ENEMY_SHOT_CORE = 2;
 const SPREAD_DRAWN_HEIGHT = 6;
+
+/**
+ * The Cruiser's wings sit either side of its 64 px hull: 32 + 24 / 2 from its centre, so the three
+ * sprites fill its 112 px box (GDD v0.17 §3.2.1).
+ */
+const CRUISER_WING_OFFSET = 44;
+
+/** The sprite of a role, chosen here, never stored in archetype data (ADR-0010). */
+const SPRITE_OF_ROLE: Readonly<Record<EnemyArchetype['id'], SpriteId>> = {
+  popcorn: 'popcorn',
+  diver: 'diver',
+  gunner: 'gunner',
+  carrier: 'carrier',
+  'heavy-ring': 'heavy',
+  'heavy-fan': 'heavy',
+};
 
 /** The phase index whose start breaks the Cruiser's turret off (phase 2). */
 const TURRET_BREAKS_AT_PHASE = 1;
@@ -120,8 +137,7 @@ export class RunPresenter {
     this.drawBoss(snapshot.boss, alpha);
     for (let i = 0; i < snapshot.enemies.count; i += 1) {
       const enemy = snapshot.enemies.at(i);
-      const flashing = this.effects.hitFlash && this.flashes.isFlashing(enemy.serial);
-      this.drawBox(enemy, alpha, flashing ? Palette.hitFlash : enemyColour(enemy));
+      this.drawEnemy(enemy, alpha);
     }
     this.explosions.draw(this.render);
     this.drawPickups(snapshot.pickups, alpha);
@@ -150,15 +166,30 @@ export class RunPresenter {
   }
 
   /**
-   * The boss as plain grey boxes (F-2a): the 112 × 48 body and, until phase 2 breaks it off, the
-   * forward turret. Nothing while it is idle or warning, off the field; the HP bar, the WARNING
-   * banner and the debris are F-2b and F-2c.
+   * An enemy as its role's sprite — its white silhouette while it flashes — or, while the sheets
+   * are not loaded, as its box in the role's colour or in white (GDD v0.17 §3.2.1, §9.4).
+   */
+  private drawEnemy(enemy: Readonly<Enemy>, alpha: number): void {
+    const flashing = this.effects.hitFlash && this.flashes.isFlashing(enemy.serial);
+    const x = lerp(enemy.previousPosition.x, enemy.position.x, alpha);
+    const y = lerp(enemy.previousPosition.y, enemy.position.y, alpha);
+    const frame = flashing ? SPRITE_FLASH_FRAME : 0;
+    if (this.render.drawSprite(SPRITE_OF_ROLE[enemy.archetype.id], x, y, frame)) return;
+    this.drawBox(enemy, alpha, flashing ? Palette.hitFlash : enemyColour(enemy));
+  }
+
+  /**
+   * The boss (GDD v0.17 §3.2.1): two wings, the hull, then the forward turret until phase 2 breaks
+   * it off, as white silhouettes while it flashes; as grey boxes (F-2a), or its white box, while
+   * the sheets are not loaded. Nothing while it is idle or warning, off the field.
    */
   private drawBoss(boss: BossSnapshot, alpha: number): void {
     if (boss.state === BossState.Idle || boss.state === BossState.Warning) return;
     const x = lerp(boss.previousPosition.x, boss.position.x, alpha);
     const y = lerp(boss.previousPosition.y, boss.position.y, alpha);
     const flashing = this.effects.hitFlash && this.flashes.isFlashing(boss.serial);
+    const turret = boss.phase === 0;
+    if (this.drawCruiserSprites(x, y, turret, flashing ? SPRITE_FLASH_FRAME : 0)) return;
     const r = this.render;
     r.drawRect(
       x - boss.width / 2,
@@ -167,7 +198,7 @@ export class RunPresenter {
       boss.height,
       flashing ? Palette.hitFlash : Palette.boss,
     );
-    if (boss.phase > 0 || flashing) return;
+    if (!turret || flashing) return;
     r.drawRect(
       x + CRUISER_TURRET.offsetX - CRUISER_TURRET.width / 2,
       y + CRUISER_TURRET.offsetY - CRUISER_TURRET.height / 2,
@@ -175,6 +206,20 @@ export class RunPresenter {
       CRUISER_TURRET.height,
       Palette.bossTurret,
     );
+  }
+
+  // The three Cruiser sprites, then the turret; false, drawing nothing, while the sheets are not
+  // loaded (the wings and the hull come from the same sheet, so one answer stands for all).
+  private drawCruiserSprites(x: number, y: number, turret: boolean, frame: number): boolean {
+    const r = this.render;
+    if (!r.drawSprite('cruiserWing', x - CRUISER_WING_OFFSET, y, frame)) return false;
+    r.drawSprite('cruiserWing', x + CRUISER_WING_OFFSET, y, frame);
+    r.drawSprite('cruiserHull', x, y, frame);
+    if (turret) {
+      const tx = x + CRUISER_TURRET.offsetX;
+      r.drawSprite('cruiserTurret', tx, y + CRUISER_TURRET.offsetY, frame);
+    }
+    return true;
   }
 
   // Handlers only record (ADR-0010): copied out of the reused event, never kept.
@@ -323,11 +368,14 @@ export class RunPresenter {
     r.drawRect(x + half - t, y - half + t, t, 2 * half - 2 * t, Palette.shieldRing);
   }
 
-  // Placeholder silhouette inside the 32 × 32 sprite box; the hull covers the centre.
+  // The ship's sprite, or the placeholder silhouette inside the 32 × 32 box while the sheets are not
+  // loaded; the cockpit is drawn over either.
   private drawShip(x: number, y: number): void {
     const r = this.render;
-    r.drawRect(x - 16, y + 2, 32, 8, Palette.shipWing);
-    r.drawRect(x - 4, y - 14, 8, 28, Palette.shipHull);
+    if (!r.drawSprite('player', x, y)) {
+      r.drawRect(x - 16, y + 2, 32, 8, Palette.shipWing);
+      r.drawRect(x - 4, y - 14, 8, 28, Palette.shipHull);
+    }
     // The cockpit is the hitbox, exactly: the bright square shows where a bullet counts (GDD §4.1).
     const core = PlayerTuning.hitboxSize;
     r.drawRect(x - core / 2, y - core / 2, core, core, Palette.shipCockpit);

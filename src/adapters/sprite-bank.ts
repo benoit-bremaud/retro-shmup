@@ -1,10 +1,14 @@
 import { SPRITE_IDS } from '../domain/ports/render-port';
+import { Palette } from '../domain/presentation/palette';
 import type { SpriteId } from '../domain/ports/render-port';
 import { CELL_SIZE, SPRITE_CELLS } from './sprite-atlas';
 
 /** The part of `CanvasRenderingContext2D` the bake uses; tests pass a recording double. */
 export interface BakeSurface {
   imageSmoothingEnabled: boolean;
+  globalCompositeOperation: GlobalCompositeOperation;
+  fillStyle: string | CanvasGradient | CanvasPattern;
+  fillRect(x: number, y: number, w: number, h: number): void;
   drawImage(
     image: CanvasImageSource,
     sx: number,
@@ -26,11 +30,28 @@ export interface BakeCanvas {
   readonly image: CanvasImageSource;
 }
 
-/** A baked sprite and its size in logical pixels. */
+/** A baked sprite, its white flash silhouette, and its size in logical pixels. */
 export interface BakedSprite {
   readonly image: CanvasImageSource;
+  readonly flash: CanvasImageSource;
   readonly width: number;
   readonly height: number;
+}
+
+/** The flash colour wherever `image` has a pixel: its own copy, then `source-in` paint. */
+function whiteSilhouette(
+  image: CanvasImageSource,
+  side: number,
+  newCanvas: (width: number, height: number) => BakeCanvas,
+): CanvasImageSource {
+  const canvas = newCanvas(side, side);
+  const surface = canvas.surface;
+  surface.imageSmoothingEnabled = false;
+  surface.drawImage(image, 0, 0, side, side, 0, 0, side, side);
+  surface.globalCompositeOperation = 'source-in';
+  surface.fillStyle = Palette.hitFlash;
+  surface.fillRect(0, 0, side, side);
+  return canvas.image;
 }
 
 /**
@@ -43,7 +64,8 @@ export class SpriteBank {
 
   /**
    * Copies every cell into its own canvas, once, outside the game loop: scaled with nearest
-   * neighbour, turned nose up where the cell says so. All or nothing: if a canvas fails, the bank
+   * neighbour, turned nose up where the cell says so, with a white silhouette of the result for
+   * the hit flash. All or nothing: if a canvas fails, the bank
    * stays empty, so a run never mixes sprites and shapes (render/02-sequence-sprite-loading).
    */
   bake(
@@ -67,7 +89,8 @@ export class SpriteBank {
       }
       const sheet = cell.sheet === 'ships' ? ships : tiles;
       surface.drawImage(sheet, cell.column * size, cell.row * size, size, size, 0, 0, side, side);
-      staged.set(id, { image: canvas.image, width: side, height: side });
+      const flash = whiteSilhouette(canvas.image, side, newCanvas);
+      staged.set(id, { image: canvas.image, flash, width: side, height: side });
     }
     staged.forEach((sprite, id) => this.baked.set(id, sprite));
   }

@@ -65,6 +65,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it and nothing is recorded.
 - An attract mode: after 10 s on the title without touching anything, the high scores show for
   6 s, then the title again; any key, button, click or mouse move brings the title back.
+- Sprites: the ship, the five enemy roles and the Cruiser are drawn with Kenney's *Pixel Shmup*
+  placeholder sprites (CC0), hits flash as a white silhouette; if the images fail to load the
+  game keeps its shapes (#75, #76).
 - A controls screen in the options: every keyboard and gamepad action on two keys or buttons,
   changed by pressing the new one (a key already used swaps places), shown with the letters your
   own keyboard prints; restore the defaults per device. Saved in the browser.

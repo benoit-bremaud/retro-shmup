@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { SpriteBank } from '../../src/adapters/sprite-bank';
 import type { BakeCanvas, BakeSurface } from '../../src/adapters/sprite-bank';
 import { SPRITE_IDS } from '../../src/domain/ports/render-port';
+import { Palette } from '../../src/domain/presentation/palette';
 import type { SpriteId } from '../../src/domain/ports/render-port';
 
 /** A baking canvas that records its size and the calls made on its surface. */
 class RecordingBakeSurface implements BakeSurface {
   imageSmoothingEnabled = true;
+  globalCompositeOperation: GlobalCompositeOperation = 'source-over';
+  fillStyle: string | CanvasGradient | CanvasPattern = '';
   readonly calls: string[] = [];
   drawImage(
     image: CanvasImageSource,
@@ -19,11 +22,16 @@ class RecordingBakeSurface implements BakeSurface {
     dw: number,
     dh: number,
   ): void {
-    const sheet = image === ships ? 'ships' : 'tiles';
+    const sheet = image === ships ? 'ships' : image === tiles ? 'tiles' : 'baked';
     const smoothing = String(this.imageSmoothingEnabled);
     this.calls.push(
       `drawImage ${sheet} smoothing=${smoothing} ${[sx, sy, sw, sh, dx, dy, dw, dh].join(',')}`,
     );
+  }
+  fillRect(x: number, y: number, w: number, h: number): void {
+    const style = typeof this.fillStyle === 'string' ? this.fillStyle : 'non-colour';
+    const box = [x, y, w, h].join(',');
+    this.calls.push(`fillRect ${this.globalCompositeOperation} ${style} ${box}`);
   }
   translate(x: number, y: number): void {
     this.calls.push(`translate ${[x, y].join(',')}`);
@@ -66,7 +74,8 @@ describe('SpriteBank (GDD v0.17 §3.2.1, ADR-0001 amendment)', () => {
 
   it('bakes every sprite id into its own canvas', () => {
     const { bank, canvases } = bakeAll();
-    expect(canvases.size).toBe(SPRITE_IDS.length);
+    // One canvas for the sprite, one for its white flash silhouette.
+    expect(canvases.size).toBe(2 * SPRITE_IDS.length);
     for (const id of SPRITE_IDS) {
       expect(bank.get(id)).toBeDefined();
     }
@@ -119,6 +128,21 @@ describe('SpriteBank (GDD v0.17 §3.2.1, ADR-0001 amendment)', () => {
       expect(bank.get(id)).toBeUndefined();
     }
   });
+
+  it.each(['player', 'heavy', 'cruiserTurret'] as const)(
+    'bakes the white flash silhouette of %s from its own baked canvas (§9.4)',
+    (id) => {
+      const { bank, canvases } = bakeAll();
+      const sprite = bank.get(id);
+      if (sprite === undefined) throw new Error(`${id} not baked`);
+      const side = String(sprite.width);
+      const box = `0,0,${side},${side}`;
+      expect(canvases.get(sprite.flash)?.calls).toEqual([
+        `drawImage baked smoothing=false ${box},${box}`,
+        `fillRect source-in ${Palette.hitFlash} ${box}`,
+      ]);
+    },
+  );
 
   it('reports each baked size, so the renderer centres the sprite', () => {
     const { bank } = bakeAll();

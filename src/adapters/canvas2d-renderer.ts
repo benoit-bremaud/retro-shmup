@@ -1,4 +1,9 @@
-import { HUD_FONT_CELL, MENU_FONT_CELL, TITLE_FONT_CELL } from '../domain/ports/render-port';
+import {
+  HUD_FONT_CELL,
+  MENU_FONT_CELL,
+  SPRITE_FLASH_FRAME,
+  TITLE_FONT_CELL,
+} from '../domain/ports/render-port';
 import type { FontId, RenderPort, RenderRegion, SpriteId } from '../domain/ports/render-port';
 import { Palette } from '../domain/presentation/palette';
 import { FIELD_HEIGHT, FIELD_WIDTH, LANDSCAPE } from '../domain/presentation/screen';
@@ -117,12 +122,12 @@ export class Canvas2DRenderer implements RenderPort {
     this.offscreen.fillRect(0, 0, this.layoutNow.width, this.layoutNow.height);
   }
 
-  drawSprite(id: SpriteId, x: number, y: number): boolean {
+  drawSprite(id: SpriteId, x: number, y: number, frame = 0): boolean {
     const sprite = this.sprites.get(id);
     if (sprite === undefined) return false;
     const { width, height } = sprite;
     this.offscreen.drawImage(
-      sprite.image,
+      frame === SPRITE_FLASH_FRAME ? sprite.flash : sprite.image,
       Math.round(this.originX() + x - width / 2),
       Math.round(this.originY() + y - height / 2),
       width,

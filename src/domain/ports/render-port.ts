@@ -16,6 +16,12 @@ export const SPRITE_IDS = [
   'cruiserTurret',
 ] as const;
 
+/**
+ * The `frame` of `drawSprite` that draws the sprite's white silhouette: the hit flash of GDD v0.17
+ * §3.2.1 and §9.4, baked once at load like the sprite (ADR-0001 amendment).
+ */
+export const SPRITE_FLASH_FRAME = 1;
+
 /** Key of a sprite (ADR-0001 amendment). */
 export type SpriteId = (typeof SPRITE_IDS)[number];
 
@@ -60,7 +66,8 @@ export interface RenderPort {
   clear(): void;
   /**
    * Draws the sprite centred on (x, y) in the selected region — unlike `drawRect` and `drawText`,
-   * whose (x, y) is the top-left — field draws following the camera offset.
+   * whose (x, y) is the top-left — field draws following the camera offset. `frame` is 0 (the
+   * default) for the sprite, `SPRITE_FLASH_FRAME` for its white flash silhouette.
    * @returns `true` when drawn; `false` while the sprite sheets are not loaded (still loading, or a
    * load failed), the caller then drawing its own placeholder shape (ADR-0001 amendment).
    */

@@ -135,8 +135,11 @@ later G4 step. Every sprite is centred on its entity's position; **hitboxes do n
 - **The Cruiser as a composite** (owner, MCDA A 410/500): it fills its 112 × 48 box; a single
   ship at 3× (96 × 72, 370/500) overhangs the box 12 px above and below while its wing tips
   leave the box partly empty, so the dangerous area would read wrong.
-- **Hit flash**: a flashing enemy or boss is drawn as its box in the flash colour, as before
-  (§9.4), not as its sprite; the switch keeps its meaning.
+- **Hit flash** *(amended in G4-1b)*: a flashing enemy or boss is drawn as the white silhouette
+  of its sprite (§9.4), baked at load; while the sheets are not loaded it stays its box in the
+  flash colour; the switch keeps its meaning. Owner, MCDA B 460/500: a box hid the Cruiser for the
+  whole fight, since sustained fire keeps it flashing (headless capture); a blink (330) and a
+  translucent veil (295) read worse.
 - **Fallback**: the game starts at once on the shapes it draws today; each sprite replaces its
   shape as soon as the sheet is loaded, and if the sheet never loads the whole run stays on the
   shapes, with no error shown to the player (ADR-0001 amendment).
@@ -977,7 +980,7 @@ over or the Results ignores the whole menu (no highlight move, no activation).
 
 ### 9.4 Game feel (all effects individually toggleable in §9.3)
 
-Hit flash (white, about 33 ms *(v0.6)*), hit-stop on large kills (2–3 frames), screen shake on bombs and boss
+Hit flash (white, about 33 ms *(v0.6)*; the sprite's white silhouette *(v0.17, §3.2.1)*), hit-stop on large kills (2–3 frames), screen shake on bombs and boss
 hits (the play field only; a bomb's shake is 4 logical px changing side every 33 ms and fading
 out over 300 ms *(initial, v0.8)*), bomb flash (a tint of the play field, about 300 ms, at most 3 per
 second *(v0.8)*), invulnerability blink (non-flashing replacement when off, §9.7) *(v0.5)*, muzzle flash,
@@ -1219,3 +1222,4 @@ fully playable at release quality, used to validate the design before producing 
 | Hall of fame *(v0.16)* | G2 (owner, 2026-10-14): the name on a letter grid (43/50: 6 taps for a 6-letter name on a phone, the directions and `confirm` elsewhere, `back` deletes); the country on the same grid with the letters only, *OK* shown only for a complete code in the allowlist (44/50, revised up from the first analysis: a big-cell grid already built, 3 taps to change it); a score enters above the tenth only, ties keep the older entry first; *High scores* in the title menu; the Ending card *VICTORY* with the score, its two story sentences deferred to the assets brick | The arcade letter wheel (30/50: about 80 presses for a name, small arrows on a phone); the grid plus typing on a physical keyboard (42/50: a text capture in the adapter for little gain, kept for later if testers ask); the country as a two-letter spinner over valid codes (37/50) or a scrolling list (31/50, no-scrolling rule); *MISSION COMPLETE* in the title font (252 px, wider than the field) |
 | Skipping the name entry *(v0.16, amended)* | Owner, 2026-10-14: *SKIP*, or *OK* on an empty name, records nothing and returns to the title — the player is never made to appear in the table (42/50) | Store the score as `???` (44/50 on paper, the v0.2 arcade rule, but against the owner's intent); both buttons, *SKIP* and *ANONYMOUS* (40/50) |
 | Placeholder sprites *(v0.17)* | G4-1 (owner, 2026-10-15): Kenney *Pixel Shmup* (CC0) for the player, the five roles and the Cruiser; small enemies at 1× over their 16 × 16 hitbox (380/500); the Cruiser as hull ×2 between two 1× wings with the turret tile (410/500); the player's nose-up copy and the 2× sizes baked at load (430/500); `drawSprite` returns whether it drew, the presentation draws its shape otherwise (475/500) | Halving the small ships to 16 (260/500: hitbox larger than the drawing); hitboxes grown to the sprites (280/500, a balance change); the Cruiser as one ship ×3 (370/500) or kept as shapes (300/500); a `flipY` port parameter (360/500); a `hasSprite` query (440/500); the fallback drawn inside the adapter (270/500) |
+| Sprite hit flash *(v0.17, G4-1b)* | Owner, 2026-10-15, after a headless capture showed the Cruiser as a white box for its whole fight: the flash draws the sprite's white silhouette, baked at load, through `drawSprite`'s `frame` (460/500); the box stays the fallback without sheets | The white box (325/500: sustained fire keeps the boss flashing); a blink instead of the flash (330/500); a translucent white veil over the sprite (295/500) |

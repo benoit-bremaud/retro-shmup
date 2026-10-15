@@ -179,7 +179,9 @@ it prints every property, the token included.
 - **Shared helpers** in `tests/support/`: `shots(n)` writes HP and damage in level-1 shots, as the
   GDD does — the code holds tenths (ADR-0019) and tests never write raw tenths; `RecordingRender`
   is the `RenderPort` double that records rectangles and texts per region, counts presented
-  frames and keeps the last camera offset.
+  frames and keeps the last camera offset; its `drawSprite` answers `false` (the shapes path)
+  unless a test sets `spritesLoaded`, then records each sprite with its frame, and `order` keeps
+  sprites and rectangles in drawing order.
 - **Exactly one browser smoke test**, `tests/smoke/first-playable.spec.ts` (Playwright), run by
   hand with `make smoke` (`pnpm test:smoke`); it is part of neither `make verify` nor CI.
 

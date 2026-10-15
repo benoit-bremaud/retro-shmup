@@ -8,6 +8,18 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-15
 
+### G4-1a: the sprite bank (#76 → `4491f15`)
+
+- `SPRITE_IDS` closed union; `drawSprite(id, centre x, y)` returns `false` until baked;
+  `sprite-atlas.ts` (pack cell per sprite), `SpriteBank` bakes each sprite once, all or nothing
+  (architecture-guardian: a canvas failing midway left a partial bank — fixed).
+- `main.ts` awaits `loadSprites()` at top level after `loop.start()` (Sonar S7785 failed the
+  quality gate on `void loadSprites()`); on failure `console.warn`, the shapes stay.
+- Kenney *Pixel Shmup* packed sheets → `public/assets/sprites/{ships,tiles}.png` (pixel-identical
+  to the single files); `CREDITS.md` entry, `public/assets/LICENSE.md` (ADR-0005).
+- UML drift approved by the owner: `SpriteBank.get` returns `BakedSprite` (canvas and size).
+  Codex: no findings.
+
 ### G4-1 design: placeholder sprites (#75 → `a2a9c35`)
 
 - Kenney *Pixel Shmup* (CC0, `kenney_pixel-shmup.zip`, 127 424 bytes, sha256 `e33fd626…f952`)

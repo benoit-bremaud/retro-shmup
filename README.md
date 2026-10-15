@@ -50,10 +50,12 @@ What the current build plays:
 Play it at <https://retro-shmup.pages.dev>, or locally with `pnpm install` then `pnpm dev` (see
 CONTRIBUTING.md). Level 1 now ends in the Cruiser, its boss: a 3 s warning, a 90 s fight in two
 phases, a bonus for the seconds left, with a WARNING banner, an HP bar and the seconds left
-(drawn as grey boxes until the sprites). Explosions are animated, the turret breaks into debris
+(the ships are CC0 placeholder sprites from Kenney's *Pixel Shmup*, drawn as shapes if the
+images fail to load). Explosions are animated, the turret breaks into debris
 and the boss dies in a chain of bursts with a short slow motion. The level ends on the Results
 screen: the tally of formations, no bomb, no miss and bombs left, added to the score, then the
-title. Next: the screens brick (G) — the Ending, the name entry and the options.
+title. The screens brick (G1–G2) added the menus, the options, the hall of fame and the Ending;
+G4-1 draws the ships as sprites. Next: the level-1 rebalance (v0.18), then audio (G3).
 
 Roadmap (GDD section 11):
 
