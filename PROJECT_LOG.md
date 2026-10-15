@@ -8,7 +8,7 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-16
 
-### Level-1 rebalance v0.18 applied, the balance bot committed (branch `feat/balance-bot`) — Refs #56
+### Level-1 rebalance v0.18 applied, the balance bot committed (#80 → `b6b61ad`) — closed #56
 
 - `tests/support/average-player.ts`: a seeded model player (looks every 0.15 / 0.25 / 0.40 s and
   holds its choice, a miss chance, a dodge that reads every bullet's path over 0.8 s and picks
@@ -28,6 +28,12 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 - Measured (100 seeds, good / average / beginner): game over 18 / 28 / 59 %, boss killed 82 / 73 /
   41 %, average deaths 2.3, fight 38 / 39 / 41 s, power 5 near 118 s (v0.12: average 0.56 deaths,
   2 % game over, fight 27 s, power 5 at 88 s).
+- Review: four local checks, 0 Must, 12 Should fixed (bot constants imported, thresholds named,
+  measurement in `beforeAll`, Cruiser 85 px/s asserted, full-power share, six docs drifts); 4 Nice
+  in `review-local.md`. Codex silent (usage limit): merged with owner approval (430/500).
+- Next (owner priorities): the shield fix #74, then a quality brick (100 % test and code-doc
+  coverage), then wave density and more content for a young player, the #1 name in the far
+  background with G4, then G3 audio.
 
 ### GDD v0.18, the third level-1 rebalance (#79 → `10ceacd`)
 
