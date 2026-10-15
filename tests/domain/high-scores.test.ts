@@ -110,6 +110,26 @@ describe('parseHighScores (ADR-0021 decisions 2, 3 and 6; untrusted input)', () 
     expect(Object.getPrototypeOf(parsed)).toBe(Object.prototype);
   });
 
+  it.each(['2026-02-28', '2024-02-29', '2000-02-29', '2026-12-31', '2026-04-30'])(
+    'accepts the real calendar date %s',
+    (date) => {
+      expect(parseHighScores([{ ...entry('ACE', 10), date }])).toHaveLength(1);
+    },
+  );
+
+  it.each([
+    '2026-02-29',
+    '2100-02-29',
+    '2026-02-31',
+    '2026-04-31',
+    '2026-13-01',
+    '2026-00-10',
+    '2026-01-00',
+    '2026-99-99',
+  ])('drops the impossible date %s (Codex review, PR #67)', (date) => {
+    expect(parseHighScores([{ ...entry('ACE', 10), date }])).toEqual([]);
+  });
+
   it('accepts ??? and a name with an inner space', () => {
     expect(parseHighScores([entry('???', 3), entry('BIG BOB', 2)])).toHaveLength(2);
   });
