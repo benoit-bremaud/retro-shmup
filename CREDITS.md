@@ -10,9 +10,16 @@ recorded in its entry below, and lives under `public/assets/` (governed by
 
 ## Assets
 
-None yet. The design phase has no sprites, music or sound effects. Development starts with CC0
-placeholder packs, replaced by custom assets before release (GDD §3.2); every file or pack, in
-either phase, gets an entry here.
+## Pixel Shmup (Kenney), version 1.1
+
+- Files: public/assets/sprites/ships.png, public/assets/sprites/tiles.png
+- Author: Kenney (www.kenney.nl)
+- Source: https://kenney.nl/assets/pixel-shmup
+- Licence: CC0-1.0
+- Modifications: none (the pack's packed tilemaps `ships_packed.png` and `tiles_packed.png`,
+  renamed); the game scales some cells 2× and turns the player's ship nose up at load
+
+Development placeholders (GDD §3.2.1), to be replaced by custom assets before release.
 
 Entry format (ADR-0005, one entry per file or pack):
 

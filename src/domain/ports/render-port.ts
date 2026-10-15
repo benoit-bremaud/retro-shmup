@@ -1,7 +1,23 @@
 import type { ScreenLayout } from '../presentation/screen';
 
-/** Key of a sprite in the loaded sprite sheets (ADR-0001). */
-export type SpriteId = string;
+/**
+ * Every sprite the presentation draws (GDD v0.17 §3.2.1, ADR-0001 amendment): a closed list, so an
+ * unknown id does not compile and the adapter's cell table is checked for completeness.
+ */
+export const SPRITE_IDS = [
+  'player',
+  'popcorn',
+  'diver',
+  'gunner',
+  'carrier',
+  'heavy',
+  'cruiserHull',
+  'cruiserWing',
+  'cruiserTurret',
+] as const;
+
+/** Key of a sprite (ADR-0001 amendment). */
+export type SpriteId = (typeof SPRITE_IDS)[number];
 
 /**
  * Bitmap fonts; no system text is ever drawn (ADR-0001). A font draws only its glyph set and
@@ -42,7 +58,13 @@ export type RenderRegion = 'field' | 'hud';
 export interface RenderPort {
   setRegion(region: RenderRegion): void;
   clear(): void;
-  drawSprite(id: SpriteId, x: number, y: number, frame?: number, flipX?: boolean): void;
+  /**
+   * Draws the sprite centred on (x, y) in the selected region — unlike `drawRect` and `drawText`,
+   * whose (x, y) is the top-left — field draws following the camera offset.
+   * @returns `true` when drawn; `false` while the sprite sheets are not loaded (still loading, or a
+   * load failed), the caller then drawing its own placeholder shape (ADR-0001 amendment).
+   */
+  drawSprite(id: SpriteId, x: number, y: number, frame?: number, flipX?: boolean): boolean;
   drawRect(x: number, y: number, w: number, h: number, colour: string): void;
   /**
    * Draws `text` with the top-left of its first cell at (x, y) in the selected region, in the

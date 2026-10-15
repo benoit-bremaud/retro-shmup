@@ -4,6 +4,7 @@ import { Palette } from '../domain/presentation/palette';
 import { FIELD_HEIGHT, FIELD_WIDTH, LANDSCAPE } from '../domain/presentation/screen';
 import type { ScreenLayout } from '../domain/presentation/screen';
 import { GLYPH_COLUMNS, GLYPH_ROWS, hudGlyph, menuGlyph, titleGlyph } from './hud-font';
+import type { SpriteBank } from './sprite-bank';
 import type { Viewport } from './viewport';
 
 // Logical pixels per glyph pixel: HUD_FONT_CELL and TITLE_FONT_CELL are built on them.
@@ -48,8 +49,8 @@ export interface RenderSurface {
  * integer factor with smoothing off.
  *
  * @remarks The camera offset (screen shake) moves field-region draws only, at draw time: the HUD
- * never shakes (ADR-0014). `drawSprite` fails closed until the asset brick loads a sprite sheet;
- * `drawText` draws the placeholder `hud`, `title` and `menu` glyphs and fails closed on anything else.
+ * never shakes (ADR-0014). `drawSprite` draws the baked sprites of `SpriteBank` and answers `false`
+ * until they are baked (ADR-0001 amendment); `drawText` draws the placeholder `hud`, `title` and `menu` glyphs and fails closed on anything else.
  */
 export class Canvas2DRenderer implements RenderPort {
   private region: RenderRegion = 'hud';
@@ -61,12 +62,22 @@ export class Canvas2DRenderer implements RenderPort {
   private readonly offscreen: RenderSurface;
   private readonly offscreenImage: CanvasImageSource;
   private readonly visible: RenderSurface;
+  private readonly sprites: SpriteBank;
 
-  /** `offscreenImage` is the canvas behind `offscreen`, copied to `visible` by `present()`. */
-  constructor(offscreen: RenderSurface, offscreenImage: CanvasImageSource, visible: RenderSurface) {
+  /**
+   * `offscreenImage` is the canvas behind `offscreen`, copied to `visible` by `present()`;
+   * `sprites` fills in once the sheets are loaded, after the first frames.
+   */
+  constructor(
+    offscreen: RenderSurface,
+    offscreenImage: CanvasImageSource,
+    visible: RenderSurface,
+    sprites: SpriteBank,
+  ) {
     this.offscreen = offscreen;
     this.offscreenImage = offscreenImage;
     this.visible = visible;
+    this.sprites = sprites;
   }
 
   /**
@@ -106,8 +117,18 @@ export class Canvas2DRenderer implements RenderPort {
     this.offscreen.fillRect(0, 0, this.layoutNow.width, this.layoutNow.height);
   }
 
-  drawSprite(id: SpriteId, _x: number, _y: number): void {
-    throw new Error(`Canvas2DRenderer: no sprite sheet loaded yet, cannot draw sprite "${id}"`);
+  drawSprite(id: SpriteId, x: number, y: number): boolean {
+    const sprite = this.sprites.get(id);
+    if (sprite === undefined) return false;
+    const { width, height } = sprite;
+    this.offscreen.drawImage(
+      sprite.image,
+      Math.round(this.originX() + x - width / 2),
+      Math.round(this.originY() + y - height / 2),
+      width,
+      height,
+    );
+    return true;
   }
 
   drawRect(x: number, y: number, w: number, h: number, colour: string): void {
@@ -141,15 +162,21 @@ export class Canvas2DRenderer implements RenderPort {
 
   // Region origin, camera offset for the field, whole logical pixels.
   private fillLogical(x: number, y: number, w: number, h: number): void {
-    const inField = this.region === 'field';
-    const originX = inField ? this.layoutNow.fieldX + this.cameraX : 0;
-    const originY = inField ? this.layoutNow.fieldY + this.cameraY : 0;
     this.offscreen.fillRect(
-      Math.round(originX + x),
-      Math.round(originY + y),
+      Math.round(this.originX() + x),
+      Math.round(this.originY() + y),
       Math.round(w),
       Math.round(h),
     );
+  }
+
+  // The selected region's origin on the logical screen, the camera offset included for the field.
+  private originX(): number {
+    return this.region === 'field' ? this.layoutNow.fieldX + this.cameraX : 0;
+  }
+
+  private originY(): number {
+    return this.region === 'field' ? this.layoutNow.fieldY + this.cameraY : 0;
   }
 
   setCameraOffset(dx: number, dy: number): void {
