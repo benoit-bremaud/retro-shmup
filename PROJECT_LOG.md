@@ -8,6 +8,25 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-16
 
+### Brick G3 audio: design, sound effects, music (#104 `08b7220`, #105 `f698786`, #110 `5d56244`)
+
+- Design (#104): GDD v0.23 §9.3, §9.5 (sound effects, music by scene, pause duck, warning fade,
+  the *Audio* sub-screen, volumes 0–10 saved); UML `audio/04-class-audio.md`.
+- G3-1 (#105): in-house synthesiser in the domain (pure, seeded noise), `WebAudioPlayer` adapter
+  (unlock on first gesture, 16 voices, 33 ms repeat guard, pause mix keeping menu sounds), the run's
+  sound effects through `RunSounds`; shot sounds from counters instead of new events (470 / 500).
+- G3-2 (#110): music by scene from the CC0 *NES Shooter Music* by SketchyLogic (OpenGameArt, mono
+  96 kb/s MP3, ~1.4 MB); boss intro then loop, Results and Game over jingles, −12 dB pause duck,
+  0.5 s fade at the WARNING; *Audio* sub-screen in title and pause options, volumes saved at save
+  version 2 (allowlisted); chain-step, tally-tick, controls and name-entry sounds.
+- QA found the title music starting ~12 s late (six files decoded at once); decoding one at a time,
+  the needed track first, starts it within 100 ms (`4a496cb`).
+- Gate: 1 475 tests, smoke 6/6, SonarQube passed, gitleaks clean, QA screenshots of the French
+  *Audio* screen. Open: Should (controls / name-entry sound diff → screen `feedback` getter), loop
+  gaps unmeasured in Firefox and WebKit, boss / Results music not played in the browser.
+- Owner: the synthesised effects are "a bit unbearable" — retune later; own compositions planned
+  later (MuseScore, LMMS, Furnace, FamiStudio installed; Korg piano over USB-MIDI).
+
 ### Playtest collision fixes: the Laser stops, a 6 × 6 hitbox (#106, #107 → #108 `699b50d`)
 
 - Owner playtest: an enemy bullet crossed the ship's wing without a kill (#106); a Laser bolt went
