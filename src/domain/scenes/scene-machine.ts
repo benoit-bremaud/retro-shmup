@@ -3,7 +3,6 @@ import { Sfx } from '../audio/sfx';
 import { volumeGain } from '../audio/volume';
 import { SILENT_AUDIO } from '../ports/audio-port';
 import type { AudioPort } from '../ports/audio-port';
-import type { VolumeRow } from '../options';
 import { RunOutcome } from '../game/run';
 import type { RunView, Simulation } from '../game/run';
 import { ResultsTuning, SceneTuning, STEP_SECONDS, toSteps } from '../game/tuning';
@@ -28,7 +27,7 @@ import {
 import { drawResults, formatTallyValues, tallyLineAppears } from '../presentation/results';
 import { RunPresenter } from '../presentation/run-presenter';
 import { EFFECT_ROWS, LiveOptions } from '../options';
-import type { Options } from '../options';
+import type { Options, VolumeRow } from '../options';
 import { ChampionName } from '../presentation/champion-name';
 import { STARFIELD_LAYERS } from '../presentation/starfield';
 import type { Starfield } from '../presentation/starfield';

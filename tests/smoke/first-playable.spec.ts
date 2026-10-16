@@ -458,8 +458,8 @@ test.describe('the hall of fame on a desktop with a keyboard', () => {
     expect(seeded).toBeGreaterThan(empty * 2);
     expect(await storedNames(page)).toEqual(SEEDED_NAMES);
 
-    // A real write: Options (Esc to the title, third row), Autofire is the third row of the
-    // keyboard options; a right press flips it and the game rewrites the whole document.
+    // A real write: Options (Esc to the title, third row), Autofire is the fourth row of the
+    // keyboard options (after Visual effects, Audio and Controls); a right press flips it and the game rewrites the whole document.
     await press(page, 'Escape');
     // Back on the title, the first presses within about a second are not taken in any engine
     // tried: wait like a player would.
@@ -468,6 +468,7 @@ test.describe('the hall of fame on a desktop with a keyboard', () => {
     await press(page, 'ArrowDown');
     await press(page, 'ArrowDown');
     await press(page, 'Enter');
+    await press(page, 'ArrowDown');
     await press(page, 'ArrowDown');
     await press(page, 'ArrowDown');
     await press(page, 'ArrowRight');

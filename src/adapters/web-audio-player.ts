@@ -70,7 +70,7 @@ const MAX_VOICES = 16;
 const REPEAT_GUARD_S = 0.033;
 
 function isTrack(track: TrackId): track is Track {
-  return Object.values(Track).some((known) => known === track);
+  return (Object.values(Track) as readonly TrackId[]).includes(track);
 }
 
 /** One playing track: its sources (an intro and a loop for the boss) through its own fade. */
