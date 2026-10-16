@@ -440,3 +440,12 @@ describe('PointerModule — mouse (GDD v0.7 §4.2, ADR-0018 decisions 2, 4 and 8
     expect(mouseSample(module).held).toBe(0);
   });
 });
+
+describe('PointerModule — a mouse cancel with the button still down', () => {
+  it('keeps firing when the browser cancels the pointer while the left button is held', () => {
+    const module = pointer();
+    module.down(event('mouse', 200, 250, LEFT), 1);
+    module.cancel(event('mouse', 200, 250, LEFT));
+    expect(mouseSample(module).held).toBe(Button.Fire);
+  });
+});

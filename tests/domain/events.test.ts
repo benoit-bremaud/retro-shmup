@@ -46,3 +46,16 @@ describe('EventBus — per-run, synchronous, ordered (ADR-0003, ADR-0010)', () =
     expect(heard).toBe(true);
   });
 });
+
+describe('EventBus — unsubscribing twice', () => {
+  it('leaves the other handlers in place when an unsubscribe is called a second time', () => {
+    const bus = new EventBus();
+    const heard: string[] = [];
+    const first = bus.subscribe(GameEventKind.PlayerDied, () => heard.push('first'));
+    bus.subscribe(GameEventKind.PlayerDied, () => heard.push('second'));
+    first();
+    first();
+    bus.publish(createGameEvent(GameEventKind.PlayerDied));
+    expect(heard).toEqual(['second']);
+  });
+});

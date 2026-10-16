@@ -278,6 +278,18 @@ describe('SceneMachine — Paused and Count-in (meta/05-state-scenes, pause rule
     expect(pausedStars).toEqual(playingStars);
   });
 
+  it('keeps the time scale at 1 in play while no slow motion runs', () => {
+    expect(playing().machine.timeScale()).toBe(1);
+  });
+
+  it('draws the starfield and the HUD bands in Boot, before the first step', () => {
+    const { machine, render } = setup();
+    machine.render(0, 16);
+    expect(render.drew(Palette.starFar)).toBe(true);
+    expect(render.drew(Palette.hudBand)).toBe(true);
+    expect(render.presented).toBe(1);
+  });
+
   it('keeps the time scale at 1 in Paused and Count-in', () => {
     const fixture = playing();
     fixture.machine.step(DT, frame(Button.Pause));

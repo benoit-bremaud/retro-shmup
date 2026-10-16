@@ -91,6 +91,8 @@ describe('parseHighScores (ADR-0021 decisions 2, 3 and 6; untrusted input)', () 
     ['level 4', { ...entry('ACE', 10), level: 4 }],
     ['a bad date', { ...entry('ACE', 10), date: '14/10/2026' }],
     ['a non-object', 'ACE'],
+    ['a non-string name', { ...entry('ACE', 10), name: 42 }],
+    ['a non-string date', { ...entry('ACE', 10), date: 20261014 }],
   ])('drops an entry with %s and keeps the others', (_label, bad) => {
     expect(parseHighScores([bad, entry('KEEP', 5)])).toEqual([entry('KEEP', 5)]);
   });

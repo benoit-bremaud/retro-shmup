@@ -132,4 +132,26 @@ describe('ControlsGrid (GDD v0.15 §4.2)', () => {
     grid.reset(2, frame());
     expect([grid.menu.highlighted, grid.column]).toEqual([0, 0]);
   });
+
+  it('follows the hovering mouse into the primary column', () => {
+    const grid = opened();
+    grid.step(frame({ moveKind: 'direction', moveX: 1 }), 1);
+    grid.step(frame(), 2);
+    grid.step(
+      frame({ hovered: true, hoverX: CONTROLS_COLUMNS.slots[0] + 5, hoverY: rowY(grid, 0) }),
+      3,
+    );
+    expect(grid.column).toBe(0);
+  });
+
+  it('keeps the column when the mouse hovers over a label', () => {
+    const grid = opened();
+    grid.step(frame({ moveKind: 'direction', moveX: 1 }), 1);
+    grid.step(frame(), 2);
+    grid.step(
+      frame({ hovered: true, hoverX: CONTROLS_COLUMNS.label + 2, hoverY: rowY(grid, 0) }),
+      3,
+    );
+    expect(grid.column).toBe(1);
+  });
 });

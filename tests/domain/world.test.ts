@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { PickupKind } from '../../src/domain/game/pickup';
 import { DIVER, POPCORN } from '../../src/domain/game/enemy';
 import {
   ENEMY_BULLET_POOL_SIZE,
@@ -151,5 +152,17 @@ describe('World — Game over (GDD v0.6 §4.4)', () => {
     world.spendPlayerBullets();
     world.sweep();
     expect(world.playerBullets.count).toBe(0);
+  });
+});
+
+describe('World — pickups already spent', () => {
+  it('leaves a spent pickup where it is until the sweep releases it', () => {
+    const world = new World();
+    world.spawnPickup(PickupKind.PRed, 100, 50);
+    const pickup = world.pickups.at(0);
+    pickup.spent = true;
+    world.movePickups();
+    expect(pickup.position).toEqual({ x: 100, y: 50 });
+    expect(pickup.age).toBe(0);
   });
 });

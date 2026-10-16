@@ -445,6 +445,19 @@ describe('Run — drops, formation P and collection (GDD v0.8 §4.6, §5.2; ADR-
     expect(log).toHaveLength(PICKUP_POOL_SIZE);
   });
 
+  it('announces no death release when the full pool has no room for it', () => {
+    const run = new Run({ createRandom: () => scripted(Array.from({ length: 8 }, () => 0.02)) });
+    const pickup = new Pickup();
+    pickup.spawn(PickupKind.PRed, 100, 200, 1);
+    run.rules.pickupCollected(pickup); // power 2, so the death loses a level
+    for (let i = 0; i < PICKUP_POOL_SIZE; i += 1) run.rules.destroyEnemy(enemyAt(GUNNER, 60, 80));
+    expect(run.snapshot().pickups.count).toBe(PICKUP_POOL_SIZE);
+    const log = logOf(run, [SPAWNED]);
+    run.rules.playerDied();
+    expect(log).toEqual([]);
+    expect(run.snapshot().power).toBe(1);
+  });
+
   it('applies a caught P and scores the cap bonus flat, outside the chain', () => {
     const run = new Run({ createRandom: () => scripted([]) });
     const log = logOf(run, [COLLECTED]);
