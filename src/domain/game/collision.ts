@@ -96,10 +96,10 @@ function nearestTarget(world: World, bullet: Bullet): Enemy | Boss | undefined {
   return nearest;
 }
 
-// Pass 1: player bullets against enemies and the fighting boss. A Spread bullet hits one enemy and is spent; a Laser bolt
-// passes through up to three, nearest first along its path, each body hit once, every one taking
-// the full damage (GDD v0.8 §4.3). Each hit spends the bullet, destroys the enemy or records it,
-// so the loop ends.
+// Pass 1: player bullets against enemies and the fighting boss, nearest first along the bullet's
+// path. Every shot of the tables has no pass-through, so it hits one body and is spent (GDD v0.24
+// §4.3); the pass-through memory serves a shot whose data gives one. Each hit spends the bullet,
+// destroys the enemy or records it, so the loop ends.
 function shotsAgainstEnemies(world: World, rules: HitRules): void {
   for (let i = 0; i < world.playerBullets.count; i += 1) {
     const bullet = world.playerBullets.at(i);

@@ -116,11 +116,12 @@ export const WEAPONS: Readonly<Record<WeaponKind, readonly WeaponLevel[]>> = {
     spreadLevel(toSteps(1 / SpreadTuning.level5ShotsPerSecond), 20, [8, 18]),
   ],
   [WeaponKind.Laser]: [
-    laserLevel(2, 10, 1),
-    laserLevel(3, 15, 1),
-    laserLevel(4, 20, 2),
-    laserLevel(6, 25, 2),
-    laserLevel(8, 30, 3),
+    // GDD v0.24 (#107): a bolt stops on the first body it touches, at every level.
+    laserLevel(2, 10, 0),
+    laserLevel(3, 15, 0),
+    laserLevel(4, 20, 0),
+    laserLevel(6, 25, 0),
+    laserLevel(8, 30, 0),
   ],
 };
 

@@ -184,7 +184,7 @@ describe('CollisionResolver — hazards against the 4 × 4 hitbox (GDD §4.1, §
   });
 });
 
-describe('CollisionResolver — Laser pass-throughs (GDD v0.8 §4.3)', () => {
+describe('CollisionResolver — the pass-through memory, on shots whose data sets one (ADR-0019)', () => {
   const BOLT: ShotSpec = {
     ...SHOT,
     width: 8,
@@ -269,7 +269,7 @@ describe('CollisionResolver — bullet memory and every level (GDD v0.8 §4.3)',
   );
 });
 
-describe('CollisionResolver — Laser hits in travel order (GDD v0.8 §4.3)', () => {
+describe('CollisionResolver — hits in travel order (GDD v0.8 §4.3)', () => {
   it('hits the stacked enemies nearest the ship first, whatever the list order', () => {
     const world = new World();
     // Inserted far to near: the list order is the opposite of the travel order.
