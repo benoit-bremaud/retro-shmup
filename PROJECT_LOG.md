@@ -8,6 +8,25 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-16
 
+### Playtest collision fixes: the Laser stops, a 6 × 6 hitbox (#106, #107 → #108 `699b50d`)
+
+- Owner playtest: an enemy bullet crossed the ship's wing without a kill (#106); a Laser bolt went
+  through an enemy (#107).
+- #106 root cause: no code defect. Only the 4 × 4 hitbox collided and tunnelling is impossible
+  (235 px/s relative = 3.9 px/step). First recommendation was to keep it (430 / 500); the owner then
+  chose to enlarge it. The bot measured 8 × 8 too harsh (good player 74–81 % Game over), so the
+  owner chose 6 × 6 (415 / 500) for a playtest. The level-1 balance bands were widened to the
+  measured values (good player 60 % Game over, average 3.32 deaths, beginner 3 % boss kills) until
+  that playtest settles them.
+- #107: GDD v0.24 makes every Laser bolt stop on its first enemy or boss hit, nearest first; the
+  pass-through machinery stays with zero pass-throughs in the data.
+- Design and code in one PR (owner waiver to the GDD-own-PR rule). review-local: 4 Musts fixed (two
+  tests that could not fail, stale pierce wording in README, CHANGELOG, GDD, comments), shared
+  collision test helpers; open Nice: an ADR-0019 context note, a dormant "Piercing" heading.
+- Gate: 1 427 tests, coverage 99.26 / 95.67 / 100 / 99.9 %, smoke 6/6, SonarQube passed, gitleaks
+  clean, QA capture of the 6 × 6 cockpit. Owner decision: no more Copilot or Codex reviews, the
+  local gate decides.
+
 ### The champion's name in the far background (#98 → `4253c8b`, #99 → `f407ef6`)
 
 - Owner wish (logged 2026-10-13, re-asked 2026-10-16): the hall-of-fame number 1's name drifting
