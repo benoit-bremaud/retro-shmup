@@ -123,6 +123,10 @@ describe('SaveStore.load (ADR-0006: untrusted input, never throws)', () => {
     ['an unknown language', { version: 2, options: { ...CUSTOM, language: 'de' } }],
     ['a non-boolean switch', { version: 2, options: { ...CUSTOM, autofire: 'yes' } }],
     [
+      'a null champion name',
+      { version: 2, options: { ...CUSTOM, effects: { ...CUSTOM.effects, championName: null } } },
+    ],
+    [
       'a non-boolean champion name',
       { version: 2, options: { ...CUSTOM, effects: { ...CUSTOM.effects, championName: 1 } } },
     ],

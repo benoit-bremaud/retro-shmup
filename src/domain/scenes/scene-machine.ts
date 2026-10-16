@@ -726,7 +726,9 @@ export class SceneMachine {
     const background = (this.backgroundSteps + scroll) * STEP_SECONDS;
     // The champion's name sits between the far star layer and the nearer ones (GDD v0.22 §9.4.1).
     this.starfield.drawLayers(r, background, 0, 1);
-    if (this.current === Scene.Playing && this.options.effects.championName) {
+    // Shown in play, and frozen with the stars in the pause and its screens (frozen, not scrolling).
+    const inPlay = this.current === Scene.Playing || (traits.frozen && !traits.scrolls);
+    if (inPlay && this.options.effects.championName) {
       this.champion.draw(r, background - this.runStartSteps * STEP_SECONDS);
     }
     this.starfield.drawLayers(r, background, 1, STARFIELD_LAYERS.length);

@@ -45,7 +45,7 @@ export function defaultOptions(reducedMotion: boolean): Options {
 function parseEffects(value: unknown): EffectSettings | undefined {
   if (!isRecord(value)) return undefined;
   const { blink, hitFlash, explosions, shake, bombFlash, slowMotion } = value;
-  const championName = value.championName ?? true;
+  const championName = value.championName === undefined ? true : value.championName;
   if (
     typeof blink !== 'boolean' ||
     typeof hitFlash !== 'boolean' ||

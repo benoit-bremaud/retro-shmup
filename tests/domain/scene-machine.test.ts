@@ -1635,16 +1635,6 @@ describe('SceneMachine — the attract mode (GDD v0.16 §9.1, G2-3b)', () => {
 });
 
 describe('SceneMachine — the champion name (GDD v0.22 §9.4.1)', () => {
-  const ALL_ON: EffectSettings = {
-    blink: true,
-    hitFlash: true,
-    explosions: true,
-    shake: true,
-    bombFlash: true,
-    slowMotion: true,
-    championName: true,
-  };
-
   /** A run with no enemy and a far boss, played 41 s from the title; the name's texts drawn. */
   function farTexts(effects: EffectSettings, table: readonly HighScoreEntry[]): string[] {
     const render = new RecordingRender();
@@ -1674,6 +1664,29 @@ describe('SceneMachine — the champion name (GDD v0.22 §9.4.1)', () => {
 
   it('draws nothing with an empty table', () => {
     expect(farTexts(ALL_ON, [])).toEqual([]);
+  });
+
+  it('keeps the name, frozen, behind the pause', () => {
+    const render = new RecordingRender();
+    const machine = new SceneMachine(
+      render,
+      new Starfield(() => 0.5),
+      withEffects(ALL_ON),
+      () => new Run({ levels: [testScript([], { warningAt: 100, boss: STUB_BOSS })] }),
+      NO_HOST,
+      FULL_TABLE,
+    );
+    machine.step(DT, createIntentFrame());
+    machine.step(DT, pressed(Button.Confirm)); // Play
+    for (let i = 0; i < 41 * 60; i += 1) machine.step(DT, createIntentFrame());
+    machine.step(DT, pressed(Button.Pause));
+    expect(machine.scene).toBe(Scene.Paused);
+    machine.render(0, 16);
+    const first = render.texts.find((text) => text.font === 'far');
+    for (let i = 0; i < 60; i += 1) machine.step(DT, createIntentFrame());
+    machine.render(0, 16);
+    expect(first?.text).toBe('ACE');
+    expect(render.texts.find((text) => text.font === 'far')).toEqual(first);
   });
 
   it('draws nothing on the title', () => {
