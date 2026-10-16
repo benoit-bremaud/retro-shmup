@@ -28,6 +28,11 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 - Docs (this PR): JSDoc added to the 7 exports that had none. The companion types of a const that
   is already documented (`BossState`, `PickupKind`, and so on) and the geometry re-export are left
   without one, to avoid noise.
+- Owner rule set during the brick, for every project: a five-step local pre-merge gate (full
+  test suites, coverage floors — tests ≥ 80 % with ~100 % as target, docs ≥ 90 % — SonarQube,
+  secrets, QA pass on the running product with screenshots), codified in
+  `~/.agent-rules/common.md`. Here: `make doc-coverage` (part of `make check`) measures the doc
+  figure: 306 / 306 counted exports at this entry.
 - Codex was at its usage limit; the owner approved the merge.
 
 ### The shield ring collides while a charge is held (#82 → `ea320a2`, #83 → `3fcd3ae`) — closed #74

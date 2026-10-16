@@ -2,7 +2,7 @@
 SONAR_TOKEN_FILE := $(HOME)/.config/sonar-tokens/retro-shmup
 SONAR_URL := http://localhost:9000
 
-.PHONY: verify check secrets audit sonar-scan smoke
+.PHONY: verify check doc-coverage secrets audit sonar-scan smoke
 
 verify: check secrets audit sonar-scan
 
@@ -12,6 +12,19 @@ check:
 	pnpm knip
 	pnpm format:check
 	pnpm test:coverage
+	$(MAKE) --no-print-directory doc-coverage
+
+# Documentation coverage: exports of src/ preceded by a doc block, floor 90 % (owner rule
+# 2026-10-16). Companion `type X = (typeof X)[keyof typeof X]` lines and re-exports are not
+# counted: the const's doc is theirs.
+doc-coverage:
+	@git ls-files 'src/**/*.ts' | xargs awk ' \
+	  /^export (type [A-Za-z]+ = \(typeof|\{)/ { next } \
+	  /^export / { total++; if (prev !~ /\*\/[[:space:]]*$$/) missing++ } \
+	  !/^[[:space:]]*$$/ { prev = $$0 } \
+	  END { pct = (total - missing) * 100 / total; \
+	        printf "doc coverage: %d/%d exports documented (%.1f %%, floor 90)\n", total - missing, total, pct; \
+	        exit (pct < 90) }'
 
 secrets:
 	gitleaks git --redact --no-banner

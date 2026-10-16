@@ -12,7 +12,8 @@ export default defineConfig({
       reporter: ['text', 'lcov'],
       // Every function is tested. The floors are a ratchet at the measured values: what is left
       // are noUncheckedIndexedAccess guards on in-range indices, kept free of ignore comments by
-      // owner decision (2026-10-16). Raise them, never lower them.
+      // owner decision (2026-10-16). Raise them, never lower them; the owner's hard floor for
+      // every project is 80 %.
       thresholds: {
         statements: 99.2,
         branches: 95.6,
