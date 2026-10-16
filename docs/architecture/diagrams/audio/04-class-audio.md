@@ -11,8 +11,12 @@
 
 The domain names sounds and tracks and decides **when** they play; the adapter decides **how**.
 The synthesiser is pure arithmetic (no browser API), so it lives in the domain and is unit-tested;
-only `WebAudioOutput` touches `AudioContext`. Sounds follow the run's events, the same way the
-presenter does (ADR-0010): a listener subscribes to `RunEvents` and calls `AudioPort.play`. The
+only `WebAudioPlayer` touches `AudioContext`. Sounds follow the run's events: as ADR-0010 and the component
+diagram say, `RunPresenter` maps events to sounds; it delegates the mapping to a small
+`RunSounds` module (subscribed to `RunEvents`, calling `AudioPort.play`) so the presenter does not
+grow. The adapter keeps two tables of its own, so the port stays as ADR-0009 drew it: which `SfxId`
+are menu sounds (kept by the pause mix), and per `TrackId` its file, whether it loops (the boss
+track: intro once, then loop; the jingles: once) and its loop start. The
 music follows the scene. Events missing for a sound (a shot fired, an enemy shot, a 1-UP) are
 added to `GameEventKind` with the sound that needs them.
 
@@ -42,7 +46,7 @@ classDiagram
     +renderSfx(params, sampleRate, seed) Float32Array
   }
   class RunSounds {
-    <<listener, domain/presentation, planned>>
+    <<module used by RunPresenter, domain/presentation, planned>>
     +subscribe(events: RunEvents) void
   }
   class SceneMusic {
@@ -53,26 +57,37 @@ classDiagram
     <<pure function, domain/audio, planned>>
     +volumeGain(step 0..10) number
   }
-  class WebAudioOutput {
+  class WebAudioPlayer {
     <<adapter, adapters/audio, planned>>
     +unlock() void
     +setHidden(hidden: boolean) void
     -buffers: Map~SfxId, AudioBuffer~
-    -voices: 16
-    -lastStart: Map~SfxId, time~
+    -MAX_VOICES: number = 16
+    -lastStart: Map~SfxId, number~
+    -UI_SOUNDS: Set~SfxId~
+    -TRACKS: Record~TrackId, TrackFile~
+  }
+  class SceneMachine {
+    <<domain/scenes>>
+  }
+  class RunPresenter {
+    <<domain/presentation>>
   }
   class Options {
     <<domain/options>>
     +musicVolume: 0..10
     +sfxVolume: 0..10
   }
-  WebAudioOutput ..|> AudioPort
-  WebAudioOutput ..> renderSfx : renders SFX_TABLE at unlock
+  WebAudioPlayer ..|> AudioPort
+  WebAudioPlayer ..> renderSfx : renders SFX_TABLE at unlock
   renderSfx ..> SfxParams
   SFX_TABLE o-- SfxParams
+  RunPresenter ..> RunSounds : delegates event to sound
   RunSounds ..> AudioPort : play
-  SceneMusic ..> AudioPort : music, via the scene machine
-  Options ..> volumeGain : setVolumes(gain(music), gain(sfx))
+  SceneMachine ..> SceneMusic : trackOf
+  SceneMachine ..> volumeGain : on options change
+  SceneMachine ..> AudioPort : music, setVolumes, setPaused
+  SceneMachine ..> Options : reads
 ```
 
 ## Unlock, play and visibility
@@ -80,25 +95,27 @@ classDiagram
 ```mermaid
 sequenceDiagram
   participant P as Player
+  participant M as main.ts (composition root)
   participant DI as DeviceInput (adapter)
-  participant WA as WebAudioOutput (adapter)
+  participant WA as WebAudioPlayer (adapter)
   participant R as Run (domain)
   participant RS as RunSounds (domain)
   P->>DI: first click, tap or key
   DI->>WA: unlock() inside the gesture handler
-  WA->>WA: resume AudioContext, render SFX_TABLE once
+  WA->>WA: resume AudioContext (in the handler), then render SFX_TABLE once just after it
   R-->>RS: EnemyDestroyed (detail = size tier)
   RS->>WA: play(explosion of that tier)
   WA->>WA: skip if the same sound started < 33 ms ago, else start a voice (oldest stopped past 16)
   Note over WA: before unlock, play and music do nothing and queue nothing
-  P->>WA: tab hidden (visibilitychange, via main.ts)
-  WA->>WA: setHidden(true) suspends the context; false resumes it
+  P->>M: tab hidden (visibilitychange)
+  M->>WA: setHidden(true) suspends the context; false resumes it
 ```
 
 ## Rules carried
 
-- `renderSfx` is deterministic: its noise uses the seeded generator of `domain/random`, never
-  `Math.random()`; the same row and seed give the same samples.
+- `renderSfx` is deterministic: its noise uses its own `SeededRandom` seeded with a constant
+  per row, never the run's stream (rendering at unlock must not shift the gameplay sequence,
+  ADR-0002) and never `Math.random()`; the same row gives the same samples.
 - No allocation in the loop: buffers are rendered at unlock; `play` only starts a buffer source
   (a browser object, outside the simulation).
 - The music never advances the simulation clock; the warning's fade and the boss track follow the

@@ -1104,7 +1104,7 @@ Decoration only, it never competes with play.
 - **Music** *(initial)*: title, level 1, level 2, level 3, boss, final boss, results, game over —
   free chiptune tracks (CC0 / CC-BY) credited in `CREDITS.md`, replaced by custom tracks in the
   custom-asset phase (final boss first).
-- Browser autoplay policy: audio starts on the "Press Start" gesture.
+- Browser autoplay policy: audio starts on the first gesture *(v0.23: see* Unlock and visibility *below)*.
 
 **The audio brick G3** *(v0.23, owner 2026-10-16)*:
 
@@ -1112,7 +1112,8 @@ Decoration only, it never competes with play.
   dependency): square (with a duty), sawtooth, sine and noise waves, an attack / sustain / decay
   envelope, a frequency slide, vibrato and a simple low-pass. Each sound effect is a row of
   parameters in the code; the rows are rendered once, when audio unlocks, into sample buffers.
-  The noise comes from a seeded generator, so a sound is the same on every run.
+  The noise comes from the synthesiser's own seeded generator (a constant seed per sound, never
+  the run's generator), so a sound is the same on every run and rendering never shifts gameplay.
 - **Mix**: at most **16** sound effects at once (the oldest stops); the same sound started again
   within **33 ms** is skipped, so held fire never saturates; the player's shots sit lowest in the
   mix *(initial)*. The pause mix of ADR-0009 applies (music −12 dB, game sounds stopped, menu
