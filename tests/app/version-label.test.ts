@@ -6,6 +6,12 @@ describe('versionLabel (GDD v0.20 §9.9)', () => {
     expect(versionLabel('0.1.0', 'abc1234def5678')).toBe('v0.1.0+abc1234');
   });
 
+  it('cuts a full 40-character SHA to 7', () => {
+    expect(versionLabel('0.1.0', 'f63da2962269c2427ef2f3beeee253ec986fb426')).toBe(
+      'v0.1.0+f63da29',
+    );
+  });
+
   it('keeps a commit of exactly 7 hex characters', () => {
     expect(versionLabel('0.1.0', 'abc1234')).toBe('v0.1.0+abc1234');
   });

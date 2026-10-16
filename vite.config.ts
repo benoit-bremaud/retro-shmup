@@ -2,12 +2,13 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { defineConfig, loadEnv } from 'vite';
 
-/** `package.json`'s version, the one ADR-0025 bumps. */
+/** `package.json`'s version, the one ADR-0025 bumps; the build fails without one. */
 function packageVersion(): string {
   const manifest: unknown = JSON.parse(readFileSync('package.json', 'utf8'));
   const version: unknown =
     typeof manifest === 'object' && manifest !== null ? Reflect.get(manifest, 'version') : '';
-  return typeof version === 'string' ? version : '';
+  if (typeof version !== 'string' || version === '') throw new Error('package.json has no version');
+  return version;
 }
 
 /** Cloudflare Pages' commit, else git's, else `''` (no shell: argument list only). */
@@ -15,7 +16,10 @@ function buildCommit(): string {
   const pages = process.env.CF_PAGES_COMMIT_SHA;
   if (pages !== undefined && pages !== '') return pages;
   try {
-    return execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+    return execFileSync('git', ['rev-parse', 'HEAD'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
   } catch {
     return '';
   }

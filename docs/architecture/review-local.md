@@ -1,18 +1,22 @@
-# Local review — retro-shmup (branch docs/version-on-screen, GDD v0.20 version label)
+# Local review — retro-shmup (branch feat/version-label, version label code)
 
 - Date: 2026-10-16
-- Scope: branch diff `origin/main...HEAD` (docs only: GDD §9.9, UML 06, README/traceability rows)
-- Checks run: docs (doc-auditor) · `make verify`
-- Verdict: ship · Must 0 · Should 2 (fixed) · Nice 3 (2 fixed, Mermaid render unverified)
+- Scope: branch diff `origin/main...HEAD` (vite.config.ts, src/app/version-label.ts, build-constants.d.ts, main.ts, index.html, style.css, test, QA screenshots)
+- Checks run: design · security · correctness · tests (architecture-guardian, full scope) · `make verify` · `make smoke` · QA
+- Verdict: ship · Must 0 · Should 1 (fixed) · Nice 3 (fixed)
 
-## Pre-merge gate (docs diff, pre-push)
+## Pre-merge gate
 | Step | Result |
 |---|---|
-| 1 Tests | ✅ `make verify` (typecheck, Vitest) green |
-| 2 Coverage | unchanged (no code) |
-| 3 SonarQube | ✅ PASSED |
-| 4 Secrets | ✅ gitleaks clean · diff read: nothing sensitive |
-| 5 QA pass | n/a for the design PR; due on the code PR |
+| 1 Tests | ✅ Vitest (1305) · ✅ `make smoke` (Playwright, 2 projects) |
+| 2 Coverage | 99.27 % stmts / 95.67 % branches / 100 % funcs / 99.9 % lines (ratchet kept) · docs 100 % |
+| 3 SonarQube | ✅ PASSED (`make verify`, pre-push) |
+| 4 Secrets | ✅ gitleaks clean · no tracked .env · diff read: nothing sensitive (public SHA only) |
+| 5 QA pass | ✅ `vite preview` build, label `v0.0.0+<sha>` bottom-right, `pointer-events: none`, console clean · screenshots `qa/2026-10-16-version-label-{portrait,landscape}.png` |
 
 ## Fixed
-- Traceability matrix lacked the new diagram and a stale GDD version; `---` separator moved below §9.9; §9.6 names the label exception; diagram rules list selection and styling.
+- Should: UML `Main` listed a `showVersion` operation that the code does inline → diagram aligned.
+- Nice: 40-char SHA test; build fails if package.json has no version; git stderr silenced.
+
+## Disagree / Intentional
+- `versionLabel` in `src/app/` (build metadata, not a game rule); full SHA in bundle, cut at run time (public repo); missing `#version` never stops the game.
