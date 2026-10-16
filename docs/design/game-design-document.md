@@ -1137,7 +1137,7 @@ playable.
 | Public hosting | `<game>.benoitbremaud.fr` (Cloudflare Pages custom domain, one project per game), attached once the title is final; `pages.dev` URLs before; catalogue in the portfolio's projects page, `benoitbremaud.fr/projets/#jeux` | ADR-0008, ADR-0016, ADR-0017 |
 | Player data | `localStorage` only, versioned key; *(v0.9)* the top-10 entry holds a name of up to 8 characters and an optional country (§9.8) instead of three initials; no backend in 1.0 | ADR-0006, ADR-0021 |
 | Performance | 60 fps on a 2019 mid-range phone; ≤ 4 ms of logic per frame; no allocation inside the game loop (pools) | ADR-0002 |
-| Tests | Unit tests on the domain (TDD), headless level simulation with scripted inputs and seeded RNG, one browser smoke test; render and audio mocked at their ports | ADR-0003 |
+| Tests | Unit tests on the domain (TDD), headless level simulation with scripted inputs and seeded RNG, one browser smoke test in three engines (ADR-0026); render and audio mocked at their ports | ADR-0003, ADR-0026 |
 | Quality gate | Local-first: husky hooks run gitleaks, lint, typecheck, tests with coverage, the dependency audit and the local SonarQube quality gate before every push; CI runs a light lint/typecheck/test job and the security scans | ADR-0007, ADR-0013 |
 
 ---

@@ -46,7 +46,7 @@ repository.
 - **Every player-facing string goes through the message catalogue** (EN default, FR).
 - **Every game-feel effect is toggleable** and respects the photosensitivity options.
 - **Tests:** unit tests on the domain (TDD — Red/Green/Refactor), headless level-simulation tests
-  with scripted inputs and seeded RNG, exactly one browser smoke test. Render and audio are
+  with scripted inputs and seeded RNG, exactly one browser smoke test (one file, run in Chromium, Firefox and WebKit, ADR-0026). Render and audio are
   mocked at their ports, never the domain.
 
 ## Repository layout
