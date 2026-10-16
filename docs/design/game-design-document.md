@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Vertical slice — v0.22 (2026-10-16): v0.22 lets the hall-of-fame number 1's name drift now and then, very dimly, in the far background of a run (§9.4.1), on its own effect switch. v0.21 (2026-10-16): v0.21 fills the empty stretches of level 1 with filler rows that pay no P (§7.2.3): the average player saw no enemy for 83 s of the first 116 s, 65 s since. v0.20 (2026-10-16): v0.20 shows the game version to the player as a small page text outside the canvas (§9.9, ADR-0025 decision 6). v0.19 (2026-10-16): v0.19 makes the shield ring the shape that collides while a charge is held (#74): any enemy bullet or body touching the drawn 36 × 36 square consumes the charge, once. v0.18 (2026-10-16): v0.18 is the third rebalance of level 1 (#56), after the owner found it far too easy and a committed measurement bot confirmed it: enemy aimed, fan and triple bullets at 85 px/s, the Gunner tougher and faster-firing, the Heavy tougher, the Cruiser at 1 800 shots with faster volleys, and the 70 s formation no longer paying its P. v0.17 (2026-10-15): v0.17 draws the ships with the CC0 placeholder sprites of G4-1 (§3.2.1: the sprite per role, the small enemies drawn at 1× over their 16 × 16 hitbox, the Cruiser built from three ships, the shapes kept as the fallback). v0.16 (2026-10-14; amended 2026-10-15 by the owner after a design-versus-code audit: the High scores columns as built, the browser-shortcut rule of the capture, the name entry as built in G2-3, the attract mode of G2-3b): v0.16 settles the hall of fame of G2 (the letter grid for the name and the country, the high-score table and screen, the Ending card, leaving the slice-end interim). v0.15 (2026-10-14): v0.15 settles the controls screen of G1b (layout, key labels, the device edited, restore confirmation, save version 2). v0.14 (2026-10-14): v0.14 settles the options screens of G1a-3 (row texts and values, the title menu replacing tap-to-start, leaving a menu frees the ship's movement). v0.13 (2026-10-14): v0.13 designs the menus and the options of the screens brick, first part (G1a: title and pause menus, the options screen and its visual-effects sub-screen, menu navigation by touch and mouse, the save document's options). v0.12 (2026-10-14): v0.12 is the second rebalance iteration of level 1 (#45): the Cruiser takes 1 450 level-1 shots and three of the seven formations no longer pay the formation P. v0.11 (2026-10-13): v0.11 rebalances level 1 after the friends' playtest (harder, fewer drops, the ship slightly weaker than the attack; #45). v0.10 (2026-10-12): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot); v0.6 adds the initial values of the enemies brick; v0.7 settles the devices brick (portrait HUD strip, touch pause button, resuming and leaving Game over by tap or Start, mouse takeover, rotation pause); v0.8 settles the player kit (Spread and Laser tables, the death release hop, bomb, shield and pickup rules, P colours, the Carrier, HUD icons); v0.9 follows the brick-E playtest (difficulty ramp by script, a named top 10 with an optional country, pointer fire held by the left button or a steering finger with an autofire option, shot proportions for readability); v0.10 settles the level brick (the 120 s level-1 script, the Heavy, the Cruiser, the WARNING, the boss HP bar and timer, the end-of-level tally and the Results screen, a vertical slice ending after level 1) |
+| **Status** | Vertical slice — v0.23 (2026-10-16): v0.23 settles the audio brick G3 (§9.5): sound effects from a small in-house 8-bit synthesiser, CC0 NES-style music for the slice's screens, the *Audio* options sub-screen with two volumes. v0.22 (2026-10-16): v0.22 lets the hall-of-fame number 1's name drift now and then, very dimly, in the far background of a run (§9.4.1), on its own effect switch. v0.21 (2026-10-16): v0.21 fills the empty stretches of level 1 with filler rows that pay no P (§7.2.3): the average player saw no enemy for 83 s of the first 116 s, 65 s since. v0.20 (2026-10-16): v0.20 shows the game version to the player as a small page text outside the canvas (§9.9, ADR-0025 decision 6). v0.19 (2026-10-16): v0.19 makes the shield ring the shape that collides while a charge is held (#74): any enemy bullet or body touching the drawn 36 × 36 square consumes the charge, once. v0.18 (2026-10-16): v0.18 is the third rebalance of level 1 (#56), after the owner found it far too easy and a committed measurement bot confirmed it: enemy aimed, fan and triple bullets at 85 px/s, the Gunner tougher and faster-firing, the Heavy tougher, the Cruiser at 1 800 shots with faster volleys, and the 70 s formation no longer paying its P. v0.17 (2026-10-15): v0.17 draws the ships with the CC0 placeholder sprites of G4-1 (§3.2.1: the sprite per role, the small enemies drawn at 1× over their 16 × 16 hitbox, the Cruiser built from three ships, the shapes kept as the fallback). v0.16 (2026-10-14; amended 2026-10-15 by the owner after a design-versus-code audit: the High scores columns as built, the browser-shortcut rule of the capture, the name entry as built in G2-3, the attract mode of G2-3b): v0.16 settles the hall of fame of G2 (the letter grid for the name and the country, the high-score table and screen, the Ending card, leaving the slice-end interim). v0.15 (2026-10-14): v0.15 settles the controls screen of G1b (layout, key labels, the device edited, restore confirmation, save version 2). v0.14 (2026-10-14): v0.14 settles the options screens of G1a-3 (row texts and values, the title menu replacing tap-to-start, leaving a menu frees the ship's movement). v0.13 (2026-10-14): v0.13 designs the menus and the options of the screens brick, first part (G1a: title and pause menus, the options screen and its visual-effects sub-screen, menu navigation by touch and mouse, the save document's options). v0.12 (2026-10-14): v0.12 is the second rebalance iteration of level 1 (#45): the Cruiser takes 1 450 level-1 shots and three of the seven formations no longer pay the formation P. v0.11 (2026-10-13): v0.11 rebalances level 1 after the friends' playtest (harder, fewer drops, the ship slightly weaker than the attack; #45). v0.10 (2026-10-12): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot); v0.6 adds the initial values of the enemies brick; v0.7 settles the devices brick (portrait HUD strip, touch pause button, resuming and leaving Game over by tap or Start, mouse takeover, rotation pause); v0.8 settles the player kit (Spread and Laser tables, the death release hop, bomb, shield and pickup rules, P colours, the Carrier, HUD icons); v0.9 follows the brick-E playtest (difficulty ramp by script, a named top 10 with an optional country, pointer fire held by the left button or a steering finger with an autofire option, shot proportions for readability); v0.10 settles the level brick (the 120 s level-1 script, the Heavy, the Cruiser, the WARNING, the boss HP bar and timer, the end-of-level tally and the Results screen, a vertical slice ending after level 1) |
 | **Working title** | *retro-shmup* (codename; the commercial title is still open) |
 | **Genre** | Retro vertical-scrolling shoot'em up (shmup), 16-bit aesthetic |
 | **Platform** | Web browser (desktop first, mobile playable), TypeScript + native Canvas 2D |
@@ -568,7 +568,9 @@ Ground targets (two collision layers, terrain per level) and mid-bosses are **ex
 stop — no row may spawn at or after `warningAt` − 4 s, a load check — and the enemies still on
 the field live on. "WARNING" (FR "ATTENTION", title font) is shown over the field for **3 s** in
 two slow blinks, under 3 per second (§9.7). The 3 s of silence and the boss track wait for audio
-(screens and audio brick, G): until then the silence is a no-op.
+(screens and audio brick, G): until then the silence is a no-op. *(v0.23)* With audio (G3-2) the
+level music fades out over the first 0.5 s of the warning, the warning sound plays, and the boss
+track starts when the warning ends.
 
 **Lifecycle** *(v0.10, initial)*: the boss **enters** — slides down from fully above the field,
 not targetable, its body harmful — then **fights** while its 90 s timer runs, then is
@@ -1041,6 +1043,13 @@ motion, the champion's name *(v0.22, §9.4.1)*; a switch appears with its effect
 *Audio* (the two volumes) with the audio brick (G3); neither is shown before. Every change
 applies at once and is saved at once (ADR-0006).
 *(v0.15)* *Controls* (*COMMANDES*) sits between *Visual effects* and *Autofire* (§4.2).
+*(v0.23)* *Audio* ▸ (*AUDIO*) sits between *Visual effects* and *Controls*. It opens a sub-screen:
+*MUSIC* / *MUSIQUE*, *SOUND EFFECTS* / *BRUITAGES*, then *BACK* / *RETOUR*. Each volume is a step
+from 0 to 10 shown as its number; left / right move it by one (stopping at 0 and 10), an
+activation adds one and wraps from 10 to 0, like every other value row. Defaults: music **7**,
+sound effects **8** *(initial)*. The gain is (step / 10)², closer to how loudness is heard than a
+straight line; step 0 is silence. A change applies at once (a menu sound plays at the new sound
+effects volume) and is saved at once.
 *(v0.14)* Row texts (EN / FR, capitals without accents): *OPTIONS*, *VISUAL EFFECTS* / *EFFETS
 VISUELS*, *AUTOFIRE* / *TIR AUTO*, *LANGUAGE* / *LANGUE*, *FULLSCREEN* / *PLEIN ECRAN*, *BACK* /
 *RETOUR*, *ALL ON* / *TOUT ACTIVER*, *ALL OFF* / *TOUT COUPER*, *BLINK* / *CLIGNOTEMENT*, *HIT
@@ -1097,6 +1106,31 @@ Decoration only, it never competes with play.
   custom-asset phase (final boss first).
 - Browser autoplay policy: audio starts on the "Press Start" gesture.
 
+**The audio brick G3** *(v0.23, owner 2026-10-16)*:
+
+- **The synthesiser** is the game's own small sfxr-style generator, not a library (no runtime
+  dependency): square (with a duty), sawtooth, sine and noise waves, an attack / sustain / decay
+  envelope, a frequency slide, vibrato and a simple low-pass. Each sound effect is a row of
+  parameters in the code; the rows are rendered once, when audio unlocks, into sample buffers.
+  The noise comes from a seeded generator, so a sound is the same on every run.
+- **Mix**: at most **16** sound effects at once (the oldest stops); the same sound started again
+  within **33 ms** is skipped, so held fire never saturates; the player's shots sit lowest in the
+  mix *(initial)*. The pause mix of ADR-0009 applies (music −12 dB, game sounds stopped, menu
+  sounds kept).
+- **The slice's music** is *NES Shooter Music* by SketchyLogic (OpenGameArt, **CC0**, credited in
+  `CREDITS.md` though credit is optional): *Map* on the title and its menus, *Mercury* in level 1,
+  *Boss* for the boss fight (its intro once, then its loop), one jingle on the Results and one on
+  Game over (played once). The tracks ship as MP3 under `public/assets/audio/`, which every engine
+  plays. Levels 2–3 and the final boss get their tracks with their levels.
+- **Unlock and visibility**: the first click, tap or key unlocks audio (ADR-0009, §4.2
+  *Activation*); before it the game is silent and nothing is queued. While the tab is hidden the
+  audio is suspended, and it resumes when the tab shows again.
+- **Saving**: the two volumes join the options in the save document; it stays at version 2, a
+  missing volume reading as its default, as the champion's-name switch did (§9.8, v0.22).
+- **Split** (owner, MCDA 425 / 500): this design, then G3-1 (synthesiser, Web Audio adapter, the
+  sound effects on their events, volumes fixed at their defaults), then G3-2 (music, the *Audio*
+  sub-screen, the saved volumes).
+
 ### 9.6 Localisation
 
 EN (default) and FR. Every player-facing string lives in a message catalogue; no string literals in
@@ -1111,7 +1145,7 @@ times per second: the WARNING banner blinks twice in 3 s.
 
 ### 9.8 Save data
 
-`localStorage`, versioned schema *(key `retro-shmup.v1`)*: options (the autofire switch included, off by default)
+`localStorage`, versioned schema *(key `retro-shmup.v1`)*: options (the autofire switch included, off by default; the music and sound-effects volumes *(v0.23)*)
 and the top-10 table *(v0.9)*: name, country (optional), score, level reached, date. No account;
 the only personal data are a name of 8 characters at most from the picker's alphabet and a
 country the player chose. The document is untrusted input, validated by allowlist and parsed
@@ -1343,3 +1377,4 @@ fully playable at release quality, used to validate the design before producing 
 | Placeholder sprites *(v0.17)* | G4-1 (owner, 2026-10-15): Kenney *Pixel Shmup* (CC0) for the player, the five roles and the Cruiser; small enemies at 1× over their 16 × 16 hitbox (380/500); the Cruiser as hull ×2 between two 1× wings with the turret tile (410/500); the player's nose-up copy and the 2× sizes baked at load (430/500); `drawSprite` returns whether it drew, the presentation draws its shape otherwise (475/500) | Halving the small ships to 16 (260/500: hitbox larger than the drawing); hitboxes grown to the sprites (280/500, a balance change); the Cruiser as one ship ×3 (370/500) or kept as shapes (300/500); a `flipY` port parameter (360/500); a `hasSprite` query (440/500); the fallback drawn inside the adapter (270/500) |
 | Sprite hit flash *(v0.17, G4-1b)* | Owner, 2026-10-15, after a headless capture showed the Cruiser as a white box for its whole fight: the flash draws the sprite's white silhouette, baked at load, through `drawSprite`'s `frame` (460/500); the box stays the fallback without sheets | The white box (325/500: sustained fire keeps the boss flashing); a blink instead of the flash (330/500); a translucent white veil over the sprite (295/500) |
 | Champion's name *(v0.22)* | Owner, 2026-10-16: the number 1's name only, in *Playing*, menu font in the far-star colour under every other layer but the far stars, 12 px/s, first at 40 s then every 120 s, nothing with an empty table, its own effect switch on by default; satellites and a planet deferred to G4 art. Chosen by MCDA 470 / 500 | The name with satellites and a distant planet now (380 / 500: sprites still to draw, more background noise); the name on the title and attract screens only (385 / 500: not "far away during the game") |
+| Audio *(v0.23)* | Owner, 2026-10-16, G3: SFX from an in-house sfxr-style synthesiser rendered once at unlock (440/500); the slice's music = SketchyLogic *NES Shooter Music*, CC0 (450/500); volumes 0–10 per step, defaults 7 / 8, gain (step / 10)², *Audio* between *Visual effects* and *Controls*, 16 voices, a repeat within 33 ms skipped (one batch); save kept at version 2, missing volumes = defaults (470/500); design then two code PRs (425/500) | The jsfxr npm package at run time (395/500: first runtime dependency); pre-rendered WAV files (350/500: ~22 files, no reproducible source); ppeak's *Action Chiptune* pack, CC-BY (325/500: modern sound, no game-over cue); no music in the slice (250/500); a save version 3 with a migration (300/500); one code PR (305/500) or three (375/500) |
