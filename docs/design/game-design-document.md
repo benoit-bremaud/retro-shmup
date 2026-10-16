@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Vertical slice — v0.23 (2026-10-16): v0.23 settles the audio brick G3 (§9.5): sound effects from a small in-house 8-bit synthesiser, CC0 NES-style music for the slice's screens, the *Audio* options sub-screen with two volumes. v0.22 (2026-10-16): v0.22 lets the hall-of-fame number 1's name drift now and then, very dimly, in the far background of a run (§9.4.1), on its own effect switch. v0.21 (2026-10-16): v0.21 fills the empty stretches of level 1 with filler rows that pay no P (§7.2.3): the average player saw no enemy for 83 s of the first 116 s, 65 s since. v0.20 (2026-10-16): v0.20 shows the game version to the player as a small page text outside the canvas (§9.9, ADR-0025 decision 6). v0.19 (2026-10-16): v0.19 makes the shield ring the shape that collides while a charge is held (#74): any enemy bullet or body touching the drawn 36 × 36 square consumes the charge, once. v0.18 (2026-10-16): v0.18 is the third rebalance of level 1 (#56), after the owner found it far too easy and a committed measurement bot confirmed it: enemy aimed, fan and triple bullets at 85 px/s, the Gunner tougher and faster-firing, the Heavy tougher, the Cruiser at 1 800 shots with faster volleys, and the 70 s formation no longer paying its P. v0.17 (2026-10-15): v0.17 draws the ships with the CC0 placeholder sprites of G4-1 (§3.2.1: the sprite per role, the small enemies drawn at 1× over their 16 × 16 hitbox, the Cruiser built from three ships, the shapes kept as the fallback). v0.16 (2026-10-14; amended 2026-10-15 by the owner after a design-versus-code audit: the High scores columns as built, the browser-shortcut rule of the capture, the name entry as built in G2-3, the attract mode of G2-3b): v0.16 settles the hall of fame of G2 (the letter grid for the name and the country, the high-score table and screen, the Ending card, leaving the slice-end interim). v0.15 (2026-10-14): v0.15 settles the controls screen of G1b (layout, key labels, the device edited, restore confirmation, save version 2). v0.14 (2026-10-14): v0.14 settles the options screens of G1a-3 (row texts and values, the title menu replacing tap-to-start, leaving a menu frees the ship's movement). v0.13 (2026-10-14): v0.13 designs the menus and the options of the screens brick, first part (G1a: title and pause menus, the options screen and its visual-effects sub-screen, menu navigation by touch and mouse, the save document's options). v0.12 (2026-10-14): v0.12 is the second rebalance iteration of level 1 (#45): the Cruiser takes 1 450 level-1 shots and three of the seven formations no longer pay the formation P. v0.11 (2026-10-13): v0.11 rebalances level 1 after the friends' playtest (harder, fewer drops, the ship slightly weaker than the attack; #45). v0.10 (2026-10-12): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot); v0.6 adds the initial values of the enemies brick; v0.7 settles the devices brick (portrait HUD strip, touch pause button, resuming and leaving Game over by tap or Start, mouse takeover, rotation pause); v0.8 settles the player kit (Spread and Laser tables, the death release hop, bomb, shield and pickup rules, P colours, the Carrier, HUD icons); v0.9 follows the brick-E playtest (difficulty ramp by script, a named top 10 with an optional country, pointer fire held by the left button or a steering finger with an autofire option, shot proportions for readability); v0.10 settles the level brick (the 120 s level-1 script, the Heavy, the Cruiser, the WARNING, the boss HP bar and timer, the end-of-level tally and the Results screen, a vertical slice ending after level 1) |
+| **Status** | Vertical slice — v0.24 (2026-10-16): v0.24 makes the Laser bolt stop on the first enemy or boss it touches (#107, owner playtest): the Laser keeps its width and damage per level but no longer passes through; and it grows the ship's hitbox from 4 × 4 to a 6 × 6 body core, the wings still harmless (#106, §4.1). v0.23 (2026-10-16): v0.23 settles the audio brick G3 (§9.5): sound effects from a small in-house 8-bit synthesiser, CC0 NES-style music for the slice's screens, the *Audio* options sub-screen with two volumes. v0.22 (2026-10-16): v0.22 lets the hall-of-fame number 1's name drift now and then, very dimly, in the far background of a run (§9.4.1), on its own effect switch. v0.21 (2026-10-16): v0.21 fills the empty stretches of level 1 with filler rows that pay no P (§7.2.3): the average player saw no enemy for 83 s of the first 116 s, 65 s since. v0.20 (2026-10-16): v0.20 shows the game version to the player as a small page text outside the canvas (§9.9, ADR-0025 decision 6). v0.19 (2026-10-16): v0.19 makes the shield ring the shape that collides while a charge is held (#74): any enemy bullet or body touching the drawn 36 × 36 square consumes the charge, once. v0.18 (2026-10-16): v0.18 is the third rebalance of level 1 (#56), after the owner found it far too easy and a committed measurement bot confirmed it: enemy aimed, fan and triple bullets at 85 px/s, the Gunner tougher and faster-firing, the Heavy tougher, the Cruiser at 1 800 shots with faster volleys, and the 70 s formation no longer paying its P. v0.17 (2026-10-15): v0.17 draws the ships with the CC0 placeholder sprites of G4-1 (§3.2.1: the sprite per role, the small enemies drawn at 1× over their 16 × 16 hitbox, the Cruiser built from three ships, the shapes kept as the fallback). v0.16 (2026-10-14; amended 2026-10-15 by the owner after a design-versus-code audit: the High scores columns as built, the browser-shortcut rule of the capture, the name entry as built in G2-3, the attract mode of G2-3b): v0.16 settles the hall of fame of G2 (the letter grid for the name and the country, the high-score table and screen, the Ending card, leaving the slice-end interim). v0.15 (2026-10-14): v0.15 settles the controls screen of G1b (layout, key labels, the device edited, restore confirmation, save version 2). v0.14 (2026-10-14): v0.14 settles the options screens of G1a-3 (row texts and values, the title menu replacing tap-to-start, leaving a menu frees the ship's movement). v0.13 (2026-10-14): v0.13 designs the menus and the options of the screens brick, first part (G1a: title and pause menus, the options screen and its visual-effects sub-screen, menu navigation by touch and mouse, the save document's options). v0.12 (2026-10-14): v0.12 is the second rebalance iteration of level 1 (#45): the Cruiser takes 1 450 level-1 shots and three of the seven formations no longer pay the formation P. v0.11 (2026-10-13): v0.11 rebalances level 1 after the friends' playtest (harder, fewer drops, the ship slightly weaker than the attack; #45). v0.10 (2026-10-12): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot); v0.6 adds the initial values of the enemies brick; v0.7 settles the devices brick (portrait HUD strip, touch pause button, resuming and leaving Game over by tap or Start, mouse takeover, rotation pause); v0.8 settles the player kit (Spread and Laser tables, the death release hop, bomb, shield and pickup rules, P colours, the Carrier, HUD icons); v0.9 follows the brick-E playtest (difficulty ramp by script, a named top 10 with an optional country, pointer fire held by the left button or a steering finger with an autofire option, shot proportions for readability); v0.10 settles the level brick (the 120 s level-1 script, the Heavy, the Cruiser, the WARNING, the boss HP bar and timer, the end-of-level tally and the Results screen, a vertical slice ending after level 1) |
 | **Working title** | *retro-shmup* (codename; the commercial title is still open) |
 | **Genre** | Retro vertical-scrolling shoot'em up (shmup), 16-bit aesthetic |
 | **Platform** | Web browser (desktop first, mobile playable), TypeScript + native Canvas 2D |
@@ -117,7 +117,7 @@ later G4 step. Every sprite is centred on its entity's position; **hitboxes do n
 
 | Entity | Hitbox | Sprite (pack cell, drawn size) |
 |---|---|---|
-| Player | 4 × 4 (ship box 32 × 32) | `ship_0000`, blue, turned nose up; 32 × 24 drawn. The bright cockpit square stays drawn on the hitbox (§4.1) |
+| Player | 6 × 6 *(v0.24; 4 × 4 before)* (ship box 32 × 32) | `ship_0000`, blue, turned nose up; 32 × 24 drawn. The bright cockpit square stays drawn on the hitbox (§4.1) |
 | Popcorn | 16 × 16 | `ship_0010`, green small, at 1× (20 × 17 drawn) |
 | Diver | 16 × 16 | `ship_0009`, red small, at 1× (24 × 17 drawn) |
 | Gunner | 32 × 32 | `ship_0007`, yellow, at 1× (28 × 23 drawn) |
@@ -173,11 +173,17 @@ Minimal, arcade style: one intro card (two sentences), one title card per level,
   proportional to its tilt, up to it; touch and mouse move the ship toward the pointer, never
   faster *(v0.5)*. The whole sprite stays inside the play field: its centre is clamped to x 16–224
   and y 16–304 *(v0.5)*.
-- **Hitbox: 4 × 4 px** at the sprite's centre. The visible ship is much larger than what can be
-  hit; bullets graze the wings. This is the genre's standard since the 1990s and the single most
+- **Hitbox: 6 × 6 px** at the sprite's centre *(v0.24, #106; 4 × 4 from v0.1 to v0.23)*: the
+  body core — the cockpit and the fuselage — not the wings. The visible ship is still much larger
+  than what can be hit; bullets graze the wings. This is the genre's standard since the 1990s and the single most
   important fairness rule of the game. *(v0.10 playtest)* The ship's bright cockpit is drawn
   exactly on that hitbox, so the player can see where a bullet counts; only the drawing changes.
   *(v0.19)* While a shield charge is held, the 36 × 36 ring collides instead (§4.4).
+  *(v0.24, #106)* The owner's playtest found the 4 × 4 square too forgiving (a bullet seen to
+  cross the ship did not kill); the 6 × 6 core is a first step, to be playtested. A bullet crossing
+  the drawn wings outside that core still passes, by design. At the fastest relative speed (ship
+  150 px/s plus a 85 px/s bullet) a bullet moves 3.9 px per step, under the 10 px overlap window,
+  so it can never skip the hitbox.
 - Spawn / respawn: the ship enters from the bottom with **2 s of invulnerability** (blinking); the
   fly-in *(initial: 0.5 s)* is part of those 2 s and gives no control. The ship flies in like this
   at the start of **every level** *(v0.4)*. It appears centred (x 120) fully hidden below the
@@ -296,7 +302,7 @@ formations)*.
 | Weapon | Pickup | Character | Level 1 → 5 *(initial)* |
 |---|---|---|---|
 | **Spread** (red) | P-red | Wide fan of bullets, good against formations, lower single-target damage | 1 → 5 streams, widening fan, firing rate +50 % at L5 *(v0.8: +40 % before; cooldowns are whole steps)* |
-| **Laser** (blue) | P-blue | Narrow piercing beam, high single-target damage, demands aim | Beam width 2 → 8 px, damage ×1 → ×3, passes through 1 → 3 enemies *(v0.8 wording; v0.2 said "pierces up to")* |
+| **Laser** (blue) | P-blue | Narrow beam, high single-target damage, demands aim | Beam width 2 → 8 px, damage ×1 → ×3; each bolt stops on the first enemy it touches *(v0.24; v0.8 to v0.23: passes through 1 → 3 enemies)* |
 
 Damage output grows roughly ×1.0 / ×1.4 / ×1.9 / ×2.4 / ×3.0 from L1 to L5 *(initial)*. Enemy HP
 is expressed in **level-1 shots** so this ratio is what the player feels as "power".
@@ -305,7 +311,7 @@ is expressed in **level-1 shots** so this ratio is what the player feels as "pow
 the Spread's centre stream, or the Laser. The Spread's side streams add coverage, not power.
 Every player bullet deals **at least 1** (one level-1 shot), so a Popcorn always dies in one hit.
 Switching weapon keeps the power level and the running cooldown. The Laser's ratio is ×1.0 /
-1.5 / 2.0 / 2.5 / 3.0 (half-shot steps), its pass-throughs being its coverage.
+1.5 / 2.0 / 2.5 / 3.0 (half-shot steps); *(v0.24)* its coverage is its bolt width alone (v0.8 to v0.23: its pass-throughs).
 
 **Spread levels** *(initial, v0.8)*: every bullet is 2 × 8 px at 360 px/s and leaves from the
 nose; angles are measured from straight up, and a side stream flies along its angle.
@@ -323,17 +329,18 @@ neighbours are 5 steps (+20 %) or 3 steps (+100 %), so the "+40 %" of v0.2 is no
 
 **Laser levels** *(initial, v0.8)*: the Laser fires **long bolts**, not a continuous beam:
 10 bolts per second at 600 px/s, each 48 px long, its lower end at the nose; the 12 px gaps between
-bolts read as a pulsed beam. A bolt **passes through** a number of enemies and hits each enemy at
-most once; every body it crosses takes its full damage; it is spent on the hit after its last
-pass-through.
+bolts read as a pulsed beam. *(v0.24, #107)* A bolt **stops on the first body it touches** — an
+enemy, or the boss while it fights — deals its full damage there and is spent, as a Spread bullet
+is. When it overlaps several bodies in one step, it hits the nearest along its path; a body behind
+is reached only by a later bolt. *(v0.8 to v0.23: a bolt passed through 1 to 3 enemies.)*
 
-| Level | Width | Damage | Passes through | Enemies hit at most |
-|---|---|---|---|---|
-| 1 | 2 px | 1 | 1 | 2 |
-| 2 | 3 px | 1.5 | 1 | 2 |
-| 3 | 4 px | 2 | 2 | 3 |
-| 4 | 6 px | 2.5 | 2 | 3 |
-| 5 | 8 px | 3 | 3 | 4 |
+| Level | Width | Damage | Enemies hit |
+|---|---|---|---|
+| 1 | 2 px | 1 | 1 |
+| 2 | 3 px | 1.5 | 1 |
+| 3 | 4 px | 2 | 1 |
+| 4 | 6 px | 2.5 | 1 |
+| 5 | 8 px | 3 | 1 |
 
 **Spread level 1** *(initial, v0.5)*: one stream straight up from the ship's nose (16 px above its
 centre), **10 shots per second**, bullets 2 × 8 px at **360 px/s** (the field crossed in under a
@@ -354,8 +361,8 @@ is held or not, so tapping never fires faster than holding. One level-1 shot dea
   *(v0.19)* While a charge is held, the drawn ring **is** the shape that collides: an enemy bullet
   or an enemy or boss body that overlaps the 36 × 36 square centred on the ship (a strict overlap,
   as every box test of the game: a shared edge does not count) consumes the charge and the ring
-  disappears at once, even if it would have missed the 4 × 4 hitbox. The shield protects once and
-  only once; with no charge, only the 4 × 4 hitbox counts again (§4.1). This holds only while the
+  disappears at once, even if it would have missed the 6 × 6 hitbox. The shield protects once and
+  only once; with no charge, only the 6 × 6 hitbox counts again (§4.1). This holds only while the
   ship is vulnerable: during the respawn entry or any invulnerability (the 0.5 s after the absorb
   included) the ring is drawn but nothing touching it counts, and the charge stays.
 - **On death**:
@@ -1381,3 +1388,5 @@ fully playable at release quality, used to validate the design before producing 
 | Sprite hit flash *(v0.17, G4-1b)* | Owner, 2026-10-15, after a headless capture showed the Cruiser as a white box for its whole fight: the flash draws the sprite's white silhouette, baked at load, through `drawSprite`'s `frame` (460/500); the box stays the fallback without sheets | The white box (325/500: sustained fire keeps the boss flashing); a blink instead of the flash (330/500); a translucent white veil over the sprite (295/500) |
 | Champion's name *(v0.22)* | Owner, 2026-10-16: the number 1's name only, in *Playing*, menu font in the far-star colour under every other layer but the far stars, 12 px/s, first at 40 s then every 120 s, nothing with an empty table, its own effect switch on by default; satellites and a planet deferred to G4 art. Chosen by MCDA 470 / 500 | The name with satellites and a distant planet now (380 / 500: sprites still to draw, more background noise); the name on the title and attract screens only (385 / 500: not "far away during the game") |
 | Audio *(v0.23)* | Owner, 2026-10-16, G3: SFX from an in-house sfxr-style synthesiser rendered once at unlock (440/500); the slice's music = SketchyLogic *NES Shooter Music*, CC0 (450/500); volumes 0–10 per step, defaults 7 / 8, gain (step / 10)², *Audio* between *Visual effects* and *Controls*, 16 voices, a repeat within 33 ms skipped (one batch); save kept at version 2, missing volumes = defaults (470/500); design then two code PRs (425/500) | The jsfxr npm package at run time (395/500: first runtime dependency); pre-rendered WAV files (350/500: ~22 files, no reproducible source); ppeak's *Action Chiptune* pack, CC-BY (325/500: modern sound, no game-over cue); no music in the slice (250/500); a save version 3 with a migration (300/500); one code PR (305/500) or three (375/500) |
+| Laser stops on the first hit *(v0.24)* | Owner, 2026-10-16 playtest (#107): a bolt is spent on the first enemy or boss it touches, nearest along its path; width and damage per level unchanged; the pass-through memory stays in the code with zero pass-throughs (data only) | The v0.8 pass-through 1 → 3 (read as a bullet going through an enemy); removing the pass-through machinery from the code (a refactor with no player-visible gain) |
+| Player hitbox *(v0.24)* | Owner, 2026-10-16 (#106): the hitbox grows from 4 × 4 to a 6 × 6 body core (cockpit and fuselage), to be playtested (415/500); the level-1 balance bot measured 6 × 6 outside the v0.18 bands, which are widened to the measured values until the playtest settles them (the balance guard of #56); the wings still let bullets through; the cockpit square drawn on it grows with it; no tunnelling (3.9 px per step for a 10 px window) | Keeping 4 × 4 (first recommended, 430/500: the owner found it too forgiving in play); 8 × 8 as is (400/500: the bot's good player at 74–81 % Game over, the beginner at 1–2 % boss kills); 8 × 8 with a compensating rebalance in the same PR (320/500: two changes in one playtest); the hitbox as the 32 × 24 sprite (unfair deaths on the wings, a full rebalance) |

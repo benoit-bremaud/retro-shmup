@@ -32,7 +32,7 @@ function overlaps(a: Box, b: Box): boolean {
   );
 }
 
-// The ship's 4 × 4 hitbox (GDD §4.1): only it counts, never the sprite — except while a shield
+// The ship's 6 × 6 hitbox (GDD v0.24 §4.1): only it counts, never the sprite — except while a shield
 // charge is held, when the drawn 36 × 36 ring is the shape, so any touch consumes it (GDD v0.19 §4.4).
 const HITBOX = PlayerTuning.hitboxSize;
 const SHIELD = PlayerTuning.shieldSize;
@@ -96,10 +96,10 @@ function nearestTarget(world: World, bullet: Bullet): Enemy | Boss | undefined {
   return nearest;
 }
 
-// Pass 1: player bullets against enemies and the fighting boss. A Spread bullet hits one enemy and is spent; a Laser bolt
-// passes through up to three, nearest first along its path, each body hit once, every one taking
-// the full damage (GDD v0.8 §4.3). Each hit spends the bullet, destroys the enemy or records it,
-// so the loop ends.
+// Pass 1: player bullets against enemies and the fighting boss, nearest first along the bullet's
+// path. A shot with no pass-through left is spent on its hit; one with a pass-through records the
+// body and goes on (ADR-0019). Each hit spends the bullet, destroys the enemy or records it, so
+// the loop ends.
 function shotsAgainstEnemies(world: World, rules: HitRules): void {
   for (let i = 0; i < world.playerBullets.count; i += 1) {
     const bullet = world.playerBullets.at(i);

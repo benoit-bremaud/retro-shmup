@@ -38,7 +38,7 @@ export class Bullet {
     return true;
   }
 
-  /** A pass-through: the body is remembered (at most three, the most a bolt passes through). */
+  /** A pass-through: the body is remembered, three at most (no table shot passes through, v0.24). */
   recordHit(serial: number): void {
     if (this.alreadyHitCount >= HIT_MEMORY) return;
     this.alreadyHit[this.alreadyHitCount] = serial;

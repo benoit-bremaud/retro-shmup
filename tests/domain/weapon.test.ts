@@ -174,18 +174,18 @@ describe('WEAPONS — the Spread table (GDD v0.8 §4.3)', () => {
   });
 });
 
-describe('WEAPONS — the Laser table (GDD v0.8 §4.3)', () => {
+describe('WEAPONS — the Laser table (GDD v0.24 §4.3)', () => {
   it.each([
-    [1, 2, 1, 1],
-    [2, 3, 1.5, 1],
-    [3, 4, 2, 2],
-    [4, 6, 2.5, 2],
-    [5, 8, 3, 3],
+    [1, 2, 1],
+    [2, 3, 1.5],
+    [3, 4, 2],
+    [4, 6, 2.5],
+    [5, 8, 3],
   ])(
-    'fires at level %i one 48 px bolt %i px wide, %d level-1 shots, passing through %i',
-    (level, width, damage, pierce) => {
+    'fires at level %i one 48 px bolt %i px wide, %d level-1 shots, passing through none',
+    (level, width, damage) => {
       expect(volley(WeaponKind.Laser, level)).toEqual([
-        [0, -40, 0, -600, width, 48, shots(damage), pierce],
+        [0, -40, 0, -600, width, 48, shots(damage), 0],
       ]);
       expect(WEAPONS[WeaponKind.Laser][level - 1]?.cooldownSteps).toBe(6);
     },

@@ -28,13 +28,13 @@ What the current build plays:
   tougher Heavies, four of the seven formations paying no P, and a Cruiser of 1 800 shots with
   faster volleys. A seeded measurement bot (`tests/balance`) guards the balance.
 - **Player kit**: the Spread (red) and the Laser (blue) on five shared power levels, the weapon
-  chosen by the colour of the last P caught; Laser bolts pass through up to three enemies. A P
+  chosen by the colour of the last P caught; a Laser bolt stops on the first enemy it touches. A P
   drops from Gunners (10 %) and from every fully destroyed Popcorn formation that pays it (three of the seven in level 1, GDD v0.18). Shield, Bomb and
   1-UP pickups, with a 1 000-point bonus at the cap; Heavies drop a Bomb or a Shield at 30 %.
   Bombs, 2 per life up to 5, cancel every enemy bullet and hit every enemy on the field; the
   shield absorbs one hit; a death costs a power level, released as a P to catch back, and resets
   the bombs to 2.
-- **Rules**: 3 lives, a 4 × 4 hitbox, respawn with invulnerability; score with a chain
+- **Rules**: 3 lives, a 6 × 6 hitbox, respawn with invulnerability; score with a chain
   multiplier ×1 to ×8; an arcade Game over over the running wave.
 - **Screens**: title, play, pause with a 3-2-1 count-in, Game over; a landscape screen with side
   HUD bands, or a portrait screen with a top HUD strip on phones. The bomb flash and the field
@@ -148,7 +148,7 @@ notes will be on the GitHub releases page; the policy is ADR-0025 and the proced
 |---|---|
 | Resolution | 240 × 320 px play field (3:4 arcade vertical) in a landscape or portrait logical screen (GDD §3.1), integer scaling, nearest-neighbour sampling |
 | Scrolling | Vertical: enemies enter from the top (and sides), the player's ship lives in the lower third |
-| Player | 32 × 32 px sprite, 4 × 4 px hitbox, one hit = one life, 3 lives, one-charge shield, stock bombs |
+| Player | 32 × 32 px sprite, 6 × 6 px hitbox, one hit = one life, 3 lives, one-charge shield, stock bombs |
 | Weapons | Spread (red) and Laser (blue), five shared power levels; death costs one level and releases it as a pickup |
 | Enemies | 5 roles (Popcorn, Diver, Gunner, Carrier, Heavy) on 3 size tiers, defined as data, not classes |
 | Bosses | One per level, HP-threshold phases that break parts off the sprite, 90 s timer |

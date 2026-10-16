@@ -9,7 +9,7 @@
 
 ## Context
 
-What happens when an enemy bullet or an enemy or boss body overlaps the player's 4 × 4 hitbox (the 36 × 36 shield ring while a charge is held, GDD v0.19),
+What happens when an enemy bullet or an enemy or boss body overlaps the player's 6 × 6 hitbox (GDD v0.24; 4 × 4 before) (the 36 × 36 shield ring while a charge is held, GDD v0.19),
 with every branch of GDD §4.4: ignored, absorbed by a shield charge, or a life lost with the
 power penalty and its release. The timing — invulnerability, respawn, Game over at the end of
 the death sequence — belongs to the player's state machine.
