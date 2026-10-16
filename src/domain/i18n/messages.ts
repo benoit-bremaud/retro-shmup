@@ -82,6 +82,7 @@ export const MESSAGES = {
   francais: { en: 'FRANCAIS', fr: 'FRANCAIS' },
 } as const;
 
+/** A key of the catalogue: every player-facing string is looked up by one. */
 export type MessageKey = keyof typeof MESSAGES;
 
 /** The catalogue text of `key` in `language`; every player-facing string goes through it. */

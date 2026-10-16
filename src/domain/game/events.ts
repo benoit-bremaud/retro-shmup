@@ -43,7 +43,9 @@ export interface GameEvent {
   detail: number;
 }
 
+/** A subscriber: it reads the shared event during the call and must not keep it (ADR-0010). */
 export type GameEventHandler = (event: Readonly<GameEvent>) => void;
+/** Removes the handler it was returned for; calling it again does nothing. */
 export type Unsubscribe = () => void;
 
 /** The subscribe-only view handed to listeners that must never publish (the presenter). */

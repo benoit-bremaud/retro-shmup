@@ -8,6 +8,33 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-16
 
+### Quality brick: coverage gated, every public export documented (#85 → `885f4dd`, this PR)
+
+- Owner goal: 100 % test and documentation coverage. Starting point: 95.85 % statements,
+  92.98 % branches, 92.23 % functions, 96.64 % lines (`main.ts` included), 22 of 322 exports
+  without JSDoc.
+- MCDA on the scope: all four metrics with `main.ts` excluded and JSDoc checked in review scored
+  435 / 500. The other options were the same plus eslint-plugin-jsdoc (415), a branch floor of
+  95 % (390) and jsdom tests for `main.ts` (315, which would break the one-smoke-test rule).
+- Tests (#85): about 45 behavioural unit tests, written by four test-engineer agents working in
+  parallel, one per area, 1294 tests in all. A test-auditor review raised no Must and four
+  Should, all fixed. Coverage without `main.ts`: 99.27 % statements, 95.66 % branches, 100 %
+  functions, 99.9 % lines.
+- The rest, about 65 branches, are `noUncheckedIndexedAccess` guards on indices that are always
+  in range. Second MCDA: a ratchet threshold with no comments in `src/` scored 415 / 500, ahead
+  of about 65 `v8 ignore` comments (370) and rewriting the guards (315).
+- `vitest.config.ts` now enforces the thresholds and blocks `make verify` below them: functions
+  100, statements 99.2, lines 99.9, branches 95.6. Raise them, never lower them.
+- Docs (this PR): JSDoc added to the 7 exports that had none. The companion types of a const that
+  is already documented (`BossState`, `PickupKind`, and so on) and the geometry re-export are left
+  without one, to avoid noise.
+- Owner rule set during the brick, for every project: a five-step local pre-merge gate (full
+  test suites, coverage floors — tests ≥ 80 % with ~100 % as target, docs ≥ 90 % — SonarQube,
+  secrets, QA pass on the running product with screenshots), codified in
+  `~/.agent-rules/common.md`. Here: `make doc-coverage` (part of `make check`) measures the doc
+  figure: 306 / 306 counted exports at this entry.
+- Codex was at its usage limit; the owner approved the merge.
+
 ### The shield ring collides while a charge is held (#82 → `ea320a2`, #83 → `3fcd3ae`) — closed #74
 
 - Problem: the shield was drawn as a 36 × 36 ring, but only the 4 × 4 hitbox collided, so a bullet

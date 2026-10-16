@@ -74,8 +74,11 @@ export const ScoreTuning = {
   counterStop: 99_999_999,
 } as const;
 
+/** How long each timed scene lasts, in seconds; the scene machine turns them into fixed steps. */
 export const SceneTuning = {
+  /** The 3-2-1 count-in before a run starts. */
   countInSeconds: 1,
+  /** Game over stays on screen this long before the results. */
   gameOverSeconds: 3,
   /** Confirm and taps are ignored this long on Game over and on the title after it (GDD v0.7 §4.4). */
   gameOverLockSeconds: 1,

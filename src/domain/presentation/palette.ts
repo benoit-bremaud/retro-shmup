@@ -69,4 +69,5 @@ export const Palette = {
   bombFlash: '#fffbea59',
 } as const;
 
+/** One of the palette's colours, as a CSS hex string. */
 export type PaletteColour = (typeof Palette)[keyof typeof Palette];
