@@ -328,8 +328,12 @@ test('a phone starts, pauses and resumes by touch; a rotation pauses without res
   expect(errors).toEqual([]);
 });
 
-/** The save key and a valid top 10 of three named rows (ADR-0006, ADR-0021). */
+/**
+ * `SAVE_KEY` of src/domain/save/save-store.ts, copied: that module's extensionless imports do not
+ * resolve under the smoke test's `nodenext` settings.
+ */
 const SAVE_KEY = 'retro-shmup.v1';
+/** A valid top 10 of three named rows (ADR-0021), seeded into a version 2 save document. */
 const SEEDED_NAMES = ['SMOKE', 'PERSIST', 'RELOAD'];
 const SEEDED_TABLE = SEEDED_NAMES.map((name, i) => ({
   name,
@@ -338,26 +342,33 @@ const SEEDED_TABLE = SEEDED_NAMES.map((name, i) => ({
   date: '2026-10-16',
 }));
 
-/** The names of the stored top 10, or `null` when no readable document is stored. */
-async function storedNames(page: Page): Promise<string[] | null> {
-  return page.evaluate((key) => {
-    const raw = localStorage.getItem(key);
-    if (raw === null) return null;
+/** The stored save document, parsed; `undefined` when absent or unreadable. */
+async function storedDocument(page: Page): Promise<Record<string, unknown> | undefined> {
+  const raw = await page.evaluate((key) => localStorage.getItem(key), SAVE_KEY);
+  if (raw === null) return undefined;
+  try {
     const document: unknown = JSON.parse(raw);
-    if (typeof document !== 'object' || document === null || !('highScores' in document)) {
-      return null;
-    }
-    const table = document.highScores;
-    if (!Array.isArray(table)) return null;
-    return table.map((entry: { name?: unknown }) => String(entry.name));
-  }, SAVE_KEY);
+    return typeof document === 'object' && document !== null
+      ? (document as Record<string, unknown>)
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** The names of the stored top 10, or `null` when no readable table is stored. */
+async function storedNames(page: Page): Promise<string[] | null> {
+  const table = (await storedDocument(page))?.highScores;
+  if (!Array.isArray(table)) return null;
+  return table.map((entry: { name?: unknown }) => String(entry.name));
 }
 
 /** True when the stored options have autofire on. */
 async function storedAutofire(page: Page): Promise<boolean> {
-  return page.evaluate((key) => {
-    return localStorage.getItem(key)?.includes('"autofire":true') === true;
-  }, SAVE_KEY);
+  const options = (await storedDocument(page))?.options;
+  return typeof options === 'object' && options !== null && 'autofire' in options
+    ? options.autofire === true
+    : false;
 }
 
 /**
