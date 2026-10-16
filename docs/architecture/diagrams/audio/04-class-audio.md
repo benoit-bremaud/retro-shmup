@@ -5,7 +5,8 @@
 > **Related ADRs**: ADR-0009 decision 3 (the audio port controls the mix), ADR-0010 (events, no
 > allocation), ADR-0002 (deterministic simulation), ADR-0005 (asset licences)
 > **Realizes**: the sound of every use case of play and menus; *Change options* (the *Audio*
-> sub-screen). All classes are *planned* until their code PR lifts the tag.
+> sub-screen). Built in G3-1 (#105) but for the classes tagged *planned* (G3-2: music and the
+> saved volumes).
 
 ## Context
 
@@ -17,8 +18,11 @@ diagram say, `RunPresenter` maps events to sounds; it delegates the mapping to a
 grow. The adapter keeps two tables of its own, so the port stays as ADR-0009 drew it: which `SfxId`
 are menu sounds (kept by the pause mix), and per `TrackId` its file, whether it loops (the boss
 track: intro once, then loop; the jingles: once) and its loop start. The
-music follows the scene. Events missing for a sound (a shot fired, an enemy shot, a 1-UP) are
-added to `GameEventKind` with the sound that needs them.
+music follows the scene. Shots have no event *(owner, G3-1, 470/500 over new
+`PlayerFired` / `EnemyFired` events)*: `World` counts the bullets it spawns (`playerShots`,
+`enemyShots`, exposed by the snapshot) and `RunSounds.frame` plays one shot sound per drawn frame
+whose counter moved, so a five-bullet volley is one sound and the simulation only counts. Menu
+sounds come from the scene machine's `stepMenu` (a highlight move, an activation).
 
 ## Diagram
 
@@ -32,33 +36,34 @@ classDiagram
     +setPaused(paused: boolean) void
   }
   class SfxParams {
-    <<data, domain/audio, planned>>
+    <<data, domain/audio>>
     +wave: square | saw | sine | noise
     +duty, attack, sustain, decay
     +frequency, slide, vibrato, lowPass, gain
   }
   class SFX_TABLE {
-    <<data, domain/audio, planned>>
+    <<data, domain/audio>>
     +Record~SfxId, SfxParams~
   }
   class renderSfx {
-    <<pure function, domain/audio, planned>>
-    +renderSfx(params, sampleRate, seed) Float32Array
+    <<pure function, domain/audio>>
+    +renderSfx(params, sampleRate) Float32Array
   }
   class RunSounds {
-    <<module used by RunPresenter, domain/presentation, planned>>
-    +subscribe(events: RunEvents) void
+    <<module used by RunPresenter, domain/presentation>>
+    +RunSounds(audio: AudioPort, events: RunEvents)
+    +frame(snapshot: WorldSnapshot) void
   }
   class SceneMusic {
     <<pure function, domain/scenes, planned>>
     +trackOf(scene, bossStage) TrackId | null
   }
   class volumeGain {
-    <<pure function, domain/audio, planned>>
+    <<pure function, domain/audio>>
     +volumeGain(step 0..10) number
   }
   class WebAudioPlayer {
-    <<adapter, adapters/audio, planned>>
+    <<adapter, src/adapters>>
     +unlock() void
     +setHidden(hidden: boolean) void
     -buffers: Map~SfxId, AudioBuffer~
@@ -74,7 +79,7 @@ classDiagram
     <<domain/presentation>>
   }
   class Options {
-    <<domain/options>>
+    <<domain/options, volumes planned>>
     +musicVolume: 0..10
     +sfxVolume: 0..10
   }

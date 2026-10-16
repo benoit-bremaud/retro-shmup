@@ -41,6 +41,11 @@ class FakeEnvironment implements InputEnvironment {
   onPointerCancel(listener: (event: PointerEventLike) => void): void {
     this.pointer.cancel = listener;
   }
+  /** How many gestures unlocked the audio. */
+  unlocks = 0;
+  unlockAudio(): void {
+    this.unlocks += 1;
+  }
   /** The browser's fullscreen state and the calls the adapter made. */
   fullscreenActive = false;
   readonly fullscreenCalls: string[] = [];
@@ -843,5 +848,23 @@ describe('DeviceInput — refused layout map and pointer cancel', () => {
     input.read(frame);
     expect(frame.held).toBe(0);
     expect(frame.moveKind).toBe('none');
+  });
+});
+
+describe('DeviceInput — audio unlock (ADR-0009, GDD v0.23 §9.5)', () => {
+  it('unlocks the audio inside every key and pointer press, never on a move or a release', () => {
+    const { env } = setup();
+    env.down('KeyZ');
+    env.up('KeyZ');
+    env.point('down', 'mouse', 10, 10, 1);
+    env.point('move', 'mouse', 12, 10, 1);
+    env.point('up', 'mouse', 12, 10);
+    expect(env.unlocks).toBe(2);
+  });
+
+  it('does not unlock on a browser shortcut', () => {
+    const { env } = setup();
+    env.down('KeyR', false, 'ctrl');
+    expect(env.unlocks).toBe(0);
   });
 });

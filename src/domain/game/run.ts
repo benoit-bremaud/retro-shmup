@@ -103,6 +103,9 @@ export interface WorldSnapshot {
   readonly multiplier: number;
   /** The chain bar, 0 to 1. */
   readonly chainRatio: number;
+  /** Player and enemy bullets spawned this run, only increasing: one shot sound per volley. */
+  readonly playerShots: number;
+  readonly enemyShots: number;
 }
 
 /** What the scene machine may do with a run: step it and read it (class diagram, view A). */
@@ -246,6 +249,12 @@ function createSnapshot(world: World, scoreKeeper: ScoreKeeper): WorldSnapshot {
     },
     get chainRatio(): number {
       return scoreKeeper.chainRatio;
+    },
+    get playerShots(): number {
+      return world.playerShots;
+    },
+    get enemyShots(): number {
+      return world.enemyShots;
     },
   };
 }

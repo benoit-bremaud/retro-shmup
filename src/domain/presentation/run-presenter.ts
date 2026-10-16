@@ -14,6 +14,9 @@ import { PlayerTuning, STEPS_PER_SECOND } from '../game/tuning';
 import { WeaponKind } from '../game/weapon';
 import { SPRITE_FLASH_FRAME } from '../ports/render-port';
 import type { RenderPort, SpriteId } from '../ports/render-port';
+import { SILENT_AUDIO } from '../ports/audio-port';
+import type { AudioPort } from '../ports/audio-port';
+import { RunSounds } from './run-sounds';
 import {
   BombFlash,
   BossChain,
@@ -102,9 +105,17 @@ export class RunPresenter {
   /** The boss died during this frame's steps: its slow motion and chain start on the next frame. */
   private bossDiedThisFrame = false;
 
-  constructor(render: RenderPort, effects: Readonly<EffectSettings>, events: RunEvents) {
+  private readonly sounds: RunSounds;
+
+  constructor(
+    render: RenderPort,
+    effects: Readonly<EffectSettings>,
+    events: RunEvents,
+    audio: AudioPort = SILENT_AUDIO,
+  ) {
     this.render = render;
     this.effects = effects;
+    this.sounds = new RunSounds(audio, events);
     events.subscribe(GameEventKind.EnemyHit, this.onEnemyHit);
     events.subscribe(GameEventKind.EnemyDestroyed, this.onEnemyDestroyed);
     events.subscribe(GameEventKind.BombUsed, this.onBombUsed);
@@ -133,6 +144,7 @@ export class RunPresenter {
    * age by `wallDtMs` (0 in a frozen frame).
    */
   draw(snapshot: WorldSnapshot, alpha: number, wallDtMs: number): void {
+    this.sounds.frame(snapshot);
     this.render.setRegion('field');
     this.drawBoss(snapshot.boss, alpha);
     for (let i = 0; i < snapshot.enemies.count; i += 1) {
