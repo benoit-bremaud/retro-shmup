@@ -57,7 +57,7 @@ function columnAt(x: number): SlotColumn | undefined {
  * highlighted cell.
  */
 export class ControlsGrid {
-  readonly menu = new Menu<MessageKey>(ROWS, undefined, CONTROLS_HEADER_GAP);
+  readonly menu = new Menu<MessageKey>(ROWS, { headerGap: CONTROLS_HEADER_GAP });
   column: SlotColumn = 0;
 
   /** Opens the screen on the first cell, primary column (see `Menu.reset`). */

@@ -52,7 +52,8 @@ const STEP_LABELS: readonly string[] = Array.from({ length: MAX_VOLUME_STEP + 1 
 );
 
 /**
- * A menu (GDD v0.13 and v0.14 §9.1): each row's catalogue text centred in its row (16 to 32 px, GDD v0.25), or, for a
+ * A menu (GDD v0.13 and v0.14 §9.1): each row's catalogue text centred in its row (16 to 32 px tall,
+ * GDD v0.25), or, for a
  * row with a value, the label on the left and the value on the right; the highlighted row on a
  * bar. Draws from the catalogue each frame and builds no string.
  */

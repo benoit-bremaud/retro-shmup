@@ -111,7 +111,7 @@ async function hullAtRest(page: Page): Promise<boolean> {
 const MENU_HIGHLIGHT = { r: 0x3b, g: 0x4a, b: 0x8a };
 /**
  * A pixel of the bar behind RESUME, the first row highlighted on entry, left of its text, in
- * play-field pixels: the three-row menu of 32 px rows starts at y 112 and the bar at x 89 (GDD v0.25) (overlays.ts, menu-layout.ts).
+ * play-field pixels: the three 32 px rows start at y 112 (GDD v0.25), the bar at x 89 (overlays.ts, menu-layout.ts).
  */
 const PAUSE_PIXEL = { x: 90, y: 113 };
 /** The middle of the PLAY row of the title menu (three 32 px rows from y 112), in play-field pixels. */

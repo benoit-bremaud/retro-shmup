@@ -52,7 +52,7 @@ describe('Menu — keyboard and gamepad (GDD v0.13 §9.1)', () => {
   });
 
   it('activates the highlighted row on each new left or right direction (GDD v0.14)', () => {
-    const subject = new Menu(ROWS, () => true);
+    const subject = new Menu(ROWS, { flips: () => true });
     const right = frame({ moveKind: 'direction', moveX: 1 });
     expect(subject.step(right, 0)).toBe('resume');
     expect(subject.step(right, 1)).toBeUndefined();
@@ -61,7 +61,7 @@ describe('Menu — keyboard and gamepad (GDD v0.13 §9.1)', () => {
   });
 
   it('flips nothing by left or right on a row without a value', () => {
-    const subject = new Menu(ROWS, (row) => row === 'quit');
+    const subject = new Menu(ROWS, { flips: (row) => row === 'quit' });
     expect(subject.step(frame({ moveKind: 'direction', moveX: 1 }), 0)).toBeUndefined();
     subject.step(frame(), 1);
     subject.step(frame({ moveKind: 'direction', moveY: 1 }), 2);
@@ -70,7 +70,7 @@ describe('Menu — keyboard and gamepad (GDD v0.13 §9.1)', () => {
   });
 
   it('ignores a direction already held when the menu opens, until it is released', () => {
-    const subject = new Menu(ROWS, () => true);
+    const subject = new Menu(ROWS, { flips: () => true });
     const held = frame({ moveKind: 'direction', moveX: 1, moveY: 0 });
     subject.reset(0, held);
     expect(subject.step(held, 1)).toBeUndefined();
@@ -94,7 +94,7 @@ describe('Menu — keyboard and gamepad (GDD v0.13 §9.1)', () => {
   });
 
   it('moves rather than flips on a diagonal that is mostly vertical', () => {
-    const subject = new Menu(ROWS, () => true);
+    const subject = new Menu(ROWS, { flips: () => true });
     expect(
       subject.step(frame({ moveKind: 'direction', moveX: 0.3, moveY: 0.9 }), 0),
     ).toBeUndefined();
@@ -210,7 +210,7 @@ describe('Menu — layout', () => {
 
   it('shortens its rows to fit their count and the header gap (GDD v0.25 §9.1, #95)', () => {
     const ten = Array.from({ length: 10 }, () => 'back' as const);
-    const subject = new Menu(ten, undefined, 16);
+    const subject = new Menu(ten, { headerGap: 16 });
     expect(subject.rowHeight).toBe(28);
     expect(subject.top).toBe(20);
     expect(subject.rowAt(subject.top + 9 * 28 + 27)).toBe(9);

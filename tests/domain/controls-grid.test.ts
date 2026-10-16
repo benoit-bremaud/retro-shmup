@@ -12,6 +12,14 @@ function frame(edit: Partial<IntentFrame> = {}): IntentFrame {
   return Object.assign(createIntentFrame(), edit);
 }
 
+describe('ControlsGrid layout (GDD v0.25 §9.1)', () => {
+  it('fits its nine rows of 24 px under the title and the device line', () => {
+    const grid = new ControlsGrid();
+    expect(grid.menu.headerGap).toBe(48);
+    expect(grid.menu.rowHeight).toBe(24);
+  });
+});
+
 function opened(): ControlsGrid {
   const grid = new ControlsGrid();
   grid.reset(0, frame());

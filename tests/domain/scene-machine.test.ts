@@ -927,6 +927,8 @@ function tapAt(y: number): IntentFrame {
  */
 function rowTap(row: number, rows: number): IntentFrame {
   const height = menuRowHeight(rows, MENU_HEADER_GAP.title);
+  if (height !== 32)
+    throw new Error(`rowTap assumes 32 px rows, not ${String(height)}: pass the gap`);
   return tapAt(menuTop(rows, height) + row * height + height / 2);
 }
 
@@ -1182,6 +1184,18 @@ describe('SceneMachine — the options screens (GDD v0.14 §9.1, §9.3, G1a-3)',
     machine.step(DT, pressed(Button.Back));
     machine.render(0, 16);
     expect(fieldTextsOf(render)).toEqual(['JOUER', 'MEILLEURS SCORES', 'OPTIONS']);
+  });
+
+  it('builds every menu with the gap its header takes (GDD v0.25 §9.1)', () => {
+    const { machine } = hosted();
+    // A private table read on purpose: the gap and the header font are declared apart.
+    // eslint-disable-next-line @typescript-eslint/dot-notation -- bracket access reaches a private
+    const screens = Object.values(machine['menuScreens']);
+    expect(screens.length).toBeGreaterThan(8);
+    for (const screen of screens) {
+      const gap = screen.header === undefined ? 0 : MENU_HEADER_GAP[screen.header.font];
+      expect(screen.menu.headerGap).toBe(gap);
+    }
   });
 
   it('draws the title rows 32 px tall and the ten Visual effects rows 28 px (GDD v0.25, #95)', () => {
