@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Vertical slice — v0.20 (2026-10-16): v0.20 shows the game version to the player as a small page text outside the canvas (§9.9, ADR-0025 decision 6). v0.19 (2026-10-16): v0.19 makes the shield ring the shape that collides while a charge is held (#74): any enemy bullet or body touching the drawn 36 × 36 square consumes the charge, once. v0.18 (2026-10-16): v0.18 is the third rebalance of level 1 (#56), after the owner found it far too easy and a committed measurement bot confirmed it: enemy aimed, fan and triple bullets at 85 px/s, the Gunner tougher and faster-firing, the Heavy tougher, the Cruiser at 1 800 shots with faster volleys, and the 70 s formation no longer paying its P. v0.17 (2026-10-15): v0.17 draws the ships with the CC0 placeholder sprites of G4-1 (§3.2.1: the sprite per role, the small enemies drawn at 1× over their 16 × 16 hitbox, the Cruiser built from three ships, the shapes kept as the fallback). v0.16 (2026-10-14; amended 2026-10-15 by the owner after a design-versus-code audit: the High scores columns as built, the browser-shortcut rule of the capture, the name entry as built in G2-3, the attract mode of G2-3b): v0.16 settles the hall of fame of G2 (the letter grid for the name and the country, the high-score table and screen, the Ending card, leaving the slice-end interim). v0.15 (2026-10-14): v0.15 settles the controls screen of G1b (layout, key labels, the device edited, restore confirmation, save version 2). v0.14 (2026-10-14): v0.14 settles the options screens of G1a-3 (row texts and values, the title menu replacing tap-to-start, leaving a menu frees the ship's movement). v0.13 (2026-10-14): v0.13 designs the menus and the options of the screens brick, first part (G1a: title and pause menus, the options screen and its visual-effects sub-screen, menu navigation by touch and mouse, the save document's options). v0.12 (2026-10-14): v0.12 is the second rebalance iteration of level 1 (#45): the Cruiser takes 1 450 level-1 shots and three of the seven formations no longer pay the formation P. v0.11 (2026-10-13): v0.11 rebalances level 1 after the friends' playtest (harder, fewer drops, the ship slightly weaker than the attack; #45). v0.10 (2026-10-12): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot); v0.6 adds the initial values of the enemies brick; v0.7 settles the devices brick (portrait HUD strip, touch pause button, resuming and leaving Game over by tap or Start, mouse takeover, rotation pause); v0.8 settles the player kit (Spread and Laser tables, the death release hop, bomb, shield and pickup rules, P colours, the Carrier, HUD icons); v0.9 follows the brick-E playtest (difficulty ramp by script, a named top 10 with an optional country, pointer fire held by the left button or a steering finger with an autofire option, shot proportions for readability); v0.10 settles the level brick (the 120 s level-1 script, the Heavy, the Cruiser, the WARNING, the boss HP bar and timer, the end-of-level tally and the Results screen, a vertical slice ending after level 1) |
+| **Status** | Vertical slice — v0.21 (2026-10-16): v0.21 fills the empty stretches of level 1 with filler rows that pay no P (§7.2.3): the average player saw no enemy for 83 s of the first 116 s, 65 s since. v0.20 (2026-10-16): v0.20 shows the game version to the player as a small page text outside the canvas (§9.9, ADR-0025 decision 6). v0.19 (2026-10-16): v0.19 makes the shield ring the shape that collides while a charge is held (#74): any enemy bullet or body touching the drawn 36 × 36 square consumes the charge, once. v0.18 (2026-10-16): v0.18 is the third rebalance of level 1 (#56), after the owner found it far too easy and a committed measurement bot confirmed it: enemy aimed, fan and triple bullets at 85 px/s, the Gunner tougher and faster-firing, the Heavy tougher, the Cruiser at 1 800 shots with faster volleys, and the 70 s formation no longer paying its P. v0.17 (2026-10-15): v0.17 draws the ships with the CC0 placeholder sprites of G4-1 (§3.2.1: the sprite per role, the small enemies drawn at 1× over their 16 × 16 hitbox, the Cruiser built from three ships, the shapes kept as the fallback). v0.16 (2026-10-14; amended 2026-10-15 by the owner after a design-versus-code audit: the High scores columns as built, the browser-shortcut rule of the capture, the name entry as built in G2-3, the attract mode of G2-3b): v0.16 settles the hall of fame of G2 (the letter grid for the name and the country, the high-score table and screen, the Ending card, leaving the slice-end interim). v0.15 (2026-10-14): v0.15 settles the controls screen of G1b (layout, key labels, the device edited, restore confirmation, save version 2). v0.14 (2026-10-14): v0.14 settles the options screens of G1a-3 (row texts and values, the title menu replacing tap-to-start, leaving a menu frees the ship's movement). v0.13 (2026-10-14): v0.13 designs the menus and the options of the screens brick, first part (G1a: title and pause menus, the options screen and its visual-effects sub-screen, menu navigation by touch and mouse, the save document's options). v0.12 (2026-10-14): v0.12 is the second rebalance iteration of level 1 (#45): the Cruiser takes 1 450 level-1 shots and three of the seven formations no longer pay the formation P. v0.11 (2026-10-13): v0.11 rebalances level 1 after the friends' playtest (harder, fewer drops, the ship slightly weaker than the attack; #45). v0.10 (2026-10-12): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot); v0.6 adds the initial values of the enemies brick; v0.7 settles the devices brick (portrait HUD strip, touch pause button, resuming and leaving Game over by tap or Start, mouse takeover, rotation pause); v0.8 settles the player kit (Spread and Laser tables, the death release hop, bomb, shield and pickup rules, P colours, the Carrier, HUD icons); v0.9 follows the brick-E playtest (difficulty ramp by script, a named top 10 with an optional country, pointer fire held by the left button or a steering finger with an autofire option, shot proportions for readability); v0.10 settles the level brick (the 120 s level-1 script, the Heavy, the Cruiser, the WARNING, the boss HP bar and timer, the end-of-level tally and the Results screen, a vertical slice ending after level 1) |
 | **Working title** | *retro-shmup* (codename; the commercial title is still open) |
 | **Genre** | Retro vertical-scrolling shoot'em up (shmup), 16-bit aesthetic |
 | **Platform** | Web browser (desktop first, mobile playable), TypeScript + native Canvas 2D |
@@ -723,6 +723,65 @@ The 102 s pair is the peak of the level. *(v0.11)* The 92 s formation became two
 the Shield Carrier at 28 s stays; the Heavies are the Bomb and Shield sources (§5.2.1). The last
 spawn is the 110 s formation's eighth member, at 112.3 s.
 
+### 7.2.3 Level 1, the filler rows *(v0.21)*
+
+The owner's daughter and the owner found level 1 too empty: a committed-bot measurement (the
+AVERAGE profile of #56, 100 seeds) saw **no enemy on the field for 83 s of the first 116 s**
+(median), because a player at power 2 or more kills a Popcorn or a Diver within a second, while
+the script of §7.2.1 and §7.2.2 was paced for enemies that live longer. v0.21 adds the rows below
+to the script, the rows of §7.2.1 and §7.2.2 unchanged. Every added row is a Popcorn formation
+**with *pays P* false** or a lone Diver, so the power curve of v0.18 does not move (full power near
+118 s); Gunners, Heavies and Carriers are not added, being the P, Bomb and Shield sources.
+Same conventions as §7.2.1.
+
+| t (s) | Archetype | Count | Interval | Spawn | Hover / path |
+|---|---|---|---|---|---|
+| 5 | Popcorn | 6 | 1/3 s | x0 160, y −8 | S curve, mirrored — no P |
+| 10 | Diver | 1 | — | x 120, y −8 | dive |
+| 12 | Popcorn | 6 | 1/3 s | x0 80, y −8 | S curve — no P |
+| 15 | Diver | 1 + 1 | — | x 60 and x 180, y −8 | dive |
+| 16 | Popcorn | 6 | 1/3 s | x0 120, y −8 | S curve — no P |
+| 22 | Popcorn | 8 | 1/3 s | x0 120, y −8 | S curve — no P |
+| 25 | Diver | 1 + 1 | — | x 80 and x 160, y −8 | dive |
+| 26 | Popcorn | 6 | 1/3 s | x0 80, y −8 | S curve, mirrored — no P |
+| 29 | Diver | 1 | — | x 120, y −8 | dive |
+| 36 | Diver | 1 + 1 | — | x 60 and x 180, y −8 | dive |
+| 38 | Popcorn | 6 | 1/3 s | x0 160, y −8 | S curve, mirrored — no P |
+| 42 | Popcorn | 6 | 1/3 s | x0 80, y −8 | S curve — no P |
+| 44 | Diver | 1 + 1 | — | x 60 and x 180, y −8 | dive |
+| 55 | Popcorn | 6 | 1/3 s | x0 120, y −8 | S curve — no P |
+| 57 | Diver | 1 | — | x 120, y −8 | dive |
+| 60 | Popcorn | 6 | 1/3 s | x0 80, y −8 | S curve — no P |
+| 61 | Diver | 1 + 1 | — | x 80 and x 160, y −8 | dive |
+| 62 | Diver | 1 + 1 | — | x 60 and x 180, y −8 | dive |
+| 66 | Popcorn | 6 | 1/3 s | x0 160, y −8 | S curve, mirrored — no P |
+| 68 | Diver | 1 + 1 | — | x 80 and x 160, y −8 | dive |
+| 74 | Popcorn | 8 | 1/3 s | x0 80, y −8 | S curve — no P |
+| 75 | Diver | 1 + 1 | — | x 60 and x 180, y −8 | dive |
+| 76 | Diver | 1 | — | x 120, y −8 | dive |
+| 77 | Popcorn | 6 | 1/3 s | x0 120, y −8 | S curve — no P |
+| 80 | Diver | 1 + 1 | — | x 100 and x 140, y −8 | dive |
+| 86 | Popcorn | 6 | 1/3 s | x0 160, y −8 | S curve, mirrored — no P |
+| 88 | Diver | 1 | — | x 120, y −8 | dive |
+| 88 | Popcorn | 6 | 1/3 s | x0 80, y −8 | S curve — no P |
+| 95 | Popcorn | 8 | 1/3 s | x0 120, y −8 | S curve — no P |
+| 98 | Diver | 1 + 1 | — | x 60 and x 180, y −8 | dive |
+| 99 | Popcorn | 6 | 1/3 s | x0 80, y −8 | S curve — no P |
+| 101 | Diver | 1 | — | x 120, y −8 | dive |
+| 107 | Diver | 1 + 1 | — | x 100 and x 140, y −8 | dive |
+| 109 | Diver | 1 + 1 | — | x 60 and x 180, y −8 | dive |
+
+A "1 + 1" row is two one-Diver rows at the same second. The 116–120 s calm (§7.2.2) stays, and
+the ceilings of §7.2.2 still hold: **≤ 16 enemies and ≤ 40 enemy bullets at once** for a player
+who never fires (the measured peak stays below the pool of 16, so no spawn is refused); denser
+rows at 39, 48, 65, 72 and 93 s were tried and dropped because they broke that ceiling. Measured
+with the bot (100 seeds): the median time without an enemy over the first 116 s falls from 83 s
+to **65 s**; the average player dies 2.96 times per run (v0.19: 2.74) and loses 47 % of the runs
+(45 %), within the guard of v0.18. The balance guard gains a band: **at most 70 s without an
+enemy** in the first 116 s for the average player (median), so a later edit cannot empty the
+level again. A larger fall needs tougher Popcorn or a higher ceiling (rejected for level 1, see
+the decision record); levels 2 and 3 reach it by their own HP and density (§7.1).
+
 ### 7.3 Onboarding
 
 No tutorial screen. Level 1 teaches one mechanic per wave (above). The title screen shows the
@@ -1167,6 +1226,7 @@ fully playable at release quality, used to validate the design before producing 
 
 | Decision | Chosen | Rejected and why |
 |---|---|---|
+| Level-1 density *(v0.21)* | Owner, 2026-10-16: fill the empty stretches of level 1 with filler rows only, no P, the ceiling of 16 enemies kept (A1, 400/500; brick scope A, 425/500); guard band ≤ 70 s without an enemy | Levers: the ceiling raised to 20 enemies / 48 bullets (A2, 340/500: loosens a performance invariant, a busier screen for a child); Popcorn HP ×2 (A3, 340/500: reopens the v0.11/v0.12 time-to-kill). Scope: an Easy profile pulled forward from 1.x (D, 375/500); level 2 and the Gantry first (B, 330/500); a new enemy role or a 3rd weapon (C, 225/500: reopens the 5 roles and 2 weapons) |
 | Version label *(v0.20)* | Owner, 2026-10-16: page text outside the canvas, `v<version>+<commit>`, always visible (A, 450/500, applies ADR-0025 decision 6) | An Options / About row in the canvas (B, 320/500: must be opened, needs `.` and `+` glyphs, a port and a screen); a title-screen footer in the canvas (C, 345/500: title only, new glyphs, revises the ADR) |
 | Platform | Web (TS + Canvas) | Godot (less shareable, new language); Expo/RN (touch shmup ergonomics, heavier loop) |
 | Scrolling | Vertical | Horizontal (does not match "targets fall"); fixed screen (no journey, flat bosses) |

@@ -1,38 +1,32 @@
-# Local review — retro-shmup (test/smoke-three-engines)
+# Local review — retro-shmup (GDD v0.21, design/levels-density)
 
 - Date: 2026-10-16
-- Commit: branch head after the review fixes
-- Scope: branch diff main...HEAD (playwright.config.ts, package.json, Makefile, CONTRIBUTING.md,
-  tests/smoke/first-playable.spec.ts) — ADR-0026
-- Checks run: tests (test-auditor) · correctness + security (code-reviewer) · execution checks;
-  design and docs proportional (test and tooling files only, no `src/` change)
-- Verdict: ship · Must 0 · Should 0 open (3 fixed) · Nice 3
+- Commit: 236f49a
+- Scope: branch diff main...HEAD — `docs/design/game-design-document.md` only (§7.2.3, status line, decision record)
+- Checks run: docs consistency (read by hand) · secrets · execution checks through the pre-push `make verify`. Design / tests / security / correctness agents not spawned: the diff is prose only, with no code or test change to audit.
+- Verdict: ship as-is · Must 0 · Should 0 · Nice 1
 
-## Pre-merge gate
+## Pre-merge gate (head SHA 236f49a)
 | Step | Result |
 |---|---|
-| 1 Tests | ✅ 1305 Vitest · ✅ smoke 6/6 (2 tests × Chromium, Firefox, WebKit), twice |
-| 2 Coverage | tests 99.27 % stmts / 95.67 % branches / 100 % funcs / 99.9 % lines (floor 80) · docs 100 % (floor 90) |
-| 3 SonarQube | ✅ PASSED |
-| 4 Secrets | ✅ gitleaks clean · only `.env.example` tracked · diff read: nothing sensitive |
-| 5 QA pass | ✅ High scores after reload in WebKit: `qa/2026-10-16-hall-of-fame-after-reload-webkit.png`; no `vite preview` left on :4173 |
-- Gate: **GREEN**
+| 1 Tests | run by the pre-push hook (`make verify`); the rows of §7.2.3 were measured on an uncommitted prototype: level simulation and balance guard green |
+| 2 Coverage | unchanged (no code in the diff) — measured by `make verify` |
+| 3 SonarQube | run by the pre-push hook |
+| 4 Secrets | gitleaks clean on the commit · only `.env.example` tracked (placeholders) · diff read: nothing sensitive |
+| 5 QA pass | not applicable before the code PR (no runtime change); full pass and `make smoke` come with the code PR |
+- Gate: **push authorised**; merge after green CI
 
 ## 🔴 Must Have
 _None._
 
-## 🟡 Should Have (fixed in this branch)
-- `tests/smoke/first-playable.spec.ts` `[tests]` · `storedNames` could throw on unreadable JSON · one `storedDocument` helper with a guarded parse.
-- `tests/smoke/first-playable.spec.ts` `[tests][correctness]` · `storedAutofire` matched raw text · reads `options.autofire` from the parsed document.
-- `tests/smoke/first-playable.spec.ts` `[correctness]` · `SAVE_KEY` copied from `src` · import tried, but `save-store.ts` does not resolve under the smoke `nodenext` settings; kept as a copy with a pointer comment.
+## 🟡 Should Have
+_None._
 
 ## 🔵 Nice to Have
-- `tests/smoke/first-playable.spec.ts` `[tests]` · menu navigation by timed key presses · poll the highlight row after each press if it ever flakes.
-- `tests/smoke/first-playable.spec.ts` `[tests]` · `PLAY_ROW` and `RESUME_ROW` share a value · pre-existing.
-- `playwright.config.ts` `[correctness]` · `playwright test` alone skips the build · `pnpm test:smoke` / `make smoke` build first (CONTRIBUTING.md).
+- `docs/design/game-design-document.md:708` `[docs]` · §7.2.2 still says "Of the seven formations": still true for the formations of §7.2.1/§7.2.2. §7.2.3 adds formations that all pay no P, so the P count does not change · keep as is.
 
 ## ⚪ Disagree / Intentional
-- `tests/smoke/first-playable.spec.ts` `[tests]` · "the `storedNames` check is tautological, the 2× pixel margin is unverified" · the check proves the game's start-up did not wipe the seeded document, the pixel margin passed in all three engines twice, and the WebKit screenshot shows the names (ADR-0026 decision 2).
+- No UML change: the level script is data inside the existing `LevelScript` / `ScriptEvent` types (04-class-domain); no class, state or sequence changes.
 
 ## Per-dimension summary
-- Tests: one smoke file, two tests, three engines, as ADR-0026 · Correctness: no bug · Security: no new surface, no dependency · Design / Docs: config and CONTRIBUTING aligned with ADR-0026.
+- Design: no structure touched · Docs: §7.2.3 consistent with §7.1, §7.2.1, §7.2.2 (ceilings, calm, P curve, last spawn 112.3 s) · Tests: guard band of 70 s specified for the code PR · Security: n/a · Correctness: row table matches the measured prototype.
