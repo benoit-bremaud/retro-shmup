@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The game version, `v<version>+<short commit>`, shown as page text in the bottom-right corner
+  (GDD v0.20 §9.9, #88).
 - Fixed-step 60 Hz game loop, Canvas 2D renderer with integer scaling and a parallax starfield
   (#5).
 - First playable build on keyboard: title screen, the ship's fly-in, movement clamped to the

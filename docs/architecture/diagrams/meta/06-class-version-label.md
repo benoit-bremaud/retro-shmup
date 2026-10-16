@@ -26,7 +26,7 @@ classDiagram
   }
   class Main {
     <<composition root>>
-    +showVersion(element)
+    +sets p#version textContent at start-up
   }
   class VersionElement {
     <<index.html, p#version>>

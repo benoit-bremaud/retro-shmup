@@ -17,6 +17,7 @@ import { SaveStore } from '../domain/save/save-store';
 import { SceneMachine } from '../domain/scenes/scene-machine';
 import type { SceneHost } from '../domain/scenes/scene-host';
 import { FrameLoop } from './frame-loop';
+import { versionLabel } from './version-label';
 import type { FrameTarget } from './frame-loop';
 
 function context2d(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
@@ -51,6 +52,11 @@ function regionOf(tag: string): string | undefined {
 const found = document.querySelector<HTMLCanvasElement>('#screen');
 if (found === null) throw new Error('Canvas #screen is missing from index.html');
 const visible: HTMLCanvasElement = found;
+
+// The build's version, as text outside the canvas (GDD v0.20 §9.9); a page without the element
+// still plays.
+const versionText = document.querySelector('#version');
+if (versionText !== null) versionText.textContent = versionLabel(__APP_VERSION__, __APP_COMMIT__);
 
 const offscreen = document.createElement('canvas');
 const sprites = new SpriteBank();

@@ -25,3 +25,15 @@ body {
   touch-action: none;
   cursor: crosshair;
 }
+
+/* The version label (GDD v0.20 §9.9): page text in the bottom-right corner, never in the way of a
+   press and never selected. */
+#version {
+  position: fixed;
+  right: 8px;
+  bottom: 8px;
+  margin: 0;
+  font: 10px/1 monospace;
+  color: rgb(255 255 255 / 45%);
+  pointer-events: none;
+}
