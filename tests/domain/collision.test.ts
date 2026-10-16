@@ -1,12 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { CollisionResolver } from '../../src/domain/game/collision';
-import type { HitRules } from '../../src/domain/game/collision';
 import { BossState } from '../../src/domain/game/boss';
 import { CRUISER } from '../../src/domain/game/cruiser';
 import { DIVER, GUNNER, POPCORN } from '../../src/domain/game/enemy';
-import type { Enemy, EnemyArchetype } from '../../src/domain/game/enemy';
 import { PickupKind } from '../../src/domain/game/pickup';
-import type { Pickup } from '../../src/domain/game/pickup';
 import { PlayerState } from '../../src/domain/game/player';
 import { WEAPONS, WeaponKind } from '../../src/domain/game/weapon';
 import type { ShotSpec } from '../../src/domain/game/weapon';
@@ -17,6 +14,7 @@ import {
 } from '../../src/domain/game/tuning';
 import { World } from '../../src/domain/game/world';
 import { createIntentFrame } from '../../src/domain/ports/input-port';
+import { enemyAt, Rules, vulnerableWorld } from '../support/collision';
 import { shots } from '../support/shots';
 
 const DT = 1 / 60;
@@ -33,54 +31,6 @@ const SHOT: ShotSpec = {
   pierce: 0,
   weapon: WeaponKind.Spread,
 };
-
-/** The run's side of the collisions, recorded; marks a destroyed enemy like `Run` does. */
-class Rules implements HitRules {
-  hits = 0;
-  destroyed: number[] = [];
-  deaths = 0;
-  enemyHit(): void {
-    this.hits += 1;
-  }
-  destroyEnemy(enemy: Enemy): void {
-    enemy.spent = true;
-    this.destroyed.push(enemy.serial);
-  }
-  playerDied(): void {
-    this.deaths += 1;
-  }
-  readonly collected: number[] = [];
-  pickupCollected(pickup: Pickup): void {
-    this.collected.push(pickup.kind);
-  }
-  absorbed = 0;
-  shieldBroken(): void {
-    this.absorbed += 1;
-  }
-  readonly bossDamage: number[] = [];
-  damageBoss(amount: number): void {
-    this.bossDamage.push(amount);
-  }
-}
-
-/** A world whose ship is vulnerable at its resting point (120, 272). */
-function vulnerableWorld(): World {
-  const world = new World();
-  const idle = createIntentFrame();
-  for (let i = 0; i < 120; i += 1) {
-    world.player.update(idle, DT, world);
-    world.player.advanceTimers();
-  }
-  return world;
-}
-
-function enemyAt(world: World, archetype: EnemyArchetype, x: number, y: number): Enemy {
-  world.spawnEnemy({ at: 0, archetype, count: 1, spawn: { x, y } }, undefined);
-  const enemy = world.enemies.at(world.enemies.count - 1);
-  enemy.position.x = x;
-  enemy.position.y = y;
-  return enemy;
-}
 
 describe('CollisionResolver — shots against enemies (GDD §5.2, class diagram)', () => {
   it('lowers the HP by the shot damage, consumes the bullet and reports the hit', () => {
@@ -119,7 +69,7 @@ describe('CollisionResolver — shots against enemies (GDD §5.2, class diagram)
   });
 });
 
-describe('CollisionResolver — hazards against the 4 × 4 hitbox (GDD §4.1, §4.4)', () => {
+describe('CollisionResolver — hazards against the 6 × 6 hitbox (GDD v0.24 §4.1, §4.4)', () => {
   it('kills a vulnerable ship hit by an enemy bullet, and consumes the bullet', () => {
     const world = vulnerableWorld();
     world.spawnEnemyBullet(120, 272, 0, 75);
@@ -132,14 +82,14 @@ describe('CollisionResolver — hazards against the 4 × 4 hitbox (GDD §4.1, §
 
   it('ignores a bullet that only touches the sprite, outside the hitbox', () => {
     const world = vulnerableWorld();
-    world.spawnEnemyBullet(120 + 5, 272, 0, 75); // 4 px wide: reaches x 123, the hitbox ends at 122
+    world.spawnEnemyBullet(120 + 6, 272, 0, 75); // 4 px wide: reaches x 124, the hitbox ends at 123
     CollisionResolver.resolve(world, new Rules());
     expect(world.player.state).toBe(PlayerState.Vulnerable);
   });
 
   it('ignores an enemy body that touches the sprite but not the hitbox', () => {
     const world = vulnerableWorld();
-    enemyAt(world, DIVER, 120 + 11, 272); // 16 px wide: reaches x 123, the hitbox ends at 122
+    enemyAt(world, DIVER, 120 + 12, 272); // 16 px wide: reaches x 124, the hitbox ends at 123
     CollisionResolver.resolve(world, new Rules());
     expect(world.player.state).toBe(PlayerState.Vulnerable);
   });
@@ -359,7 +309,7 @@ describe('CollisionResolver — the ring is the shape while a charge is held (GD
     expect(world.enemyBullets.at(0).spent).toBe(false);
   });
 
-  it('lets the same bullet pass with no charge: only the 4 × 4 hitbox counts', () => {
+  it('lets the same bullet pass with no charge: only the 6 × 6 hitbox counts', () => {
     const world = vulnerableWorld();
     world.spawnEnemyBullet(120 + REACH - 1, 272, 0, 75);
     const rules = new Rules();
@@ -487,17 +437,17 @@ describe('CollisionResolver — the shot box is strict on both axes (overlap rul
   });
 });
 
-describe('CollisionResolver — the 4 × 4 hitbox edge is strict (GDD §4.1)', () => {
-  // The ship rests at (120, 272); an enemy bullet is 4 × 4: it kills while |Δ| < (4 + 4) / 2 = 4.
+describe('CollisionResolver — the 6 × 6 hitbox edge is strict (GDD v0.24 §4.1)', () => {
+  // The ship rests at (120, 272); an enemy bullet is 4 × 4: it kills while |Δ| < (6 + 4) / 2 = 5.
   it.each([
-    ['exactly at the right edge', 124, 272, false],
-    ['exactly at the left edge', 116, 272, false],
-    ['exactly at the lower edge', 120, 276, false],
-    ['exactly at the upper edge', 120, 268, false],
-    ['one pixel inside on the right', 123, 272, true],
-    ['one pixel inside on the left', 117, 272, true],
-    ['one pixel inside below', 120, 275, true],
-    ['one pixel inside above', 120, 269, true],
+    ['exactly at the right edge', 125, 272, false],
+    ['exactly at the left edge', 115, 272, false],
+    ['exactly at the lower edge', 120, 277, false],
+    ['exactly at the upper edge', 120, 267, false],
+    ['one pixel inside on the right', 124, 272, true],
+    ['one pixel inside on the left', 116, 272, true],
+    ['one pixel inside below', 120, 276, true],
+    ['one pixel inside above', 120, 268, true],
   ])('an enemy bullet %s: kills the ship = %s', (_label, x, y, kills) => {
     const world = vulnerableWorld();
     world.spawnEnemyBullet(x, y, 0, 0);
@@ -508,13 +458,13 @@ describe('CollisionResolver — the 4 × 4 hitbox edge is strict (GDD §4.1)', (
     expect(world.enemyBullets.at(0).spent).toBe(kills);
   });
 
-  it('keeps the same strict edge for an enemy body: a Diver (16 wide) touching at 10 px passes', () => {
+  it('keeps the same strict edge for an enemy body: a Diver (16 wide) touching at 11 px passes', () => {
     const touching = vulnerableWorld();
-    enemyAt(touching, DIVER, 120 + 10, 272); // (4 + 16) / 2 = 10
+    enemyAt(touching, DIVER, 120 + 11, 272); // (6 + 16) / 2 = 11
     CollisionResolver.resolve(touching, new Rules());
     expect(touching.player.state).toBe(PlayerState.Vulnerable);
     const inside = vulnerableWorld();
-    enemyAt(inside, DIVER, 120 + 9, 272);
+    enemyAt(inside, DIVER, 120 + 10, 272);
     CollisionResolver.resolve(inside, new Rules());
     expect(inside.player.state).toBe(PlayerState.Dead);
   });

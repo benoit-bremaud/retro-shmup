@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The ship's hitbox grows from 4 × 4 to a 6 × 6 body core; bullets through the wings still pass,
+  and the cockpit square drawn on the hitbox grows with it (GDD v0.24 §4.1, #106).
+
+### Fixed
+
+- A Laser bolt no longer passes through enemies: it stops on the first enemy or boss it touches
+  (GDD v0.24 §4.3, #107).
+
 ### Added
 
 - The hall-of-fame number 1's name drifts dimly through the far background now and then, on
@@ -33,8 +43,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a pause when the pad is lost (#23).
 - Seeded drops per run: Gunners drop a red or blue P at 30 %, every fully destroyed Popcorn
   formation drops a P of the level's colour; pickups fall with a sway (#26).
-- Spread and Laser on five shared power levels; the Laser passes through up to three enemies,
-  nearest first; HUD weapon badge and power pips (#27).
+- Spread and Laser on five shared power levels; a Laser bolt hits the nearest enemy first
+  (it stops there since GDD v0.24, #107); HUD weapon badge and power pips (#27).
 - The Carrier, crossing the field with a cargo it always drops; Shield, Bomb and 1-UP pickups
   with a 1 000-point bonus at the cap; HUD bombs and shield (#28).
 - Bombs (`X` / `Left Shift`, gamepad `B`, right click, a second finger): every enemy bullet

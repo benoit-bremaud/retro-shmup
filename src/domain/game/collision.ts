@@ -32,7 +32,7 @@ function overlaps(a: Box, b: Box): boolean {
   );
 }
 
-// The ship's 4 × 4 hitbox (GDD §4.1): only it counts, never the sprite — except while a shield
+// The ship's 6 × 6 hitbox (GDD v0.24 §4.1): only it counts, never the sprite — except while a shield
 // charge is held, when the drawn 36 × 36 ring is the shape, so any touch consumes it (GDD v0.19 §4.4).
 const HITBOX = PlayerTuning.hitboxSize;
 const SHIELD = PlayerTuning.shieldSize;
@@ -97,9 +97,9 @@ function nearestTarget(world: World, bullet: Bullet): Enemy | Boss | undefined {
 }
 
 // Pass 1: player bullets against enemies and the fighting boss, nearest first along the bullet's
-// path. Every shot of the tables has no pass-through, so it hits one body and is spent (GDD v0.24
-// §4.3); the pass-through memory serves a shot whose data gives one. Each hit spends the bullet,
-// destroys the enemy or records it, so the loop ends.
+// path. A shot with no pass-through left is spent on its hit; one with a pass-through records the
+// body and goes on (ADR-0019). Each hit spends the bullet, destroys the enemy or records it, so
+// the loop ends.
 function shotsAgainstEnemies(world: World, rules: HitRules): void {
   for (let i = 0; i < world.playerBullets.count; i += 1) {
     const bullet = world.playerBullets.at(i);

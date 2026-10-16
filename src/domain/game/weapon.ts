@@ -33,7 +33,7 @@ export interface ShotSpec {
   readonly height: number;
   /** In tenths of a level-1 shot (ADR-0019). */
   readonly damage: number;
-  /** How many bodies the bullet passes through before the hit that spends it. */
+  /** Bodies passed through before the spending hit; 0 for every table shot (GDD v0.24). */
   readonly pierce: number;
   /** The weapon that fired it: the presenter picks its colour from it, never from its size. */
   readonly weapon: WeaponKind;
@@ -80,7 +80,7 @@ function spreadLevel(
   return { cooldownSteps, shots };
 }
 
-/** A Laser bolt, its lower end at the nose (GDD v0.8 §4.3). */
+/** A Laser bolt, its lower end at the nose (GDD v0.8 §4.3; it stops on its first hit, v0.24). */
 function laserLevel(width: number, damage: number, pierce: number): WeaponLevel {
   const t = LaserTuning;
   return {
