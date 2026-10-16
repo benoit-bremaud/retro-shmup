@@ -1,35 +1,40 @@
-# Local review — retro-shmup (G3-1 audio: synthesiser, Web Audio player, sound effects)
+# Local review — retro-shmup (fix/game: #106, #107)
 
 - Date: 2026-10-16
-- Commit: feat/audio-sfx head
-- Scope: branch diff origin/main...feat/audio-sfx
-- Checks run: design · docs · tests · security · correctness (architecture-guardian covering all five on the diff)
-- Verdict: ship — every finding below fixed · Must 1 · Should 4 · Nice 4 (+ SonarQube S107)
+- Commit: fix/game head (after the review fixes)
+- Scope: branch diff origin/main...HEAD
+- Checks run: design · docs · tests · security · correctness
+- Verdict: ship — every Must resolved · Must 0 open (4 fixed) · Should 1 open · Nice 4 open
 
-## Pre-merge gate (head of feat/audio-sfx)
+## Pre-merge gate
 | Step | Result |
 |---|---|
-| 1 Tests | ✅ 1 378 unit/simulation · ✅ smoke 6/6 (Chromium, Firefox, WebKit) |
-| 2 Coverage | tests 99.26 % stmts / 95.67 % branches / 100 % funcs / 99.9 % lines (ratchet floors met) · docs 100 % (328/328) |
-| 3 SonarQube | ✅ PASSED (first run FAILED on S107, fixed) |
+| 1 Tests | ✅ 1427 unit/simulation/balance (Vitest) · ✅ 6 smoke (Chromium, Firefox, WebKit) |
+| 2 Coverage | tests 99.26 % stmts / 95.67 % branches / 100 % funcs / 99.9 % lines (floor 80) · docs: no new public symbol |
+| 3 SonarQube | ✅ PASSED |
 | 4 Secrets | ✅ gitleaks clean · no tracked .env · diff read: nothing sensitive |
-| 5 QA pass | ✅ dev server in the browser pane: the first key unlocks the context (`running`), menu move and confirm, shots and enemy shots create sources; console clean · screenshot `docs/architecture/qa/2026-10-16-g3-1-audio-pause.jpg` |
+| 5 QA pass | ✅ full · console clean · screenshot: docs/architecture/qa/2026-10-16-collision-fix-run.png (6 × 6 cockpit, Spread run) |
 - Gate: **GREEN**
 
-## 🔴 Must Have
-- `src/adapters/input/device-input.ts` `[correctness]` · a touch grants user activation on release, ADR-0009 lists `touchend` · fixed: `unlockAudio` on pointer up too
+## 🔴 Must Have (all fixed)
+- `tests/domain/collision-regressions.test.ts` `[tests]` · the "next bolt" test could not catch a pass-through regression · now asserts the farther enemy untouched after bolt 1.
+- `tests/domain/collision-regressions.test.ts` `[tests]` · headless wing cases passed even if the bullet never arrived · now assert the bullet crossed the ship's row.
+- `README.md`, `CHANGELOG.md`, GDD §4.3 ratio sentence `[docs]` · still said the Laser passes through · corrected; CHANGELOG Changed/Fixed entries added.
+- `src/domain/game/bullet.ts`, `weapon.ts` `[docs]` · pierce comments stale · reworded.
 
 ## 🟡 Should Have
-- `src/domain/scenes/scene-machine.ts` `[docs|design]` · constructor JSDoc displaced; SonarQube S107 (8 parameters) · fixed: `SceneOutputs { champion, audio }`, doc moved
-- `src/adapters/web-audio-player.ts` `[docs]` · five `*Like` interfaces undocumented (doc 98.5 %) · fixed, 100 %
-- GDD §9.5 / `04-class-audio.md` `[docs]` · chain step, tally tick and the controls / name-entry menu sounds absent without a note · now stated as G3-2 (*planned*)
-- `tests/domain/scene-sounds.test.ts` `[tests]` · pause mix only tested Paused → Count-in · added Confirm quit → title and the pause options
+- Process `[design]` · GDD revision in the same PR as the code (CLAUDE.md: own PR) · owner waiver 2026-10-16, noted in the PR body.
+- Duplicated `Rules` / `vulnerableWorld` / `enemyAt` `[design|tests]` · fixed: `tests/support/collision.ts`.
 
 ## 🔵 Nice to Have
-- `world.ts` shot counters writable → private with getters · `PAUSE_MIX_SCENES` explicit set instead of trait arithmetic · `playOn` rename · UML drift (`UI_SOUNDS` in the domain, `volumeGain` from main) — all applied
+- ADR-0019 context still justifies the pierce memory by a piercing Laser `[docs]` · follow-up note in a dedicated PR.
+- `02-sequence-enemy-destroyed.md` "Piercing" heading describes dormant machinery `[docs]`.
+- The anti-tunnelling test lists bullet speeds by hand `[tests]` · commented; a derived list would be stronger.
+- `weapon.test.ts` `%d` on 1.5 / 2.5 damage in titles `[tests]`.
 
 ## ⚪ Disagree / Intentional
-- Shot counters instead of events (owner, 470/500) · `SILENT_AUDIO` default · `*Like` seam (ADR-0015 decision 4) · one source node per `play`, outside the simulation
+- Pass-through machinery kept with zero data users `[design]` · owner decision, GDD v0.24 decision record; still tested on synthetic shots.
+- Balance bands widened `[tests]` · owner chose the 6 × 6 hitbox for a playtest (GDD v0.24 decision record); bands set to the measured values until the playtest settles them.
 
 ## Per-dimension summary
-- Design: no over-engineering, domain browser-free · Docs: 100 % · Tests: behaviour at the port, no domain mocks · Security: no untrusted input · Correctness: repeat guard, voice ring, suspend checked
+- Design: data-only fix, domain stays pure. · Docs: stale pierce wording fixed. · Tests: two false-confidence tests fixed, helpers shared. · Security: none. · Correctness: none.

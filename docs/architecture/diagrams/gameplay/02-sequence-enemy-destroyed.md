@@ -45,7 +45,7 @@ sequenceDiagram
   E-->>CR: crossed — true only when hp goes from > 0 to ≤ 0
   alt [B.pierceLeft = 0]
     CR->>B: spent = true (released at step 6)
-  else [a Laser bolt with a pass-through left]
+  else [a shot with a pass-through left — none in the tables since GDD v0.24]
     CR->>B: recordHit(E.serial), pierceLeft −= 1
   end
   CR->>Rules: enemyHit(E)
@@ -167,8 +167,9 @@ sequenceDiagram
   the multiplier and neither extends nor breaks the chain. `PICKUP_SPAWNED` and
   `PICKUP_COLLECTED` both enter the determinism test's event log.
 - **Piercing**: `canHit` / `recordHit` use serials, so a bolt never hits the same body twice
-  and a recycled pool enemy is not mistaken for the old one; a Spread bullet has no
-  pass-through and is spent on its first hit. Damage is in tenths of a level-1 shot
+  and a recycled pool enemy is not mistaken for the old one; since GDD v0.24 (#107) no shot
+  of the tables has a pass-through — Spread bullets and Laser bolts alike are spent on their first
+  hit, the nearest along their path. Damage is in tenths of a level-1 shot
   (ADR-0019).
 - **First-time labels** cover every spawn path (drop, cargo, formation reward, death release),
   including the very first formation of level 1 (GDD §7.3); they wait for the bitmap fonts
