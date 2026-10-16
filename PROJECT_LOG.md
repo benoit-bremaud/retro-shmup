@@ -8,6 +8,26 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-16
 
+### The shield ring collides while a charge is held (#82 → `ea320a2`, #83 → `3fcd3ae`) — closed #74
+
+- Problem: the shield was drawn as a 36 × 36 ring, but only the 4 × 4 hitbox collided, so a bullet
+  crossing the ring left the charge intact. Owner rule: the shield protects once and only once,
+  and anything touching it consumes it.
+- Design (#82, GDD v0.19 §4.4): MCDA on the shape. Square 36 = the drawn ring scored 395 / 500,
+  ahead of a Ø36 circle (360, which needs a new circle primitive on the render port for the same
+  measured balance) and a 24 square (285, the ring would sit inside the sprite). Bodies use the
+  same shape: a bullets-only ring measured identical. The overlap is strict, and it applies only
+  while the ship is vulnerable.
+- Code (#83): `touchesPlayer` tests `PlayerTuning.shieldSize` while `player.shield`; the presenter
+  draws the ring from the same constant (pixel-identical). 7 collision tests; manual mutants
+  (condition dropped, ring always, `<=`, size 34) all killed.
+- Balance: the charge now breaks on near misses and is worth far less. Measured on 100 seeds
+  (good / average / beginner): game over 37 / 45 / 87 %, boss killed 64 / 55 / 13 % (v0.18: 18 /
+  28 / 59 %, 82 / 73 / 41 %). The owner chose to widen the guard bands to the measured values
+  (400 / 500) instead of compensating with more shields (300): good GO ≤ 45 %, boss ≥ 55 %;
+  average GO ≤ 50 %; beginner boss ≥ 10 %.
+- Codex was at its usage limit on both PRs; the owner approved each merge.
+
 ### Level-1 rebalance v0.18 applied, the balance bot committed (#80 → `b6b61ad`) — closed #56
 
 - `tests/support/average-player.ts`: a seeded model player (looks every 0.15 / 0.25 / 0.40 s and
