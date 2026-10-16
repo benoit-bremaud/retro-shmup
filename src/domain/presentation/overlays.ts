@@ -14,6 +14,7 @@ import {
   LETTER_GRID,
   MENU_HEADER_GAP,
   NAME_ENTRY_LAYOUT,
+  CONTROLS_HEADER_GAP,
   MENU_ROW_HEIGHT,
   MENU_VALUE_MARGIN,
 } from './menu-layout';
@@ -51,7 +52,8 @@ const STEP_LABELS: readonly string[] = Array.from({ length: MAX_VOLUME_STEP + 1 
 );
 
 /**
- * A menu (GDD v0.13 and v0.14 §9.1): each row's catalogue text centred in its 16 px row, or, for a
+ * A menu (GDD v0.13 and v0.14 §9.1): each row's catalogue text centred in its row (16 to 32 px tall,
+ * GDD v0.25), or, for a
  * row with a value, the label on the left and the value on the right; the highlighted row on a
  * bar. Draws from the catalogue each frame and builds no string.
  */
@@ -62,21 +64,22 @@ export function drawMenu(
   value?: (row: MessageKey) => MessageKey | number | undefined,
 ): void {
   render.setRegion('field');
-  const textTop = (MENU_ROW_HEIGHT - MENU_FONT_CELL.height) / 2;
+  const rowHeight = menu.rowHeight;
+  const textTop = (rowHeight - MENU_FONT_CELL.height) / 2;
   for (let i = 0; i < menu.rows.length; i += 1) {
     const key = menu.rows[i];
     if (key === undefined) continue;
     const text = message(key, language);
     const valueKey = value?.(key);
-    const y = menu.top + i * MENU_ROW_HEIGHT;
+    const y = menu.top + i * rowHeight;
     if (valueKey === undefined) {
-      drawActionRow(render, text, y, i === menu.highlighted);
+      drawActionRow(render, text, y, rowHeight, i === menu.highlighted);
       continue;
     }
     if (i === menu.highlighted) {
       const width = FIELD_WIDTH - 2 * (MENU_VALUE_MARGIN - HIGHLIGHT_PAD);
       const x = Math.round((FIELD_WIDTH - width) / 2);
-      render.drawRect(x, y, width, MENU_ROW_HEIGHT, Palette.menuHighlight);
+      render.drawRect(x, y, width, rowHeight, Palette.menuHighlight);
     }
     const shown =
       typeof valueKey === 'number' ? (STEP_LABELS[valueKey] ?? '') : message(valueKey, language);
@@ -160,25 +163,22 @@ export function drawControlsScreen(
 ): void {
   drawVeil(render);
   const menu = view.menu;
-  drawBanner(
-    render,
-    message('controls', language),
-    menu.top - MENU_HEADER_GAP.title - MENU_ROW_HEIGHT,
-  );
+  drawBanner(render, message('controls', language), menu.top - CONTROLS_HEADER_GAP);
   drawMenuLine(render, message(view.deviceName, language), menu.top - MENU_ROW_HEIGHT);
-  const textTop = (MENU_ROW_HEIGHT - MENU_FONT_CELL.height) / 2;
+  const rowHeight = menu.rowHeight;
+  const textTop = (rowHeight - MENU_FONT_CELL.height) / 2;
   const intents = view.intentRows;
   for (let i = 0; i < menu.rows.length; i += 1) {
     const key = menu.rows[i];
     if (key === undefined) continue;
-    const y = menu.top + i * MENU_ROW_HEIGHT;
+    const y = menu.top + i * rowHeight;
     if (i >= intents) {
-      drawActionRow(render, message(key, language), y, i === menu.highlighted);
+      drawActionRow(render, message(key, language), y, rowHeight, i === menu.highlighted);
       continue;
     }
     if (i === menu.highlighted) {
       const x = CONTROLS_COLUMNS.slots[view.column];
-      render.drawRect(x, y, CONTROLS_COLUMNS.slotWidth, MENU_ROW_HEIGHT, Palette.menuHighlight);
+      render.drawRect(x, y, CONTROLS_COLUMNS.slotWidth, rowHeight, Palette.menuHighlight);
     }
     render.drawText(message(key, language), CONTROLS_COLUMNS.label, y + textTop, 'menu');
     drawCell(render, view.cell(i, 0), 0, y + textTop);
@@ -194,18 +194,24 @@ function drawCell(render: RenderPort, text: string, column: SlotColumn, y: numbe
 }
 
 /** A centred menu row, on its bar when highlighted, as in `drawMenu`. */
-function drawActionRow(render: RenderPort, text: string, y: number, highlighted: boolean): void {
+function drawActionRow(
+  render: RenderPort,
+  text: string,
+  y: number,
+  rowHeight: number,
+  highlighted: boolean,
+): void {
   if (highlighted) {
     const width = menuTextWidth(text) + 2 * HIGHLIGHT_PAD;
     render.drawRect(
       Math.round((FIELD_WIDTH - width) / 2),
       y,
       width,
-      MENU_ROW_HEIGHT,
+      rowHeight,
       Palette.menuHighlight,
     );
   }
-  drawMenuLine(render, text, y + (MENU_ROW_HEIGHT - MENU_FONT_CELL.height) / 2);
+  drawMenuLine(render, text, y + (rowHeight - MENU_FONT_CELL.height) / 2);
 }
 
 /** The High scores columns (GDD v0.16 §9.1): 24 characters of 8 px, one space apart. */

@@ -1,13 +1,21 @@
 import { Button } from '../ports/input-port';
 import type { IntentFrame } from '../ports/input-port';
 import type { MessageKey } from '../i18n/messages';
-import { MENU_ROW_HEIGHT, menuTop } from '../presentation/menu-layout';
+import { menuRowHeight, menuTop } from '../presentation/menu-layout';
 import type { MenuView } from '../presentation/menu-layout';
 import { axis, NO_ROW, PressGuard, sidewaysOf } from './menu-input';
 
 /** What a scene needs of a menu it opens and draws, whatever its row ids. */
 export interface OpenableMenu extends MenuView {
+  /** The field px its screen's header takes above the rows (GDD v0.25 §9.1). */
+  readonly headerGap: number;
   reset(now: number, opening: Readonly<IntentFrame>): void;
+}
+
+/** How a menu is built: which rows left and right flip, and its header's gap (GDD v0.25). */
+export interface MenuOptions<Id extends MessageKey> {
+  readonly flips?: (row: Id) => boolean;
+  readonly headerGap?: number;
 }
 
 /**
@@ -21,6 +29,10 @@ export class Menu<Id extends MessageKey> implements OpenableMenu {
   readonly rows: readonly Id[];
   /** The field y of the first row's top edge. */
   readonly top: number;
+  /** Logical px per row, 16 to 32 (GDD v0.25 §9.1). */
+  readonly rowHeight: number;
+  /** The field px the screen's header takes above the rows (GDD v0.25 §9.1). */
+  readonly headerGap: number;
   highlighted = 0;
   /** The vertical direction held at the last step (−1, 0 or 1), so a held key moves only once. */
   private direction = 0;
@@ -32,9 +44,12 @@ export class Menu<Id extends MessageKey> implements OpenableMenu {
   /** Which rows left and right flip (rows with a value, GDD v0.14 §9.1); none by default. */
   private readonly flips: (row: Id) => boolean;
 
-  constructor(rows: readonly Id[], flips: (row: Id) => boolean = () => false) {
+  /** `flips`: the rows left and right flip, none by default; `headerGap`: 0 by default. */
+  constructor(rows: readonly Id[], { flips = () => false, headerGap = 0 }: MenuOptions<Id> = {}) {
     this.rows = rows;
-    this.top = menuTop(rows.length);
+    this.headerGap = headerGap;
+    this.rowHeight = menuRowHeight(rows.length, headerGap);
+    this.top = menuTop(rows.length, this.rowHeight);
     this.flips = flips;
   }
 
@@ -73,7 +88,7 @@ export class Menu<Id extends MessageKey> implements OpenableMenu {
 
   /** The row under the field y, or `NO_ROW`. */
   rowAt(y: number): number {
-    const index = Math.floor((y - this.top) / MENU_ROW_HEIGHT);
+    const index = Math.floor((y - this.top) / this.rowHeight);
     return index >= 0 && index < this.rows.length ? index : NO_ROW;
   }
 

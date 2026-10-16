@@ -31,6 +31,7 @@ import type { Options, VolumeRow } from '../options';
 import { ChampionName } from '../presentation/champion-name';
 import { STARFIELD_LAYERS } from '../presentation/starfield';
 import type { Starfield } from '../presentation/starfield';
+import { MENU_HEADER_GAP } from '../presentation/menu-layout';
 import type { MenuScreen } from '../presentation/menu-layout';
 import { HighScoreTable } from '../hall-of-fame/high-scores';
 import type { HighScoreEntry } from '../hall-of-fame/high-scores';
@@ -272,8 +273,10 @@ export class SceneMachine {
   private steps = 0;
   /** The five menus (GDD v0.13 and v0.14 §9.1), built once. */
   private readonly titleMenu = new Menu(['play', 'highScores', 'options'] as const);
-  private readonly pauseMenu = new Menu(['resume', 'options', 'quit'] as const);
-  private readonly quitMenu = new Menu(['no', 'yes'] as const);
+  private readonly pauseMenu = new Menu(['resume', 'options', 'quit'] as const, {
+    headerGap: MENU_HEADER_GAP.title,
+  });
+  private readonly quitMenu = new Menu(['no', 'yes'] as const, { headerGap: MENU_HEADER_GAP.menu });
   // Called only after the constructor has set `options` (field initialisers run first).
   // Left and right flip exactly the rows that show a value (GDD v0.14 §9.1).
   private readonly hasValue = (row: MessageKey): boolean => this.options.value(row) !== undefined;
@@ -282,29 +285,31 @@ export class SceneMachine {
     this.options.value(row);
   private readonly fullOptionsMenu = new Menu<OptionsRow>(
     ['visualEffects', 'audio', 'controls', 'autofire', 'language', 'fullscreen', 'back'],
-    this.hasValue,
+    { flips: this.hasValue, headerGap: MENU_HEADER_GAP.title },
   );
   private readonly touchOptionsMenu = new Menu<OptionsRow>(
     ['visualEffects', 'audio', 'autofire', 'language', 'fullscreen', 'back'],
-    this.hasValue,
+    { flips: this.hasValue, headerGap: MENU_HEADER_GAP.title },
   );
   /** Whether the options opened without *Controls* (touch used last), frozen until they reopen. */
   private optionsTouch = false;
-  private readonly restoreMenu = new Menu(['no', 'yes'] as const);
+  private readonly restoreMenu = new Menu(['no', 'yes'] as const, {
+    headerGap: MENU_HEADER_GAP.menu,
+  });
   /**
    * The device of the last input, touch included (the controls screen's own device is the last
    * of keyboard and gamepad): touch hides the *Controls* row.
    */
   private lastDevice: IntentFrame['device'] = 'keyboard';
-  private readonly effectsMenu = new Menu(
-    ['allOn', 'allOff', ...EFFECT_ROWS, 'back'] as const,
-    this.hasValue,
-  );
+  private readonly effectsMenu = new Menu(['allOn', 'allOff', ...EFFECT_ROWS, 'back'] as const, {
+    flips: this.hasValue,
+    headerGap: MENU_HEADER_GAP.menu,
+  });
   /** The *Audio* sub-screen (GDD v0.23 §9.3): the two volumes, then Back. */
-  private readonly audioMenu = new Menu<VolumeRow | 'back'>(
-    ['music', 'soundEffects', 'back'],
-    this.hasValue,
-  );
+  private readonly audioMenu = new Menu<VolumeRow | 'back'>(['music', 'soundEffects', 'back'], {
+    flips: this.hasValue,
+    headerGap: MENU_HEADER_GAP.menu,
+  });
   /**
    * Every menu scene: its menu and header. Drawing and opening read this one table, so a new menu
    * screen is one entry here plus its step method.

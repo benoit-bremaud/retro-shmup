@@ -28,7 +28,8 @@ classDiagram
     +highlighted: number
     +lastSideways: number
     -flips: row to boolean, constructor
-    +constructor(rows, flips?, headerGap?)
+    +headerGap: number
+    +constructor(rows, options?: flips and headerGap)
     +reset(now: number, opening: IntentFrame) void
     +ignore(frame: IntentFrame) void
     +rowAt(y: number) number

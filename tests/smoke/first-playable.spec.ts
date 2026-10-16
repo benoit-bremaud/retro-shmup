@@ -111,13 +111,13 @@ async function hullAtRest(page: Page): Promise<boolean> {
 const MENU_HIGHLIGHT = { r: 0x3b, g: 0x4a, b: 0x8a };
 /**
  * A pixel of the bar behind RESUME, the first row highlighted on entry, left of its text, in
- * play-field pixels: the three-row menu starts at y 136 and the bar at x 89 (overlays.ts, menu-layout.ts).
+ * play-field pixels: the three 32 px rows start at y 112 (GDD v0.25), the bar at x 89 (overlays.ts, menu-layout.ts).
  */
-const PAUSE_PIXEL = { x: 90, y: 137 };
-/** The middle of the PLAY row of the title menu (three rows from y 136), in play-field pixels. */
-const PLAY_ROW = { x: 120, y: 144 };
-/** The middle of the RESUME row (three rows from y 136), in play-field pixels. */
-const RESUME_ROW = { x: 120, y: 144 };
+const PAUSE_PIXEL = { x: 90, y: 113 };
+/** The middle of the PLAY row of the title menu (three 32 px rows from y 112), in play-field pixels. */
+const PLAY_ROW = { x: 120, y: 128 };
+/** The middle of the RESUME row (three 32 px rows from y 112), in play-field pixels. */
+const RESUME_ROW = { x: 120, y: 128 };
 
 /** True when the pause menu shows with RESUME highlighted, so the scene is `Paused`. */
 async function paused(page: Page): Promise<boolean> {
@@ -412,7 +412,7 @@ async function topRowsText(page: Page): Promise<number> {
 }
 
 /** A pixel of the highlight bar behind PLAY, narrower than RESUME's, in play-field pixels. */
-const TITLE_PIXEL = { x: 100, y: 137 };
+const TITLE_PIXEL = { x: 100, y: 113 };
 
 /** True when the title menu shows with PLAY highlighted. */
 async function titleReady(page: Page): Promise<boolean> {

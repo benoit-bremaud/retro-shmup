@@ -7,11 +7,7 @@ import {
   drawNameEntry,
   drawVeil,
 } from '../../src/domain/presentation/overlays';
-import {
-  CONTROLS_COLUMNS,
-  MENU_ROW_HEIGHT,
-  MENU_VALUE_MARGIN,
-} from '../../src/domain/presentation/menu-layout';
+import { CONTROLS_COLUMNS, MENU_VALUE_MARGIN } from '../../src/domain/presentation/menu-layout';
 import type { ControlsView } from '../../src/domain/presentation/menu-layout';
 import { Menu } from '../../src/domain/scenes/menu';
 import { NameEntry } from '../../src/domain/scenes/name-entry';
@@ -35,8 +31,8 @@ describe('overlays of the frozen scenes (meta/05-state-scenes, enemies brick add
     menu.highlighted = 1;
     drawMenu(render, menu, 'fr');
     expect(render.texts.map((text) => [text.text, text.font, text.y])).toEqual([
-      ['REPRENDRE', 'menu', menu.top + 3],
-      ['QUITTER', 'menu', menu.top + MENU_ROW_HEIGHT + 3],
+      ['REPRENDRE', 'menu', menu.top + 11],
+      ['QUITTER', 'menu', menu.top + 32 + 11],
     ]);
     const quitter = render.texts[1];
     expect(quitter?.x).toBe(Math.round((FIELD_WIDTH - (6 * 8 + 6)) / 2));
@@ -45,9 +41,9 @@ describe('overlays of the frozen scenes (meta/05-state-scenes, enemies brick add
       {
         region: 'field',
         x: Math.round((FIELD_WIDTH - (54 + 16)) / 2),
-        y: menu.top + MENU_ROW_HEIGHT,
+        y: menu.top + 32,
         w: 54 + 16,
-        h: MENU_ROW_HEIGHT,
+        h: 32,
         colour: Palette.menuHighlight,
       },
     ]);
@@ -89,7 +85,12 @@ describe('overlays of the frozen scenes (meta/05-state-scenes, enemies brick add
 
 describe('drawControlsScreen (GDD v0.15 §4.2)', () => {
   const view: ControlsView = {
-    menu: { rows: ['up', 'fire', 'restoreDefaults', 'back'], top: 100, highlighted: 1 },
+    menu: {
+      rows: ['up', 'fire', 'restoreDefaults', 'back'],
+      top: 100,
+      rowHeight: 24,
+      highlighted: 1,
+    },
     intentRows: 2,
     column: 1,
     deviceName: 'keyboard',
@@ -128,9 +129,9 @@ describe('drawControlsScreen (GDD v0.15 §4.2)', () => {
       {
         region: 'field',
         x: CONTROLS_COLUMNS.slots[1],
-        y: 100 + MENU_ROW_HEIGHT,
+        y: 100 + 24,
         w: CONTROLS_COLUMNS.slotWidth,
-        h: MENU_ROW_HEIGHT,
+        h: 24,
         colour: Palette.menuHighlight,
       },
     ]);
