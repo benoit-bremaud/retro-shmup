@@ -8,6 +8,25 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-16
 
+### The champion's name in the far background (#98 → `4253c8b`, #99 → `f407ef6`)
+
+- Owner wish (logged 2026-10-13, re-asked 2026-10-16): the hall-of-fame number 1's name drifting
+  very discreetly far away, now and then.
+- MCDA on scope: the name only, in play (A, 470 / 500), ahead of the title / attract only (C, 385)
+  and the name with satellites and a distant planet now (B, 380: sprites still to draw). The far
+  objects are deferred to G4 art.
+- Design (#98): GDD v0.22 §9.4.1 (menu font in the far-star colour between the far and the near
+  star layers, 12 px/s, first pass 40 s after the run starts then every 120 s, nothing with an empty
+  table, its own effect switch on by default, also under reduced motion), §9.3 row texts, decision
+  record row; UML `render/04-class-champion-name.md`.
+- Code (#99): `ChampionName`, `Starfield.drawLayers`, a `far` font id, the `championName` switch
+  (a save without it reads it as on, save stays v2; `null` or non-boolean invalid). Architecture
+  review: 0 Must, 4 Should fixed (the name now freezes in the pause as the GDD says, UML entry
+  height −10, strict `null`, a duplicate test constant); 3 Nice deferred (shared effects test
+  helper, `drawFar` / `drawNear`, a constructor options object).
+- Gate: 1 323 tests, coverage 99.28 / 95.67 / 100 / 99.9 %, docs 100 %, smoke 6/6, SonarQube
+  passed, gitleaks clean, QA capture at 44 s of play. No reviewer comments (Codex out of credit).
+
 ### Level-1 density: filler rows and an empty-field guard band (#94 → `699bb43`, #96 → `ac27eef`)
 
 - Owner request (feedback from the owner's daughter): "sometimes several seconds with no enemy". The bot

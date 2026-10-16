@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The hall-of-fame number 1's name drifts dimly through the far background now and then, on
+  its own visual-effects switch (GDD v0.22 §9.4.1, #98, #99).
 - Level 1 is denser: filler Popcorn formations and Divers fill its empty stretches, and the
   balance guard keeps the time without an enemy at 70 s or less (GDD v0.21 §7.2.3, #94, #96).
 - The game version, `v<version>+<short commit>`, shown as page text in the bottom-right corner
