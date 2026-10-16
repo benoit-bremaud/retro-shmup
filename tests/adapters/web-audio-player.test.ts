@@ -317,4 +317,29 @@ describe('WebAudioPlayer (ADR-0009, GDD v0.23 §9.5)', () => {
       player.music('title');
     }).not.toThrow();
   });
+
+  it('loads the files one at a time, the track asked for first', async () => {
+    const order: string[] = [];
+    const context = new FakeContext();
+    const player = new WebAudioPlayer(
+      () => context,
+      (file) => {
+        order.push(file);
+        return Promise.resolve(new TextEncoder().encode(file).buffer);
+      },
+    );
+    player.music('boss');
+    player.unlock();
+    expect(order).toEqual(['boss-intro.mp3']);
+    await settle();
+    expect(order).toEqual([
+      'boss-intro.mp3',
+      'boss-loop.mp3',
+      'title.mp3',
+      'level-1.mp3',
+      'results.mp3',
+      'game-over.mp3',
+    ]);
+    expect(context.sources.map(fileOf)).toEqual(['boss-intro.mp3', 'boss-loop.mp3']);
+  });
 });

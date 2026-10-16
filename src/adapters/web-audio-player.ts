@@ -208,15 +208,28 @@ export class WebAudioPlayer implements AudioPort {
     }
   }
 
-  /** Fetches and decodes every track file once; a failure leaves that track silent. */
+  /**
+   * Fetches and decodes every track file once, one at a time, the track asked for first: decoding
+   * them all at once delays every track, the title's included, by seconds on a slow device.
+   */
   private loadTracks(context: AudioContextLike): void {
+    const first = this.track !== null && isTrack(this.track) ? TRACK_FILES[this.track] : [];
+    const queue = [...first];
     const tracks = Object.values(TRACK_FILES);
     for (let i = 0; i < tracks.length; i += 1) {
       const files = tracks[i] ?? [];
       for (let j = 0; j < files.length; j += 1) {
         const file = files[j];
-        if (file !== undefined) void this.loadTrackFile(context, file);
+        if (file !== undefined && !queue.includes(file)) queue.push(file);
       }
+    }
+    void this.loadInOrder(context, queue);
+  }
+
+  private async loadInOrder(context: AudioContextLike, files: readonly string[]): Promise<void> {
+    for (let i = 0; i < files.length; i += 1) {
+      const file = files[i];
+      if (file !== undefined) await this.loadTrackFile(context, file);
     }
   }
 

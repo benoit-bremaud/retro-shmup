@@ -78,6 +78,9 @@ classDiagram
   class volumeGain {
     <<pure function, domain/audio>>
     +volumeGain(step 0..10) number
+    +nudgeVolume(step, direction) number
+    +cycleVolume(step) number
+    +isVolumeStep(value: unknown) boolean
   }
   class WebAudioPlayer {
     <<adapter, src/adapters>>
@@ -143,7 +146,7 @@ sequenceDiagram
   R-->>RS: EnemyDestroyed (detail = size tier)
   RS->>WA: play(explosion of that tier)
   WA->>WA: skip if the same sound started < 33 ms ago, else start a voice (oldest stopped past 16)
-  Note over WA: before unlock, play and music do nothing and queue nothing
+  Note over WA: before unlock, play does nothing; music only remembers the scene's track
   P->>M: tab hidden (visibilitychange)
   M->>WA: setHidden(true) suspends the context; false resumes it
 ```
@@ -154,7 +157,7 @@ sequenceDiagram
 sequenceDiagram
   participant SM as SceneMachine (domain)
   participant WA as WebAudioPlayer (adapter)
-  Note over WA: at unlock, every track file is fetched and decoded once
+  Note over WA: at unlock, every track file is fetched and decoded once, one at a time, the track asked for first
   SM->>WA: music(title) after each step on the title (a repeat changes nothing)
   WA->>WA: start the title loop once its file is decoded
   SM->>WA: music(level-1) from Play
