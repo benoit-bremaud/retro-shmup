@@ -1,7 +1,7 @@
 # Class diagram — meta — menus, options and the save document (G1a)
 
 > **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.13 and v0.14 §9.1
-> (menus; v0.14: leaving a menu frees the movement), §9.3 (options and their layout), §9.4, §9.8
+> (menus; v0.25: the row height per menu, #95; v0.14: leaving a menu frees the movement), §9.3 (options and their layout), §9.4, §9.8
 > **Related ADRs**: ADR-0006 (save document, `StoragePort`), ADR-0009 (fullscreen at the next
 > gesture), ADR-0015 (the last device used), ADR-0020 decision 4 (the autofire option), ADR-0021
 > (the high-score entry)
@@ -24,9 +24,11 @@ classDiagram
   class Menu~Id~ {
     +rows: readonly Id[]
     +top: number
+    +rowHeight: number
     +highlighted: number
     +lastSideways: number
     -flips: row to boolean, constructor
+    +constructor(rows, flips?, headerGap?)
     +reset(now: number, opening: IntentFrame) void
     +ignore(frame: IntentFrame) void
     +rowAt(y: number) number
@@ -40,6 +42,7 @@ classDiagram
     <<interface>>
     +rows: readonly MessageKey[]
     +top: number
+    +rowHeight: number
     +highlighted: number
   }
   class MenuScreen {
