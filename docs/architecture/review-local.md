@@ -1,34 +1,18 @@
-# Local review — retro-shmup (docs/shield-ring)
+# Local review — retro-shmup (branch docs/version-on-screen, GDD v0.20 version label)
 
 - Date: 2026-10-16
-- Scope: branch diff origin/main...HEAD (GDD v0.19 shield collision, class and sequence diagram
-  notes, traceability row) — documentation only
-- Checks run: docs (doc-auditor, GDD-versus-UML consistency) · design, tests, security,
-  correctness: not applicable (no code)
-- Verdict: ship · Must 0 · Should 0 open (2 fixed) · Nice 0 open (2 fixed)
+- Scope: branch diff `origin/main...HEAD` (docs only: GDD §9.9, UML 06, README/traceability rows)
+- Checks run: docs (doc-auditor) · `make verify`
+- Verdict: ship · Must 0 · Should 2 (fixed) · Nice 3 (2 fixed, Mermaid render unverified)
 
-## 🔴 Must Have
+## Pre-merge gate (docs diff, pre-push)
+| Step | Result |
+|---|---|
+| 1 Tests | ✅ `make verify` (typecheck, Vitest) green |
+| 2 Coverage | unchanged (no code) |
+| 3 SonarQube | ✅ PASSED |
+| 4 Secrets | ✅ gitleaks clean · diff read: nothing sensitive |
+| 5 QA pass | n/a for the design PR; due on the code PR |
 
-_None._
-
-## 🟡 Should Have
-
-- `docs/design/game-design-document.md` §4.4 `[docs]` · the ring rule did not say it applies only
-  while the ship is vulnerable · fixed: entry and invulnerability keep the charge.
-- `docs/design/game-design-document.md` §4.1, §5.2 `[docs]` · no cross-reference to the v0.19
-  exception · fixed: one line each.
-
-## 🔵 Nice to Have
-
-- `docs/architecture/traceability-matrix.md` `[docs]` · "touch" versus "overlaps" on a shared
-  edge · fixed: strict overlap stated, edge test named.
-- `docs/architecture/diagrams/gameplay/04-class-domain.md` `[docs]` · `PlayerTuning.shieldSize`
-  not yet in code · fixed: tagged *planned*.
-
-## ⚪ Disagree / Intentional
-
-_None._
-
-## Per-dimension summary
-
-- Design: n/a · Docs: consistent after fixes · Tests: n/a · Security: n/a · Correctness: n/a
+## Fixed
+- Traceability matrix lacked the new diagram and a stale GDD version; `---` separator moved below §9.9; §9.6 names the label exception; diagram rules list selection and styling.

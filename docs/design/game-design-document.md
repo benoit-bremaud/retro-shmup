@@ -1017,7 +1017,7 @@ was.
 ### 9.6 Localisation
 
 EN (default) and FR. Every player-facing string lives in a message catalogue; no string literals in
-gameplay code.
+gameplay code. The one exception is the version label (§9.9), an identifier, not a sentence.
 
 ### 9.7 Accessibility
 
@@ -1035,8 +1035,6 @@ country the player chose. The document is untrusted input, validated by allowlis
 without ever throwing (ADR-0006): the name matches A–Z, 0–9 and space with a length of 1 to 8, or
 is exactly `???`; the country is absent or one code of the ISO 3166-1 alpha-2 allowlist kept in the
 code; an entry failing either check is dropped (ADR-0021).
-
----
 
 ### 9.9 Version label *(v0.20)*
 
@@ -1057,6 +1055,8 @@ placeholder fonts have no `.` or `+` (ADR-0025 decision 6).
   (§9.6); the text is set with `textContent`.
 - **Later**: brick G4 moves it into an Options / About row in the final font and removes the
   page text (ADR-0025 decision 6).
+
+---
 
 ## 10. Difficulty
 

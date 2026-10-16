@@ -16,12 +16,12 @@ root formats them with one pure function and writes the result into a page eleme
 ```mermaid
 classDiagram
   class ViteConfig {
-    <<build, vite.config.ts>>
+    <<build>>
     +define __APP_VERSION__ : string
     +define __APP_COMMIT__ : string
   }
   class versionLabel {
-    <<pure function, src/app/version-label.ts>>
+    <<pure function>>
     +versionLabel(version, commit) string
   }
   class Main {
@@ -59,4 +59,4 @@ sequenceDiagram
   dropped, never shown (the value comes from the environment).
 - git is queried with `execFileSync` and an argument list, never a shell; a failure means "no
   commit".
-- The element is styled from `style.css` (CSP `style-src 'self'`), ignores pointer events.
+- The element is styled from `style.css` (CSP `style-src 'self'`), ignores pointer events and selection (10 px monospace, white at 45 % opacity, GDD §9.9).
