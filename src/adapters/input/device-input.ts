@@ -53,8 +53,7 @@ function isShortcut(event: KeyEventLike): boolean {
 
 /**
  * The browser objects `DeviceInput` needs, injected by the composition root as one record of
- * narrow interfaces (ADR-0015 decision 4): the adapter never references a browser global. The
- * audio-unlock member joins with the audio.
+ * narrow interfaces (ADR-0015 decision 4): the adapter never references a browser global.
  */
 export interface InputEnvironment {
   onKeyDown(listener: (event: KeyEventLike) => void): void;
@@ -70,6 +69,8 @@ export interface InputEnvironment {
   gamepads(): GamepadList;
   /** The browser's keyboard layout map, where it exists (Chromium); `undefined` elsewhere. */
   layoutMap(): Promise<ReadonlyMap<string, string>> | undefined;
+  /** Unlocks the audio, called inside every key and pointer gesture's handler (ADR-0009). */
+  unlockAudio(): void;
   /** The page's fullscreen state and requests, called only inside a gesture's handler. */
   readonly fullscreen: {
     active(): boolean;
@@ -128,7 +129,7 @@ export class DeviceInput implements InputPort {
         return;
       }
       this.seq += 1;
-      this.applyFullscreen();
+      this.onGesture();
       this.keyLabels.learn(event.code, event.key);
       // While a keyboard capture waits, a key only answers it: it latches no intent, so the
       // answering step carries no menu action (GDD v0.15 §4.2).
@@ -154,7 +155,7 @@ export class DeviceInput implements InputPort {
     environment.onPointerDown((event) => {
       this.eventSinceRead = true;
       this.seq += 1;
-      this.applyFullscreen();
+      this.onGesture();
       this.pointer.down(event, this.seq);
     });
     environment.onPointerMove((event) => {
@@ -165,6 +166,8 @@ export class DeviceInput implements InputPort {
     environment.onPointerUp((event) => {
       this.eventSinceRead = true;
       this.seq += 1;
+      // A touch grants the user activation on its release, not its press (ADR-0009 decision 2).
+      this.environment.unlockAudio();
       this.pointer.up(event, this.seq);
     });
     environment.onPointerCancel((event) => {
@@ -203,8 +206,9 @@ export class DeviceInput implements InputPort {
     this.eventSinceRead = false;
   }
 
-  /** Inside a gesture's handler, the only place browsers allow it (ADR-0009). */
-  private applyFullscreen(): void {
+  /** Inside a gesture's handler, the only place browsers allow audio and fullscreen (ADR-0009). */
+  private onGesture(): void {
+    this.environment.unlockAudio();
     const wanted = this.pendingFullscreen;
     if (wanted === undefined) return;
     this.pendingFullscreen = undefined;

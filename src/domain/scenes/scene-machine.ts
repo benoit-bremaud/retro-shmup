@@ -1,3 +1,6 @@
+import { Sfx } from '../audio/sfx';
+import { SILENT_AUDIO } from '../ports/audio-port';
+import type { AudioPort } from '../ports/audio-port';
 import { RunOutcome } from '../game/run';
 import type { RunView, Simulation } from '../game/run';
 import { ResultsTuning, SceneTuning, STEP_SECONDS, toSteps } from '../game/tuning';
@@ -65,6 +68,22 @@ export const Scene = {
   Attract: 'ATTRACT',
 } as const;
 export type Scene = (typeof Scene)[keyof typeof Scene];
+
+/** The scenes of the pause mix (ADR-0009 decision 3): the pause and its menus, not the count-in. */
+const PAUSE_MIX_SCENES: ReadonlySet<Scene> = new Set([
+  Scene.Paused,
+  Scene.ConfirmQuit,
+  Scene.PauseOptions,
+  Scene.PauseEffects,
+  Scene.PauseControls,
+  Scene.PauseRestore,
+]);
+
+/** The scene machine's optional outputs besides the renderer: silent and nameless by default. */
+export interface SceneOutputs {
+  readonly champion?: ChampionName;
+  readonly audio?: AudioPort;
+}
 
 /** What differs between scenes for drawing, read by `render`. */
 interface SceneTraits {
@@ -261,10 +280,15 @@ export class SceneMachine {
   /** Every scene's step and overlay, bound once: the one place a scene is dispatched. */
   private readonly handlers: Readonly<Record<Scene, SceneHandler>>;
 
+  private readonly audio: AudioPort;
+  /** Whether the pause mix is on, so `setPaused` is called on a change only. */
+  private audioPaused = false;
+
   /**
    * `options` are the saved ones, copied into the live options; `createRun` builds each new run
    * (tests pass a short level script, the game a seeded one); `host` hears every change;
-   * `champion` draws the number 1's name in the far background (GDD v0.22 §9.4.1).
+   * `outputs.champion` draws the number 1's name in the far background (GDD v0.22 §9.4.1),
+   * `outputs.audio` plays the menu sounds, the run's sounds and the pause mix (GDD v0.23 §9.5).
    */
   constructor(
     render: RenderPort,
@@ -273,9 +297,10 @@ export class SceneMachine {
     createRun: () => InRun,
     host: SceneHost = NO_HOST,
     highScores: readonly HighScoreEntry[] = [],
-    champion: ChampionName = new ChampionName(() => 0),
+    outputs: SceneOutputs = {},
   ) {
-    this.champion = champion;
+    this.champion = outputs.champion ?? new ChampionName(() => 0);
+    this.audio = outputs.audio ?? SILENT_AUDIO;
     this.table = new HighScoreTable(highScores);
     this.renderer = render;
     this.starfield = starfield;
@@ -423,7 +448,7 @@ export class SceneMachine {
       this.titleMenu.ignore(frame);
       return;
     }
-    const row = this.titleMenu.step(frame, this.steps);
+    const row = this.stepMenu(this.titleMenu, frame);
     if (row === 'options') {
       this.openMenu(Scene.TitleOptions, frame);
     } else if (row === 'highScores') {
@@ -431,7 +456,12 @@ export class SceneMachine {
     } else if (row === 'play') {
       const run = this.createRun(); // InRun entry creates the run and its presenter.
       this.run = run;
-      this.presenter = new RunPresenter(this.renderer, this.options.effects, run.events());
+      this.presenter = new RunPresenter(
+        this.renderer,
+        this.options.effects,
+        run.events(),
+        this.audio,
+      );
       this.runStartSteps = this.backgroundSteps;
       this.champion.setName(this.table.entries[0]?.name ?? '');
       this.enter(Scene.Playing);
@@ -447,7 +477,7 @@ export class SceneMachine {
     frame: Readonly<IntentFrame>,
   ): void {
     const menu = this.optionsTouch ? this.touchOptionsMenu : this.fullOptionsMenu;
-    const row = menu.step(frame, this.steps);
+    const row = this.stepMenu(menu, frame);
     if (this.backTo(row, frame, OPTIONS_ROUTES[scene].parent)) return;
     if (row === 'visualEffects') this.openMenu(OPTIONS_ROUTES[scene].effects, frame);
     else if (row === 'controls') this.openControls(OPTIONS_ROUTES[scene].controls, frame);
@@ -459,7 +489,7 @@ export class SceneMachine {
     _dt: number,
     frame: Readonly<IntentFrame>,
   ): void {
-    const row = this.effectsMenu.step(frame, this.steps);
+    const row = this.stepMenu(this.effectsMenu, frame);
     if (this.backTo(row, frame, EFFECTS_PARENT[scene])) return;
     this.change(row);
   }
@@ -481,7 +511,7 @@ export class SceneMachine {
     _dt: number,
     frame: Readonly<IntentFrame>,
   ): void {
-    const row = this.restoreMenu.step(frame, this.steps);
+    const row = this.stepMenu(this.restoreMenu, frame);
     if (row === 'yes') this.controls.restoreDefaults();
     if (row !== undefined || this.backed(frame)) this.openControls(RESTORE_PARENT[scene], frame);
   }
@@ -541,7 +571,7 @@ export class SceneMachine {
   // Pause does nothing here: an automatic trigger can only enter the pause, never leave it. Back
   // and the pause button resume like the Resume row; Quit asks first (GDD v0.13 §9.1).
   private stepPaused(_dt: number, frame: Readonly<IntentFrame>): void {
-    const row = this.pauseMenu.step(frame, this.steps);
+    const row = this.stepMenu(this.pauseMenu, frame);
     if (row === 'quit') {
       this.openMenu(Scene.ConfirmQuit, frame);
     } else if (row === 'options') {
@@ -555,7 +585,7 @@ export class SceneMachine {
   // No is first, so a hurried Confirm never loses the run; Back returns to the pause, Pause is
   // ignored. Yes discards the run: no name entry, and the title is locked like after Game over.
   private stepConfirmQuit(_dt: number, frame: Readonly<IntentFrame>): void {
-    const row = this.quitMenu.step(frame, this.steps);
+    const row = this.stepMenu(this.quitMenu, frame);
     if (row === 'yes') {
       this.toTitle(frame);
     } else if (row === 'no' || this.backed(frame)) {
@@ -675,6 +705,22 @@ export class SceneMachine {
   private enter(scene: Scene): void {
     this.current = scene;
     this.sceneSteps = 0;
+    // The pause mix (ADR-0009 decision 3): on in the pause and its menus, off from the count-in.
+    const paused = PAUSE_MIX_SCENES.has(scene);
+    if (paused !== this.audioPaused) this.audio.setPaused(paused);
+    this.audioPaused = paused;
+  }
+
+  /** One step of a menu, with its sounds: a move of the highlight, an activation (GDD §9.5). */
+  private stepMenu<Id extends MessageKey>(
+    menu: Menu<Id>,
+    frame: Readonly<IntentFrame>,
+  ): Id | undefined {
+    const before = menu.highlighted;
+    const row = menu.step(frame, this.steps);
+    if (row !== undefined) this.audio.play(Sfx.MenuConfirm);
+    else if (menu.highlighted !== before) this.audio.play(Sfx.MenuMove);
+    return row;
   }
 
   /** The menu screen of a scene: the table's, or the options without *Controls* on touch. */

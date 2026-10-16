@@ -10,6 +10,8 @@ import { PerformanceClock } from '../adapters/performance-clock';
 import { SpriteBank } from '../adapters/sprite-bank';
 import type { BakeCanvas } from '../adapters/sprite-bank';
 import { LocalStorageStore } from '../adapters/local-storage-store';
+import { WebAudioPlayer } from '../adapters/web-audio-player';
+import { DefaultVolume, volumeGain } from '../domain/audio/volume';
 import { computeViewport } from '../adapters/viewport';
 import { Run } from '../domain/game/run';
 import { ChampionName } from '../domain/presentation/champion-name';
@@ -94,6 +96,14 @@ async function loadSprites(): Promise<void> {
   }
 }
 
+// Silent until the first gesture (ADR-0009); volumes at their defaults until the Audio options of
+// G3-2 (GDD v0.23 §9.3).
+const audio = new WebAudioPlayer(() => new AudioContext());
+audio.setVolumes(volumeGain(DefaultVolume.music), volumeGain(DefaultVolume.sfx));
+document.addEventListener('visibilitychange', () => {
+  audio.setHidden(document.hidden);
+});
+
 // The input adapter never touches a browser global: it gets these narrow hooks (ADR-0015).
 const environment: InputEnvironment = {
   onKeyDown: (listener) => {
@@ -119,6 +129,9 @@ const environment: InputEnvironment = {
   },
   onPointerCancel: (listener) => {
     globalThis.addEventListener('pointercancel', listener);
+  },
+  unlockAudio: () => {
+    audio.unlock();
   },
   gamepads: () => navigator.getGamepads(),
   layoutMap: () => {
@@ -247,7 +260,7 @@ const scenes: FrameTarget = new SceneMachine(
   () => new Run({ seed: Math.floor(Math.random() * 2 ** 32) }),
   host,
   save.highScores,
-  new ChampionName(Math.random),
+  { champion: new ChampionName(Math.random), audio },
 );
 const loop = new FrameLoop(new PerformanceClock(), input, scenes, (callback) => {
   requestAnimationFrame(callback);

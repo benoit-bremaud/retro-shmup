@@ -1129,7 +1129,9 @@ Decoration only, it never competes with play.
 - **Saving**: the two volumes join the options in the save document; it stays at version 2, a
   missing volume reading as its default, as the champion's-name switch did (§9.8, v0.22).
 - **Split** (owner, MCDA 425 / 500): this design, then G3-1 (synthesiser, Web Audio adapter, the
-  sound effects on their events, volumes fixed at their defaults), then G3-2 (music, the *Audio*
+  sound effects on their events, volumes fixed at their defaults; the menu sounds of the
+  title, pause and options menus), then G3-2 (with the chain step and the tally tick, which belong
+  to the Results, and the menu sounds of the controls and name-entry screens) (music, the *Audio*
   sub-screen, the saved volumes).
 
 ### 9.6 Localisation

@@ -108,6 +108,8 @@ function snapshot(
     score: 0,
     multiplier: 1,
     chainRatio: 0,
+    playerShots: 0,
+    enemyShots: 0,
     ...extra,
   };
 }

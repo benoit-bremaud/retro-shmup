@@ -39,6 +39,22 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, WorldView {
   readonly boss = new Boss();
   /** Run-scoped, only increases, never reused: a recycled body is never its predecessor. */
   private nextSerial = 1;
+  /**
+   * Bullets spawned this run, only increasing: the presentation compares them between frames to
+   * play one shot sound per volley (audio/04-class-audio). Counting never changes the outcome.
+   */
+  private playerShotCount = 0;
+  private enemyShotCount = 0;
+
+  /** Player bullets spawned this run. */
+  get playerShots(): number {
+    return this.playerShotCount;
+  }
+
+  /** Enemy bullets spawned this run. */
+  get enemyShots(): number {
+    return this.enemyShotCount;
+  }
 
   /** The next serial of the run: enemies, pickups and the boss draw from one counter. */
   takeSerial(): number {
@@ -55,6 +71,7 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, WorldView {
   spawnPlayerBullet(x: number, y: number, shot: Readonly<ShotSpec>): void {
     const bullet = this.playerBullets.add();
     if (bullet === undefined) return;
+    this.playerShotCount += 1;
     placeBullet(bullet, x, y, shot.vxPerSecond, shot.vyPerSecond);
     bullet.width = shot.width;
     bullet.height = shot.height;
@@ -67,6 +84,7 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, WorldView {
   spawnEnemyBullet(x: number, y: number, vxPerSecond: number, vyPerSecond: number): void {
     const bullet = this.enemyBullets.add();
     if (bullet === undefined) return;
+    this.enemyShotCount += 1;
     placeBullet(bullet, x, y, vxPerSecond, vyPerSecond);
     bullet.width = EnemyBulletTuning.size;
     bullet.height = EnemyBulletTuning.size;

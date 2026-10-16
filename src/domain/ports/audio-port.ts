@@ -16,3 +16,11 @@ export interface AudioPort {
    */
   setPaused(paused: boolean): void;
 }
+
+/** The silence: what a scene or a presenter plays through when no audio is wired (tests, boot). */
+export const SILENT_AUDIO: AudioPort = {
+  play: () => undefined,
+  music: () => undefined,
+  setVolumes: () => undefined,
+  setPaused: () => undefined,
+};

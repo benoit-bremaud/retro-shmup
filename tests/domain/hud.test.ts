@@ -61,6 +61,8 @@ function hudOf(values: Partial<WorldSnapshot>, screen: ScreenLayout = LANDSCAPE)
     score: 0,
     multiplier: 1,
     chainRatio: 0,
+    playerShots: 0,
+    enemyShots: 0,
     ...values,
   });
   return render;

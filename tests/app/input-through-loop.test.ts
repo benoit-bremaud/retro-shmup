@@ -32,6 +32,9 @@ class KeyOnlyEnvironment implements InputEnvironment {
   onPointerCancel(): void {
     // No pointer in this scenario.
   }
+  unlockAudio(): void {
+    // No audio in this scenario.
+  }
   gamepads(): GamepadList {
     return [];
   }

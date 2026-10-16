@@ -166,3 +166,16 @@ describe('World — pickups already spent', () => {
     expect(pickup.age).toBe(0);
   });
 });
+
+describe('World — shot counters (GDD v0.23 §9.5)', () => {
+  it('counts the bullets that exist, not those a full pool refused', () => {
+    const world = new World();
+    for (let i = 0; i < PLAYER_BULLET_POOL_SIZE + 2; i += 1)
+      world.spawnPlayerBullet(100, 100, SHOT);
+    for (let i = 0; i < ENEMY_BULLET_POOL_SIZE + 3; i += 1) world.spawnEnemyBullet(100, 100, 0, 75);
+    expect([world.playerShots, world.enemyShots]).toEqual([
+      PLAYER_BULLET_POOL_SIZE,
+      ENEMY_BULLET_POOL_SIZE,
+    ]);
+  });
+});

@@ -1,0 +1,213 @@
+import type { SfxId } from '../ports/audio-port';
+import { Wave } from './synth';
+import type { SfxParams } from './synth';
+
+/** The sound effects of GDD §9.5 the slice plays (G3-1); keys of `SFX_TABLE`. */
+export const Sfx = {
+  ShotSpread: 'shotSpread',
+  ShotLaser: 'shotLaser',
+  EnemyShot: 'enemyShot',
+  Hit: 'hit',
+  ExplosionSmall: 'explosionSmall',
+  ExplosionMedium: 'explosionMedium',
+  ExplosionLarge: 'explosionLarge',
+  BossHit: 'bossHit',
+  BossPhase: 'bossPhase',
+  BossDeath: 'bossDeath',
+  Pickup: 'pickup',
+  PowerUp: 'powerUp',
+  ShieldUp: 'shieldUp',
+  ShieldBreak: 'shieldBreak',
+  Bomb: 'bomb',
+  PlayerDeath: 'playerDeath',
+  OneUp: 'oneUp',
+  MenuMove: 'menuMove',
+  MenuConfirm: 'menuConfirm',
+  Warning: 'warning',
+} as const satisfies Record<string, SfxId>;
+export type Sfx = (typeof Sfx)[keyof typeof Sfx];
+
+/** The menu sounds: the pause mix keeps them (ADR-0009 decision 3). */
+export const UI_SOUNDS: readonly Sfx[] = [Sfx.MenuMove, Sfx.MenuConfirm];
+
+const BASE: SfxParams = {
+  wave: Wave.Square,
+  frequency: 440,
+  slide: 0,
+  duty: 0.5,
+  vibratoDepth: 0,
+  vibratoRate: 0,
+  attack: 0,
+  sustain: 0.05,
+  decay: 0.1,
+  lowPass: 1,
+  gain: 0.5,
+  seed: 1,
+};
+
+function row(overrides: Partial<SfxParams>): SfxParams {
+  return { ...BASE, ...overrides };
+}
+
+/**
+ * Every sound as a synthesiser row *(initial, GDD v0.23 §9.5)*: tuned by ear, the player's shots
+ * lowest in the mix. Each noise row has its own constant seed.
+ */
+export const SFX_TABLE: Readonly<Record<Sfx, SfxParams>> = {
+  shotSpread: row({
+    frequency: 880,
+    slide: -2400,
+    duty: 0.25,
+    sustain: 0.02,
+    decay: 0.05,
+    gain: 0.12,
+  }),
+  shotLaser: row({
+    wave: Wave.Saw,
+    frequency: 1400,
+    slide: -1800,
+    sustain: 0.03,
+    decay: 0.05,
+    gain: 0.1,
+  }),
+  enemyShot: row({
+    frequency: 520,
+    slide: -600,
+    duty: 0.5,
+    sustain: 0.02,
+    decay: 0.06,
+    gain: 0.15,
+  }),
+  hit: row({ wave: Wave.Noise, frequency: 2200, sustain: 0.01, decay: 0.04, gain: 0.2, seed: 2 }),
+  explosionSmall: row({
+    wave: Wave.Noise,
+    frequency: 900,
+    slide: -900,
+    sustain: 0.04,
+    decay: 0.2,
+    lowPass: 0.6,
+    gain: 0.4,
+    seed: 3,
+  }),
+  explosionMedium: row({
+    wave: Wave.Noise,
+    frequency: 600,
+    slide: -500,
+    sustain: 0.08,
+    decay: 0.35,
+    lowPass: 0.45,
+    gain: 0.5,
+    seed: 4,
+  }),
+  explosionLarge: row({
+    wave: Wave.Noise,
+    frequency: 400,
+    slide: -250,
+    sustain: 0.15,
+    decay: 0.7,
+    lowPass: 0.3,
+    gain: 0.6,
+    seed: 5,
+  }),
+  bossHit: row({ frequency: 180, slide: -200, duty: 0.25, sustain: 0.02, decay: 0.06, gain: 0.25 }),
+  bossPhase: row({
+    wave: Wave.Saw,
+    frequency: 160,
+    slide: 300,
+    vibratoDepth: 0.1,
+    vibratoRate: 12,
+    sustain: 0.3,
+    decay: 0.3,
+    gain: 0.45,
+  }),
+  bossDeath: row({
+    wave: Wave.Noise,
+    frequency: 300,
+    slide: -120,
+    sustain: 0.6,
+    decay: 1.4,
+    lowPass: 0.25,
+    gain: 0.7,
+    seed: 6,
+  }),
+  pickup: row({ frequency: 660, slide: 1200, sustain: 0.05, decay: 0.08, gain: 0.35 }),
+  powerUp: row({
+    frequency: 440,
+    slide: 1800,
+    duty: 0.25,
+    vibratoDepth: 0.05,
+    vibratoRate: 20,
+    sustain: 0.15,
+    decay: 0.12,
+    gain: 0.4,
+  }),
+  shieldUp: row({
+    wave: Wave.Sine,
+    frequency: 330,
+    slide: 900,
+    sustain: 0.18,
+    decay: 0.15,
+    gain: 0.45,
+  }),
+  shieldBreak: row({
+    wave: Wave.Noise,
+    frequency: 1800,
+    slide: -1600,
+    sustain: 0.05,
+    decay: 0.25,
+    lowPass: 0.7,
+    gain: 0.5,
+    seed: 7,
+  }),
+  bomb: row({
+    wave: Wave.Noise,
+    frequency: 250,
+    slide: -80,
+    attack: 0.02,
+    sustain: 0.3,
+    decay: 0.9,
+    lowPass: 0.2,
+    gain: 0.75,
+    seed: 8,
+  }),
+  playerDeath: row({
+    wave: Wave.Saw,
+    frequency: 600,
+    slide: -700,
+    vibratoDepth: 0.2,
+    vibratoRate: 15,
+    sustain: 0.2,
+    decay: 0.6,
+    gain: 0.55,
+  }),
+  oneUp: row({
+    frequency: 523,
+    slide: 1000,
+    duty: 0.25,
+    vibratoDepth: 0.08,
+    vibratoRate: 16,
+    sustain: 0.3,
+    decay: 0.2,
+    gain: 0.45,
+  }),
+  menuMove: row({ frequency: 990, duty: 0.25, sustain: 0.015, decay: 0.03, gain: 0.25 }),
+  menuConfirm: row({
+    frequency: 660,
+    slide: 1500,
+    duty: 0.25,
+    sustain: 0.04,
+    decay: 0.08,
+    gain: 0.3,
+  }),
+  warning: row({
+    wave: Wave.Square,
+    frequency: 220,
+    vibratoDepth: 0.15,
+    vibratoRate: 4,
+    attack: 0.05,
+    sustain: 1.2,
+    decay: 0.4,
+    lowPass: 0.5,
+    gain: 0.4,
+  }),
+};
