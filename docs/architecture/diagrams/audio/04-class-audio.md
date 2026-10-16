@@ -22,7 +22,9 @@ music follows the scene. Shots have no event *(owner, G3-1, 470/500 over new
 `PlayerFired` / `EnemyFired` events)*: `World` counts the bullets it spawns (`playerShots`,
 `enemyShots`, exposed by the snapshot) and `RunSounds.frame` plays one shot sound per drawn frame
 whose counter moved, so a five-bullet volley is one sound and the simulation only counts. Menu
-sounds come from the scene machine's `stepMenu` (a highlight move, an activation).
+sounds come from the scene machine's `stepMenu` (a highlight move, an activation) in the title,
+pause and options menus; the controls and name-entry screens, the chain step and the tally tick
+join in G3-2 (*planned*).
 
 ## Diagram
 
@@ -40,6 +42,10 @@ classDiagram
     +wave: square | saw | sine | noise
     +duty, attack, sustain, decay
     +frequency, slide, vibrato, lowPass, gain
+  }
+  class UI_SOUNDS {
+    <<data, domain/audio>>
+    +readonly Sfx[]
   }
   class SFX_TABLE {
     <<data, domain/audio>>
@@ -69,7 +75,6 @@ classDiagram
     -buffers: Map~SfxId, AudioBuffer~
     -MAX_VOICES: number = 16
     -lastStart: Map~SfxId, number~
-    -UI_SOUNDS: Set~SfxId~
     -TRACKS: Record~TrackId, TrackFile~
   }
   class SceneMachine {
@@ -77,6 +82,9 @@ classDiagram
   }
   class RunPresenter {
     <<domain/presentation>>
+  }
+  class Main {
+    <<composition root, src/app>>
   }
   class Options {
     <<domain/options, volumes planned>>
@@ -90,8 +98,9 @@ classDiagram
   RunPresenter ..> RunSounds : delegates event to sound
   RunSounds ..> AudioPort : play
   SceneMachine ..> SceneMusic : trackOf
-  SceneMachine ..> volumeGain : on options change
-  SceneMachine ..> AudioPort : music, setVolumes, setPaused
+  SceneMachine ..> AudioPort : play menu sounds, setPaused, music planned
+  WebAudioPlayer ..> UI_SOUNDS : kept by the pause mix
+  Main ..> volumeGain : setVolumes at start-up (from the options in G3-2)
   SceneMachine ..> Options : reads
 ```
 

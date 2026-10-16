@@ -34,8 +34,7 @@ function onTitle(): { machine: SceneMachine; audio: RecordingAudio } {
     () => new Run(),
     undefined,
     undefined,
-    undefined,
-    audio,
+    { audio },
   );
   machine.step(DT, createIntentFrame());
   return { machine, audio };
@@ -86,5 +85,31 @@ describe('SceneMachine — menu sounds and the pause mix (GDD v0.23 §9.5, ADR-0
       machine.render(1, DT * 1000);
     }
     expect(audio.played).toContain(Sfx.ShotSpread);
+  });
+
+  it('turns the pause mix off when Confirm quit leaves to the title', () => {
+    const { machine, audio } = onTitle();
+    machine.step(DT, pressed(Button.Confirm));
+    machine.step(DT, pressed(Button.Pause));
+    machine.step(DT, down());
+    machine.step(DT, createIntentFrame());
+    machine.step(DT, down());
+    machine.step(DT, pressed(Button.Confirm)); // Quit
+    machine.step(DT, down());
+    machine.step(DT, pressed(Button.Confirm)); // Yes
+    expect(machine.scene).toBe(Scene.Title);
+    expect(audio.paused).toEqual([true, false]);
+  });
+
+  it('keeps the pause mix on, without repeated calls, through the pause options', () => {
+    const { machine, audio } = onTitle();
+    machine.step(DT, pressed(Button.Confirm));
+    machine.step(DT, pressed(Button.Pause));
+    machine.step(DT, down());
+    machine.step(DT, pressed(Button.Confirm)); // Options
+    expect(machine.scene).toBe(Scene.PauseOptions);
+    machine.step(DT, pressed(Button.Back));
+    expect(machine.scene).toBe(Scene.Paused);
+    expect(audio.paused).toEqual([true]);
   });
 });

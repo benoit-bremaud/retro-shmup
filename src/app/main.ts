@@ -260,8 +260,7 @@ const scenes: FrameTarget = new SceneMachine(
   () => new Run({ seed: Math.floor(Math.random() * 2 ** 32) }),
   host,
   save.highScores,
-  new ChampionName(Math.random),
-  audio,
+  { champion: new ChampionName(Math.random), audio },
 );
 const loop = new FrameLoop(new PerformanceClock(), input, scenes, (callback) => {
   requestAnimationFrame(callback);

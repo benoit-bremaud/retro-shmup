@@ -852,14 +852,14 @@ describe('DeviceInput — refused layout map and pointer cancel', () => {
 });
 
 describe('DeviceInput — audio unlock (ADR-0009, GDD v0.23 §9.5)', () => {
-  it('unlocks the audio inside every key and pointer press, never on a move or a release', () => {
+  it('unlocks the audio inside every key press and pointer press or release, never on a move or a key release', () => {
     const { env } = setup();
     env.down('KeyZ');
     env.up('KeyZ');
     env.point('down', 'mouse', 10, 10, 1);
     env.point('move', 'mouse', 12, 10, 1);
     env.point('up', 'mouse', 12, 10);
-    expect(env.unlocks).toBe(2);
+    expect(env.unlocks).toBe(3);
   });
 
   it('does not unlock on a browser shortcut', () => {

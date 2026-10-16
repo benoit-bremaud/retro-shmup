@@ -69,6 +69,22 @@ export const Scene = {
 } as const;
 export type Scene = (typeof Scene)[keyof typeof Scene];
 
+/** The scenes of the pause mix (ADR-0009 decision 3): the pause and its menus, not the count-in. */
+const PAUSE_MIX_SCENES: ReadonlySet<Scene> = new Set([
+  Scene.Paused,
+  Scene.ConfirmQuit,
+  Scene.PauseOptions,
+  Scene.PauseEffects,
+  Scene.PauseControls,
+  Scene.PauseRestore,
+]);
+
+/** The scene machine's optional outputs besides the renderer: silent and nameless by default. */
+export interface SceneOutputs {
+  readonly champion?: ChampionName;
+  readonly audio?: AudioPort;
+}
+
 /** What differs between scenes for drawing, read by `render`. */
 interface SceneTraits {
   /** The run does not step and the frame draws at alpha 1. */
@@ -264,15 +280,16 @@ export class SceneMachine {
   /** Every scene's step and overlay, bound once: the one place a scene is dispatched. */
   private readonly handlers: Readonly<Record<Scene, SceneHandler>>;
 
-  /**
-   * `options` are the saved ones, copied into the live options; `createRun` builds each new run
-   * (tests pass a short level script, the game a seeded one); `host` hears every change;
-   * `champion` draws the number 1's name in the far background (GDD v0.22 §9.4.1).
-   */
   private readonly audio: AudioPort;
   /** Whether the pause mix is on, so `setPaused` is called on a change only. */
   private audioPaused = false;
 
+  /**
+   * `options` are the saved ones, copied into the live options; `createRun` builds each new run
+   * (tests pass a short level script, the game a seeded one); `host` hears every change;
+   * `outputs.champion` draws the number 1's name in the far background (GDD v0.22 §9.4.1),
+   * `outputs.audio` plays the menu sounds, the run's sounds and the pause mix (GDD v0.23 §9.5).
+   */
   constructor(
     render: RenderPort,
     starfield: Starfield,
@@ -280,11 +297,10 @@ export class SceneMachine {
     createRun: () => InRun,
     host: SceneHost = NO_HOST,
     highScores: readonly HighScoreEntry[] = [],
-    champion: ChampionName = new ChampionName(() => 0),
-    audio: AudioPort = SILENT_AUDIO,
+    outputs: SceneOutputs = {},
   ) {
-    this.champion = champion;
-    this.audio = audio;
+    this.champion = outputs.champion ?? new ChampionName(() => 0);
+    this.audio = outputs.audio ?? SILENT_AUDIO;
     this.table = new HighScoreTable(highScores);
     this.renderer = render;
     this.starfield = starfield;
@@ -690,8 +706,7 @@ export class SceneMachine {
     this.current = scene;
     this.sceneSteps = 0;
     // The pause mix (ADR-0009 decision 3): on in the pause and its menus, off from the count-in.
-    const traits = SCENE_TRAITS[scene];
-    const paused = traits.frozen && !traits.scrolls && scene !== Scene.CountIn;
+    const paused = PAUSE_MIX_SCENES.has(scene);
     if (paused !== this.audioPaused) this.audio.setPaused(paused);
     this.audioPaused = paused;
   }

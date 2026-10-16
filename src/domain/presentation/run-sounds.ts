@@ -37,13 +37,13 @@ export class RunSounds {
     this.audio = audio;
     events.subscribe(GameEventKind.EnemyHit, this.onEnemyHit);
     events.subscribe(GameEventKind.EnemyDestroyed, this.onEnemyDestroyed);
-    events.subscribe(GameEventKind.PlayerDied, this.play(Sfx.PlayerDeath));
+    events.subscribe(GameEventKind.PlayerDied, this.playOn(Sfx.PlayerDeath));
     events.subscribe(GameEventKind.PickupCollected, this.onPickupCollected);
-    events.subscribe(GameEventKind.PlayerHit, this.play(Sfx.ShieldBreak));
-    events.subscribe(GameEventKind.BombUsed, this.play(Sfx.Bomb));
+    events.subscribe(GameEventKind.PlayerHit, this.playOn(Sfx.ShieldBreak));
+    events.subscribe(GameEventKind.BombUsed, this.playOn(Sfx.Bomb));
     events.subscribe(GameEventKind.BossWarning, this.onBossWarning);
-    events.subscribe(GameEventKind.BossPhaseChanged, this.play(Sfx.BossPhase));
-    events.subscribe(GameEventKind.BossDestroyed, this.play(Sfx.BossDeath));
+    events.subscribe(GameEventKind.BossPhaseChanged, this.playOn(Sfx.BossPhase));
+    events.subscribe(GameEventKind.BossDestroyed, this.playOn(Sfx.BossDeath));
   }
 
   /** Once per drawn frame: the shot sounds of the steps since the last frame. */
@@ -58,7 +58,8 @@ export class RunSounds {
     }
   }
 
-  private play(sfx: Sfx): () => void {
+  /** A handler that plays `sfx`, for an event whose detail does not matter. */
+  private playOn(sfx: Sfx): () => void {
     return () => {
       this.audio.play(sfx);
     };

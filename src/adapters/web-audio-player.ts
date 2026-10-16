@@ -2,24 +2,32 @@ import { Sfx, SFX_TABLE, UI_SOUNDS } from '../domain/audio/sfx';
 import { renderSfx } from '../domain/audio/synth';
 import type { AudioPort, SfxId, TrackId } from '../domain/ports/audio-port';
 
-/** The parts of Web Audio this adapter uses, injected so tests run without a browser. */
+/**
+ * The parts of Web Audio this adapter uses, injected so tests run without a browser (as
+ * `InputEnvironment`, ADR-0015 decision 4): a gain's value.
+ */
 export interface AudioParamLike {
   value: number;
 }
+/** A node that feeds another. */
 export interface AudioNodeLike {
   connect(destination: AudioNodeLike): void;
 }
+/** A volume control: the sound-effects bus. */
 export interface GainNodeLike extends AudioNodeLike {
   readonly gain: AudioParamLike;
 }
+/** Rendered samples, filled once at unlock. */
 export interface AudioBufferLike {
   copyToChannel(source: Float32Array<ArrayBuffer>, channel: number): void;
 }
+/** One playing sound effect: single-use, as in Web Audio. */
 export interface BufferSourceLike extends AudioNodeLike {
   buffer: AudioBufferLike | null;
   start(): void;
   stop(): void;
 }
+/** The context: clock, suspension and node factories. */
 export interface AudioContextLike {
   readonly sampleRate: number;
   readonly currentTime: number;

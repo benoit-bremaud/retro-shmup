@@ -166,6 +166,8 @@ export class DeviceInput implements InputPort {
     environment.onPointerUp((event) => {
       this.eventSinceRead = true;
       this.seq += 1;
+      // A touch grants the user activation on its release, not its press (ADR-0009 decision 2).
+      this.environment.unlockAudio();
       this.pointer.up(event, this.seq);
     });
     environment.onPointerCancel((event) => {
