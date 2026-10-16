@@ -2,12 +2,24 @@ import type { FontId } from '../ports/render-port';
 import type { MessageKey } from '../i18n/messages';
 import { FIELD_HEIGHT } from './screen';
 
-/** A menu row is 16 logical px high, a comfortable touch target at the usual scales (§9.1). */
+/** The shortest menu row, 16 logical px: the menu font's line, and the high scores' row (§9.1). */
 export const MENU_ROW_HEIGHT = 16;
 
+/** The tallest menu row, 32 logical px: 43 to 49 CSS px at ×4 on a phone (GDD v0.25 §9.1). */
+export const MENU_MAX_ROW_HEIGHT = 32;
+
+/**
+ * A menu's row height (GDD v0.25 §9.1, #95): the tallest that fits `rowCount` rows on the field
+ * with `headerGap` free above them and below, between 16 and 32 logical px.
+ */
+export function menuRowHeight(rowCount: number, headerGap: number): number {
+  const fit = Math.floor((FIELD_HEIGHT - 2 * headerGap) / rowCount);
+  return Math.min(MENU_MAX_ROW_HEIGHT, Math.max(MENU_ROW_HEIGHT, fit));
+}
+
 /** The field y of the first row's top edge: the rows are centred on the field. */
-export function menuTop(rowCount: number): number {
-  return (FIELD_HEIGHT - rowCount * MENU_ROW_HEIGHT) / 2;
+export function menuTop(rowCount: number, rowHeight: number): number {
+  return (FIELD_HEIGHT - rowCount * rowHeight) / 2;
 }
 
 /** How far above the first row a header's top sits, by the font it is drawn in. */
@@ -16,10 +28,15 @@ export const MENU_HEADER_GAP: Readonly<Record<Extract<FontId, 'title' | 'menu'>,
   menu: MENU_ROW_HEIGHT,
 };
 
+/** What the controls screen's header takes above its rows: its title, then the device line. */
+export const CONTROLS_HEADER_GAP = MENU_HEADER_GAP.title + MENU_ROW_HEIGHT;
+
 /** What a menu shows: the presentation reads this, never the scene's `Menu` itself. */
 export interface MenuView {
   readonly rows: readonly MessageKey[];
   readonly top: number;
+  /** Logical px per row, 16 to 32 (GDD v0.25 §9.1). */
+  readonly rowHeight: number;
   readonly highlighted: number;
 }
 

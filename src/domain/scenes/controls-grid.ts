@@ -2,7 +2,7 @@ import type { Slot } from '../input/bindings-editor';
 import { REMAPPABLE_INTENTS } from '../ports/input-port';
 import type { IntentFrame, RemappableIntent } from '../ports/input-port';
 import type { MessageKey } from '../i18n/messages';
-import { CONTROLS_COLUMNS } from '../presentation/menu-layout';
+import { CONTROLS_COLUMNS, CONTROLS_HEADER_GAP } from '../presentation/menu-layout';
 import type { SlotColumn } from '../presentation/menu-layout';
 import { Menu } from './menu';
 
@@ -57,7 +57,7 @@ function columnAt(x: number): SlotColumn | undefined {
  * highlighted cell.
  */
 export class ControlsGrid {
-  readonly menu = new Menu<MessageKey>(ROWS);
+  readonly menu = new Menu<MessageKey>(ROWS, undefined, CONTROLS_HEADER_GAP);
   column: SlotColumn = 0;
 
   /** Opens the screen on the first cell, primary column (see `Menu.reset`). */

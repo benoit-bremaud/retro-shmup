@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { toSteps } from '../../src/domain/game/tuning';
-import { CONTROLS_COLUMNS, MENU_ROW_HEIGHT } from '../../src/domain/presentation/menu-layout';
+import { CONTROLS_COLUMNS } from '../../src/domain/presentation/menu-layout';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
 import { ControlsGrid } from '../../src/domain/scenes/controls-grid';
@@ -19,7 +19,7 @@ function opened(): ControlsGrid {
 }
 
 const rowY = (grid: ControlsGrid, row: number): number =>
-  grid.menu.top + row * MENU_ROW_HEIGHT + MENU_ROW_HEIGHT / 2;
+  grid.menu.top + row * grid.menu.rowHeight + grid.menu.rowHeight / 2;
 
 describe('ControlsGrid (GDD v0.15 §4.2)', () => {
   it('lists the seven intents, then Restore defaults and Back', () => {

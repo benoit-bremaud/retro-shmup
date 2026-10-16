@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { MENU_ROW_HEIGHT } from '../../src/domain/presentation/menu-layout';
+import {
+  MENU_MAX_ROW_HEIGHT,
+  MENU_ROW_HEIGHT,
+  menuRowHeight,
+} from '../../src/domain/presentation/menu-layout';
 import { Menu } from '../../src/domain/scenes/menu';
 import { MenuTuning, NO_ROW } from '../../src/domain/scenes/menu-input';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
@@ -18,8 +22,11 @@ function frame(edit: Partial<IntentFrame> = {}): IntentFrame {
 }
 
 /** The field y of the middle of row `index`. */
-function rowY(subject: { readonly top: number }, index: number): number {
-  return subject.top + index * MENU_ROW_HEIGHT + MENU_ROW_HEIGHT / 2;
+function rowY(
+  subject: { readonly top: number; readonly rowHeight: number },
+  index: number,
+): number {
+  return subject.top + index * subject.rowHeight + subject.rowHeight / 2;
 }
 
 describe('Menu — keyboard and gamepad (GDD v0.13 §9.1)', () => {
@@ -192,10 +199,31 @@ describe('Menu — touch and mouse (GDD v0.13 §9.1)', () => {
 describe('Menu — layout', () => {
   it('centres the rows on the field and maps a y to its row', () => {
     const subject = menu();
-    expect(subject.top).toBe((320 - 2 * MENU_ROW_HEIGHT) / 2);
+    expect(subject.rowHeight).toBe(MENU_MAX_ROW_HEIGHT);
+    expect(subject.top).toBe((320 - 2 * 32) / 2);
     expect(subject.rowAt(subject.top)).toBe(0);
-    expect(subject.rowAt(subject.top + MENU_ROW_HEIGHT)).toBe(1);
+    expect(subject.rowAt(subject.top + 31)).toBe(0);
+    expect(subject.rowAt(subject.top + 32)).toBe(1);
     expect(subject.rowAt(subject.top - 1)).toBe(NO_ROW);
-    expect(subject.rowAt(subject.top + 2 * MENU_ROW_HEIGHT)).toBe(NO_ROW);
+    expect(subject.rowAt(subject.top + 2 * 32)).toBe(NO_ROW);
+  });
+
+  it('shortens its rows to fit their count and the header gap (GDD v0.25 §9.1, #95)', () => {
+    const ten = Array.from({ length: 10 }, () => 'back' as const);
+    const subject = new Menu(ten, undefined, 16);
+    expect(subject.rowHeight).toBe(28);
+    expect(subject.top).toBe(20);
+    expect(subject.rowAt(subject.top + 9 * 28 + 27)).toBe(9);
+    expect(subject.rowAt(subject.top + 10 * 28)).toBe(NO_ROW);
+  });
+});
+
+describe('menuRowHeight (GDD v0.25 §9.1)', () => {
+  it('is the tallest row that fits, between 16 and 32 px', () => {
+    expect(menuRowHeight(3, 0)).toBe(32);
+    expect(menuRowHeight(7, 32)).toBe(32);
+    expect(menuRowHeight(10, 16)).toBe(28);
+    expect(menuRowHeight(9, 48)).toBe(24);
+    expect(menuRowHeight(30, 0)).toBe(MENU_ROW_HEIGHT);
   });
 });
