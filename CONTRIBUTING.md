@@ -21,7 +21,8 @@ nvm use               # Node 22 from .nvmrc
 pnpm install          # also installs the git hooks (husky)
 pnpm dev              # dev server
 make verify           # the full local gate, as run by the pre-push hook
-pnpm exec playwright install chromium   # once, for the browser smoke test (make smoke)
+pnpm exec playwright install chromium firefox webkit   # once, for the browser smoke test (make smoke)
+# WebKit on Linux may also need system libraries: sudo pnpm exec playwright install-deps webkit
 ```
 
 **One-time SonarQube setup**: in SonarQube, create the project `retro-shmup` (manual setup, main
@@ -150,7 +151,7 @@ installs the git hooks (husky):
 pushed.
 
 Before every push, also run the structured local review gate (`review-local`) and, when render,
-input or bootstrap code changed, the Playwright smoke test (`make smoke`).
+input, bootstrap or save code changed, the Playwright smoke test (`make smoke`).
 
 CI keeps the necessary minimum (ADR-0013): `ci.yml` (lint, typecheck, format check, tests,
 build) and the security workflows (Gitleaks, CodeQL, Dependency Review; OSSF Scorecard weekly,
@@ -182,8 +183,10 @@ it prints every property, the token included.
   frames and keeps the last camera offset; its `drawSprite` answers `false` (the shapes path)
   unless a test sets `spritesLoaded`, then records each sprite with its frame, and `order` keeps
   sprites and rectangles in drawing order.
-- **Exactly one browser smoke test**, `tests/smoke/first-playable.spec.ts` (Playwright), run by
-  hand with `make smoke` (`pnpm test:smoke`); it is part of neither `make verify` nor CI.
+- **Exactly one browser smoke test**, `tests/smoke/first-playable.spec.ts` (Playwright), in
+  Chromium, Firefox and WebKit (ADR-0026): the phone path, then the hall-of-fame names surviving a
+  reload and a rewrite of the save. Run by hand with `make smoke` (`pnpm test:smoke`, which builds
+  first); it is part of neither `make verify` nor CI.
 
 ## Pull request process
 
