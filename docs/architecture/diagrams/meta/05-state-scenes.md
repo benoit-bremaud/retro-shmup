@@ -26,6 +26,7 @@ stateDiagram-v2
   state "High scores" as HighScores
   state "Gesture prompt" as GesturePrompt
   state "Visual effects" as Effects
+  state "Audio" as AudioScreen
   state "Game over" as GameOver
   state "Name entry" as NameEntry
 
@@ -35,6 +36,8 @@ stateDiagram-v2
   Options --> Title : back
   Options --> Effects : visual effects
   Effects --> Options : back
+  Options --> AudioScreen : audio
+  AudioScreen --> Options : back
   Title --> HighScores : high scores
   HighScores --> Title : back, confirm or a tap
   Title --> Credits : credits
@@ -51,6 +54,7 @@ stateDiagram-v2
     state "Options" as PauseOptions
     state "Confirm quit" as ConfirmQuit
     state "Visual effects" as PauseEffects
+    state "Audio" as PauseAudio
 
     [*] --> IntroCard
     IntroCard --> LevelCard : confirm or after(intro time)
@@ -64,6 +68,8 @@ stateDiagram-v2
     PauseOptions --> Paused : back
     PauseOptions --> PauseEffects : visual effects
     PauseEffects --> PauseOptions : back
+    PauseOptions --> PauseAudio : audio
+    PauseAudio --> PauseOptions : back
     Paused --> ConfirmQuit : quit
     ConfirmQuit --> Paused : no
     Playing --> Results : run outcome is LEVEL_CLEARED or RUN_CLEARED
@@ -104,8 +110,8 @@ stateDiagram-v2
     when play starts and cleared when leaving `InRun`;
   - every other scene ignores `Pause`.
 - **The time scale** returned to the loop is 1 in every scene except `Playing` (ADR-0010).
-- **Options and Visual effects are two states each, sharing one screen implementation** (GDD
-  v0.13 §9.3), so `back` returns to the right parent without a history pseudostate; the pause
+- **Options, Visual effects and Audio *(v0.23)* are two states each, sharing one screen
+  implementation** (GDD v0.13 and v0.23 §9.3), so `back` returns to the right parent without a history pseudostate; the pause
   pair keeps the simulation frozen like `Paused`.
 - **Gesture prompt** exists only for a start from a gamepad before any click, tap or key press;
   the audio unlock itself happens in the input adapter's handler (ADR-0009).

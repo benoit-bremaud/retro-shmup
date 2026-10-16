@@ -1,3 +1,4 @@
+import { cycleVolume, nudgeVolume } from './audio/volume';
 import type { Language, MessageKey } from './i18n/messages';
 import type { Bindings } from './ports/input-port';
 
@@ -19,7 +20,7 @@ export interface EffectSettings {
   championName: boolean;
 }
 
-/** The player's options (GDD v0.13 §9.3, v0.15 §4.2); the volumes (G3) come later. */
+/** The player's options (GDD v0.13 §9.3, v0.15 §4.2, v0.23 the volumes). */
 export interface Options {
   readonly effects: Readonly<EffectSettings>;
   /** Touch and mouse fire all the time (ADR-0020 decision 4). */
@@ -28,7 +29,16 @@ export interface Options {
   readonly fullscreen: boolean;
   /** Both devices' slots (ADR-0012), replaced whole by each rebinding. */
   readonly bindings: Bindings;
+  /** The volume steps, 0 to 10 (GDD v0.23 §9.3). */
+  readonly musicVolume: number;
+  readonly sfxVolume: number;
 }
+
+/** The *Audio* sub-screen's value rows (GDD v0.23 §9.3). */
+export type VolumeRow = 'music' | 'soundEffects';
+
+/** What a value row shows: a catalogue key (a switch, a choice) or a volume step. */
+export type RowValue = MessageKey | number;
 
 /** The effect switches, in screen order; each row's message key is its `EffectSettings` key. */
 export const EFFECT_ROWS = [
@@ -63,6 +73,8 @@ export class LiveOptions implements Options {
   fullscreen: boolean;
   /** Immutable: each rebinding replaces it (GDD v0.15 §4.2). */
   bindings: Bindings;
+  musicVolume: number;
+  sfxVolume: number;
 
   /** A copy of the saved options. */
   constructor(saved: Readonly<Options>) {
@@ -71,10 +83,14 @@ export class LiveOptions implements Options {
     this.language = saved.language;
     this.fullscreen = saved.fullscreen;
     this.bindings = saved.bindings;
+    this.musicVolume = saved.musicVolume;
+    this.sfxVolume = saved.sfxVolume;
   }
 
   /** The value a row shows on its right, or `undefined` for a row without one. */
-  value(row: MessageKey): MessageKey | undefined {
+  value(row: MessageKey): RowValue | undefined {
+    if (row === 'music') return this.musicVolume;
+    if (row === 'soundEffects') return this.sfxVolume;
     if (row === 'autofire') return onOff(this.autofire);
     if (row === 'fullscreen') return onOff(this.fullscreen);
     if (row === 'language') return this.language === 'en' ? 'english' : 'francais';
@@ -84,12 +100,20 @@ export class LiveOptions implements Options {
   /** Applies the row's change: flips a switch, the language, or sets every effect; true if any. */
   apply(row: MessageKey): boolean {
     if (row === 'autofire') this.autofire = !this.autofire;
+    else if (row === 'music') this.musicVolume = cycleVolume(this.musicVolume);
+    else if (row === 'soundEffects') this.sfxVolume = cycleVolume(this.sfxVolume);
     else if (row === 'fullscreen') this.fullscreen = !this.fullscreen;
     else if (row === 'language') this.language = this.language === 'en' ? 'fr' : 'en';
     else if (row === 'allOn' || row === 'allOff') this.setAllEffects(row === 'allOn');
     else if (isEffectRow(row)) this.effects[row] = !this.effects[row];
     else return false;
     return true;
+  }
+
+  /** Left (−1) or right (1) on a volume row: one step, held at 0 and 10 (GDD v0.23 §9.3). */
+  nudge(row: VolumeRow, direction: number): void {
+    if (row === 'music') this.musicVolume = nudgeVolume(this.musicVolume, direction);
+    else this.sfxVolume = nudgeVolume(this.sfxVolume, direction);
   }
 
   private setAllEffects(on: boolean): void {

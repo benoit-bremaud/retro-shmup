@@ -1,4 +1,6 @@
+import { runTrack, Track } from '../audio/music';
 import { Sfx } from '../audio/sfx';
+import { volumeGain } from '../audio/volume';
 import { SILENT_AUDIO } from '../ports/audio-port';
 import type { AudioPort } from '../ports/audio-port';
 import { RunOutcome } from '../game/run';
@@ -22,10 +24,10 @@ import {
   drawVeil,
   drawWarning,
 } from '../presentation/overlays';
-import { drawResults, formatTallyValues } from '../presentation/results';
+import { drawResults, formatTallyValues, tallyLineAppears } from '../presentation/results';
 import { RunPresenter } from '../presentation/run-presenter';
 import { EFFECT_ROWS, LiveOptions } from '../options';
-import type { Options } from '../options';
+import type { Options, VolumeRow } from '../options';
 import { ChampionName } from '../presentation/champion-name';
 import { STARFIELD_LAYERS } from '../presentation/starfield';
 import type { Starfield } from '../presentation/starfield';
@@ -55,6 +57,9 @@ export const Scene = {
   TitleEffects: 'TITLE_EFFECTS',
   PauseOptions: 'PAUSE_OPTIONS',
   PauseEffects: 'PAUSE_EFFECTS',
+  /** The *Audio* sub-screen, from the title's options and from the pause's (G3-2). */
+  TitleAudio: 'TITLE_AUDIO',
+  PauseAudio: 'PAUSE_AUDIO',
   /** The controls screen and its restore confirmation, from the title and from the pause (G1b). */
   TitleControls: 'TITLE_CONTROLS',
   TitleRestore: 'TITLE_RESTORE',
@@ -75,6 +80,7 @@ const PAUSE_MIX_SCENES: ReadonlySet<Scene> = new Set([
   Scene.ConfirmQuit,
   Scene.PauseOptions,
   Scene.PauseEffects,
+  Scene.PauseAudio,
   Scene.PauseControls,
   Scene.PauseRestore,
 ]);
@@ -111,6 +117,8 @@ const SCENE_TRAITS: Readonly<Record<Scene, SceneTraits>> = {
   [Scene.TitleEffects]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
   [Scene.PauseOptions]: { frozen: true, scrolls: false, drawsRun: true, pauseButton: false },
   [Scene.PauseEffects]: { frozen: true, scrolls: false, drawsRun: true, pauseButton: false },
+  [Scene.TitleAudio]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
+  [Scene.PauseAudio]: { frozen: true, scrolls: false, drawsRun: true, pauseButton: false },
   [Scene.TitleControls]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
   [Scene.TitleRestore]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
   [Scene.PauseControls]: { frozen: true, scrolls: false, drawsRun: true, pauseButton: false },
@@ -129,11 +137,13 @@ const OPTIONS_ROUTES = {
   [Scene.TitleOptions]: {
     parent: Scene.Title,
     effects: Scene.TitleEffects,
+    audio: Scene.TitleAudio,
     controls: Scene.TitleControls,
   },
   [Scene.PauseOptions]: {
     parent: Scene.Paused,
     effects: Scene.PauseEffects,
+    audio: Scene.PauseAudio,
     controls: Scene.PauseControls,
   },
 } as const;
@@ -147,11 +157,46 @@ const RESTORE_PARENT = {
 } as const;
 
 /** The options rows; *Controls* is hidden when the last device used is touch (GDD v0.15 §4.2). */
-type OptionsRow = 'visualEffects' | 'controls' | 'autofire' | 'language' | 'fullscreen' | 'back';
+type OptionsRow =
+  'visualEffects' | 'audio' | 'controls' | 'autofire' | 'language' | 'fullscreen' | 'back';
 const EFFECTS_PARENT = {
   [Scene.TitleEffects]: Scene.TitleOptions,
   [Scene.PauseEffects]: Scene.PauseOptions,
 } as const;
+const AUDIO_PARENT = {
+  [Scene.TitleAudio]: Scene.TitleOptions,
+  [Scene.PauseAudio]: Scene.PauseOptions,
+} as const;
+
+/**
+ * Each scene's music (GDD v0.23 §9.5): the title's track on the title and its screens, the run's
+ * in the run and its pause (by its boss, `runTrack`), a jingle on Game over and on the Results,
+ * held over the Ending card. The adapter starts a track on a change only.
+ */
+const SCENE_MUSIC: Readonly<Record<Scene, Track | 'run'>> = {
+  [Scene.Boot]: Track.Title,
+  [Scene.Title]: Track.Title,
+  [Scene.Playing]: 'run',
+  [Scene.Paused]: 'run',
+  [Scene.CountIn]: 'run',
+  [Scene.GameOver]: Track.GameOver,
+  [Scene.Results]: Track.Results,
+  [Scene.ConfirmQuit]: 'run',
+  [Scene.TitleOptions]: Track.Title,
+  [Scene.TitleEffects]: Track.Title,
+  [Scene.PauseOptions]: 'run',
+  [Scene.PauseEffects]: 'run',
+  [Scene.TitleAudio]: Track.Title,
+  [Scene.PauseAudio]: 'run',
+  [Scene.TitleControls]: Track.Title,
+  [Scene.TitleRestore]: Track.Title,
+  [Scene.PauseControls]: 'run',
+  [Scene.PauseRestore]: 'run',
+  [Scene.HighScores]: Track.Title,
+  [Scene.Ending]: Track.Results,
+  [Scene.NameEntry]: Track.Title,
+  [Scene.Attract]: Track.Title,
+};
 
 const COUNT_IN_STEPS = toSteps(SceneTuning.countInSeconds);
 const GAME_OVER_STEPS = toSteps(SceneTuning.gameOverSeconds);
@@ -233,13 +278,14 @@ export class SceneMachine {
   // Left and right flip exactly the rows that show a value (GDD v0.14 §9.1).
   private readonly hasValue = (row: MessageKey): boolean => this.options.value(row) !== undefined;
   /** The value each options row shows, read at each draw; built once. */
-  private readonly value = (row: MessageKey): MessageKey | undefined => this.options.value(row);
+  private readonly value = (row: MessageKey): MessageKey | number | undefined =>
+    this.options.value(row);
   private readonly fullOptionsMenu = new Menu<OptionsRow>(
-    ['visualEffects', 'controls', 'autofire', 'language', 'fullscreen', 'back'],
+    ['visualEffects', 'audio', 'controls', 'autofire', 'language', 'fullscreen', 'back'],
     this.hasValue,
   );
   private readonly touchOptionsMenu = new Menu<OptionsRow>(
-    ['visualEffects', 'autofire', 'language', 'fullscreen', 'back'],
+    ['visualEffects', 'audio', 'autofire', 'language', 'fullscreen', 'back'],
     this.hasValue,
   );
   /** Whether the options opened without *Controls* (touch used last), frozen until they reopen. */
@@ -254,6 +300,11 @@ export class SceneMachine {
     ['allOn', 'allOff', ...EFFECT_ROWS, 'back'] as const,
     this.hasValue,
   );
+  /** The *Audio* sub-screen (GDD v0.23 §9.3): the two volumes, then Back. */
+  private readonly audioMenu = new Menu<VolumeRow | 'back'>(
+    ['music', 'soundEffects', 'back'],
+    this.hasValue,
+  );
   /**
    * Every menu scene: its menu and header. Drawing and opening read this one table, so a new menu
    * screen is one entry here plus its step method.
@@ -266,6 +317,8 @@ export class SceneMachine {
     [Scene.PauseOptions]: this.optionsScreen(),
     [Scene.TitleEffects]: this.effectsScreen(),
     [Scene.PauseEffects]: this.effectsScreen(),
+    [Scene.TitleAudio]: this.audioScreen(),
+    [Scene.PauseAudio]: this.audioScreen(),
     [Scene.TitleRestore]: this.restoreScreen(),
     [Scene.PauseRestore]: this.restoreScreen(),
   };
@@ -309,6 +362,7 @@ export class SceneMachine {
     this.options = new LiveOptions(options);
     this.controls = new ControlsScreen(this.options, host);
     this.handlers = this.buildHandlers();
+    this.applyVolumes();
   }
 
   private buildHandlers(): Record<Scene, SceneHandler> {
@@ -348,6 +402,8 @@ export class SceneMachine {
         step: this.stepEffects.bind(this, Scene.PauseEffects),
         overlay: menu,
       },
+      [Scene.TitleAudio]: { step: this.stepAudio.bind(this, Scene.TitleAudio), overlay: menu },
+      [Scene.PauseAudio]: { step: this.stepAudio.bind(this, Scene.PauseAudio), overlay: menu },
       [Scene.TitleControls]: {
         step: this.stepControls.bind(this, Scene.TitleControls),
         overlay: controls,
@@ -408,6 +464,10 @@ export class SceneMachine {
     };
   }
 
+  private audioScreen(): MenuScene {
+    return { menu: this.audioMenu, header: { key: 'audio', font: 'menu' }, value: this.value };
+  }
+
   get scene(): Scene {
     return this.current;
   }
@@ -425,6 +485,14 @@ export class SceneMachine {
     this.steps += 1;
     this.lastDevice = frame.device;
     this.handlers[this.current].step(dt, frame);
+    this.audio.music(this.track());
+  }
+
+  /** The current scene's music; the run's follows its boss (GDD v0.23 §6). */
+  private track(): Track | null {
+    const music = SCENE_MUSIC[this.current];
+    if (music !== 'run') return music;
+    return this.run === undefined ? null : runTrack(this.run.snapshot().boss.state);
   }
 
   // Nothing to load yet (no assets, no save document). The title takes this step's frame, so a
@@ -480,6 +548,7 @@ export class SceneMachine {
     const row = this.stepMenu(menu, frame);
     if (this.backTo(row, frame, OPTIONS_ROUTES[scene].parent)) return;
     if (row === 'visualEffects') this.openMenu(OPTIONS_ROUTES[scene].effects, frame);
+    else if (row === 'audio') this.openMenu(OPTIONS_ROUTES[scene].audio, frame);
     else if (row === 'controls') this.openControls(OPTIONS_ROUTES[scene].controls, frame);
     else this.change(row);
   }
@@ -494,13 +563,42 @@ export class SceneMachine {
     this.change(row);
   }
 
+  // Left and right nudge a volume by one, held at 0 and 10; an activation adds one and wraps;
+  // each change applies at once, so the next menu sound plays at the new volume (GDD v0.23 §9.3).
+  private stepAudio(
+    scene: keyof typeof AUDIO_PARENT,
+    _dt: number,
+    frame: Readonly<IntentFrame>,
+  ): void {
+    const row = this.stepMenu(this.audioMenu, frame);
+    if (this.backTo(row, frame, AUDIO_PARENT[scene])) return;
+    if (row === undefined || row === 'back') return;
+    const sideways = this.audioMenu.lastSideways;
+    if (sideways === 0) this.options.apply(row);
+    else this.options.nudge(row, sideways);
+    this.applyVolumes();
+    this.host.optionsChanged(this.options);
+  }
+
+  private applyVolumes(): void {
+    this.audio.setVolumes(volumeGain(this.options.musicVolume), volumeGain(this.options.sfxVolume));
+  }
+
   // The controls screen does its own work; it hands back only its two exits (GDD v0.15 §4.2).
   private stepControls(
     scene: keyof typeof CONTROLS_ROUTES,
     _dt: number,
     frame: Readonly<IntentFrame>,
   ): void {
+    const row = this.controls.menu.highlighted;
+    const column = this.controls.column;
+    const capturing = this.controls.capturing;
     const exit = this.controls.step(frame, this.steps);
+    if (exit !== undefined || this.controls.capturing !== capturing)
+      this.audio.play(Sfx.MenuConfirm);
+    else if (this.controls.menu.highlighted !== row || this.controls.column !== column) {
+      this.audio.play(Sfx.MenuMove);
+    }
     if (exit === 'back') this.openMenu(CONTROLS_ROUTES[scene].parent, frame);
     else if (exit === 'restore') this.openMenu(CONTROLS_ROUTES[scene].restore, frame);
   }
@@ -622,6 +720,7 @@ export class SceneMachine {
   private stepResults(_dt: number, frame: Readonly<IntentFrame>): void {
     this.backgroundSteps += 1;
     this.sceneSteps += 1;
+    if (tallyLineAppears(this.sceneSteps)) this.audio.play(Sfx.TallyTick);
     const confirmed = !this.locked() && isConfirmOrTap(frame);
     if (!confirmed && this.sceneSteps < RESULTS_STEPS) return;
     this.resultsValues = [];
@@ -658,7 +757,13 @@ export class SceneMachine {
   private stepNameEntry(_dt: number, frame: Readonly<IntentFrame>): void {
     // The stars keep moving over the frozen run, as on the Results and the Ending.
     this.backgroundSteps += 1;
+    const cursor = this.nameEntry.grid.cursor;
+    const filled = this.nameEntry.nextSlot;
+    const heading = this.nameEntry.heading;
     const exit = this.nameEntry.step(frame, this.steps);
+    const typed = this.nameEntry.nextSlot !== filled || this.nameEntry.heading !== heading;
+    if (exit !== undefined || typed) this.audio.play(Sfx.MenuConfirm);
+    else if (this.nameEntry.grid.cursor !== cursor) this.audio.play(Sfx.MenuMove);
     if (exit === 'skipped') {
       this.toTitle(frame);
     } else if (exit === 'entered') {

@@ -29,6 +29,8 @@ describe('NO_HOST (the tests’ default host)', () => {
       language: 'en',
       fullscreen: false,
       bindings: DEFAULT_BINDINGS,
+      musicVolume: 7,
+      sfxVolume: 8,
     };
     expect(() => {
       NO_HOST.optionsChanged(options);

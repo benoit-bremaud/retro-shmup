@@ -82,4 +82,13 @@ describe('RunSounds (GDD v0.23 §9.5, audio/04-class-audio)', () => {
     sounds.frame(shots(7, 3, WeaponKind.Laser));
     expect(audio.played).toEqual([Sfx.ShotSpread, Sfx.ShotLaser, Sfx.EnemyShot]);
   });
+
+  it('plays the chain sound when the multiplier steps up, not when it resets', () => {
+    const { audio, sounds } = setup();
+    const base = new Run().snapshot();
+    sounds.frame({ ...base, multiplier: 2 });
+    sounds.frame({ ...base, multiplier: 2 });
+    sounds.frame({ ...base, multiplier: 1 });
+    expect(audio.played).toEqual([Sfx.ChainStep]);
+  });
 });

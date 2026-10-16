@@ -2,7 +2,7 @@ import type { SfxId } from '../ports/audio-port';
 import { Wave } from './synth';
 import type { SfxParams } from './synth';
 
-/** The sound effects of GDD §9.5 the slice plays (G3-1); keys of `SFX_TABLE`. */
+/** The sound effects of GDD §9.5 the slice plays (G3-1, G3-2); keys of `SFX_TABLE`. */
 export const Sfx = {
   ShotSpread: 'shotSpread',
   ShotLaser: 'shotLaser',
@@ -24,6 +24,8 @@ export const Sfx = {
   MenuMove: 'menuMove',
   MenuConfirm: 'menuConfirm',
   Warning: 'warning',
+  ChainStep: 'chainStep',
+  TallyTick: 'tallyTick',
 } as const satisfies Record<string, SfxId>;
 export type Sfx = (typeof Sfx)[keyof typeof Sfx];
 
@@ -210,4 +212,6 @@ export const SFX_TABLE: Readonly<Record<Sfx, SfxParams>> = {
     lowPass: 0.5,
     gain: 0.4,
   }),
+  chainStep: row({ frequency: 784, slide: 600, duty: 0.25, sustain: 0.03, decay: 0.06, gain: 0.3 }),
+  tallyTick: row({ frequency: 1320, duty: 0.5, sustain: 0.01, decay: 0.03, gain: 0.25 }),
 };

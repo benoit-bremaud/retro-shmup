@@ -30,6 +30,8 @@ function onTitle(): { machine: SceneMachine; audio: RecordingAudio } {
       language: 'en',
       fullscreen: false,
       bindings: DEFAULT_BINDINGS,
+      musicVolume: 7,
+      sfxVolume: 8,
     },
     () => new Run(),
     undefined,

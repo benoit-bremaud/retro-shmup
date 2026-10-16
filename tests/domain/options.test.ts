@@ -17,6 +17,8 @@ const SAVED: Options = {
   language: 'en',
   fullscreen: false,
   bindings: DEFAULT_BINDINGS,
+  musicVolume: 7,
+  sfxVolume: 8,
 };
 
 describe('LiveOptions (GDD v0.14 §9.3, meta/04-class-menus)', () => {
@@ -25,6 +27,15 @@ describe('LiveOptions (GDD v0.14 §9.3, meta/04-class-menus)', () => {
     live.apply('shake');
     expect(SAVED.effects.shake).toBe(true);
     expect(live.effects.shake).toBe(false);
+  });
+
+  it('shows the volumes as steps, adds one on an activation and nudges them (GDD v0.23)', () => {
+    const live = new LiveOptions(SAVED);
+    expect([live.value('music'), live.value('soundEffects')]).toEqual([7, 8]);
+    expect(live.apply('music')).toBe(true);
+    live.nudge('soundEffects', -1);
+    live.nudge('music', 1);
+    expect([live.musicVolume, live.sfxVolume]).toEqual([9, 7]);
   });
 
   it('toggles the language back from French to English', () => {
