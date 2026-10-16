@@ -84,3 +84,14 @@ describe('Starfield (ADR-0010: a pure function of scroll time)', () => {
     expect(calls).toBe(afterConstruction);
   });
 });
+
+describe('Starfield.drawLayers (GDD v0.22 §9.4.1)', () => {
+  it('draws the far layer, then the rest, as the whole field would', () => {
+    const field = new Starfield(sequence());
+    const render = new RecordingRender();
+    field.drawLayers(render, 7.5, 0, 1);
+    expect(render.rects).toHaveLength(STARFIELD_LAYERS[0]?.count ?? -1);
+    field.drawLayers(render, 7.5, 1, STARFIELD_LAYERS.length);
+    expect(render.rects).toEqual(draw(field, 7.5));
+  });
+});

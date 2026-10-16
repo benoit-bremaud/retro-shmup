@@ -11,6 +11,7 @@ const SAVED: Options = {
     shake: true,
     bombFlash: true,
     slowMotion: true,
+    championName: true,
   },
   autofire: false,
   language: 'en',

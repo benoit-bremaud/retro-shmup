@@ -47,6 +47,7 @@ const CUSTOM: Options = {
     shake: true,
     bombFlash: false,
     slowMotion: true,
+    championName: true,
   },
   autofire: true,
   language: 'fr',
@@ -67,6 +68,7 @@ describe('defaultOptions (GDD §9.3)', () => {
         shake: true,
         bombFlash: true,
         slowMotion: true,
+        championName: true,
       },
       autofire: false,
       language: 'en',
@@ -84,6 +86,7 @@ describe('defaultOptions (GDD §9.3)', () => {
       shake: false,
       bombFlash: false,
       slowMotion: false,
+      championName: true,
     });
   });
 });
@@ -120,11 +123,25 @@ describe('SaveStore.load (ADR-0006: untrusted input, never throws)', () => {
     ['an unknown language', { version: 2, options: { ...CUSTOM, language: 'de' } }],
     ['a non-boolean switch', { version: 2, options: { ...CUSTOM, autofire: 'yes' } }],
     [
+      'a null champion name',
+      { version: 2, options: { ...CUSTOM, effects: { ...CUSTOM.effects, championName: null } } },
+    ],
+    [
+      'a non-boolean champion name',
+      { version: 2, options: { ...CUSTOM, effects: { ...CUSTOM.effects, championName: 1 } } },
+    ],
+    [
       'a missing effect',
       { version: 2, options: { ...CUSTOM, effects: { ...CUSTOM.effects, shake: undefined } } },
     ],
   ])('falls back to the defaults on %s', (_label, document) => {
     expect(new SaveStore(stored(document), false).load()).toEqual(defaultOptions(false));
+  });
+
+  it('reads a document saved before the champion name with that switch on (GDD v0.22)', () => {
+    const { championName: _new, ...before } = { ...CUSTOM.effects, championName: false };
+    const document = { version: 2, options: { ...CUSTOM, effects: before }, highScores: [] };
+    expect(new SaveStore(stored(document), false).load().effects.championName).toBe(true);
   });
 
   it('keeps only the known fields of a valid document', () => {

@@ -12,6 +12,7 @@ import type { BakeCanvas } from '../adapters/sprite-bank';
 import { LocalStorageStore } from '../adapters/local-storage-store';
 import { computeViewport } from '../adapters/viewport';
 import { Run } from '../domain/game/run';
+import { ChampionName } from '../domain/presentation/champion-name';
 import { Starfield } from '../domain/presentation/starfield';
 import { SaveStore } from '../domain/save/save-store';
 import { SceneMachine } from '../domain/scenes/scene-machine';
@@ -246,6 +247,7 @@ const scenes: FrameTarget = new SceneMachine(
   () => new Run({ seed: Math.floor(Math.random() * 2 ** 32) }),
   host,
   save.highScores,
+  new ChampionName(Math.random),
 );
 const loop = new FrameLoop(new PerformanceClock(), input, scenes, (callback) => {
   requestAnimationFrame(callback);

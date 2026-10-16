@@ -44,12 +44,24 @@ export class Starfield {
     }
   }
 
-  /** Draws in the current region, which the caller sets to the play field. */
+  /** Draws every layer in the current region, which the caller sets to the play field. */
   draw(render: RenderPort, timeSeconds: number): void {
+    this.drawLayers(render, timeSeconds, 0, STARFIELD_LAYERS.length);
+  }
+
+  /**
+   * Draws the layers `from` (included) to `to` (excluded), far to near, so something can sit
+   * between two layers (the champion's name, GDD v0.22 §9.4.1).
+   */
+  drawLayers(render: RenderPort, timeSeconds: number, from: number, to: number): void {
     let i = 0;
-    for (let l = 0; l < STARFIELD_LAYERS.length; l += 1) {
+    for (let l = 0; l < to; l += 1) {
       const layer = STARFIELD_LAYERS[l];
       if (layer === undefined) continue;
+      if (l < from) {
+        i += layer.count;
+        continue;
+      }
       const offset = layer.speed * timeSeconds;
       for (let n = 0; n < layer.count; n += 1) {
         const y = ((((this.ys[i] ?? 0) + offset) % FIELD_HEIGHT) + FIELD_HEIGHT) % FIELD_HEIGHT;

@@ -1070,9 +1070,9 @@ Decoration only, it never competes with play.
 
 - **What**: the name of the first entry of the table (§9.1), nothing else (no rank, no score, no
   country). An empty table shows nothing.
-- **When**: in *Playing* only, never on the title, the menus or the results. It first appears
-  40 s after the start of the level, then every 120 s (two or three passes in level 1). Pause and
-  the frozen scenes stop it with the starfield.
+- **When**: in *Playing*, never on the title, its menus, Game over or the results. It first
+  appears 40 s after the start of the run, then every 120 s (two or three passes in level 1). The
+  pause, the count-in and the pause's screens keep it frozen with the starfield.
 - **Look**: the menu font in the far-star colour (`starFar`), drawn right after the far star
   layer: under the middle and near stars and under every ship, shot, pickup and effect. No
   outline, no blink, no fade.

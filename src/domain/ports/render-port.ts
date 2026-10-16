@@ -30,10 +30,11 @@ export type SpriteId = (typeof SPRITE_IDS)[number];
  * throws on any other character: `hud` is `0`–`9`, `×` (U+00D7) and the
  * space (an empty cell, ADR-0022 decision 8), `title` is `A`–`Z` and the
  * space, `menu` the same plus `0`–`9`, the arrows ← ↑ → ↓ (U+2190–U+2193, GDD v0.15 §4.2), `?` and `-` (v0.16);
+ * `far` is the `menu` font in the far-star colour, for the champion's name (GDD v0.22 §9.4.1);
  * French text is written in capitals without accents, arcade style, until the bitmap fonts of
  * the screens brick.
  */
-export type FontId = 'hud' | 'title' | 'menu';
+export type FontId = 'hud' | 'title' | 'menu' | 'far';
 
 /**
  * Cell of the `hud` font in logical pixels: 3 × 5 glyphs drawn 2× (`glyphWidth` × 10) plus a 2 px

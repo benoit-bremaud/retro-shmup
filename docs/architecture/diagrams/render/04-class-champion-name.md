@@ -57,7 +57,7 @@ classDiagram
     hud | title | menu | far
   }
   SceneMachine --> Starfield : far layer, then near layers
-  SceneMachine --> ChampionName : between them, Playing only
+  SceneMachine --> ChampionName : between them, in play and in the pause
   SceneMachine ..> SaveStore : number 1's name at run start
   SceneMachine ..> EffectSettings : championName switch
   ChampionName ..> ChampionTuning
@@ -77,7 +77,7 @@ sequenceDiagram
   SM->>CN: setName(name or '')
   Note over SM: each rendered frame
   SM->>SF: drawLayers(r, t, 0, 1)
-  alt Playing and effects.championName and name not empty
+  alt in play or in the pause, effects.championName, name not empty
     SM->>CN: draw(r, runSeconds)
     CN->>CN: pass = floor((runSeconds - 40) / 120), new pass draws x
     opt the pass is still inside the field
@@ -90,9 +90,11 @@ sequenceDiagram
 ## Notes
 
 - `runSeconds` is the background time since the run started, so the pause and the frozen scenes
-  stop the name with the stars. `y = -8 + 12 × (runSeconds − 40 − 120 × pass)`; the name is drawn
+  stop the name with the stars. `y = -10 + 12 × (runSeconds − 40 − 120 × pass)` (−10: the menu cell's height); the name is drawn
   only while `y < 320`.
 - `x` is drawn once per new pass from the presentation randomness, keeping the whole name inside
   the 240 px field: no gameplay draw, no allocation per frame.
 - `EffectSettings.championName` is optional in the parsed save: missing means on, so save version
-  2 is kept; a present non-boolean is invalid like any other switch.
+  2 is kept; a present non-boolean, `null` included, is invalid like any other switch.
+- "In the pause" is every scene that is frozen and does not scroll (Paused, Count-in, the quit
+  confirmation, the pause's options screens): the name stays where it was, like the stars.
