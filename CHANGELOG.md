@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Menu rows are as tall as the screen allows, up to 32 px, so a phone can tap them without
+  zooming: about 43–49 CSS px on the title, pause and options menus (GDD v0.25 §9.1, #95).
 - The ship's hitbox grows from 4 × 4 to a 6 × 6 body core; bullets through the wings still pass,
   and the cockpit square drawn on the hitbox grows with it (GDD v0.24 §4.1, #106).
 

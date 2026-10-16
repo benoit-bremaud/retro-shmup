@@ -8,6 +8,24 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-16
 
+### Mobile tap targets: menu rows as tall as fit (#95 → #112 `9b4d5f8`, #113 `0fc7985`)
+
+- Owner playtest: on a phone the title and menu rows needed a pinch-zoom to tap. Measured: 16 px
+  rows were 16–27 CSS px on phones (×2–×5 integer scales), against a 44–48 CSS px target; a
+  bigger scale alone caps at ~26 CSS px (240 logical px across ~390 CSS px). The page already
+  never zooms or scrolls by itself (ADR-0018 decision 10); a deliberate pinch stays possible.
+- Owner MCDA (#112, GDD v0.25 §9.1): B, a row height per menu,
+  `min(32, max(16, floor((320 − 2·gap)/rows)))` (435 / 500), over uniform 24 px rows (410),
+  touch-only 32 px rows with scrolling (325) and a fractional scale (230, breaks ADR-0014).
+- Code (#113): `Menu(rows, { flips, headerGap })` derives `rowHeight` and `top` once; hit band,
+  highlight bar and text follow it. Title, pause, quit, options and audio rows are 32 px
+  (43–49 CSS px at ×4, 48 at ×3), Visual effects 28 px, Controls 24 px.
+- Gate: 1 480 tests (coverage 99.27 % / docs 100 %), smoke 6/6 on three engines (taps and pixel
+  probes moved to the new rows), SonarQube passed, gitleaks clean, QA at 390 × 844 with
+  screenshots. Review fixes: header gap checked against every screen's header font, options
+  object instead of `undefined` placeholders. Open: the name entry's letter grid (20 px cells,
+  ~27 CSS px) has the same issue.
+
 ### Brick G3 audio: design, sound effects, music (#104 `08b7220`, #105 `f698786`, #110 `5d56244`)
 
 - Design (#104): GDD v0.23 §9.3, §9.5 (sound effects, music by scene, pause duck, warning fade,
