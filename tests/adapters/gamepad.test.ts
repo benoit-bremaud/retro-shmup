@@ -220,3 +220,29 @@ describe('GamepadModule — active pad (GDD §4.2, ADR-0009 automatic pause)', (
     expect(sampleOf(module).pressed).toBe(Button.Fire | Button.Confirm);
   });
 });
+
+describe('GamepadModule — odd bindings and pads', () => {
+  it('holds a button through its secondary binding', () => {
+    const module = gamepad({
+      ...DEFAULT_BINDINGS,
+      gamepad: { ...DEFAULT_BINDINGS.gamepad, fire: { primary: 5, secondary: 6 } },
+    });
+    module.poll([pad([6])], 1);
+    expect(sampleOf(module).held).toBe(Button.Fire);
+  });
+
+  it.each([-1, 40])('ignores a binding index outside the readable range (%s)', (index) => {
+    const module = gamepad({
+      ...DEFAULT_BINDINGS,
+      gamepad: { ...DEFAULT_BINDINGS.gamepad, fire: { primary: index, secondary: null } },
+    });
+    module.poll([pad([A])], 1);
+    expect(sampleOf(module).held).toBe(0);
+  });
+
+  it('reads a pad that reports no axes as a centred stick', () => {
+    const module = gamepad();
+    module.poll([pad([], 0, 0, { axes: [] })], 1);
+    expect(sampleOf(module)).toMatchObject({ moving: false, moveX: 0, moveY: 0 });
+  });
+});

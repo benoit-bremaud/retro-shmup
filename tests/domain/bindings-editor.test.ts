@@ -138,4 +138,17 @@ describe('restore — one device (GDD v0.15 §4.2)', () => {
     expect(restored.gamepad).toEqual(DEFAULT_BINDINGS.gamepad);
     expect(restored.keyboard.pause.secondary).toBe('KeyC');
   });
+
+  it('refuses a keyboard exchange that would leave an intent without a key', () => {
+    // Bomb has a single key; pause's empty secondary taking it would empty bomb's primary.
+    const single: Bindings = {
+      ...DEFAULT_BINDINGS,
+      keyboard: { ...DEFAULT_BINDINGS.keyboard, bomb: { primary: 'KeyX', secondary: null } },
+    };
+    expect(bind(single, 'keyboard', 'pause', 'secondary', 'KeyX')).toBeUndefined();
+  });
+
+  it('returns the same bindings when the gamepad slot already holds the button', () => {
+    expect(bind(DEFAULT_BINDINGS, 'gamepad', 'fire', 'primary', 0)).toBe(DEFAULT_BINDINGS);
+  });
 });

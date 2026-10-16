@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_BINDINGS } from '../../src/domain/input/default-bindings';
 import { LiveOptions } from '../../src/domain/options';
 import type { Options } from '../../src/domain/options';
-import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
+import { Button, REMAPPABLE_INTENTS, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { BindingCapture, IntentFrame } from '../../src/domain/ports/input-port';
 import { ControlsScreen } from '../../src/domain/scenes/controls-screen';
 import { NO_HOST } from '../../src/domain/scenes/scene-host';
@@ -181,5 +181,21 @@ describe('ControlsScreen — Back and Restore defaults', () => {
     expect(options.bindings.keyboard).toEqual(DEFAULT_BINDINGS.keyboard);
     expect(options.bindings.gamepad.fire.secondary).toBe(2);
     expect(host.saved).toHaveLength(1);
+  });
+
+  it('names the edited device for the screen header', () => {
+    expect(screen('keyboard').controls.deviceName).toBe('keyboard');
+    expect(screen('gamepad').controls.deviceName).toBe('gamepad');
+  });
+
+  it('shows no text for a row that is not an intent', () => {
+    const { controls } = screen();
+    expect(controls.cell(controls.intentRows, 0)).toBe('');
+  });
+
+  it('shows a blank for a gamepad slot without a button', () => {
+    const { controls } = screen('gamepad');
+    // Fire has no secondary button by default.
+    expect(controls.cell(REMAPPABLE_INTENTS.indexOf('fire'), 1)).toBe('');
   });
 });

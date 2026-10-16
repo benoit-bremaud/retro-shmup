@@ -823,3 +823,25 @@ describe('DeviceInput — the raw activity signal (ADR-0009 amended, GDD v0.16 �
     expect(frame.active).toBe(false);
   });
 });
+
+describe('DeviceInput — refused layout map and pointer cancel', () => {
+  it('keeps the US characters when the browser refuses the layout map', async () => {
+    class RefusingEnvironment extends FakeEnvironment {
+      override layoutMap(): Promise<ReadonlyMap<string, string>> {
+        return Promise.reject(new Error('refused'));
+      }
+    }
+    const input = new DeviceInput(new RefusingEnvironment());
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(input.label('KeyW')).toBe('W');
+  });
+
+  it('releases the steering finger when the browser cancels the pointer', () => {
+    const { env, input, frame } = setup();
+    env.point('down', 'touch', 200, 250);
+    env.point('cancel', 'touch', 200, 250);
+    input.read(frame);
+    expect(frame.held).toBe(0);
+    expect(frame.moveKind).toBe('none');
+  });
+});

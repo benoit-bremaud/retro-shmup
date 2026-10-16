@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { aimedAttack, fanAttack, ringAttack, sequenceAttack } from '../../src/domain/game/attacks';
+import {
+  aimedAttack,
+  fanAttack,
+  NoAttack,
+  ringAttack,
+  sequenceAttack,
+} from '../../src/domain/game/attacks';
 import type { AttackPattern, EnemyShotSpawner } from '../../src/domain/game/attacks';
 import { Enemy, POPCORN } from '../../src/domain/game/enemy';
 import type { Vec2 } from '../../src/domain/game/geometry';
@@ -141,5 +147,15 @@ describe('sequenceAttack — groups taking turns on one timer (ADR-0023)', () =>
   it('is a frozen object and needs at least one group', () => {
     expect(Object.isFrozen(sequenceAttack([[FAN]], 1))).toBe(true);
     expect(() => sequenceAttack([], 1)).toThrow(RangeError);
+  });
+});
+
+describe('NoAttack — the Null Object', () => {
+  it('neither fires nor ticks a bullet', () => {
+    const shotsLog = new RecordingShots();
+    const enemy = body();
+    NoAttack.fire(enemy, shipAt(120, 300), shotsLog, 0);
+    NoAttack.tick(enemy, shipAt(120, 300), shotsLog, DT);
+    expect(shotsLog.shots).toHaveLength(0);
   });
 });

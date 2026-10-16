@@ -111,3 +111,12 @@ describe('arbitrate — several devices at once (ADR-0015 decision 5, ADR-0018 d
     expect(frame.moveKind).toBe('direction');
   });
 });
+
+describe('arbitrate — no device has given input', () => {
+  it('keeps the previous device name when every sequence is still 0', () => {
+    const frame = createIntentFrame();
+    frame.device = 'gamepad';
+    arbitrate(createArbitration(), samples(), frame);
+    expect(frame.device).toBe('gamepad');
+  });
+});

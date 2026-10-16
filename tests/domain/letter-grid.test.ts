@@ -232,3 +232,35 @@ describe('LetterGrid — picking a cell (GDD v0.16 §9.1, the menus’ rules)', 
     expect(current(grid)).toBe('noCountry');
   });
 });
+
+describe('LetterGrid — edges of the pointer and the cursor', () => {
+  it('keeps the cursor when the mouse hovers over an empty place', () => {
+    const grid = opened(COUNTRY_CELLS);
+    const { x, y } = place(3, 7); // past OK, nothing there
+    grid.step(frame({ hovered: true, hoverX: x, hoverY: y }), 1);
+    expect(current(grid)).toBe('A');
+  });
+
+  it('picks nothing from a release over the HUD', () => {
+    const grid = opened();
+    const { x, y } = place(0, 0);
+    grid.step(frame({ tapRegion: 'field', tapX: x, tapY: y }), GUARD);
+    expect(
+      grid.step(frame({ releaseRegion: 'hud', releaseX: x, releaseY: y }), GUARD + 1),
+    ).toBeUndefined();
+  });
+
+  it('does not move sideways from a start cell that does not exist', () => {
+    const grid = new LetterGrid(NAME_CELLS);
+    grid.reset(0, IDLE, NAME_CELLS.length + 5);
+    go(grid, RIGHT);
+    expect(grid.cursor).toBe(NAME_CELLS.length + 5);
+  });
+
+  it('moves down from a start cell that does not exist as from the first row', () => {
+    const grid = new LetterGrid(NAME_CELLS);
+    grid.reset(0, IDLE, NAME_CELLS.length + 5);
+    go(grid, DOWN);
+    expect(current(grid)).toBe('I');
+  });
+});

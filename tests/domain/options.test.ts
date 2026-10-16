@@ -26,6 +26,18 @@ describe('LiveOptions (GDD v0.14 §9.3, meta/04-class-menus)', () => {
     expect(live.effects.shake).toBe(false);
   });
 
+  it('toggles the language back from French to English', () => {
+    const live = new LiveOptions({ ...SAVED, language: 'fr' });
+    expect(live.apply('language')).toBe(true);
+    expect(live.value('language')).toBe('english');
+  });
+
+  it('shows no value on a row without one, and ignores its activation', () => {
+    const live = new LiveOptions(SAVED);
+    expect(live.value('back')).toBeUndefined();
+    expect(live.apply('back')).toBe(false);
+  });
+
   it.each([
     ['autofire', 'off', 'on'],
     ['fullscreen', 'off', 'on'],

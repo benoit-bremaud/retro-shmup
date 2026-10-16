@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import { Pickup, PickupKind } from '../../src/domain/game/pickup';
 import { PlayerState } from '../../src/domain/game/player';
 import type { Bullet } from '../../src/domain/game/bullet';
 import { DIVER, POPCORN } from '../../src/domain/game/enemy';
 import { GameEventKind } from '../../src/domain/game/events';
 import type { LevelScript } from '../../src/domain/game/level-script';
 import { Run, RunOutcome } from '../../src/domain/game/run';
-import { PLAYER_BULLET_POOL_SIZE } from '../../src/domain/game/tuning';
+import { ENEMY_POOL_SIZE, PLAYER_BULLET_POOL_SIZE } from '../../src/domain/game/tuning';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
 import { testScript } from '../support/script';
@@ -141,5 +142,43 @@ describe('Run — scoring (GDD §8, ADR-0010 wording note)', () => {
     expect(seen).toBe(150);
     expect(run.snapshot().multiplier).toBe(1);
     expect(run.snapshot().chainRatio).toBeGreaterThan(0);
+  });
+});
+
+describe('Run — a refused lone enemy', () => {
+  it('drops a spawn the full enemy pool refuses, with no formation to complete', () => {
+    const rows = Array.from({ length: ENEMY_POOL_SIZE + 1 }, () => ({
+      at: 0,
+      archetype: POPCORN,
+      count: 1,
+      spawn: { x: 120, y: -8 },
+    }));
+    const run = new Run({ levels: [testScript(rows)] });
+    let cleared = 0;
+    run.events().subscribe(GameEventKind.FormationCleared, () => {
+      cleared += 1;
+    });
+    steps(run, frame(0), 1);
+    expect(run.snapshot().enemies.count).toBe(ENEMY_POOL_SIZE);
+    expect(cleared).toBe(0);
+  });
+});
+
+describe('Run — the death release of a lost power level', () => {
+  function raisedLaser(): Run {
+    const run = new Run();
+    const pickup = new Pickup();
+    pickup.spawn(PickupKind.PBlue, 100, 200, 1);
+    run.rules.pickupCollected(pickup);
+    run.rules.pickupCollected(pickup);
+    return run;
+  }
+
+  it('releases a blue P for a lost Laser level and announces it', () => {
+    const run = raisedLaser();
+    const heard: number[] = [];
+    run.events().subscribe(GameEventKind.PickupSpawned, (e) => heard.push(e.detail));
+    run.rules.playerDied();
+    expect(heard).toEqual([PickupKind.PBlue]);
   });
 });

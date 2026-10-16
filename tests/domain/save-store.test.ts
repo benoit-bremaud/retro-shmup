@@ -116,6 +116,7 @@ describe('SaveStore.load (ADR-0006: untrusted input, never throws)', () => {
   it.each([
     ['a missing version', { options: CUSTOM, highScores: [] }],
     ['a missing options object', { version: 2, highScores: [] }],
+    ['a non-object effects field', { version: 2, options: { ...CUSTOM, effects: 'all' } }],
     ['an unknown language', { version: 2, options: { ...CUSTOM, language: 'de' } }],
     ['a non-boolean switch', { version: 2, options: { ...CUSTOM, autofire: 'yes' } }],
     [
