@@ -8,6 +8,23 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-16
 
+### Version label: the build's version shown to the player (#88 → `70a7b5b`, #89 → `e571e1f`)
+
+- Owner request: playtesters must be able to quote the build they play. MCDA on the place: a page
+  text outside the canvas scored 450 / 500, ahead of a title-screen footer in the canvas (345) and
+  an Options / About row (320). It applies ADR-0025 decision 6 as already decided; the placeholder
+  fonts have no `.` or `+`.
+- Design (#88): GDD v0.20 §9.9 (`v<version>+<short commit>`, bottom-right, 10 px monospace, 45 %
+  white, no pointer events, not localised; moves to Options / About with the final font in G4),
+  UML `meta/06-class-version-label.md`, traceability matrix updated.
+- Code (#89): `vite.config.ts` defines the version from `package.json` (the build fails without
+  one) and the commit from `CF_PAGES_COMMIT_SHA`, else `git rev-parse HEAD` through `execFileSync`
+  without a shell; `src/app/version-label.ts` allowlists the commit (7–40 lowercase hex, cut to
+  7); `main.ts` writes it with `textContent`. The domain and the CSP are untouched.
+- Gate: 1305 tests, smoke green, coverage 99.27 / 95.67 / 100 / 99.9 %, docs 307/307, SonarQube
+  passed, gitleaks clean, QA screenshots in portrait and landscape. Reviews: 0 Must; one Should
+  (the UML named an operation the code does inline) fixed. Codex had no credit.
+
 ### Quality brick: coverage gated, every public export documented (#85 → `885f4dd`, this PR)
 
 - Owner goal: 100 % test and documentation coverage. Starting point: 95.85 % statements,
