@@ -6,7 +6,9 @@ import { Palette } from '../../src/domain/presentation/palette.js';
 // The single browser smoke test (ADR-0003; 05-state-scenes; ADR-0018 Consequences): a phone in
 // portrait, then a rotation. A tap on the PLAY row starts a run, the ship reaches its resting
 // point, the pause button pauses, the RESUME row resumes; a landscape window pauses without restarting the
-// run, `Esc` resumes, and enemies appear.
+// run, `Esc` resumes, and enemies appear. Then, on a desktop with a keyboard, the hall-of-fame
+// names survive a reload and a rewrite of the save by the game (ADR-0026). Chromium, Firefox and
+// WebKit run both (playwright.config.ts).
 
 // A phone: 390 × 844 CSS pixels at pixel ratio 2, with touch (ADR-0018 Consequences).
 test.use({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true });
@@ -258,6 +260,7 @@ async function scriptMsPerFrame(page: Page): Promise<number> {
 
 test('a phone starts, pauses and resumes by touch; a rotation pauses without restarting the run', async ({
   page,
+  browserName,
 }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
@@ -308,14 +311,165 @@ test('a phone starts, pauses and resumes by touch; a rotation pauses without res
   // The enemies brick: the first wave is on screen.
   await expect.poll(() => popcornInField(page), { timeout: 5000 }).toBe(true);
 
-  const msPerFrame = await scriptMsPerFrame(page);
   // Measured and logged against the 4 ms budget (ADR-0002 decision 7), not asserted: this is an
   // upper bound (all page scripts, draw calls included) on a desktop, not the reference phone.
-  test.info().annotations.push({
-    type: 'script time per frame',
-    description: `${msPerFrame.toFixed(3)} ms (budget: 4 ms of logic per frame on a 2019 phone)`,
-  });
-  console.log(`Script time per frame: ${msPerFrame.toFixed(3)} ms`);
+  // The DevTools metrics exist in Chromium only (ADR-0026 decision 3).
+  if (browserName === 'chromium') {
+    const msPerFrame = await scriptMsPerFrame(page);
+    test.info().annotations.push({
+      type: 'script time per frame',
+      description: `${msPerFrame.toFixed(3)} ms (budget: 4 ms of logic per frame on a 2019 phone)`,
+    });
+    console.log(`Script time per frame: ${msPerFrame.toFixed(3)} ms`);
+  } else {
+    test.info().annotations.push({ type: 'script time per frame', description: 'Chromium only' });
+  }
 
   expect(errors).toEqual([]);
+});
+
+/** The save key and a valid top 10 of three named rows (ADR-0006, ADR-0021). */
+const SAVE_KEY = 'retro-shmup.v1';
+const SEEDED_NAMES = ['SMOKE', 'PERSIST', 'RELOAD'];
+const SEEDED_TABLE = SEEDED_NAMES.map((name, i) => ({
+  name,
+  score: 30000 - i * 10000,
+  level: 1,
+  date: '2026-10-16',
+}));
+
+/** The names of the stored top 10, or `null` when no readable document is stored. */
+async function storedNames(page: Page): Promise<string[] | null> {
+  return page.evaluate((key) => {
+    const raw = localStorage.getItem(key);
+    if (raw === null) return null;
+    const document: unknown = JSON.parse(raw);
+    if (typeof document !== 'object' || document === null || !('highScores' in document)) {
+      return null;
+    }
+    const table = document.highScores;
+    if (!Array.isArray(table)) return null;
+    return table.map((entry: { name?: unknown }) => String(entry.name));
+  }, SAVE_KEY);
+}
+
+/** True when the stored options have autofire on. */
+async function storedAutofire(page: Page): Promise<boolean> {
+  return page.evaluate((key) => {
+    return localStorage.getItem(key)?.includes('"autofire":true') === true;
+  }, SAVE_KEY);
+}
+
+/**
+ * Holds a key for a few frames, since bindings are sampled once per step and an instant press can
+ * fall between two, then waits past the menus' 150 ms press guard.
+ */
+async function press(page: Page, key: string): Promise<void> {
+  await page.keyboard.down(key);
+  await page.waitForTimeout(50);
+  await page.keyboard.up(key);
+  await page.waitForTimeout(250);
+}
+
+/** Rows 1 to 3 of the High scores table, in play-field pixels (GDD v0.16 §9.1). */
+const TOP_ROWS = { y: 80, h: 48 };
+
+/**
+ * Text pixels (the menu pink: strong red, weak green, so no star) in rows 1 to 3 of the table: an
+ * empty row draws thin dashes, a stored entry draws a name and a score, several times more.
+ */
+async function topRowsText(page: Page): Promise<number> {
+  const g = await geometry(page);
+  return page.evaluate(
+    ({ x, y, w, h }) => {
+      const context = document.querySelector<HTMLCanvasElement>('#screen')?.getContext('2d');
+      if (context === null || context === undefined) return 0;
+      const data = context.getImageData(x, y, w, h).data;
+      let text = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        if ((data[i] ?? 0) > 200 && (data[i + 1] ?? 0) < 160) text += 1;
+      }
+      return text;
+    },
+    {
+      x: g.fieldX * g.scale,
+      y: (g.fieldY + TOP_ROWS.y) * g.scale,
+      w: 240 * g.scale,
+      h: TOP_ROWS.h * g.scale,
+    },
+  );
+}
+
+/** A pixel of the highlight bar behind PLAY, narrower than RESUME's, in play-field pixels. */
+const TITLE_PIXEL = { x: 100, y: 137 };
+
+/** True when the title menu shows with PLAY highlighted. */
+async function titleReady(page: Page): Promise<boolean> {
+  const g = await geometry(page);
+  return colourAt(
+    page,
+    (g.fieldX + TITLE_PIXEL.x) * g.scale + 1,
+    (g.fieldY + TITLE_PIXEL.y) * g.scale + 1,
+    MENU_HIGHLIGHT,
+  );
+}
+
+/** Waits for the title menu, then opens High scores (rows: PLAY, HIGH SCORES, OPTIONS). */
+async function openHighScores(page: Page): Promise<number> {
+  await expect.poll(() => titleReady(page), { timeout: 5000 }).toBe(true);
+  await page.waitForTimeout(300);
+  await press(page, 'ArrowDown');
+  await press(page, 'Enter');
+  await page.waitForTimeout(300);
+  return topRowsText(page);
+}
+
+test.describe('the hall of fame on a desktop with a keyboard', () => {
+  test.use({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: 1, hasTouch: false });
+
+  test('saved names survive a reload and a real write by the game (ADR-0026)', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+
+    // An empty table first: the reference for the painted rows.
+    await page.goto('./');
+    const empty = await openHighScores(page);
+
+    // A stored top 10, read back after a reload and shown.
+    await page.evaluate(
+      ({ key, table }) => {
+        localStorage.setItem(key, JSON.stringify({ version: 2, highScores: table }));
+      },
+      { key: SAVE_KEY, table: SEEDED_TABLE },
+    );
+    await page.reload();
+    const seeded = await openHighScores(page);
+    expect(seeded).toBeGreaterThan(empty * 2);
+    expect(await storedNames(page)).toEqual(SEEDED_NAMES);
+
+    // A real write: Options (Esc to the title, third row), Autofire is the third row of the
+    // keyboard options; a right press flips it and the game rewrites the whole document.
+    await press(page, 'Escape');
+    // Back on the title, the first presses within about a second are not taken in any engine
+    // tried: wait like a player would.
+    await expect.poll(() => titleReady(page), { timeout: 5000 }).toBe(true);
+    await page.waitForTimeout(1000);
+    await press(page, 'ArrowDown');
+    await press(page, 'ArrowDown');
+    await press(page, 'Enter');
+    await press(page, 'ArrowDown');
+    await press(page, 'ArrowDown');
+    await press(page, 'ArrowRight');
+    await expect.poll(() => storedAutofire(page)).toBe(true);
+    expect(await storedNames(page)).toEqual(SEEDED_NAMES);
+
+    // After the write, a reload still reads and shows the same names.
+    await page.reload();
+    const rewritten = await openHighScores(page);
+    expect(rewritten).toBeGreaterThan(empty * 2);
+    expect(await storedNames(page)).toEqual(SEEDED_NAMES);
+    expect(await storedAutofire(page)).toBe(true);
+
+    expect(errors).toEqual([]);
+  });
 });

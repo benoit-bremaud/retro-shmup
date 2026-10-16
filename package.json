@@ -21,7 +21,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "test:smoke": "playwright test",
+    "test:smoke": "pnpm build && playwright test",
     "prepare": "husky || true"
   },
   "lint-staged": {
