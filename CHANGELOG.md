@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Level 1 is denser: filler Popcorn formations and Divers fill its empty stretches, and the
+  balance guard keeps the time without an enemy at 70 s or less (GDD v0.21 §7.2.3, #94, #96).
 - The game version, `v<version>+<short commit>`, shown as page text in the bottom-right corner
   (GDD v0.20 §9.9, #88).
 - Fixed-step 60 Hz game loop, Canvas 2D renderer with integer scaling and a parallax starfield
