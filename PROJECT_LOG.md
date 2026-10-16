@@ -8,6 +8,24 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-16
 
+### Smoke in three engines, hall-of-fame persistence proven in the browser (#91 → `475b3c2`, #92 → `9ffb2ce`)
+
+- Owner request: prove the saved names persist and that the game works in any major browser.
+  Names already persisted in `localStorage`; only unit tests covered it, and the smoke ran in
+  Chromium only. Storage is per browser and origin: a shared table needs the v2 backend.
+- MCDA: seed a top 10 → reload → change an option (a real rewrite of the save) → reload, 445 / 500,
+  ahead of seed-only (430), a test-only URL hook (350, public surface per ADR-0025) and a real game
+  over (300, slow and flaky). Browsers: Chromium, Firefox, WebKit, local only, CI unchanged.
+- Design (#91): ADR-0026; CLAUDE.md test line and GDD §13 row point to it.
+- Code (#92): three Playwright projects; `webServer` runs `vite preview` directly (no orphan on
+  :4173), `pnpm test:smoke` builds first; CDP frame time Chromium only; keys held 50 ms (bindings
+  are sampled per step, an instant press was lost); after Back the title ignores keys for about a
+  second (cause not found, harmless to players).
+- Setup: WebKit on Linux needed `libevent-2.1-7t64 libavif16` (installed by the owner).
+- Gate: smoke 6/6 twice, 1305 tests, coverage 99.27 / 95.67 / 100 / 99.9 %, docs 100 %, SonarQube
+  passed, gitleaks clean, WebKit QA screenshot. Reviews: 0 Must, 3 Should fixed. Global skill
+  `testing-strategy` gained a "Smoke tests" section from this brick.
+
 ### Version label: the build's version shown to the player (#88 → `70a7b5b`, #89 → `e571e1f`)
 
 - Owner request: playtesters must be able to quote the build they play. MCDA on the place: a page
