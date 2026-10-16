@@ -90,7 +90,8 @@ sequenceDiagram
   resting line it stays catchable about 4 s after control returns. It is
   an ordinary P (the cap rule applies), released on the last life too — the run plays on after
   Game over, and the rule stays uniform.
-- **Shield** (GDD v0.8 §4.4): a bullet or a body contact both consume the charge; the bullet is
+- **Shield** (GDD v0.8 §4.4; ring shape v0.19): a bullet or a body touching the 36 × 36 ring both
+  consume the charge; the bullet is
   spent, the body survives. `PLAYER_HIT` is published by
   `HitRules.shieldBroken()`, which `RunRules` realizes.
 - **Order**: the release pickup spawns before `PLAYER_DIED` is published, so every listener sees

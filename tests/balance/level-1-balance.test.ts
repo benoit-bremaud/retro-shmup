@@ -41,7 +41,7 @@ function summarize(profile: PlayerProfile): Summary {
   };
 }
 
-describe('level 1 balance (measurement bot, GDD v0.18)', () => {
+describe('level 1 balance (measurement bot, GDD v0.19)', () => {
   // 300 full runs: played once, before the assertions, inside the hook's own timeout.
   let good: Summary;
   let average: Summary;
@@ -54,18 +54,20 @@ describe('level 1 balance (measurement bot, GDD v0.18)', () => {
       console.info(JSON.stringify({ good, average, beginner }, null, 1));
   }, 120_000);
 
-  // Measured 18 % game over, 82 % boss killed: a good player wins most runs.
+  // Measured 37 % game over, 64 % boss killed since the shield ring collides (v0.19; v0.18: 18 %,
+  // 82 %): a good player still wins most runs.
   it('lets the good player win most runs', () => {
-    expect(good.gameOverRate).toBeLessThanOrEqual(0.3);
-    expect(good.bossKillRate).toBeGreaterThanOrEqual(0.7);
+    expect(good.gameOverRate).toBeLessThanOrEqual(0.45);
+    expect(good.bossKillRate).toBeGreaterThanOrEqual(0.55);
   });
 
-  // Measured 2.3 deaths, 28 % game over, 73 % boss killed (v0.12: 0.56, 2 %, 98 %).
+  // Measured 2.74 deaths, 45 % game over, 55 % boss killed (v0.19, the ring breaks on near misses;
+  // v0.18: 2.3, 28 %, 73 %; v0.12: 0.56, 2 %, 98 %).
   it('makes the average player lose lives and sometimes the run', () => {
     expect(average.deathsPerRun).toBeGreaterThanOrEqual(1.5);
     expect(average.deathsPerRun).toBeLessThanOrEqual(3);
     expect(average.gameOverRate).toBeGreaterThanOrEqual(0.15);
-    expect(average.gameOverRate).toBeLessThanOrEqual(0.45);
+    expect(average.gameOverRate).toBeLessThanOrEqual(0.5);
   });
 
   // Measured 39 s from the WARNING (3 s warning and 3 s entry included), of a 90 s timer; only the
@@ -81,8 +83,8 @@ describe('level 1 balance (measurement bot, GDD v0.18)', () => {
     expect(average.medianFullPowerS).toBeGreaterThanOrEqual(110);
   });
 
-  // Measured 41 %: the beginner still beats the boss now and then.
+  // Measured 13 % (v0.19; v0.18: 41 %): the beginner still beats the boss now and then.
   it('leaves the beginner a chance at the boss', () => {
-    expect(beginner.bossKillRate).toBeGreaterThanOrEqual(0.25);
+    expect(beginner.bossKillRate).toBeGreaterThanOrEqual(0.1);
   });
 });

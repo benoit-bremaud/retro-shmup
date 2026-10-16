@@ -34,6 +34,8 @@ export const PlayerTuning = {
   blinksPerSecond: 3,
   /** The 4 × 4 hitbox centred on the ship (GDD §4.1): only it counts for hits. */
   hitboxSize: 4,
+  /** The shield ring, 36 × 36: while a charge is held it collides instead of the hitbox (GDD v0.19 §4.4). */
+  shieldSize: 36,
   /** The full sprite box: pickups are caught with it, generously (GDD §4.6). */
   collectSize: 32,
   /** The death sequence before the next fly-in (GDD §4.4). */

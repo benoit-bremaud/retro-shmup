@@ -32,13 +32,16 @@ function overlaps(a: Box, b: Box): boolean {
   );
 }
 
-// The ship's 4 × 4 hitbox (GDD §4.1): only it counts, never the sprite.
+// The ship's 4 × 4 hitbox (GDD §4.1): only it counts, never the sprite — except while a shield
+// charge is held, when the drawn 36 × 36 ring is the shape, so any touch consumes it (GDD v0.19 §4.4).
 const HITBOX = PlayerTuning.hitboxSize;
+const SHIELD = PlayerTuning.shieldSize;
 
-function overlapsHitbox(player: Player, box: Box): boolean {
+function touchesPlayer(player: Player, box: Box): boolean {
+  const size = player.shield ? SHIELD : HITBOX;
   return (
-    Math.abs(player.position.x - box.position.x) < (HITBOX + box.width) / 2 &&
-    Math.abs(player.position.y - box.position.y) < (HITBOX + box.height) / 2
+    Math.abs(player.position.x - box.position.x) < (size + box.width) / 2 &&
+    Math.abs(player.position.y - box.position.y) < (size + box.height) / 2
   );
 }
 
@@ -115,12 +118,12 @@ function report(outcome: HitOutcome, rules: HitRules): void {
   else if (outcome === HitOutcome.Absorbed) rules.shieldBroken();
 }
 
-// Pass 2: enemy bullets against the hitbox. A bullet that killed the ship or broke its shield is
-// consumed; an ignored hit passes through.
+// Pass 2: enemy bullets against the hitbox, or the ring while a charge is held. A bullet that
+// killed the ship or broke its shield is consumed; an ignored hit passes through.
 function bulletsAgainstPlayer(world: World, rules: HitRules): void {
   for (let i = 0; i < world.enemyBullets.count; i += 1) {
     const bullet = world.enemyBullets.at(i);
-    if (bullet.spent || !overlapsHitbox(world.player, bullet)) continue;
+    if (bullet.spent || !touchesPlayer(world.player, bullet)) continue;
     const outcome = world.player.hit();
     if (outcome === HitOutcome.Ignored) continue;
     bullet.spent = true;
@@ -128,15 +131,15 @@ function bulletsAgainstPlayer(world: World, rules: HitRules): void {
   }
 }
 
-// Pass 3: enemy bodies, and the boss while it enters or fights, against the hitbox; contact hurts
-// the player, never the enemy (GDD §5.2), and a body the shield absorbed survives.
+// Pass 3: enemy bodies, and the boss while it enters or fights, against the hitbox or the ring;
+// contact hurts the player, never the enemy (GDD §5.2), and a body the shield absorbed survives.
 function bodiesAgainstPlayer(world: World, rules: HitRules): void {
   for (let i = 0; i < world.enemies.count; i += 1) {
     const enemy = world.enemies.at(i);
-    if (enemy.spent || !overlapsHitbox(world.player, enemy)) continue;
+    if (enemy.spent || !touchesPlayer(world.player, enemy)) continue;
     report(world.player.hit(), rules);
   }
-  if (world.boss.isHarmful() && overlapsHitbox(world.player, world.boss)) {
+  if (world.boss.isHarmful() && touchesPlayer(world.player, world.boss)) {
     report(world.player.hit(), rules);
   }
 }
