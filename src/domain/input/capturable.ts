@@ -25,10 +25,12 @@ const CHARACTER_KEY = /^(Key[A-Z]|Digit\d|Numpad\d)$/;
 /** The highest standard-mapping button a slot can hold; 16, the home button, is the system's. */
 const LAST_BUTTON = 15;
 
+/** Whether a `KeyboardEvent.code` may be bound to a slot (the closed set above). */
 export function isCapturableKey(code: string): boolean {
   return NAMED_KEYS.has(code) || CHARACTER_KEY.test(code);
 }
 
+/** Whether a standard-mapping gamepad button index may be bound to a slot (0 to 15). */
 export function isCapturableButton(index: number): boolean {
   return Number.isInteger(index) && index >= 0 && index <= LAST_BUTTON;
 }
