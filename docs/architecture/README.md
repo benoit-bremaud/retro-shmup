@@ -74,6 +74,7 @@ Status: complete for 1.0 (2026-10-08); the bomb sequence added with the player-k
 | `meta` | [02 sequence — remap capture](diagrams/meta/02-sequence-remap-capture.md) | Rebinding one slot: capture, swap, save (G1b) |
 | `meta` | [04 class — menus](diagrams/meta/04-class-menus.md) | One menu model, the options and their save (G1a) |
 | `meta` | [05 state — scenes](diagrams/meta/05-state-scenes.md) | The screens of GDD §9.1 and their transitions |
+| `meta` | [06 class — version label](diagrams/meta/06-class-version-label.md) | The build-time version shown as page text (v0.20) |
 | `render` | [02 sequence — sprite loading](diagrams/render/02-sequence-sprite-loading.md) | The sheets load beside the first frames; the shapes stay the fallback (G4-1) |
 | `render` | [04 class — sprites](diagrams/render/04-class-sprites.md) | `SpriteId`, `drawSprite` returning whether it drew, the baked `SpriteBank` (G4-1) |
 | — | [traceability matrix](traceability-matrix.md) | Is every use case realized, and every class used? |
