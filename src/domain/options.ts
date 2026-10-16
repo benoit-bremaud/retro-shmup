@@ -15,6 +15,8 @@ export interface EffectSettings {
   bombFlash: boolean;
   /** Half speed for 0.5 s after the boss's death (GDD v0.10 §9.3, §9.4): its own switch. */
   slowMotion: boolean;
+  /** The hall-of-fame number 1's name in the far background (GDD v0.22 §9.4.1). */
+  championName: boolean;
 }
 
 /** The player's options (GDD v0.13 §9.3, v0.15 §4.2); the volumes (G3) come later. */
@@ -36,6 +38,7 @@ export const EFFECT_ROWS = [
   'shake',
   'bombFlash',
   'slowMotion',
+  'championName',
 ] as const satisfies readonly (keyof EffectSettings & MessageKey)[];
 type EffectRow = (typeof EFFECT_ROWS)[number];
 

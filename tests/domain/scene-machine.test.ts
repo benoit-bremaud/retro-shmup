@@ -55,6 +55,7 @@ function setup(): { machine: SceneMachine; render: RecordingRender } {
       shake: true,
       bombFlash: true,
       slowMotion: true,
+      championName: true,
     }),
     () => new Run(),
   );
@@ -338,6 +339,7 @@ function gameOverFixture(): ReturnType<typeof setup> {
       shake: true,
       bombFlash: true,
       slowMotion: true,
+      championName: true,
     }),
     () => new Run({ levels: [KILLER] }),
   );
@@ -445,6 +447,7 @@ describe('SceneMachine — effects per run (ADR-0010, 02-sequence-fixed-step-tic
         shake: true,
         bombFlash: true,
         slowMotion: true,
+        championName: true,
       }),
       () => new Run({ levels: [TARGET] }),
     );
@@ -495,6 +498,7 @@ describe('SceneMachine — effects per run (ADR-0010, 02-sequence-fixed-step-tic
         shake: true,
         bombFlash: true,
         slowMotion: true,
+        championName: true,
       }),
       () => new Run({ levels: [script] }),
       NO_HOST,
@@ -674,6 +678,7 @@ describe('SceneMachine — Results (meta/05-state-scenes, GDD v0.10 §8, F-3)', 
         shake: true,
         bombFlash: true,
         slowMotion: true,
+        championName: true,
       }),
       () => new Run({ levels: [testScript([], { warningAt: 5, boss: GLASS })] }),
       host,
@@ -807,6 +812,7 @@ describe('SceneMachine — the boss HUD (meta/05-state-scenes, F-2b)', () => {
         shake: true,
         bombFlash: true,
         slowMotion: true,
+        championName: true,
       }),
       () => new Run({ levels: [testScript([], { warningAt: 5, boss: STUB_BOSS })] }),
     );
@@ -876,6 +882,7 @@ describe('SceneMachine — the boss HUD (meta/05-state-scenes, F-2b)', () => {
         shake: true,
         bombFlash: true,
         slowMotion: true,
+        championName: true,
       }),
       () => ending,
     );
@@ -1091,6 +1098,7 @@ const ALL_ON: EffectSettings = {
   shake: true,
   bombFlash: true,
   slowMotion: true,
+  championName: true,
 };
 
 function idle(machine: SceneMachine, steps = 10): void {
@@ -1184,6 +1192,7 @@ describe('SceneMachine — the options screens (GDD v0.14 §9.1, §9.3, G1a-3)',
       shake: false,
       bombFlash: false,
       slowMotion: false,
+      championName: false,
     });
     downBy(machine, 2); // Hit flash
     machine.step(DT, right());
@@ -1622,5 +1631,63 @@ describe('SceneMachine — the attract mode (GDD v0.16 §9.1, G2-3b)', () => {
     machine.step(DT, pressed(Button.Confirm)); // Options
     idle(machine, IDLE_STEPS * 2);
     expect(machine.scene).toBe(Scene.TitleOptions);
+  });
+});
+
+describe('SceneMachine — the champion name (GDD v0.22 §9.4.1)', () => {
+  const ALL_ON: EffectSettings = {
+    blink: true,
+    hitFlash: true,
+    explosions: true,
+    shake: true,
+    bombFlash: true,
+    slowMotion: true,
+    championName: true,
+  };
+
+  /** A run with no enemy and a far boss, played 41 s from the title; the name's texts drawn. */
+  function farTexts(effects: EffectSettings, table: readonly HighScoreEntry[]): string[] {
+    const render = new RecordingRender();
+    const machine = new SceneMachine(
+      render,
+      new Starfield(() => 0.5),
+      withEffects(effects),
+      () => new Run({ levels: [testScript([], { warningAt: 100, boss: STUB_BOSS })] }),
+      NO_HOST,
+      table,
+    );
+    machine.step(DT, createIntentFrame());
+    machine.step(DT, pressed(Button.Confirm)); // Play
+    for (let i = 0; i < 41 * 60; i += 1) machine.step(DT, createIntentFrame());
+    expect(machine.scene).toBe(Scene.Playing);
+    machine.render(0, 16);
+    return render.texts.filter((text) => text.font === 'far').map((text) => text.text);
+  }
+
+  it('draws the number 1 in the far font once the first pass has started', () => {
+    expect(farTexts(ALL_ON, FULL_TABLE)).toEqual(['ACE']);
+  });
+
+  it('draws nothing with its switch off', () => {
+    expect(farTexts({ ...ALL_ON, championName: false }, FULL_TABLE)).toEqual([]);
+  });
+
+  it('draws nothing with an empty table', () => {
+    expect(farTexts(ALL_ON, [])).toEqual([]);
+  });
+
+  it('draws nothing on the title', () => {
+    const render = new RecordingRender();
+    const machine = new SceneMachine(
+      render,
+      new Starfield(() => 0.5),
+      withEffects(ALL_ON),
+      () => new Run(),
+      NO_HOST,
+      FULL_TABLE,
+    );
+    for (let i = 0; i < 41 * 60; i += 1) machine.step(DT, createIntentFrame());
+    machine.render(0, 16);
+    expect(render.texts.some((text) => text.font === 'far')).toBe(false);
   });
 });

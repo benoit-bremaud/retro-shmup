@@ -387,6 +387,7 @@ describe('Effects — bomb flash and shake (GDD v0.8 §9.4)', () => {
       shake: on,
       bombFlash: on,
       slowMotion: on,
+      championName: on,
     };
     const presenter = new RunPresenter(render, effects, run.events());
     run.step(DT, pressing(Button.Bomb));
@@ -409,6 +410,7 @@ describe('RunPresenter — the shield ring (GDD v0.8 §4.4)', () => {
       shake: true,
       bombFlash: true,
       slowMotion: true,
+      championName: true,
     };
     new RunPresenter(render, effects, run.events()).draw(run.snapshot(), 1, 16);
     const ring = render.rectsOf(Palette.shieldRing);

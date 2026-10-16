@@ -29,6 +29,7 @@ export function defaultOptions(reducedMotion: boolean): Options {
       shake: !reducedMotion,
       bombFlash: !reducedMotion,
       slowMotion: !reducedMotion,
+      championName: true,
     },
     autofire: false,
     language: 'en',
@@ -37,21 +38,26 @@ export function defaultOptions(reducedMotion: boolean): Options {
   };
 }
 
-/** Rebuilds the effects from the known keys only; `undefined` if any is not a boolean. */
+/**
+ * Rebuilds the effects from the known keys only; `undefined` if any is not a boolean. The
+ * champion's name came after save version 2, so a missing key reads as on (GDD v0.22 §9.4.1).
+ */
 function parseEffects(value: unknown): EffectSettings | undefined {
   if (!isRecord(value)) return undefined;
   const { blink, hitFlash, explosions, shake, bombFlash, slowMotion } = value;
+  const championName = value.championName ?? true;
   if (
     typeof blink !== 'boolean' ||
     typeof hitFlash !== 'boolean' ||
     typeof explosions !== 'boolean' ||
     typeof shake !== 'boolean' ||
     typeof bombFlash !== 'boolean' ||
-    typeof slowMotion !== 'boolean'
+    typeof slowMotion !== 'boolean' ||
+    typeof championName !== 'boolean'
   ) {
     return undefined;
   }
-  return { blink, hitFlash, explosions, shake, bombFlash, slowMotion };
+  return { blink, hitFlash, explosions, shake, bombFlash, slowMotion, championName };
 }
 
 /**

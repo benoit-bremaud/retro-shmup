@@ -69,6 +69,7 @@ function presenter(
       shake: true,
       bombFlash: true,
       slowMotion: true,
+      championName: true,
       ...switches,
     },
     bus,

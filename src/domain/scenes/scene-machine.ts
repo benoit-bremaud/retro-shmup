@@ -23,6 +23,8 @@ import { drawResults, formatTallyValues } from '../presentation/results';
 import { RunPresenter } from '../presentation/run-presenter';
 import { EFFECT_ROWS, LiveOptions } from '../options';
 import type { Options } from '../options';
+import { ChampionName } from '../presentation/champion-name';
+import { STARFIELD_LAYERS } from '../presentation/starfield';
 import type { Starfield } from '../presentation/starfield';
 import type { MenuScreen } from '../presentation/menu-layout';
 import { HighScoreTable } from '../hall-of-fame/high-scores';
@@ -177,6 +179,8 @@ export class SceneMachine {
   private current: Scene = Scene.Boot;
   private run: InRun | undefined;
   private backgroundSteps = 0;
+  /** `backgroundSteps` when the run started: the champion's name runs on the run's time. */
+  private runStartSteps = 0;
   /**
    * Steps since the current scene was entered (0 on the entering step): the count-in digit, the
    * Game over, Results and Ending timers, the Results lines shown, the title's steps without
@@ -195,6 +199,7 @@ export class SceneMachine {
   private readonly createRun: () => InRun;
   private readonly renderer: RenderPort;
   private readonly starfield: Starfield;
+  private readonly champion: ChampionName;
   /** Built with each run, so no effect or listener outlives its run (ADR-0010). */
   private presenter: RunPresenter | undefined;
   /** A frozen step ran since the last render: that frame ages no effect (count-in handoff). */
@@ -258,7 +263,8 @@ export class SceneMachine {
 
   /**
    * `options` are the saved ones, copied into the live options; `createRun` builds each new run
-   * (tests pass a short level script, the game a seeded one); `host` hears every change.
+   * (tests pass a short level script, the game a seeded one); `host` hears every change;
+   * `champion` draws the number 1's name in the far background (GDD v0.22 §9.4.1).
    */
   constructor(
     render: RenderPort,
@@ -267,7 +273,9 @@ export class SceneMachine {
     createRun: () => InRun,
     host: SceneHost = NO_HOST,
     highScores: readonly HighScoreEntry[] = [],
+    champion: ChampionName = new ChampionName(() => 0),
   ) {
+    this.champion = champion;
     this.table = new HighScoreTable(highScores);
     this.renderer = render;
     this.starfield = starfield;
@@ -424,6 +432,8 @@ export class SceneMachine {
       const run = this.createRun(); // InRun entry creates the run and its presenter.
       this.run = run;
       this.presenter = new RunPresenter(this.renderer, this.options.effects, run.events());
+      this.runStartSteps = this.backgroundSteps;
+      this.champion.setName(this.table.entries[0]?.name ?? '');
       this.enter(Scene.Playing);
       this.host.releaseMovement();
     }
@@ -713,7 +723,13 @@ export class SceneMachine {
     }
     // Frozen scenes draw the starfield at alpha 1 too, so it never steps back at the pause.
     const scroll = traits.scrolls || traits.frozen ? frameAlpha : 0;
-    this.starfield.draw(r, (this.backgroundSteps + scroll) * STEP_SECONDS);
+    const background = (this.backgroundSteps + scroll) * STEP_SECONDS;
+    // The champion's name sits between the far star layer and the nearer ones (GDD v0.22 §9.4.1).
+    this.starfield.drawLayers(r, background, 0, 1);
+    if (this.current === Scene.Playing && this.options.effects.championName) {
+      this.champion.draw(r, background - this.runStartSteps * STEP_SECONDS);
+    }
+    this.starfield.drawLayers(r, background, 1, STARFIELD_LAYERS.length);
     if (traits.drawsRun && this.run !== undefined && this.presenter !== undefined) {
       const snapshot = this.run.snapshot();
       this.presenter.draw(snapshot, frameAlpha, effectMs);

@@ -29,6 +29,7 @@ const FONTS = {
     colour: Palette.titleText,
   },
   menu: { cell: MENU_FONT_CELL, scale: HUD_SCALE, glyph: menuGlyph, colour: Palette.titleText },
+  far: { cell: MENU_FONT_CELL, scale: HUD_SCALE, glyph: menuGlyph, colour: Palette.starFar },
 } as const;
 
 /**
@@ -55,7 +56,7 @@ export interface RenderSurface {
  *
  * @remarks The camera offset (screen shake) moves field-region draws only, at draw time: the HUD
  * never shakes (ADR-0014). `drawSprite` draws the baked sprites of `SpriteBank` and answers `false`
- * until they are baked (ADR-0001 amendment); `drawText` draws the placeholder `hud`, `title` and `menu` glyphs and fails closed on anything else.
+ * until they are baked (ADR-0001 amendment); `drawText` draws the placeholder `hud`, `title`, `menu` and `far` glyphs and fails closed on anything else.
  */
 export class Canvas2DRenderer implements RenderPort {
   private region: RenderRegion = 'hud';

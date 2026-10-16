@@ -200,6 +200,15 @@ function textBlocks(surface: RecordingSurface): string[] {
     .map((call) => call.slice(prefix.length).split(',').slice(0, 2).join(','));
 }
 
+describe('Canvas2DRenderer — far font (GDD v0.22 §9.4.1)', () => {
+  it('draws the menu glyphs in the far-star colour, never the menu colour', () => {
+    const { renderer, offscreen } = setup();
+    renderer.drawText('A1', 0, 0, 'far');
+    expect(offscreen.calls.some((call) => call.includes(Palette.starFar))).toBe(true);
+    expect(offscreen.calls.some((call) => call.includes(Palette.titleText))).toBe(false);
+  });
+});
+
 describe('Canvas2DRenderer — hud font (RenderPort contract, HUD_FONT_CELL)', () => {
   it('draws a digit as 2 × 2 blocks of its 3 × 5 glyph, from the top-left of its cell', () => {
     const { renderer, offscreen } = setup();
