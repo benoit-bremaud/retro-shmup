@@ -1,7 +1,7 @@
 # Traceability matrix — UML study (1.0)
 
 > **Scope**: the UML study of [docs/architecture](README.md) against the
-> [Game Design Document](../design/game-design-document.md) v0.16, ADR-0001 to ADR-0010,
+> [Game Design Document](../design/game-design-document.md) v0.20, ADR-0001 to ADR-0010,
 > ADR-0014, ADR-0015, ADR-0018, ADR-0019 to ADR-0024 (ADR-0011 to ADR-0013 are tooling decisions, ADR-0025 a versioning and release process decision, and ADR-0016 and ADR-0017 deployment and catalogue decisions, with no UML realization).
 > **Purpose**: prove coverage — every use case is realized, every class and component is used,
 > nothing is orphaned. Update this file in the same change as any diagram.
@@ -18,7 +18,8 @@ Diagram abbreviations: **UC** [01-use-case](diagrams/system/01-use-case.md) · *
 [05-state-scenes](diagrams/meta/05-state-scenes.md) · **CD-menus**
 [04-class-menus](diagrams/meta/04-class-menus.md) · **SD-remap**
 [02-sequence-remap-capture](diagrams/meta/02-sequence-remap-capture.md) · **SD-score**
-[02-sequence-record-high-score](diagrams/meta/02-sequence-record-high-score.md).
+[02-sequence-record-high-score](diagrams/meta/02-sequence-record-high-score.md) · **CD-version**
+[06-class-version-label](diagrams/meta/06-class-version-label.md) (the version label of GDD §9.9 has no use case: the player does nothing).
 
 ## 1. Use cases → realizations
 
