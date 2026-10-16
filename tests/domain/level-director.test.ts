@@ -43,44 +43,90 @@ function play(script: LevelScript, ticks: number): Recorder {
   return recorder;
 }
 
-/** The rows of GDD v0.12 §7.2.1 (Bomb Carrier removed) and §7.2.2, as the GDD writes them. */
+/** The rows of GDD v0.12 §7.2.1 (Bomb Carrier removed), §7.2.2 and the v0.21 filler rows of §7.2.3, in script order. */
 const GDD_ROWS: readonly (readonly [number, string, number, number, number, string])[] = [
   [0, 'popcorn', 8, 80, -8, 'S'],
+  [5, 'popcorn', 6, 160, -8, 'S mirrored'],
   [8, 'popcorn', 6, 160, -8, 'S mirrored'],
   [8, 'diver', 1, 80, -8, ''],
   [8, 'diver', 1, 160, -8, ''],
+  [10, 'diver', 1, 120, -8, ''],
+  [12, 'popcorn', 6, 80, -8, 'S'],
+  [15, 'diver', 1, 60, -8, ''],
+  [15, 'diver', 1, 180, -8, ''],
+  [16, 'popcorn', 6, 120, -8, 'S'],
   [18, 'gunner', 1, -16, 80, '60,80'],
   [18, 'gunner', 1, 256, 80, '180,80'],
+  [22, 'popcorn', 8, 120, -8, 'S'],
+  [25, 'diver', 1, 80, -8, ''],
+  [25, 'diver', 1, 160, -8, ''],
+  [26, 'popcorn', 6, 80, -8, 'S mirrored'],
   [28, 'carrier', 1, -16, 64, 'cargo 2'],
+  [29, 'diver', 1, 120, -8, ''],
   [32, 'popcorn', 8, 120, -8, 'S'],
   [32, 'gunner', 1, 120, -16, '120,80'],
+  [36, 'diver', 1, 60, -8, ''],
+  [36, 'diver', 1, 180, -8, ''],
+  [38, 'popcorn', 6, 160, -8, 'S mirrored'],
   [40, 'diver', 1, 80, -8, ''],
   [40, 'diver', 1, 160, -8, ''],
+  [42, 'popcorn', 6, 80, -8, 'S'],
+  [44, 'diver', 1, 60, -8, ''],
+  [44, 'diver', 1, 180, -8, ''],
   [45, 'heavy-ring', 1, 120, -24, '120,72'],
   [50, 'popcorn', 8, 60, -8, 'S'],
   [52, 'popcorn', 6, 180, -8, 'S mirrored'],
+  [55, 'popcorn', 6, 120, -8, 'S'],
+  [57, 'diver', 1, 120, -8, ''],
   [58, 'diver', 1, 60, -8, ''],
   [58, 'diver', 1, 180, -8, ''],
   [59, 'diver', 1, 100, -8, ''],
   [59, 'diver', 1, 140, -8, ''],
+  [60, 'popcorn', 6, 80, -8, 'S'],
+  [61, 'diver', 1, 80, -8, ''],
+  [61, 'diver', 1, 160, -8, ''],
+  [62, 'diver', 1, 60, -8, ''],
+  [62, 'diver', 1, 180, -8, ''],
   [64, 'gunner', 1, 60, -16, '60,64'],
   [64, 'gunner', 1, 180, -16, '180,64'],
+  [66, 'popcorn', 6, 160, -8, 'S mirrored'],
+  [68, 'diver', 1, 80, -8, ''],
+  [68, 'diver', 1, 160, -8, ''],
   [70, 'popcorn', 8, 120, -8, 'S'],
   [70, 'diver', 1, 40, -8, ''],
   [70, 'diver', 1, 200, -8, ''],
+  [74, 'popcorn', 8, 80, -8, 'S'],
+  [75, 'diver', 1, 60, -8, ''],
+  [75, 'diver', 1, 180, -8, ''],
+  [76, 'diver', 1, 120, -8, ''],
+  [77, 'popcorn', 6, 120, -8, 'S'],
   [78, 'carrier', 1, -16, 48, 'cargo 4'],
+  [80, 'diver', 1, 100, -8, ''],
+  [80, 'diver', 1, 140, -8, ''],
   [82, 'gunner', 1, -16, 72, '48,72'],
   [82, 'gunner', 1, 256, 72, '192,72'],
   [82, 'gunner', 1, 120, -16, '120,56'],
+  [86, 'popcorn', 6, 160, -8, 'S mirrored'],
+  [88, 'diver', 1, 120, -8, ''],
+  [88, 'popcorn', 6, 80, -8, 'S'],
   [90, 'heavy-fan', 1, 120, -24, '120,72'],
   [92, 'diver', 1, 60, -8, ''],
   [93, 'diver', 1, 180, -8, ''],
+  [95, 'popcorn', 8, 120, -8, 'S'],
+  [98, 'diver', 1, 60, -8, ''],
+  [98, 'diver', 1, 180, -8, ''],
+  [99, 'popcorn', 6, 80, -8, 'S'],
+  [101, 'diver', 1, 120, -8, ''],
   [102, 'heavy-ring', 1, 60, -24, '60,80'],
   [102, 'heavy-fan', 1, 180, -24, '180,80'],
+  [107, 'diver', 1, 100, -8, ''],
+  [107, 'diver', 1, 140, -8, ''],
+  [109, 'diver', 1, 60, -8, ''],
+  [109, 'diver', 1, 180, -8, ''],
   [110, 'popcorn', 8, 120, -8, 'S'],
 ];
 
-describe('LEVEL_1 — the 120 s script of GDD v0.12 §7.2.1 and §7.2.2', () => {
+describe('LEVEL_1 — the 120 s script of GDD v0.12 §7.2.1, §7.2.2 and v0.21 §7.2.3', () => {
   it('holds exactly the GDD rows, in order', () => {
     const rows = LEVEL_1.events.map((e) => {
       let path = '';
@@ -92,20 +138,36 @@ describe('LEVEL_1 — the 120 s script of GDD v0.12 §7.2.1 and §7.2.2', () => 
     expect(rows).toEqual(GDD_ROWS);
   });
 
-  it('pins the P of each of the seven formations: only 8, 50, 52 and 70 s pay none (GDD v0.18)', () => {
+  it('pins the P of each formation: only 0, 32 and 110 s pay it (GDD v0.18, v0.21 §7.2.3)', () => {
     const formations = LEVEL_1.events.filter((e) => e.archetype.formation && e.count > 1);
     expect(formations.map((e) => [e.at, e.paysP !== false])).toEqual([
       [0, true],
+      [5, false],
       [8, false],
+      [12, false],
+      [16, false],
+      [22, false],
+      [26, false],
       [32, true],
+      [38, false],
+      [42, false],
       [50, false],
       [52, false],
+      [55, false],
+      [60, false],
+      [66, false],
       [70, false],
+      [74, false],
+      [77, false],
+      [86, false],
+      [88, false],
+      [95, false],
+      [99, false],
       [110, true],
     ]);
     // The flag lives on formation rows only (a load check), so no other row carries one.
     expect(LEVEL_1.events.filter((e) => e.paysP !== undefined).map((e) => e.at)).toEqual([
-      8, 50, 52, 70,
+      5, 8, 12, 16, 22, 26, 38, 42, 50, 52, 55, 60, 66, 70, 74, 77, 86, 88, 95, 99,
     ]);
   });
 
@@ -114,7 +176,23 @@ describe('LEVEL_1 — the 120 s script of GDD v0.12 §7.2.1 and §7.2.2', () => 
     expect(recorder.formations.map((formation) => formation.paysP)).toEqual([
       true,
       false,
+      false,
+      false,
+      false,
+      false,
+      false,
       true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
       false,
       false,
       false,
@@ -151,7 +229,7 @@ describe('LEVEL_1 — the 120 s script of GDD v0.12 §7.2.1 and §7.2.2', () => 
 describe('LevelDirector — script walking (GDD v0.6 §7.2.1, class diagram)', () => {
   it('spawns the 0 s row on the first step: 8 Popcorn (GDD v0.11), one every 1/3 s (20 steps)', () => {
     const ticks = play(LEVEL_1, 480)
-      .spawns.filter((s) => s.id === 'popcorn')
+      .spawns.filter((s) => s.id === 'popcorn' && s.x === 80)
       .map((s) => s.tick);
     expect(ticks).toEqual([1, 21, 41, 61, 81, 101, 121, 141]);
   });
@@ -201,12 +279,12 @@ describe('LevelDirector — script walking (GDD v0.6 §7.2.1, class diagram)', (
     expect(spawns.map((s) => s.tick).slice(-1)).toEqual([6741]);
   });
 
-  // GDD v0.11–v0.12 (unchanged): Popcorn 8 + 6 + 8 + 8 + 6 + 8 + 8 = 52; Divers 2 + 2 + 4 + 2 + 2 (92 s, 93 s) = 12.
-  it('holds the rows of GDD v0.12 §7.2.1 and §7.2.2 per pass', () => {
+  // GDD v0.11–v0.12: Popcorn 52, Divers 12; v0.21 §7.2.3 adds the filler rows (no Gunner, Carrier or Heavy).
+  it('holds the rows of GDD v0.12 §7.2.1, §7.2.2 and v0.21 §7.2.3 per pass', () => {
     const recorder = play(LEVEL_1, 7200);
     const count = (id: string): number => recorder.spawns.filter((s) => s.id === id).length;
     expect(['popcorn', 'diver', 'gunner', 'carrier', 'heavy-ring', 'heavy-fan'].map(count)).toEqual(
-      [52, 12, 8, 2, 2, 2],
+      [154, 42, 8, 2, 2, 2],
     );
   });
 

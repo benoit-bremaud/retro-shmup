@@ -56,10 +56,14 @@ export interface RunMeasure {
   /** Seconds since the start when power 5 was first reached; NaN when never. */
   readonly fullPowerS: number;
   readonly bombsUsed: number;
+  /** Seconds with no enemy on the field before `EMPTY_UNTIL_S` (GDD v0.21 §7.2.3). */
+  readonly emptyS: number;
 }
 
 /** The waves last 120 s, the boss at most 3 + 3 + 90 s, then the destroyed sequence. */
 const MAX_STEPS = STEPS_PER_SECOND * 230;
+/** The empty-field count stops here: the calm before the WARNING is empty on purpose (§7.2.2). */
+const EMPTY_UNTIL_S = 116;
 /** How far ahead (seconds) a bullet's path is checked against the ship. */
 const LOOKAHEAD_S = 0.8;
 /** Samples of that look-ahead per candidate move. */
@@ -103,10 +107,14 @@ export function measureRun(profile: PlayerProfile, seed: number): RunMeasure {
   events.subscribe(GameEventKind.BossWarning, () => (warningStep = step));
   events.subscribe(GameEventKind.BossDestroyed, () => (killStep = step));
   let fullPowerS = NaN;
+  let emptySteps = 0;
   for (; step < MAX_STEPS && run.outcome() === RunOutcome.Playing; step += 1) {
     if (step % holdSteps === 0) decide(run, profile, mind, frame);
     else frame.pressed = 0;
     run.step(STEP_SECONDS, frame);
+    if (step < EMPTY_UNTIL_S * STEPS_PER_SECOND && run.snapshot().enemies.count === 0) {
+      emptySteps += 1;
+    }
     if (Number.isNaN(fullPowerS) && run.snapshot().power === KitCaps.maxPower) {
       fullPowerS = step / STEPS_PER_SECOND;
     }
@@ -119,6 +127,7 @@ export function measureRun(profile: PlayerProfile, seed: number): RunMeasure {
     score: run.snapshot().score,
     fullPowerS,
     bombsUsed: bombs,
+    emptyS: emptySteps / STEPS_PER_SECOND,
   };
 }
 

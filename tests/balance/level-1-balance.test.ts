@@ -18,6 +18,7 @@ interface Summary {
   readonly fullPowerRate: number;
   readonly medianFullPowerS: number;
   readonly bombsPerRun: number;
+  readonly medianEmptyS: number;
 }
 
 function median(values: number[]): number {
@@ -38,10 +39,11 @@ function summarize(profile: PlayerProfile): Summary {
     fullPowerRate: share((m) => !Number.isNaN(m.fullPowerS)),
     medianFullPowerS: median(runs.map((m) => m.fullPowerS)),
     bombsPerRun: runs.reduce((s, m) => s + m.bombsUsed, 0) / SEEDS,
+    medianEmptyS: median(runs.map((m) => m.emptyS)),
   };
 }
 
-describe('level 1 balance (measurement bot, GDD v0.19)', () => {
+describe('level 1 balance (measurement bot, GDD v0.21)', () => {
   // 300 full runs: played once, before the assertions, inside the hook's own timeout.
   let good: Summary;
   let average: Summary;
@@ -61,8 +63,8 @@ describe('level 1 balance (measurement bot, GDD v0.19)', () => {
     expect(good.bossKillRate).toBeGreaterThanOrEqual(0.55);
   });
 
-  // Measured 2.74 deaths, 45 % game over, 55 % boss killed (v0.19, the ring breaks on near misses;
-  // v0.18: 2.3, 28 %, 73 %; v0.12: 0.56, 2 %, 98 %).
+  // Measured 2.96 deaths, 47 % game over, 53 % boss killed with the v0.21 filler rows (v0.19: 2.74,
+  // 45 %, 55 %, the ring breaks on near misses; v0.18: 2.3, 28 %, 73 %; v0.12: 0.56, 2 %, 98 %).
   it('makes the average player lose lives and sometimes the run', () => {
     expect(average.deathsPerRun).toBeGreaterThanOrEqual(1.5);
     expect(average.deathsPerRun).toBeLessThanOrEqual(3);
@@ -81,6 +83,12 @@ describe('level 1 balance (measurement bot, GDD v0.19)', () => {
   it('gives full power only near the boss', () => {
     expect(average.fullPowerRate).toBeGreaterThanOrEqual(0.4); // measured 54 %: a Gunner P is needed
     expect(average.medianFullPowerS).toBeGreaterThanOrEqual(110);
+  });
+
+  // GDD v0.21 §7.2.3: measured 65 s without an enemy in the first 116 s (v0.20: 83 s), so a later
+  // edit cannot empty the level again.
+  it('keeps the field busy: at most 70 s without an enemy before the calm', () => {
+    expect(average.medianEmptyS).toBeLessThanOrEqual(70);
   });
 
   // Measured 13 % (v0.19; v0.18: 41 %): the beginner still beats the boss now and then.
