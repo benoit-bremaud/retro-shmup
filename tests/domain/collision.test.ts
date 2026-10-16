@@ -10,7 +10,11 @@ import type { Pickup } from '../../src/domain/game/pickup';
 import { PlayerState } from '../../src/domain/game/player';
 import { WEAPONS, WeaponKind } from '../../src/domain/game/weapon';
 import type { ShotSpec } from '../../src/domain/game/weapon';
-import { PLAYER_BULLET_POOL_SIZE } from '../../src/domain/game/tuning';
+import {
+  EnemyBulletTuning,
+  PLAYER_BULLET_POOL_SIZE,
+  PlayerTuning,
+} from '../../src/domain/game/tuning';
 import { World } from '../../src/domain/game/world';
 import { createIntentFrame } from '../../src/domain/ports/input-port';
 import { shots } from '../support/shots';
@@ -318,6 +322,69 @@ describe('CollisionResolver — the shield absorbs (GDD v0.8 §4.4)', () => {
     const rules = new Rules();
     CollisionResolver.resolve(world, rules);
     expect([rules.absorbed, rules.deaths]).toEqual([1, 0]);
+    expect(world.enemyBullets.at(1).spent).toBe(false);
+  });
+});
+
+describe('CollisionResolver — the ring is the shape while a charge is held (GDD v0.19 §4.4)', () => {
+  // The ship rests at (120, 272); the ring is 36 × 36 and an enemy bullet 4 × 4, so a bullet
+  // centre closer than 18 + 2 = 20 px on both axes overlaps the ring, strictly.
+  const REACH = PlayerTuning.shieldSize / 2 + EnemyBulletTuning.size / 2;
+
+  function shieldedWorld(): World {
+    const world = vulnerableWorld();
+    world.player.collect(PickupKind.Shield);
+    return world;
+  }
+
+  it.each([
+    ['a corner', 120 + REACH - 1, 272 + REACH - 1],
+    ['an edge', 120 - REACH + 1, 272],
+    ['the inside, off the hitbox', 120, 272 - 10],
+  ])('consumes the charge with a bullet overlapping %s of the ring', (_, x, y) => {
+    const world = shieldedWorld();
+    world.spawnEnemyBullet(x, y, 0, 75);
+    const rules = new Rules();
+    CollisionResolver.resolve(world, rules);
+    expect([rules.absorbed, rules.deaths, world.player.shield]).toEqual([1, 0, false]);
+    expect(world.enemyBullets.at(0).spent).toBe(true);
+  });
+
+  it('leaves the charge to a bullet that only shares the ring edge', () => {
+    const world = shieldedWorld();
+    world.spawnEnemyBullet(120 + REACH, 272, 0, 75);
+    const rules = new Rules();
+    CollisionResolver.resolve(world, rules);
+    expect([rules.absorbed, rules.deaths, world.player.shield]).toEqual([0, 0, true]);
+    expect(world.enemyBullets.at(0).spent).toBe(false);
+  });
+
+  it('lets the same bullet pass with no charge: only the 4 × 4 hitbox counts', () => {
+    const world = vulnerableWorld();
+    world.spawnEnemyBullet(120 + REACH - 1, 272, 0, 75);
+    const rules = new Rules();
+    CollisionResolver.resolve(world, rules);
+    expect([rules.absorbed, rules.deaths]).toEqual([0, 0]);
+    expect(world.enemyBullets.at(0).spent).toBe(false);
+  });
+
+  it('absorbs a body touching the ring and leaves it alive', () => {
+    const world = shieldedWorld();
+    // A 16 × 16 Popcorn reaches the ring when its centre is closer than 18 + 8 = 26 px.
+    const popcorn = enemyAt(world, POPCORN, 120 + 25, 272);
+    const rules = new Rules();
+    CollisionResolver.resolve(world, rules);
+    expect([rules.absorbed, popcorn.spent, world.player.shield]).toEqual([1, false, false]);
+  });
+
+  it('protects once only: the next touch of the vanished ring is a near miss again', () => {
+    const world = shieldedWorld();
+    world.spawnEnemyBullet(120 + REACH - 1, 272, 0, 75);
+    CollisionResolver.resolve(world, new Rules());
+    world.spawnEnemyBullet(120 + REACH - 1, 272 - 5, 0, 75);
+    const rules = new Rules();
+    CollisionResolver.resolve(world, rules);
+    expect([rules.absorbed, rules.deaths]).toEqual([0, 0]);
     expect(world.enemyBullets.at(1).spent).toBe(false);
   });
 });

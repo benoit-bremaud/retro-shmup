@@ -357,10 +357,11 @@ export class RunPresenter {
     this.render.drawRect(x - box.width / 2, y - box.height / 2, box.width, box.height, colour);
   }
 
-  // The shield ring: a 36 × 36 outline of four 2 px rectangles around the ship (GDD v0.8 §4.4).
+  // The shield ring: a 36 × 36 outline of four 2 px rectangles around the ship, exactly the shape
+  // that collides while the charge is held (GDD v0.19 §4.4).
   private drawShieldRing(x: number, y: number): void {
     const r = this.render;
-    const half = 18;
+    const half = PlayerTuning.shieldSize / 2;
     const t = 2;
     r.drawRect(x - half, y - half, 2 * half, t, Palette.shieldRing);
     r.drawRect(x - half, y + half - t, 2 * half, t, Palette.shieldRing);
