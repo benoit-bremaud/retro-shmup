@@ -1,20 +1,20 @@
-# Local review — retro-shmup (GDD v0.21, design/levels-density)
+# Local review — retro-shmup (level-1 filler rows, feat/levels-density)
 
 - Date: 2026-10-16
-- Commit: 236f49a
-- Scope: branch diff main...HEAD — `docs/design/game-design-document.md` only (§7.2.3, status line, decision record)
-- Checks run: docs consistency (read by hand) · secrets · execution checks through the pre-push `make verify`. Design / tests / security / correctness agents not spawned: the diff is prose only, with no code or test change to audit.
-- Verdict: ship as-is · Must 0 · Should 0 · Nice 1
+- Commit: branch head (code PR of GDD v0.21 §7.2.3, design #94)
+- Scope: branch diff main...HEAD — `src/domain/game/level-script.ts` (data rows + doc comment), `tests/domain/level-director.test.ts`, `tests/balance/level-1-balance.test.ts`, `tests/support/average-player.ts`, QA screenshots
+- Checks run: design · docs · tests · security · correctness, read by hand: the diff is level data plus test pins, with no new type or logic in `src`
+- Verdict: ship as-is · Must 0 · Should 0 · Nice 0
 
-## Pre-merge gate (head SHA 236f49a)
+## Pre-merge gate
 | Step | Result |
 |---|---|
-| 1 Tests | run by the pre-push hook (`make verify`); the rows of §7.2.3 were measured on an uncommitted prototype: level simulation and balance guard green |
-| 2 Coverage | unchanged (no code in the diff) — measured by `make verify` |
-| 3 SonarQube | run by the pre-push hook |
-| 4 Secrets | gitleaks clean on the commit · only `.env.example` tracked (placeholders) · diff read: nothing sensitive |
-| 5 QA pass | not applicable before the code PR (no runtime change); full pass and `make smoke` come with the code PR |
-- Gate: **push authorised**; merge after green CI
+| 1 Tests | ✅ `make check`: unit + level simulation + balance guard, all green · ✅ `make smoke` 6/6 (Chromium, Firefox, WebKit) |
+| 2 Coverage | tests 99.27 % stmts / 95.67 % branches / 100 % funcs / 99.9 % lines (ratchet thresholds held) · docs 307/307 = 100 % |
+| 3 SonarQube | run by the pre-push hook (`make verify`) |
+| 4 Secrets | gitleaks on commit · no tracked `.env` besides `.env.example` · diff read: nothing sensitive |
+| 5 QA pass | ✅ headless Chromium, build of the branch: title → play, 13 s and 23 s captures (the 22 s filler formation on screen), console clean · `docs/architecture/qa/2026-10-16-level-density-13s.png`, `-23s.png` |
+- Gate: **GREEN** once CI passes
 
 ## 🔴 Must Have
 _None._
@@ -23,10 +23,11 @@ _None._
 _None._
 
 ## 🔵 Nice to Have
-- `docs/design/game-design-document.md:708` `[docs]` · §7.2.2 still says "Of the seven formations": still true for the formations of §7.2.1/§7.2.2. §7.2.3 adds formations that all pay no P, so the P count does not change · keep as is.
+_None._
 
 ## ⚪ Disagree / Intentional
-- No UML change: the level script is data inside the existing `LevelScript` / `ScriptEvent` types (04-class-domain); no class, state or sequence changes.
+- `tests/domain/level-director.test.ts` `GDD_ROWS` is a literal copy of the script order: it is the pin that makes any row edit a deliberate GDD change (as since v0.10).
+- No UML change: data inside the existing `LevelScript` / `ScriptEvent` (GDD v0.21 PR #94).
 
 ## Per-dimension summary
-- Design: no structure touched · Docs: §7.2.3 consistent with §7.1, §7.2.1, §7.2.2 (ceilings, calm, P curve, last spawn 112.3 s) · Tests: guard band of 70 s specified for the code PR · Security: n/a · Correctness: row table matches the measured prototype.
+- Design: data only, ADR-0003 untouched · Docs: script doc comment cites §7.2.3 · Tests: pins updated to GDD, new band `medianEmptyS ≤ 70` (measured 64.7 s) · Security: no input, no sink · Correctness: P curve unchanged (3 paying formations: 0, 32, 110 s), ceilings ≤ 16 / ≤ 40 held, WARNING field empty.
