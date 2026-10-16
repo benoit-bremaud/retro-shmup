@@ -90,7 +90,7 @@ is a calculation covered by unit tests (ADR-0003), not by a diagram.
 | MessageCatalogue | CMP; implied by UC7 and the cards and menus of STM-scenes |
 | SeededRandom | SD-kill (`Random`), CD (`Run` owns it); in the code since PR #5 but unused by the game; owned by `Run` from the player-kit brick E-1 (ADR-0019) |
 | Canvas2DRenderer, DeviceInput, PerformanceClock | SD-tick (through `RenderPort`, `InputPort`, `Clock`), CMP |
-| WebAudioPlayer | SD-kill and SD-hit (SFX through the presenter), CMP |
+| WebAudioPlayer | SD-kill and SD-hit (SFX through the presenter), CD-audio, CMP |
 | LocalStorageStore | STM-scenes (`Boot`, `Name entry`, `Options`), CD-menus (realizes `StoragePort`), CMP |
 
 ## 4. Decisions → where they are realized

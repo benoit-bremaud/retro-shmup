@@ -1,37 +1,37 @@
-# Local review — retro-shmup (feat/champion-name)
+# Local review — retro-shmup (GDD v0.23 audio design)
 
 - Date: 2026-10-16
-- Commit: see the PR head
-- Scope: branch diff origin/main...HEAD (GDD v0.22 §9.4.1 code; `ChampionName`, `Starfield.drawLayers`, `far` font, `championName` switch)
-- Checks run: design (architecture-guardian) · docs · tests · security · correctness
-- Verdict: ship · Must 0 · Should 0 open (4 fixed) · Nice 3 deferred
+- Commit: design commit 7801629 + review fixes
+- Scope: branch diff origin/main...docs/design-audio (docs only)
+- Checks run: design · docs (architecture-guardian on the docs diff); tests, security and correctness have no code to review
+- Verdict: ship after the fixes below (applied) · Must 2 · Should 5 · Nice 3
 
-## Pre-merge gate
+## Pre-merge gate (head of docs/design-audio)
 | Step | Result |
 |---|---|
-| 1 Tests | ✅ 1 323 unit / simulation / balance · ✅ smoke 6/6 in Chromium, Firefox, WebKit |
-| 2 Coverage | tests 99.28 % stmts / 95.67 % branches / 100 % funcs / 99.9 % lines (ratchet thresholds met) · docs 309/309 = 100 % |
-| 3 SonarQube | run by the pre-push hook (`make verify`) |
-| 4 Secrets | ✅ gitleaks clean · only `.env.example` tracked · diff read: nothing sensitive |
-| 5 QA pass | ✅ headless Chromium, a seeded top 1 *BENOIT*, 44 s of play: the name drifts dimly under the enemies and shots; console and page errors none · `docs/architecture/qa/2026-10-16-champion-name-44s.png` |
+| 1 Tests | ✅ 1 323 unit/simulation (66 files) · ✅ smoke 6/6 (Chromium, Firefox, WebKit) |
+| 2 Coverage | tests 99.28 % stmts / 95.67 % branches / 100 % funcs / 99.9 % lines (floor 80) · docs 100 % (309/309) |
+| 3 SonarQube | ✅ PASSED |
+| 4 Secrets | ✅ gitleaks clean · no tracked .env · diff read: nothing sensitive |
+| 5 QA pass | ✅ smoke only (docs-only diff) |
+- Gate: **GREEN**
 
 ## 🔴 Must Have
-_None._
+- `diagrams/audio/04-class-audio.md` `[design|docs]` · adapter named `WebAudioOutput` and a separate listener drifted from the component diagram (`WebAudioPlayer`, RunPresenter maps events to SFX, ADR-0010) · fixed: `WebAudioPlayer`, `RunSounds` is a module RunPresenter delegates to; component diagram and traceability matrix updated
+- `04-class-audio.md` / GDD §9.5 `[design]` · the synthesiser's seed could be read as the run's stream (determinism, ADR-0002) · fixed: own `SeededRandom`, a constant seed per sound
 
-## 🟡 Should Have (fixed in this branch)
-- `src/domain/scenes/scene-machine.ts` `[design|correctness]` · the name vanished in the pause, against GDD §9.4.1 · now frozen in every frozen, non-scrolling scene; test added.
-- `docs/architecture/diagrams/render/04-class-champion-name.md` `[docs]` · entry height −8 vs code −10 · doc corrected.
-- `src/domain/save/save-store.ts` `[security]` · a saved `null` read as on · only a missing key reads as on; `null` test added (ADR-0006).
-- `tests/domain/scene-machine.test.ts` `[tests]` · duplicate `ALL_ON` · removed.
+## 🟡 Should Have
+- `04-class-audio.md` `[design]` · arrows from data/pure functions · fixed: SceneMachine drives music, volumes and pause
+- `04-class-audio.md` `[design]` · the adapter's UI-sound and track tables were missing (ADR-0009) · fixed: `UI_SOUNDS`, `TRACKS`
+- GDD §9.5 `[docs]` · volume allowlist on load not stated (ADR-0006) · fixed
+- GDD §9.5 `[docs]` · stale "Press Start" autoplay line · fixed
+- `docs/architecture/README.md` `[docs]` · index missing the audio diagram · fixed
 
-## 🔵 Nice to Have (deferred)
-- `tests/**` `[tests]` · every effects literal repeats each switch · a shared `allEffects(on)` test helper.
-- `src/domain/scenes/scene-machine.ts` `[design]` · layer indices 0/1 leak into the scene machine · `drawFar`/`drawNear` with a UML update.
-- `src/domain/scenes/scene-machine.ts` `[design]` · 7 positional constructor parameters · an options object, own refactor.
+## 🔵 Nice to Have
+- `04-class-audio.md` `[docs]` · UML attribute syntax, a main.ts participant, only resume() inside the gesture · all applied
 
 ## ⚪ Disagree / Intentional
-- `ChampionName` keeps its pass and x: needed so the x is drawn once per pass (ADR-0010).
-- A `far` font id rather than alpha: the render port has no alpha (UML context).
+- One `AudioBufferSourceNode` per `play`: Web Audio sources are single-use and live outside the simulation; not a pool violation.
 
 ## Per-dimension summary
-- Design: small presentation class, no over-engineering. · Docs: GDD/UML aligned (run start, pause, −10). · Tests: unit + scene + adapter + save cases. · Security: names already allowlisted, switch parsed strictly. · Correctness: pass arithmetic tested.
+- Design: sound, no over-engineering · Docs: drift fixed · Tests / Security / Correctness: no code in the diff

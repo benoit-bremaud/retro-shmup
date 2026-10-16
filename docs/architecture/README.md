@@ -78,6 +78,7 @@ Status: complete for 1.0 (2026-10-08); the bomb sequence added with the player-k
 | `render` | [02 sequence — sprite loading](diagrams/render/02-sequence-sprite-loading.md) | The sheets load beside the first frames; the shapes stay the fallback (G4-1) |
 | `render` | [04 class — sprites](diagrams/render/04-class-sprites.md) | `SpriteId`, `drawSprite` returning whether it drew, the baked `SpriteBank` (G4-1) |
 | `render` | [04 class — champion name](diagrams/render/04-class-champion-name.md) | The number 1's name in the far background, between the far and near star layers (v0.22) |
+| `audio` | [04 class — audio](diagrams/audio/04-class-audio.md) | Synthesiser, sound table, `RunSounds`, scene music, `WebAudioPlayer`, unlock and visibility (G3, v0.23) |
 | — | [traceability matrix](traceability-matrix.md) | Is every use case realized, and every class used? |
 
 **Deliberately not drawn**, each covered elsewhere:
