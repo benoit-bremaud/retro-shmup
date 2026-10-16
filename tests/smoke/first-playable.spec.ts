@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
+import { PLAYER_CELL, POPCORN_CELL, SHIP_CELL_SIZE } from '../support/ship-cells.js';
+import { Palette } from '../../src/domain/presentation/palette.js';
 
 // The single browser smoke test (ADR-0003; 05-state-scenes; ADR-0018 Consequences): a phone in
 // portrait, then a rotation. A tap on the PLAY row starts a run, the ship reaches its resting
@@ -9,11 +11,9 @@ import type { Page } from '@playwright/test';
 // A phone: 390 × 844 CSS pixels at pixel ratio 2, with touch (ADR-0018 Consequences).
 test.use({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true });
 
-/** The hull colour `Palette.shipHull`, which no star uses. */
-const HULL = { r: 0x4f, g: 0xd1, b: 0xc5 };
 /** The ship's resting point in play-field pixels (GDD §4.1). */
 const REST = { x: 120, y: 272 };
-/** A hull pixel 8 px below the centre, which the bright cockpit (the hitbox) occupies. */
+/** A ship-grey hull pixel 8 px below the sprite's centre: no star colour, and no enemy there at rest. */
 const HULL_PROBE = { x: REST.x, y: REST.y + 8 };
 
 interface Geometry {
@@ -59,14 +59,49 @@ async function colourAt(
   );
 }
 
-/** True when the hull colour is on the ship's hull at rest, in whichever screen is in use. */
+/**
+ * The colour of the hull pixel in the ships sheet itself, read from the PNG the game loads: the
+ * sprite is baked nose up, so the sheet row is the cell's mirror image. The probe follows the art
+ * instead of a copied colour, and an empty (transparent) pixel fails the test loudly.
+ */
+async function spriteHullColour(page: Page): Promise<{ r: number; g: number; b: number }> {
+  const half = SHIP_CELL_SIZE / 2;
+  const below = half + (HULL_PROBE.y - REST.y);
+  const pixel = await page.evaluate(
+    async ({ url, column, row }) => {
+      const image = new Image();
+      image.src = url;
+      await image.decode();
+      const canvas = document.createElement('canvas');
+      canvas.width = image.width;
+      canvas.height = image.height;
+      const context = canvas.getContext('2d');
+      if (context === null) return null;
+      context.drawImage(image, 0, 0);
+      return Array.from(context.getImageData(column, row, 1, 1).data);
+    },
+    {
+      url: 'assets/sprites/ships.png',
+      column: half + (HULL_PROBE.x - REST.x),
+      row: PLAYER_CELL.flipY ? SHIP_CELL_SIZE - 1 - below : below,
+    },
+  );
+  const [r, g, b, a] = pixel ?? [];
+  if (r === undefined || g === undefined || b === undefined || a !== 255) {
+    throw new Error('the hull probe pixel of the ships sheet is not opaque: move HULL_PROBE');
+  }
+  return { r, g, b };
+}
+
+/** True when the sprite's hull pixel is on screen where the ship rests, in whichever screen is in use. */
 async function hullAtRest(page: Page): Promise<boolean> {
   const g = await geometry(page);
+  const hull = await spriteHullColour(page);
   return colourAt(
     page,
     (g.fieldX + HULL_PROBE.x) * g.scale + 1,
     (g.fieldY + HULL_PROBE.y) * g.scale + 1,
-    HULL,
+    hull,
   );
 }
 
@@ -107,26 +142,71 @@ async function tapScreen(page: Page, x: number, y: number): Promise<void> {
   );
 }
 
-/** The Popcorn colour `Palette.popcorn`, used by nothing else. */
-const POPCORN = { r: 0xf5, g: 0x65, b: 0x65 };
+/** The three star colours as `r,g,b` keys: the only other thing the field paints behind a wave. */
+const STAR_KEYS = [Palette.starFar, Palette.starMid, Palette.starNear].map((hex) =>
+  [1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16)).join(','),
+);
+
+/**
+ * The opaque colours of one cell of the ships sheet that neither the player's ship nor a star
+ * uses, read from the PNG the game loads, as `r,g,b` keys. Other enemies may share them (the Heavy
+ * only spawns at 102 s), so during the first wave, which is Popcorn only, a pixel of one of them
+ * on screen is a Popcorn.
+ */
+async function colourOnlyIn(page: Page, cell: { column: number; row: number }): Promise<string[]> {
+  return page.evaluate(
+    async ({ url, size, wanted, apart, stars }) => {
+      const image = new Image();
+      image.src = url;
+      await image.decode();
+      const canvas = document.createElement('canvas');
+      canvas.width = image.width;
+      canvas.height = image.height;
+      const context = canvas.getContext('2d');
+      if (context === null) return [];
+      context.drawImage(image, 0, 0);
+      const mine = new Set<string>();
+      const others = new Set<string>(stars);
+      const data = context.getImageData(0, 0, image.width, image.height).data;
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i + 3] !== 255) continue;
+        const pixel = i / 4;
+        const column = Math.floor((pixel % image.width) / size);
+        const row = Math.floor(Math.floor(pixel / image.width) / size);
+        const key = Array.from(data.subarray(i, i + 3)).join(',');
+        if (column === wanted.column && row === wanted.row) mine.add(key);
+        else if (column === apart.column && row === apart.row) others.add(key);
+      }
+      return [...mine].filter((key) => !others.has(key));
+    },
+    {
+      url: 'assets/sprites/ships.png',
+      size: SHIP_CELL_SIZE,
+      wanted: cell,
+      apart: PLAYER_CELL,
+      stars: STAR_KEYS,
+    },
+  );
+}
 
 /** True when a Popcorn is painted anywhere in the play field, in whichever screen is in use. */
 async function popcornInField(page: Page): Promise<boolean> {
   const g = await geometry(page);
+  const colours = await colourOnlyIn(page, POPCORN_CELL);
+  if (colours.length === 0) throw new Error('the Popcorn cell has no colour of its own');
   return page.evaluate(
-    ({ popcorn, x, y, w, h }) => {
+    ({ keys, x, y, w, h }) => {
       const context = document.querySelector<HTMLCanvasElement>('#screen')?.getContext('2d');
       if (context === null || context === undefined) return false;
+      const wanted = new Set(keys);
       const data = context.getImageData(x, y, w, h).data;
       for (let i = 0; i < data.length; i += 4) {
-        if (data[i] === popcorn.r && data[i + 1] === popcorn.g && data[i + 2] === popcorn.b) {
-          return true;
-        }
+        if (wanted.has(Array.from(data.subarray(i, i + 3)).join(','))) return true;
       }
       return false;
     },
     {
-      popcorn: POPCORN,
+      keys: colours,
       x: g.fieldX * g.scale,
       y: g.fieldY * g.scale,
       w: 240 * g.scale,
@@ -186,6 +266,7 @@ test('a phone starts, pauses and resumes by touch; a rotation pauses without res
   await expect.poll(() => paintedPixels(page)).toBeGreaterThan(0);
   expect((await geometry(page)).portrait).toBe(true);
   expect(await hullAtRest(page)).toBe(false);
+  expect(await popcornInField(page)).toBe(false);
 
   // A tap on the PLAY row of the title menu starts a run (GDD v0.14). Fly-in then invulnerability
   // blink: once vulnerable, the ship is always drawn. The first Popcorn wave crosses y 272 near
