@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Sound: synthesised retro sound effects for play and menus, kept for menus during the pause
+  (GDD v0.23 §9.3, #105).
+- Music by scene — title, level 1, boss intro and loop, Results and Game over jingles (CC0, by
+  SketchyLogic) — ducked in the pause and faded at the WARNING; an *Audio* options screen with
+  saved music and sound-effect volumes (GDD v0.23 §9.5, #110).
 - The hall-of-fame number 1's name drifts dimly through the far background now and then, on
   its own visual-effects switch (GDD v0.22 §9.4.1, #98, #99).
 - Level 1 is denser: filler Popcorn formations and Divers fill its empty stretches, and the
