@@ -8,6 +8,26 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-16
 
+### Level-1 density: filler rows and an empty-field guard band (#94 → `699bb43`, #96 → `ac27eef`)
+
+- Owner request (feedback from the owner's daughter): "sometimes several seconds with no enemy". The bot
+  measured it: the average player saw no enemy for 83 s of the first 116 s (median, 100 seeds),
+  because the script was paced for enemies that live longer than a second.
+- MCDA on scope: density of level 1 (A, 425 / 500) ahead of an Easy profile pulled forward (D, 375),
+  level 2 and the Gantry (B, 330) and a new enemy role or weapon (C, 225). Lever: rows only, keeping
+  the 16-enemy ceiling (A1, 400), ahead of a ceiling raised to 20 / 48 (A2, 340) and Popcorn HP ×2
+  (A3, 340). Denser rows at 39, 48, 65, 72 and 93 s were tried and dropped: they broke the ceiling.
+- Design (#94): GDD v0.21 §7.2.3, the filler rows (Popcorn formations without P, single Divers),
+  decision record row. No UML change (data inside `LevelScript`).
+- Code (#96): the rows in `LEVEL_1`; the bot measures `emptyS`; new guard band `medianEmptyS ≤ 70`
+  (measured 64.7 s); pinning tests follow the GDD. Average player 2.96 deaths, 47 % game over (guard
+  ≤ 3 and ≤ 50 %: little headroom left).
+- Gate: `make check` green, coverage 99.27 / 95.67 / 100 / 99.9 %, docs 100 %, smoke 6/6, SonarQube
+  passed, gitleaks clean, QA captures at 13 s and 23 s. Codex out of credit, no review.
+- Backlog from the owner during the brick: #95 (menu buttons too small on phones); ideas kept in
+  memory for later chats: flag chosen at start + feedback form after the hall of fame (conflicts
+  with "no network call in 1.0"), short release notes in Options.
+
 ### Smoke in three engines, hall-of-fame persistence proven in the browser (#91 → `475b3c2`, #92 → `9ffb2ce`)
 
 - Owner request: prove the saved names persist and that the game works in any major browser.
