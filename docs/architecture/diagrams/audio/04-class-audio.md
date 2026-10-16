@@ -5,8 +5,8 @@
 > **Related ADRs**: ADR-0009 decision 3 (the audio port controls the mix), ADR-0010 (events, no
 > allocation), ADR-0002 (deterministic simulation), ADR-0005 (asset licences)
 > **Realizes**: the sound of every use case of play and menus; *Change options* (the *Audio*
-> sub-screen). Built in G3-1 (#105) but for the classes tagged *planned* (G3-2: music and the
-> saved volumes).
+> sub-screen). Built in G3-1 (#105: synthesiser, sound effects, pause mix) and G3-2 (music, the
+> *Audio* sub-screen, the saved volumes, the remaining sounds).
 
 ## Context
 
@@ -16,15 +16,17 @@ only `WebAudioPlayer` touches `AudioContext`. Sounds follow the run's events: as
 diagram say, `RunPresenter` maps events to sounds; it delegates the mapping to a small
 `RunSounds` module (subscribed to `RunEvents`, calling `AudioPort.play`) so the presenter does not
 grow. The adapter keeps two tables of its own, so the port stays as ADR-0009 drew it: which `SfxId`
-are menu sounds (kept by the pause mix), and per `TrackId` its file, whether it loops (the boss
-track: intro once, then loop; the jingles: once) and its loop start. The
-music follows the scene. Shots have no event *(owner, G3-1, 470/500 over new
+are menu sounds (kept by the pause mix), and per `TrackId` its files (`TRACK_FILES`: the boss
+track's intro, played once, then its loop; the jingles play once, every other track loops). The
+music follows the scene: the scene machine looks its track up in `SCENE_MUSIC` after each step,
+the run's scenes through `runTrack(boss state)`, and the adapter acts on a change only. Shots have no event *(owner, G3-1, 470/500 over new
 `PlayerFired` / `EnemyFired` events)*: `World` counts the bullets it spawns (`playerShots`,
 `enemyShots`, exposed by the snapshot) and `RunSounds.frame` plays one shot sound per drawn frame
 whose counter moved, so a five-bullet volley is one sound and the simulation only counts. Menu
 sounds come from the scene machine's `stepMenu` (a highlight move, an activation) in the title,
-pause and options menus; the controls and name-entry screens, the chain step and the tally tick
-join in G3-2 (*planned*).
+pause, options and *Audio* menus, and from a change of the highlighted cell or an action on the
+controls and name-entry screens. `RunSounds.frame` plays the chain step when the multiplier rises;
+the Results scene plays the tally tick on each new line (`tallyLineAppears`).
 
 ## Diagram
 
@@ -60,9 +62,18 @@ classDiagram
     +RunSounds(audio: AudioPort, events: RunEvents)
     +frame(snapshot: WorldSnapshot) void
   }
-  class SceneMusic {
-    <<pure function, domain/scenes, planned>>
-    +trackOf(scene, bossStage) TrackId | null
+  class Track {
+    <<data, domain/audio/music>>
+    title | level-1 | boss | results | game-over
+    +JINGLES: Track[]
+  }
+  class runTrack {
+    <<pure function, domain/audio/music>>
+    +runTrack(boss: BossState) Track | null
+  }
+  class SCENE_MUSIC {
+    <<data, domain/scenes>>
+    +Record~Scene, Track | run~
   }
   class volumeGain {
     <<pure function, domain/audio>>
@@ -70,12 +81,14 @@ classDiagram
   }
   class WebAudioPlayer {
     <<adapter, src/adapters>>
+    +WebAudioPlayer(createContext, loadFile: LoadAudioFile)
     +unlock() void
     +setHidden(hidden: boolean) void
     -buffers: Map~SfxId, AudioBuffer~
     -MAX_VOICES: number = 16
     -lastStart: Map~SfxId, number~
-    -TRACKS: Record~TrackId, TrackFile~
+    -TRACK_FILES: Record~Track, string[]~
+    -trackBuffers: Map~file, AudioBuffer~
   }
   class SceneMachine {
     <<domain/scenes>>
@@ -87,9 +100,14 @@ classDiagram
     <<composition root, src/app>>
   }
   class Options {
-    <<domain/options, volumes planned>>
+    <<domain/options>>
     +musicVolume: 0..10
     +sfxVolume: 0..10
+  }
+  class LiveOptions {
+    <<domain/options>>
+    +apply(row) boolean
+    +nudge(row: VolumeRow, direction) void
   }
   WebAudioPlayer ..|> AudioPort
   WebAudioPlayer ..> renderSfx : renders SFX_TABLE at unlock
@@ -97,11 +115,16 @@ classDiagram
   SFX_TABLE o-- SfxParams
   RunPresenter ..> RunSounds : delegates event to sound
   RunSounds ..> AudioPort : play
-  SceneMachine ..> SceneMusic : trackOf
-  SceneMachine ..> AudioPort : play menu sounds, setPaused, music planned
+  SceneMachine ..> SCENE_MUSIC : track after each step
+  SCENE_MUSIC ..> Track
+  SceneMachine ..> runTrack : the run's scenes
+  SceneMachine ..> AudioPort : play menu sounds, setPaused, music, setVolumes
+  SceneMachine ..> volumeGain : at start-up and on each volume change
   WebAudioPlayer ..> UI_SOUNDS : kept by the pause mix
-  Main ..> volumeGain : setVolumes at start-up (from the options in G3-2)
-  SceneMachine ..> Options : reads
+  WebAudioPlayer ..> Track : TRACK_FILES, JINGLES
+  Main ..> WebAudioPlayer : fetch of public/assets/audio as LoadAudioFile
+  LiveOptions ..|> Options
+  SceneMachine ..> LiveOptions : changes on the Audio sub-screen
 ```
 
 ## Unlock, play and visibility
@@ -125,6 +148,23 @@ sequenceDiagram
   M->>WA: setHidden(true) suspends the context; false resumes it
 ```
 
+## Music through a run
+
+```mermaid
+sequenceDiagram
+  participant SM as SceneMachine (domain)
+  participant WA as WebAudioPlayer (adapter)
+  Note over WA: at unlock, every track file is fetched and decoded once
+  SM->>WA: music(title) after each step on the title (a repeat changes nothing)
+  WA->>WA: start the title loop once its file is decoded
+  SM->>WA: music(level-1) from Play
+  SM->>WA: setPaused(true) in the pause: duck to −12 dB over 150 ms
+  SM->>WA: setPaused(false) at the count-in: back over 1 s
+  SM->>WA: music(null) at the WARNING: fade out over 0.5 s
+  SM->>WA: music(boss) at its entrance: intro once, then the loop from the intro's end
+  SM->>WA: music(results) or music(game-over): the jingle once, the track before stopped
+```
+
 ## Rules carried
 
 - `renderSfx` is deterministic: its noise uses its own `SeededRandom` seeded with a constant
@@ -133,4 +173,5 @@ sequenceDiagram
 - No allocation in the loop: buffers are rendered at unlock; `play` only starts a buffer source
   (a browser object, outside the simulation).
 - The music never advances the simulation clock; the warning's fade and the boss track follow the
-  scene and the run's `BossWarning` event (GDD §6).
+  scene and the boss's state (GDD §6), read from the snapshot after each step.
+- A track file that fails to fetch or decode leaves that track silent; the game plays on.

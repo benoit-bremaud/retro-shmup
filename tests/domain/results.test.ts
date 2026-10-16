@@ -7,6 +7,7 @@ import {
   formatTallyValues,
   groupThousands,
   RESULTS_LINES,
+  tallyLineAppears,
 } from '../../src/domain/presentation/results';
 import { FIELD_WIDTH } from '../../src/domain/presentation/screen';
 import { RecordingRender } from '../support/recording-render';
@@ -125,5 +126,12 @@ describe('drawResults — the Results screen (GDD v0.10 §8, ADR-0022 decision 9
       'BOMBES',
       'TOTAL',
     ]);
+  });
+});
+
+describe('tallyLineAppears — the tick of each new line (GDD v0.23 §9.5)', () => {
+  it('is true on each step a line after the first appears, never after the last', () => {
+    const steps = Array.from({ length: 400 }, (_, i) => i).filter(tallyLineAppears);
+    expect(steps).toEqual([30, 60, 90, 120].slice(0, RESULTS_LINES - 1));
   });
 });

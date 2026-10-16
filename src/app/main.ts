@@ -11,7 +11,6 @@ import { SpriteBank } from '../adapters/sprite-bank';
 import type { BakeCanvas } from '../adapters/sprite-bank';
 import { LocalStorageStore } from '../adapters/local-storage-store';
 import { WebAudioPlayer } from '../adapters/web-audio-player';
-import { DefaultVolume, volumeGain } from '../domain/audio/volume';
 import { computeViewport } from '../adapters/viewport';
 import { Run } from '../domain/game/run';
 import { ChampionName } from '../domain/presentation/champion-name';
@@ -96,10 +95,15 @@ async function loadSprites(): Promise<void> {
   }
 }
 
-// Silent until the first gesture (ADR-0009); volumes at their defaults until the Audio options of
-// G3-2 (GDD v0.23 §9.3).
-const audio = new WebAudioPlayer(() => new AudioContext());
-audio.setVolumes(volumeGain(DefaultVolume.music), volumeGain(DefaultVolume.sfx));
+// Silent until the first gesture (ADR-0009); the scene machine sets the saved volumes.
+const audio = new WebAudioPlayer(
+  () => new AudioContext(),
+  async (file) => {
+    const response = await fetch(`assets/audio/${file}`);
+    if (!response.ok) throw new Error(`Audio file not loaded: ${file}`);
+    return response.arrayBuffer();
+  },
+);
 document.addEventListener('visibilitychange', () => {
   audio.setHidden(document.hidden);
 });

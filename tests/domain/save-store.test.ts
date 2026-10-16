@@ -53,6 +53,8 @@ const CUSTOM: Options = {
   language: 'fr',
   fullscreen: true,
   bindings: CUSTOM_BINDINGS,
+  musicVolume: 3,
+  sfxVolume: 10,
 };
 
 /** The same options as a version 1 document stored them, before the bindings. */
@@ -74,6 +76,8 @@ describe('defaultOptions (GDD §9.3)', () => {
       language: 'en',
       fullscreen: false,
       bindings: DEFAULT_BINDINGS,
+      musicVolume: 7,
+      sfxVolume: 8,
     });
   });
 
@@ -138,6 +142,18 @@ describe('SaveStore.load (ADR-0006: untrusted input, never throws)', () => {
     expect(new SaveStore(stored(document), false).load()).toEqual(defaultOptions(false));
   });
 
+  it('reads a document saved before the volumes with their defaults (GDD v0.23 §9.8)', () => {
+    const { musicVolume: _music, sfxVolume: _sfx, ...before } = CUSTOM;
+    const document = { version: 2, options: before, highScores: [] };
+    const options = new SaveStore(stored(document), false).load();
+    expect([options.musicVolume, options.sfxVolume]).toEqual([7, 8]);
+  });
+
+  it.each([11, -1, 2.5, '5', null])('falls back to the defaults on a volume of %j', (volume) => {
+    const document = { version: 2, options: { ...CUSTOM, sfxVolume: volume }, highScores: [] };
+    expect(new SaveStore(stored(document), false).load()).toEqual(defaultOptions(false));
+  });
+
   it('reads a document saved before the champion name with that switch on (GDD v0.22)', () => {
     const { championName: _new, ...before } = { ...CUSTOM.effects, championName: false };
     const document = { version: 2, options: { ...CUSTOM, effects: before }, highScores: [] };
@@ -186,6 +202,8 @@ describe('SaveStore.load (ADR-0006: untrusted input, never throws)', () => {
       language: 'en',
       fullscreen: false,
       bindings: DEFAULT_BINDINGS,
+      musicVolume: 7,
+      sfxVolume: 8,
     });
     expect(Object.getPrototypeOf(options)).toBe(Object.prototype);
     expect(({} as Record<string, unknown>).autofire).toBeUndefined();

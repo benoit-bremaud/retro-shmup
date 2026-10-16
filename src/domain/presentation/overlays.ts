@@ -1,6 +1,7 @@
 // Overlays of the frozen scenes (meta/05-state-scenes): pure draw functions, so the scene machine
 // only picks which ones a scene shows (ADR-0010: no drawing inside the navigator). Each selects the
 // field region it draws in.
+import { MAX_VOLUME_STEP } from '../audio/volume';
 import { BossState } from '../game/boss';
 import type { BossSnapshot } from '../game/run';
 import { BossHudTuning, SceneTuning, toSteps } from '../game/tuning';
@@ -44,6 +45,11 @@ function drawMenuLine(render: RenderPort, text: string, y: number): void {
   render.drawText(text, Math.round((FIELD_WIDTH - menuTextWidth(text)) / 2), y, 'menu');
 }
 
+/** A volume step's digits, built once: a draw builds no string (GDD v0.23 §9.3). */
+const STEP_LABELS: readonly string[] = Array.from({ length: MAX_VOLUME_STEP + 1 }, (_, i) =>
+  String(i),
+);
+
 /**
  * A menu (GDD v0.13 and v0.14 §9.1): each row's catalogue text centred in its 16 px row, or, for a
  * row with a value, the label on the left and the value on the right; the highlighted row on a
@@ -53,7 +59,7 @@ export function drawMenu(
   render: RenderPort,
   menu: MenuView,
   language: Language,
-  value?: (row: MessageKey) => MessageKey | undefined,
+  value?: (row: MessageKey) => MessageKey | number | undefined,
 ): void {
   render.setRegion('field');
   const textTop = (MENU_ROW_HEIGHT - MENU_FONT_CELL.height) / 2;
@@ -72,7 +78,8 @@ export function drawMenu(
       const x = Math.round((FIELD_WIDTH - width) / 2);
       render.drawRect(x, y, width, MENU_ROW_HEIGHT, Palette.menuHighlight);
     }
-    const shown = message(valueKey, language);
+    const shown =
+      typeof valueKey === 'number' ? (STEP_LABELS[valueKey] ?? '') : message(valueKey, language);
     render.drawText(text, MENU_VALUE_MARGIN, y + textTop, 'menu');
     render.drawText(
       shown,

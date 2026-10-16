@@ -28,8 +28,8 @@ export interface MenuScreen {
   readonly menu: MenuView;
   /** The line above the rows, in its font; the title menu has none. */
   readonly header?: { readonly key: MessageKey; readonly font: Extract<FontId, 'title' | 'menu'> };
-  /** The value a row shows on its right (a switch or a choice), if any; built once. */
-  readonly value?: (row: MessageKey) => MessageKey | undefined;
+  /** The value a row shows on its right (a switch, a choice or a volume step), if any; built once. */
+  readonly value?: (row: MessageKey) => MessageKey | number | undefined;
 }
 
 /** A row with a value: its label starts here and its value ends at the mirror edge. */

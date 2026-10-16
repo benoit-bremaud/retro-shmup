@@ -40,6 +40,8 @@ function withEffects(effects: EffectSettings): Options {
     language: 'en',
     fullscreen: false,
     bindings: DEFAULT_BINDINGS,
+    musicVolume: 7,
+    sfxVolume: 8,
   };
 }
 
@@ -1134,6 +1136,7 @@ describe('SceneMachine — the options screens (GDD v0.14 §9.1, §9.3, G1a-3)',
     expect(fieldTextsOf(render)).toEqual([
       'OPTIONS',
       'VISUAL EFFECTS',
+      'AUDIO',
       'CONTROLS',
       'AUTOFIRE',
       'OFF',
@@ -1148,7 +1151,7 @@ describe('SceneMachine — the options screens (GDD v0.14 §9.1, §9.3, G1a-3)',
     downBy(machine, 1);
     machine.step(DT, pressed(Button.Confirm));
     idle(machine);
-    machine.step(DT, rowTap(5, 6)); // Back
+    machine.step(DT, rowTap(6, 7)); // Back
     expect(machine.scene).toBe(Scene.Title);
   });
 
@@ -1156,7 +1159,7 @@ describe('SceneMachine — the options screens (GDD v0.14 §9.1, §9.3, G1a-3)',
     const { machine, host } = hosted();
     downBy(machine, 2);
     machine.step(DT, pressed(Button.Confirm));
-    downBy(machine, 2); // Autofire
+    downBy(machine, 3); // Autofire
     machine.step(DT, pressed(Button.Confirm));
     machine.step(DT, right());
     expect(host.saved.map((options) => options.autofire)).toEqual([true, false]);
@@ -1166,7 +1169,7 @@ describe('SceneMachine — the options screens (GDD v0.14 §9.1, §9.3, G1a-3)',
     const { machine, render, host } = hosted();
     downBy(machine, 2);
     machine.step(DT, pressed(Button.Confirm));
-    downBy(machine, 3); // Language
+    downBy(machine, 4); // Language
     machine.step(DT, pressed(Button.Confirm));
     machine.render(0, 16);
     expect(fieldTextsOf(render)).toContain('LANGUE');
@@ -1266,7 +1269,7 @@ describe('SceneMachine — the controls screen (GDD v0.15 §4.2, G1b-3)', () => 
   function toControls(machine: SceneMachine): void {
     downBy(machine, 2);
     machine.step(DT, pressed(Button.Confirm)); // Options
-    downBy(machine, 1);
+    downBy(machine, 2);
     machine.step(DT, pressed(Button.Confirm)); // Controls
   }
 
@@ -1320,7 +1323,7 @@ describe('SceneMachine — the controls screen (GDD v0.15 §4.2, G1b-3)', () => 
     machine.step(DT, pressed(Button.Pause));
     downBy(machine, 1);
     machine.step(DT, pressed(Button.Confirm)); // Options
-    downBy(machine, 1);
+    downBy(machine, 2);
     machine.step(DT, pressed(Button.Confirm)); // Controls
     downBy(machine, 4); // Fire
     machine.step(DT, pressed(Button.Confirm)); // the capture starts; this host cancels it at once
@@ -1336,7 +1339,7 @@ describe('SceneMachine — the controls screen (GDD v0.15 §4.2, G1b-3)', () => 
     machine.step(DT, pressed(Button.Pause));
     downBy(machine, 1);
     machine.step(DT, pressed(Button.Confirm)); // Options
-    downBy(machine, 1);
+    downBy(machine, 2);
     machine.step(DT, pressed(Button.Confirm)); // Controls
     expect(machine.scene).toBe(Scene.PauseControls);
     machine.step(DT, pressed(Button.Back));

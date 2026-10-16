@@ -1,3 +1,4 @@
+import { DefaultVolume, isVolumeStep } from '../audio/volume';
 import type { Language } from '../i18n/messages';
 import { isRecord } from '../guards';
 import { parseHighScores, type HighScoreEntry } from '../hall-of-fame/high-scores';
@@ -35,7 +36,18 @@ export function defaultOptions(reducedMotion: boolean): Options {
     language: 'en',
     fullscreen: false,
     bindings: DEFAULT_BINDINGS,
+    musicVolume: DefaultVolume.music,
+    sfxVolume: DefaultVolume.sfx,
   };
+}
+
+/**
+ * A stored volume step, by allowlist: the volumes came after save version 2, so a missing one
+ * reads as its default (GDD v0.23 §9.8); anything but an integer from 0 to 10 is invalid.
+ */
+function parseVolume(value: unknown, fallback: number): number | undefined {
+  if (value === undefined) return fallback;
+  return isVolumeStep(value) ? value : undefined;
 }
 
 /**
@@ -72,8 +84,11 @@ function parseOptions(value: unknown, version: number): Options | undefined {
   if (typeof autofire !== 'boolean' || typeof fullscreen !== 'boolean') return undefined;
   const known = LANGUAGES.find((candidate) => candidate === language);
   if (known === undefined) return undefined;
+  const musicVolume = parseVolume(value.musicVolume, DefaultVolume.music);
+  const sfxVolume = parseVolume(value.sfxVolume, DefaultVolume.sfx);
+  if (musicVolume === undefined || sfxVolume === undefined) return undefined;
   const bindings = version === FIRST_VERSION ? DEFAULT_BINDINGS : parseBindings(value.bindings);
-  return { effects, autofire, language: known, fullscreen, bindings };
+  return { effects, autofire, language: known, fullscreen, bindings, musicVolume, sfxVolume };
 }
 
 function parseJson(raw: string): unknown {

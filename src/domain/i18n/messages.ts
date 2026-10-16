@@ -31,6 +31,10 @@ export const MESSAGES = {
   play: { en: 'PLAY', fr: 'JOUER' },
   options: { en: 'OPTIONS', fr: 'OPTIONS' },
   visualEffects: { en: 'VISUAL EFFECTS', fr: 'EFFETS VISUELS' },
+  /** The *Audio* sub-screen (GDD v0.23 §9.3). */
+  audio: { en: 'AUDIO', fr: 'AUDIO' },
+  music: { en: 'MUSIC', fr: 'MUSIQUE' },
+  soundEffects: { en: 'SOUND EFFECTS', fr: 'BRUITAGES' },
   autofire: { en: 'AUTOFIRE', fr: 'TIR AUTO' },
   language: { en: 'LANGUAGE', fr: 'LANGUE' },
   fullscreen: { en: 'FULLSCREEN', fr: 'PLEIN ECRAN' },

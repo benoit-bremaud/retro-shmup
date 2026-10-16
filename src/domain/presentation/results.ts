@@ -58,6 +58,15 @@ export function formatTallyValues(tally: TallyView): readonly string[] {
   ];
 }
 
+/** Whether a new tally line appears on this step of the Results (its tick sound, GDD §9.5). */
+export function tallyLineAppears(stepsSinceEntry: number): boolean {
+  return (
+    stepsSinceEntry > 0 &&
+    stepsSinceEntry % LINE_STEPS === 0 &&
+    stepsSinceEntry / LINE_STEPS < RESULTS_LINES
+  );
+}
+
 /**
  * The Results overlay over the frozen run: the veil, the LEVEL CLEAR header, then one line more
  * every 30 steps from the entering step (step 0): its label in the `title` font at the left

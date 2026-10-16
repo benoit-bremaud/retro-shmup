@@ -2,9 +2,6 @@
   "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
   // Entry points come from the Vite (index.html → src/app/main.ts), Vitest and Playwright plugins.
   "project": ["src/**/*.ts", "tests/**/*.ts"],
-  // The audio port required by ADR-0009, declared ahead of its adapter (audio brick, G3):
-  // intentional, not dead code. Remove the entry when its adapter lands.
-  "ignore": ["src/domain/ports/audio-port.ts"],
   // A type or interface used in its own file is not flagged: it covers public data shapes such as
   // `DropTable` in `EnemyArchetype`, but also hides an interface implemented only in its own file
   // (`Pool<T>`, retired by ADR-0024) — review such interfaces by hand.

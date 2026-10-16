@@ -56,7 +56,8 @@ images fail to load). Explosions are animated, the turret breaks into debris
 and the boss dies in a chain of bursts with a short slow motion. The level ends on the Results
 screen: the tally of formations, no bomb, no miss and bombs left, added to the score, then the
 title. The screens brick (G1–G2) added the menus, the options, the hall of fame and the Ending;
-G4-1 draws the ships as sprites. Next: the level-1 rebalance (v0.18), then audio (G3).
+G4-1 draws the ships as sprites. G3 added the sound: 8-bit sound effects from the game's own
+synthesiser, CC0 chiptune music by SketchyLogic, and an *Audio* options screen with two volumes.
 
 Roadmap (GDD section 11):
 

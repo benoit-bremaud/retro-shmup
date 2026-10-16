@@ -21,6 +21,18 @@ recorded in its entry below, and lives under `public/assets/` (governed by
 
 Development placeholders (GDD §3.2.1), to be replaced by custom assets before release.
 
+## NES Shooter Music (5 tracks, 3 jingles) (SketchyLogic)
+
+- Files: public/assets/audio/*.mp3
+- Author: SketchyLogic
+- Source: https://opengameart.org/content/nes-shooter-music-5-tracks-3-jingles
+- Licence: CC0-1.0
+- Modifications: encoded from the pack's `WAV.zip` to mono MP3 at 96 kb/s, metadata stripped,
+  renamed by use: `Map` → `title`, `Mercury` → `level-1`, `BossIntro` → `boss-intro`,
+  `BossMain` → `boss-loop`, `Win Jingle` → `results`, `Warp Jingle` → `game-over`
+
+The slice's music (GDD v0.23 §9.5), to be replaced by custom tracks in the custom-asset phase.
+
 Entry format (ADR-0005, one entry per file or pack):
 
 ```text
@@ -34,8 +46,9 @@ Entry format (ADR-0005, one entry per file or pack):
 
 ## Tools
 
-- **8-bit SFX generator** (jsfxr-style; named when chosen) — generates the sound effects listed in
-  GDD §9.5. Licence recorded when chosen.
+- **The game's own sfxr-style synthesiser** (`src/domain/audio/synth.ts`, MIT with the code) —
+  renders the sound effects of GDD §9.5 when audio unlocks; no third-party generator.
+- **[FFmpeg](https://ffmpeg.org/)** (LAME encoder) — encoded the music to MP3. Not shipped.
 - **[Mermaid](https://mermaid.js.org/)** — UML diagrams under `docs/architecture/diagrams/`. MIT.
 
 ## Rule for contributors

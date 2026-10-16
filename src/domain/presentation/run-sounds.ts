@@ -30,6 +30,8 @@ export class RunSounds {
   private readonly audio: AudioPort;
   private playerShots = 0;
   private enemyShots = 0;
+  /** The chain multiplier last drawn: a step up plays the chain sound (GDD §9.5). */
+  private multiplier = 1;
   /** The boss's serial, from its warning: its hits sound apart from the other enemies'. */
   private bossSerial = 0;
 
@@ -46,7 +48,7 @@ export class RunSounds {
     events.subscribe(GameEventKind.BossDestroyed, this.playOn(Sfx.BossDeath));
   }
 
-  /** Once per drawn frame: the shot sounds of the steps since the last frame. */
+  /** Once per drawn frame: the shot and chain-step sounds of the steps since the last frame. */
   frame(snapshot: Readonly<WorldSnapshot>): void {
     if (snapshot.playerShots !== this.playerShots) {
       this.audio.play(snapshot.weaponKind === WeaponKind.Laser ? Sfx.ShotLaser : Sfx.ShotSpread);
@@ -56,6 +58,8 @@ export class RunSounds {
       this.audio.play(Sfx.EnemyShot);
       this.enemyShots = snapshot.enemyShots;
     }
+    if (snapshot.multiplier > this.multiplier) this.audio.play(Sfx.ChainStep);
+    this.multiplier = snapshot.multiplier;
   }
 
   /** A handler that plays `sfx`, for an event whose detail does not matter. */

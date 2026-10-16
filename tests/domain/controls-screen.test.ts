@@ -72,6 +72,8 @@ function screen(device: IntentFrame['device'] = 'keyboard'): {
     language: 'fr',
     fullscreen: false,
     bindings: DEFAULT_BINDINGS,
+    musicVolume: 7,
+    sfxVolume: 8,
   });
   const controls = new ControlsScreen(options, host);
   controls.open(0, frame({ device }));
