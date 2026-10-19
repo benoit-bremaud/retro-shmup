@@ -2004,6 +2004,12 @@ describe('SceneMachine — the feedback form (GDD v0.26 §9.1, ADR-0027)', () =>
       );
     });
 
+    it('rebuilds the address when the device changes: a touch player sends touch', () => {
+      const { machine, link } = onTitleWith(FORM);
+      machine.step(DT, { ...frame(0), device: 'touch' });
+      expect(link.armed?.url).toContain('device=touch');
+    });
+
     it('counts and saves an opening, and stays on the title', () => {
       const { machine, host, link } = onFeedbackRow();
       link.outcome = 'opened';

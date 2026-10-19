@@ -607,6 +607,8 @@ export class SceneMachine {
     // The title and its menus scroll the background; the scenes with a run count it themselves.
     if (traits.scrolls && !traits.drawsRun) this.backgroundSteps += 1;
     this.steps += 1;
+    // The form's address names the device: a new one re-arms it with a fresh context (ADR-0027).
+    if (frame.device !== this.lastDevice) this.feedback.disarm();
     this.lastDevice = frame.device;
     this.handlers[this.current].step(dt, frame);
     this.audio.music(this.track());
