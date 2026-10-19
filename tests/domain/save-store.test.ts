@@ -166,6 +166,21 @@ describe('SaveStore.load (ADR-0006: untrusted input, never throws)', () => {
     expect(options.musicVolume).toBe(CUSTOM.musicVolume); // the other options kept
   });
 
+  it.each([0, 1, 42])('reads back the feedback count %j (GDD v0.26 §9.8)', (feedbackCount) => {
+    const document = { version: 2, options: { ...CUSTOM, feedbackCount }, highScores: [] };
+    expect(new SaveStore(stored(document), false).load().feedbackCount).toBe(feedbackCount);
+  });
+
+  it.each([-1, 2.5, '3', null, Number.MAX_SAFE_INTEGER + 2])(
+    'reads a feedback count of %j as absent, keeping the other options',
+    (feedbackCount) => {
+      const document = { version: 2, options: { ...CUSTOM, feedbackCount }, highScores: [] };
+      const options = new SaveStore(stored(document), false).load();
+      expect('feedbackCount' in options).toBe(false);
+      expect(options.musicVolume).toBe(CUSTOM.musicVolume);
+    },
+  );
+
   it('reads a document saved before the champion name with that switch on (GDD v0.22)', () => {
     const { championName: _new, ...before } = { ...CUSTOM.effects, championName: false };
     const document = { version: 2, options: { ...CUSTOM, effects: before }, highScores: [] };

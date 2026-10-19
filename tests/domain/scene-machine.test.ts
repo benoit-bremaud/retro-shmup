@@ -22,6 +22,7 @@ import { Scene, SceneMachine } from '../../src/domain/scenes/scene-machine';
 import type { HighScoreEntry } from '../../src/domain/hall-of-fame/high-scores';
 import { NO_HOST } from '../../src/domain/scenes/scene-host';
 import type { SceneHost } from '../../src/domain/scenes/scene-host';
+import type { ArmedLink, LinkOutcome, LinkPort } from '../../src/domain/ports/link-port';
 import { PORTRAIT } from '../../src/domain/presentation/screen';
 import { RecordingRender } from '../support/recording-render';
 import type { RecordedRect } from '../support/recording-render';
@@ -1873,5 +1874,375 @@ describe('SceneMachine — the country first (GDD v0.26 §9.1, ADR-0027)', () =>
     machine.render(1, 16);
     const texts = fieldTextsOf(render);
     expect(texts[texts.indexOf('COUNTRY') + 1]).toBe('--');
+  });
+});
+
+const ACE_ENTRY: HighScoreEntry = { name: 'ACE', score: 9000, level: 1, date: '2026-10-14' };
+
+describe('SceneMachine — the feedback form (GDD v0.26 §9.1, ADR-0027)', () => {
+  const FORM = 'https://tally.so/r/abc123';
+
+  /** Stands for the browser's link: records the armings, serves the outcome a test sets. */
+  class FakeLink implements LinkPort {
+    readonly armings: (ArmedLink | undefined)[] = [];
+    outcome: LinkOutcome = 'none';
+    arm(link: ArmedLink | undefined): void {
+      this.armings.push(link);
+    }
+    takeOutcome(): LinkOutcome {
+      const outcome = this.outcome;
+      this.outcome = 'none';
+      return outcome;
+    }
+    get armed(): ArmedLink | undefined {
+      return this.armings[this.armings.length - 1];
+    }
+  }
+
+  /** A run that ends in Game over on its first step with `score` points. */
+  function losing(score: number): ReturnType<ConstructorParameters<typeof SceneMachine>[3]> {
+    const real = new Run();
+    return {
+      step: (): void => undefined,
+      outcome: (): RunOutcome => RunOutcome.GameOver,
+      snapshot: () => ({ ...real.snapshot(), score }),
+      events: () => real.events(),
+      tally: () => real.tally(),
+    };
+  }
+
+  interface Fixture {
+    machine: SceneMachine;
+    render: RecordingRender;
+    host: RecordingHost;
+    link: FakeLink;
+  }
+
+  /** A hosted machine on its title, the form on (`form`) or off (`''`), past the title's lock. */
+  function onTitleWith(form: string, table: readonly HighScoreEntry[] = FULL_TABLE): Fixture {
+    const render = new RecordingRender();
+    const host = new RecordingHost();
+    const link = new FakeLink();
+    const machine = new SceneMachine(
+      render,
+      new Starfield(() => 0.5),
+      withEffects(ALL_ON),
+      () => losing(321),
+      host,
+      table,
+      { feedback: { form, version: '0.26.1', link } },
+    );
+    machine.step(DT, createIntentFrame()); // Boot → Title
+    idle(machine, 70);
+    return { machine, render, host, link };
+  }
+
+  function press(machine: SceneMachine, button: number): void {
+    machine.step(DT, pressed(button));
+    machine.step(DT, createIntentFrame());
+  }
+
+  /** From the title: a run ends in Game over, then Confirm past its 1 s lock. */
+  function afterRun(fixture: Fixture): void {
+    const { machine } = fixture;
+    press(machine, Button.Confirm); // Play (the saved country is FR)
+    machine.step(DT, createIntentFrame()); // Game over
+    for (let i = 0; i < 80 && machine.scene === Scene.GameOver; i += 1) {
+      machine.step(DT, pressed(Button.Confirm));
+    }
+  }
+
+  /** A fixture on the feedback offer after a run that does not enter the full table. */
+  function onOffer(): Fixture {
+    const fixture = onTitleWith(FORM);
+    afterRun(fixture);
+    expect(fixture.machine.scene).toBe(Scene.FeedbackOffer);
+    idle(fixture.machine); // past the menu's opening guard
+    return fixture;
+  }
+
+  /** A fixture on the title with the highlight on its FEEDBACK row. */
+  function onFeedbackRow(): Fixture {
+    const fixture = onTitleWith(FORM);
+    downBy(fixture.machine, 3);
+    return fixture;
+  }
+
+  function blockedShown(fixture: Fixture): boolean {
+    fixture.render.texts.length = 0;
+    fixture.machine.render(1, 16);
+    return fieldTextsOf(fixture.render).includes('OPEN BLOCKED');
+  }
+
+  describe('the title row', () => {
+    it('shows a FEEDBACK row last when the build holds a form address', () => {
+      const { machine, render } = onTitleWith(FORM);
+      machine.render(1, 16);
+      expect(fieldTextsOf(render)).toEqual(['PLAY', 'HIGH SCORES', 'OPTIONS', 'FEEDBACK']);
+    });
+
+    it('shows no FEEDBACK row without a form address', () => {
+      const { machine, render, link } = onTitleWith('');
+      machine.render(1, 16);
+      expect(fieldTextsOf(render)).toEqual(['PLAY', 'HIGH SCORES', 'OPTIONS']);
+      expect(link.armings).toEqual([]);
+    });
+
+    it('arms the link on the title: a lift over the row opens, Enter only while highlighted', () => {
+      const { link, machine } = onTitleWith(FORM);
+      expect(link.armed).toMatchObject({ keys: 'none' });
+      downBy(machine, 3);
+      expect(link.armed).toMatchObject({ keys: 'confirm' });
+      downBy(machine, 1); // wraps to Play
+      expect(link.armed).toMatchObject({ keys: 'none' });
+    });
+
+    it('sends the run context in the address: the set, version, country, language', () => {
+      const { link } = onTitleWith(FORM);
+      expect(link.armed?.url).toBe(
+        `${FORM}?set=1&version=0.26.1&score=0&level=1&country=FR&device=keyboard&lang=en`,
+      );
+    });
+
+    it('counts and saves an opening, and stays on the title', () => {
+      const { machine, host, link } = onFeedbackRow();
+      link.outcome = 'opened';
+      press(machine, Button.Confirm);
+      expect(machine.scene).toBe(Scene.Title);
+      expect(host.saved.map((options) => options.feedbackCount)).toEqual([1]);
+    });
+
+    it('shows OPEN BLOCKED for two seconds after a refused tab, counting nothing', () => {
+      const fixture = onFeedbackRow();
+      fixture.link.outcome = 'refused';
+      press(fixture.machine, Button.Confirm);
+      expect(fixture.machine.scene).toBe(Scene.Title);
+      expect(fixture.host.saved).toEqual([]);
+      expect(blockedShown(fixture)).toBe(true);
+      idle(fixture.machine, 125);
+      expect(blockedShown(fixture)).toBe(false);
+    });
+
+    it('asks for a tap, click or key when no opening happened, as with a gamepad', () => {
+      const { machine, host } = onFeedbackRow();
+      press(machine, Button.Confirm);
+      expect(machine.scene).toBe(Scene.FeedbackGesture);
+      expect(host.saved).toEqual([]);
+    });
+  });
+
+  describe('the offer after a run', () => {
+    it('shows after a run end that does not enter the table', () => {
+      const { machine } = onOffer();
+      expect(machine.scene).toBe(Scene.FeedbackOffer);
+    });
+
+    it('draws the heading, the note and its two rows', () => {
+      const { machine, render } = onOffer();
+      machine.render(1, 16);
+      expect(fieldTextsOf(render)).toEqual([
+        '2 QUICK QUESTIONS',
+        'YOUR OPINION',
+        'GIVE FEEDBACK',
+        'LATER',
+      ]);
+    });
+
+    it('sends the score of the run just ended in the address', () => {
+      const { link } = onOffer();
+      expect(link.armed?.url).toContain('score=321');
+    });
+
+    it('arms Enter on GIVE FEEDBACK only, and a lift over its row always', () => {
+      const { machine, link } = onOffer();
+      expect(link.armed).toMatchObject({ keys: 'confirm' });
+      downBy(machine, 1);
+      expect(link.armed).toMatchObject({ keys: 'none' });
+      expect(link.armed?.band).toBeDefined();
+    });
+
+    it('is not offered when the build holds no form address', () => {
+      const fixture = onTitleWith('');
+      afterRun(fixture);
+      expect(fixture.machine.scene).toBe(Scene.Title);
+    });
+
+    it('leaves to the title on LATER, nothing counted, nothing armed', () => {
+      const { machine, host, link } = onOffer();
+      downBy(machine, 1);
+      press(machine, Button.Confirm);
+      expect(machine.scene).toBe(Scene.Title);
+      expect(host.saved).toEqual([]);
+      expect(link.armed).toBeUndefined();
+    });
+
+    it('leaves to the title on back', () => {
+      const { machine } = onOffer();
+      press(machine, Button.Back);
+      expect(machine.scene).toBe(Scene.Title);
+    });
+
+    it('ignores Pause', () => {
+      const { machine } = onOffer();
+      press(machine, Button.Pause);
+      expect(machine.scene).toBe(Scene.FeedbackOffer);
+    });
+
+    it('leaves to the title after 20 s without input', () => {
+      const { machine } = onOffer();
+      idle(machine, 20 * 60 - 12);
+      expect(machine.scene).toBe(Scene.FeedbackOffer);
+      idle(machine, 20);
+      expect(machine.scene).toBe(Scene.Title);
+    });
+
+    it('restarts the 20 s on every input', () => {
+      const { machine } = onOffer();
+      idle(machine, 20 * 60 - 30);
+      const active = createIntentFrame();
+      active.active = true;
+      machine.step(DT, active);
+      idle(machine, 20 * 60 - 30);
+      expect(machine.scene).toBe(Scene.FeedbackOffer);
+    });
+
+    it('counts and saves an opening, then returns to the title', () => {
+      const { machine, host, link } = onOffer();
+      link.outcome = 'opened';
+      press(machine, Button.Confirm);
+      expect(machine.scene).toBe(Scene.Title);
+      expect(host.saved.map((options) => options.feedbackCount)).toEqual([1]);
+    });
+
+    it('rotates the question set with each opening', () => {
+      const first = onOffer();
+      first.link.outcome = 'opened';
+      press(first.machine, Button.Confirm);
+      idle(first.machine, 70);
+      afterRun(first);
+      idle(first.machine, 1); // the offer arms on its first step
+      expect(first.link.armed?.url).toContain('set=2');
+    });
+
+    it('shows OPEN BLOCKED over the offer after a refused tab, and stays', () => {
+      const fixture = onOffer();
+      fixture.link.outcome = 'refused';
+      press(fixture.machine, Button.Confirm);
+      expect(fixture.machine.scene).toBe(Scene.FeedbackOffer);
+      expect(fixture.host.saved).toEqual([]);
+      expect(blockedShown(fixture)).toBe(true);
+      idle(fixture.machine, 125);
+      expect(blockedShown(fixture)).toBe(false);
+    });
+
+    it('asks for a gesture when no opening happened', () => {
+      const { machine } = onOffer();
+      press(machine, Button.Confirm);
+      expect(machine.scene).toBe(Scene.FeedbackGesture);
+    });
+
+    it('follows SKIP on the name entry', () => {
+      const fixture = onTitleWith(FORM, [ACE_ENTRY]);
+      afterRun(fixture);
+      expect(fixture.machine.scene).toBe(Scene.NameEntry);
+      const up = createIntentFrame();
+      up.moveKind = 'direction';
+      up.moveY = -1;
+      fixture.machine.step(DT, up); // SKIP
+      fixture.machine.step(DT, createIntentFrame());
+      press(fixture.machine, Button.Confirm);
+      expect(fixture.machine.scene).toBe(Scene.FeedbackOffer);
+    });
+
+    it('follows the high scores shown after a name was entered', () => {
+      const fixture = onTitleWith(FORM, [ACE_ENTRY]);
+      afterRun(fixture);
+      const { machine } = fixture;
+      press(machine, Button.Confirm); // A
+      press(machine, Button.Confirm); // A
+      const up = createIntentFrame();
+      up.moveKind = 'direction';
+      up.moveY = -1;
+      machine.step(DT, up);
+      machine.step(DT, createIntentFrame());
+      machine.step(DT, up);
+      machine.step(DT, createIntentFrame());
+      const left = createIntentFrame();
+      left.moveKind = 'direction';
+      left.moveX = -1;
+      machine.step(DT, left); // OK
+      machine.step(DT, createIntentFrame());
+      press(machine, Button.Confirm);
+      expect(machine.scene).toBe(Scene.HighScores);
+      idle(machine, 70);
+      press(machine, Button.Confirm);
+      expect(machine.scene).toBe(Scene.FeedbackOffer);
+    });
+
+    it('does not offer after the high scores opened from the title', () => {
+      const { machine } = onTitleWith(FORM);
+      downBy(machine, 1);
+      press(machine, Button.Confirm);
+      expect(machine.scene).toBe(Scene.HighScores);
+      idle(machine);
+      press(machine, Button.Confirm);
+      expect(machine.scene).toBe(Scene.Title);
+    });
+  });
+
+  describe('the gesture prompt', () => {
+    function onGesture(): Fixture {
+      const fixture = onOffer();
+      press(fixture.machine, Button.Confirm);
+      expect(fixture.machine.scene).toBe(Scene.FeedbackGesture);
+      return fixture;
+    }
+
+    it('draws the prompt and arms any tap, click or key', () => {
+      const { machine, render, link } = onGesture();
+      machine.render(1, 16);
+      expect(fieldTextsOf(render)).toEqual(['TAP OR PRESS A KEY']);
+      expect(link.armed).toMatchObject({ band: undefined, keys: 'any' });
+    });
+
+    it('counts, saves and returns to the title when the gesture opened the form', () => {
+      const { machine, host, link } = onGesture();
+      link.outcome = 'opened';
+      idle(machine, 1);
+      expect(machine.scene).toBe(Scene.Title);
+      expect(host.saved.map((options) => options.feedbackCount)).toEqual([1]);
+    });
+
+    it('stays while nothing happens', () => {
+      const { machine } = onGesture();
+      idle(machine, 300);
+      expect(machine.scene).toBe(Scene.FeedbackGesture);
+    });
+
+    it('returns to the title on back, counting nothing', () => {
+      const { machine, host } = onGesture();
+      press(machine, Button.Back);
+      expect(machine.scene).toBe(Scene.Title);
+      expect(host.saved).toEqual([]);
+    });
+
+    it('returns to the title with OPEN BLOCKED after a refusal', () => {
+      const fixture = onGesture();
+      fixture.link.outcome = 'refused';
+      idle(fixture.machine, 1);
+      expect(fixture.machine.scene).toBe(Scene.Title);
+      expect(fixture.host.saved).toEqual([]);
+      expect(blockedShown(fixture)).toBe(true);
+    });
+
+    it('returns to the title from the title row and counts there too', () => {
+      const fixture = onFeedbackRow();
+      press(fixture.machine, Button.Confirm); // no opening: the prompt
+      expect(fixture.machine.scene).toBe(Scene.FeedbackGesture);
+      fixture.link.outcome = 'opened';
+      idle(fixture.machine, 1);
+      expect(fixture.machine.scene).toBe(Scene.Title);
+      expect(fixture.host.saved.map((options) => options.feedbackCount)).toEqual([1]);
+    });
   });
 });

@@ -981,7 +981,7 @@ what does not and what they would change, without the owner asking each by hand.
   address, and the questions change without a new game release.
 - **The offer**: after every run end — Ending or Game over, after the name entry and the high
   scores when they show, never after a run quit from the pause — a *Feedback offer* screen:
-  heading *YOUR OPINION?* / *TON AVIS ?*, one line *2 QUICK QUESTIONS* / *2 QUESTIONS RAPIDES*,
+  heading *YOUR OPINION* / *TON AVIS* (the title font has no `?`; amended in the feedback code brick, #122), one line *2 QUICK QUESTIONS* / *2 QUESTIONS RAPIDES*,
   then two menu rows, *GIVE FEEDBACK* / *DONNER MON AVIS* (the cursor starts on it) and *LATER* /
   *PLUS TARD*. *Later*, `back` or 20 s without input return to the title; *Give feedback* opens the
   form and returns to the title. `Pause` is ignored there, like on the high scores.
@@ -1010,7 +1010,8 @@ what does not and what they would change, without the owner asking each by hand.
   click or key opens the tab at once; a gamepad press shows the gesture prompt, and the next click,
   tap or key opens it (ADR-0009). The tab is opened inside that input event's handler, never on a
   later frame. If the browser still refuses (it returns no window), the screen shows *OPEN
-  BLOCKED* / *OUVERTURE BLOQUEE* for 2 s and the offer stays, and the count does not rise.
+  BLOCKED* / *OUVERTURE BLOQUEE* for 2 s and the offer stays, and the count does not rise; refused
+  from the gesture prompt, the game returns to the title with the same text (#122).
 - **No form address configured** (a build without one): the *Feedback* row and the offer are not
   shown.
 
@@ -1151,9 +1152,9 @@ VISUELS*, *AUTOFIRE* / *TIR AUTO*, *LANGUAGE* / *LANGUE*, *FULLSCREEN* / *PLEIN 
 *RETOUR*, *ALL ON* / *TOUT ACTIVER*, *ALL OFF* / *TOUT COUPER*, *BLINK* / *CLIGNOTEMENT*, *HIT
 FLASH* / *FLASH IMPACT*, *EXPLOSIONS* / *EXPLOSIONS*, *SHAKE* / *SECOUSSE*, *BOMB FLASH* / *FLASH
 BOMBE*, *SLOW MOTION* / *RALENTI*, *CHAMPION NAME* / *NOM DU CHAMPION* *(v0.22)*; the title menu *PLAY* / *JOUER*, *OPTIONS*, *HIGH SCORES* / *MEILLEURS SCORES*, *FEEDBACK* / *AVIS*
-*(v0.26)*; *(v0.26)* *COUNTRY* / *PAYS*, and the feedback offer's *YOUR OPINION?* / *TON AVIS ?*, *2 QUICK
+*(v0.26)*; *(v0.26)* *COUNTRY* / *PAYS*, and the feedback offer's *YOUR OPINION* / *TON AVIS*, *2 QUICK
 QUESTIONS* / *2 QUESTIONS RAPIDES*, *GIVE FEEDBACK* / *DONNER MON AVIS*, *LATER* / *PLUS TARD*,
-*OPEN BLOCKED* / *OUVERTURE BLOQUEE*. Hit-stop, muzzle
+*OPEN BLOCKED* / *OUVERTURE BLOQUEE*, and the gesture prompt's *TAP OR PRESS A KEY* / *TOUCHE OU APPUIE* (#122). Hit-stop, muzzle
 flash and score pop-ups get their texts with their effects. On the title the 1 s lock after Game
 over or the Results ignores the whole menu (no highlight move, no activation).
 

@@ -3,8 +3,11 @@ import { HUD_FONT_CELL } from '../../src/domain/ports/render-port';
 import {
   drawControlsScreen,
   drawCountIn,
+  drawGesturePrompt,
   drawMenu,
+  drawMenuScreen,
   drawNameEntry,
+  drawStatusLine,
   drawVeil,
 } from '../../src/domain/presentation/overlays';
 import { CONTROLS_COLUMNS, MENU_VALUE_MARGIN } from '../../src/domain/presentation/menu-layout';
@@ -167,5 +170,48 @@ describe('drawNameEntry (GDD v0.16 §9.1, v0.26)', () => {
       [104, 72, 16],
       [0, 105, 30], // the 32 px cell's bar keeps a 1 px gap (GDD v0.26, #115)
     ]);
+  });
+});
+
+describe('the feedback screens (GDD v0.26 §9.1)', () => {
+  it('draws a menu screen note between its header and its rows, the header lifted by a row', () => {
+    const menu = new Menu(['giveFeedback', 'later'] as const, { headerGap: 64 });
+    const render = new RecordingRender();
+    drawMenuScreen(
+      render,
+      { menu, header: { key: 'pause', font: 'title' }, note: 'quickQuestions' },
+      'en',
+    );
+    const texts = render.texts.map((text) => text.text);
+    expect(texts).toEqual(['2 QUICK QUESTIONS', 'PAUSE', 'GIVE FEEDBACK', 'LATER']);
+    const note = render.texts[0];
+    expect(note?.font).toBe('menu');
+    expect(note?.y).toBeLessThan(menu.top);
+  });
+
+  it('draws no note line when the screen has none', () => {
+    const menu = new Menu(['resume', 'quit'] as const);
+    const render = new RecordingRender();
+    drawMenuScreen(render, { menu }, 'en');
+    expect(render.texts.map((text) => text.text)).toEqual(['RESUME', 'QUIT']);
+  });
+
+  it('draws the status line in French near the foot of the field', () => {
+    const render = new RecordingRender();
+    drawStatusLine(render, 'openBlocked', 'fr');
+    expect(render.texts).toHaveLength(1);
+    expect(render.texts[0]).toMatchObject({ text: 'OUVERTURE BLOQUEE', font: 'menu' });
+    expect(render.texts[0]?.y).toBeGreaterThan(FIELD_HEIGHT / 2);
+    expect(render.texts[0]?.y).toBeLessThan(FIELD_HEIGHT);
+  });
+
+  it('draws the gesture prompt on a veil, centred vertically', () => {
+    const render = new RecordingRender();
+    drawGesturePrompt(render, 'en');
+    expect(render.rectsOf(Palette.veil)).toHaveLength(1);
+    expect(render.texts).toHaveLength(1);
+    expect(render.texts[0]).toMatchObject({ text: 'TAP OR PRESS A KEY', font: 'menu' });
+    expect(render.texts[0]?.y).toBeGreaterThan(FIELD_HEIGHT / 3);
+    expect(render.texts[0]?.y).toBeLessThan((2 * FIELD_HEIGHT) / 3);
   });
 });

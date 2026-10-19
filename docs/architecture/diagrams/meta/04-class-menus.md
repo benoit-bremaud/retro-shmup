@@ -50,6 +50,7 @@ classDiagram
     <<interface>>
     +menu: MenuView
     +header?: key and font, title or menu
+    +note?: MessageKey, one line above the rows (the feedback offer)
     +value?(row: MessageKey) MessageKey | undefined
   }
   class ControlsView {
@@ -133,6 +134,18 @@ classDiagram
     +constructor(..., host, highScores)
     -openMenu(scene, frame) void
     -screenOf(scene) MenuScene | undefined
+  }
+  class FeedbackFlow {
+    +enabled: boolean
+    +blocked: boolean, 2 s after a refused tab
+    +step(at: ArmedAt, context) LinkOutcome
+    +disarm() void
+    +block() void
+  }
+  class LinkPort {
+    <<interface>>
+    +arm(link: ArmedLink | undefined) void
+    +takeOutcome() opened | refused | none
   }
   class SceneHandler {
     <<interface>>
@@ -287,6 +300,8 @@ classDiagram
   LocalStorageStore ..|> StoragePort
   SceneHost ..> SaveStore : composition root
   SceneHost ..> InputPort : composition root
+  SceneMachine --> FeedbackFlow : title row, offer, gesture prompt
+  FeedbackFlow --> LinkPort : arms the row's band and keys, ADR-0027
 ```
 
 ## Notes
@@ -452,3 +467,11 @@ classDiagram
   the extraction of the run-end flow were rejected: the scenes share the run, the lock, the host
   and the menus, so either would move the coupling into a mutable context without removing it
   (architecture-guardian finding on G2-3b, ADR-0003 allows both). No behaviour change.
+
+**Feedback link (#122, ADR-0027 decision 5).** The fixed step runs in `requestAnimationFrame`,
+where browsers refuse a new tab, so the domain never opens one: `FeedbackFlow` *arms* the address
+on `LinkPort` with the active row's band and the keys that may open it (`confirm` on a highlighted
+row, `any` in the gesture prompt, `none` otherwise), and `DeviceInput` — which implements both
+`InputPort` and `LinkPort` — opens it inside the keydown or pointerup handler. The next step reads
+`takeOutcome()`: `opened` counts and saves, `refused` shows *OPEN BLOCKED*, `none` after an
+activation (a gamepad) enters the gesture prompt.
