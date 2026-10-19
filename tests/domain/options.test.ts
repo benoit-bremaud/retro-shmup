@@ -38,6 +38,21 @@ describe('LiveOptions (GDD v0.14 §9.3, meta/04-class-menus)', () => {
     expect([live.musicVolume, live.sfxVolume]).toEqual([9, 7]);
   });
 
+  it('counts a feedback opening from absent, then on, without touching the saved object', () => {
+    const live = new LiveOptions(SAVED);
+    expect(live.feedbackCount).toBeUndefined();
+    live.countFeedback();
+    live.countFeedback();
+    expect(live.feedbackCount).toBe(2);
+    expect(SAVED.feedbackCount).toBeUndefined();
+  });
+
+  it('continues from the saved feedback count', () => {
+    const live = new LiveOptions({ ...SAVED, feedbackCount: 4 });
+    live.countFeedback();
+    expect(live.feedbackCount).toBe(5);
+  });
+
   it('toggles the language back from French to English', () => {
     const live = new LiveOptions({ ...SAVED, language: 'fr' });
     expect(live.apply('language')).toBe(true);

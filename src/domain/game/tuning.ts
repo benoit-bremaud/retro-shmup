@@ -90,6 +90,10 @@ export const SceneTuning = {
   attractIdleSeconds: 10,
   /** The attract mode shows the high scores this long, then the title again (GDD v0.16 §9.1). */
   attractSeconds: 6,
+  /** The feedback offer leaves after this long without input (GDD v0.26 §9.1). */
+  feedbackOfferIdleSeconds: 20,
+  /** *OPEN BLOCKED* shows this long after a refused tab (GDD v0.26 §9.1). */
+  openBlockedSeconds: 2,
 } as const;
 
 /**

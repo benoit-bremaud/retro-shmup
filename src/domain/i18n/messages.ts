@@ -82,6 +82,15 @@ export const MESSAGES = {
   ok: { en: 'OK', fr: 'OK' },
   skip: { en: 'SKIP', fr: 'PASSER' },
   noCountry: { en: 'NONE', fr: 'AUCUN' },
+  /** The feedback questionnaire (GDD v0.26 §9.1, §9.3): the title row and the offer screen. */
+  feedback: { en: 'FEEDBACK', fr: 'AVIS' },
+  yourOpinion: { en: 'YOUR OPINION', fr: 'TON AVIS' },
+  quickQuestions: { en: '2 QUICK QUESTIONS', fr: '2 QUESTIONS RAPIDES' },
+  giveFeedback: { en: 'GIVE FEEDBACK', fr: 'DONNER MON AVIS' },
+  later: { en: 'LATER', fr: 'PLUS TARD' },
+  openBlocked: { en: 'OPEN BLOCKED', fr: 'OUVERTURE BLOQUEE' },
+  /** The gesture prompt: a gamepad cannot open a tab, a tap, click or key can (ADR-0009). */
+  gesturePrompt: { en: 'TAP OR PRESS A KEY', fr: 'TOUCHE OU APPUIE' },
   /** A language is always named in itself (GDD v0.14 §9.1). */
   english: { en: 'ENGLISH', fr: 'ENGLISH' },
   francais: { en: 'FRANCAIS', fr: 'FRANCAIS' },

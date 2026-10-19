@@ -25,6 +25,15 @@ function buildCommit(): string {
   }
 }
 
+/** The feedback form's address, `''` when unset; any other host fails the build (ADR-0027). */
+function feedbackFormAddress(value: string | undefined): string {
+  if (value === undefined || value === '') return '';
+  if (!value.startsWith('https://tally.so/') || /[?#\s]/.test(value)) {
+    throw new Error('VITE_FEEDBACK_FORM_URL must be a https://tally.so/ address without query');
+  }
+  return value;
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
   return {
@@ -34,6 +43,7 @@ export default defineConfig(({ mode }) => {
     define: {
       __APP_VERSION__: JSON.stringify(packageVersion()),
       __APP_COMMIT__: JSON.stringify(buildCommit()),
+      __FEEDBACK_FORM__: JSON.stringify(feedbackFormAddress(env.VITE_FEEDBACK_FORM_URL)),
     },
     // No asset inlined as a data: URI, so the CSP needs no data: source (ADR-0008 decision 4).
     build: { target: 'es2022', sourcemap: true, assetsInlineLimit: 0 },

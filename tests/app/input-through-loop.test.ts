@@ -14,6 +14,9 @@ class KeyOnlyEnvironment implements InputEnvironment {
   onKeyDown(listener: (event: KeyEventLike) => void): void {
     this.keyDown = listener;
   }
+  openLink(): boolean {
+    return false; // No link in this scenario.
+  }
   onKeyUp(): void {
     // No release in this scenario.
   }

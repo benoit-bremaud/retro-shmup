@@ -8,13 +8,14 @@ import { toSteps } from '../../domain/game/tuning';
 import { isCapturableButton, isCapturableKey } from '../../domain/input/capturable';
 import { InputTuning } from '../../domain/input/input-tuning';
 import { Button } from '../../domain/ports/input-port';
+import type { ArmedLink, LinkOutcome, LinkPort } from '../../domain/ports/link-port';
 import type { ScreenLayout } from '../../domain/presentation/screen';
 import { arbitrate, createArbitration, createSample, releasePointerOwner } from './arbitration';
 import type { DeviceSamples } from './arbitration';
 import { GamepadModule } from './gamepad';
 import type { GamepadList } from './gamepad';
 import { KeyLabels } from './key-labels';
-import { KeyboardModule } from './keyboard';
+import { isBackKey, isConfirmKey, KeyboardModule } from './keyboard';
 import { PointerModule } from './pointer';
 import type { CanvasRect, PointerEventLike } from './pointer';
 
@@ -71,6 +72,11 @@ export interface InputEnvironment {
   layoutMap(): Promise<ReadonlyMap<string, string>> | undefined;
   /** Unlocks the audio, called inside every key and pointer gesture's handler (ADR-0009). */
   unlockAudio(): void;
+  /**
+   * Opens `url` in a new tab, inside a gesture's handler only (ADR-0027 decision 2); false when
+   * the browser refused it.
+   */
+  openLink(url: string): boolean;
   /** The page's fullscreen state and requests, called only inside a gesture's handler. */
   readonly fullscreen: {
     active(): boolean;
@@ -84,7 +90,7 @@ export interface InputEnvironment {
  * It numbers every keydown and pointer event, then the gamepad poll last in each read, and
  * combines the device samples with the browser-free `arbitrate` (ADR-0018 decision 9).
  */
-export class DeviceInput implements InputPort {
+export class DeviceInput implements InputPort, LinkPort {
   private readonly keyboard = new KeyboardModule();
   private readonly pointer = new PointerModule();
   private readonly gamepad = new GamepadModule();
@@ -111,6 +117,9 @@ export class DeviceInput implements InputPort {
   private captured: BindingCapture = WAITING;
   private captureReadsLeft = 0;
   private readonly keyLabels = new KeyLabels();
+  /** The opening armed by the scene machine, and what the last gesture did with it. */
+  private armedLink: ArmedLink | undefined;
+  private linkOutcome: LinkOutcome = 'none';
 
   constructor(environment: InputEnvironment) {
     this.environment = environment;
@@ -130,6 +139,12 @@ export class DeviceInput implements InputPort {
       }
       this.seq += 1;
       this.onGesture();
+      const keys = this.armedLink?.keys;
+      const opens =
+        keys === 'confirm' ? isConfirmKey(event.code) : keys === 'any' && !isBackKey(event.code);
+      if (!event.repeat && opens) {
+        this.openArmed();
+      }
       this.keyLabels.learn(event.code, event.key);
       // While a keyboard capture waits, a key only answers it: it latches no intent, so the
       // answering step carries no menu action (GDD v0.15 §4.2).
@@ -168,6 +183,7 @@ export class DeviceInput implements InputPort {
       this.seq += 1;
       // A touch grants the user activation on its release, not its press (ADR-0009 decision 2).
       this.environment.unlockAudio();
+      this.openOnLift(event);
       this.pointer.up(event, this.seq);
     });
     environment.onPointerCancel((event) => {
@@ -204,6 +220,35 @@ export class DeviceInput implements InputPort {
     const keyHeld = this.keyboard.anyDown || this.shortcutsDown.size > 0;
     into.active = this.eventSinceRead || keyHeld || this.gamepad.anyHeld;
     this.eventSinceRead = false;
+  }
+
+  arm(link: ArmedLink | undefined): void {
+    this.armedLink = link;
+  }
+
+  takeOutcome(): LinkOutcome {
+    const outcome = this.linkOutcome;
+    this.linkOutcome = 'none';
+    return outcome;
+  }
+
+  /** A lift over the armed band, or anywhere for the prompt, opens the link in this handler. */
+  private openOnLift(event: PointerEventLike): void {
+    const link = this.armedLink;
+    if (link === undefined) return;
+    const y = this.pointer.liftFieldY(event);
+    const band = link.band;
+    if (band === undefined || (y !== undefined && y >= band.top && y < band.bottom)) {
+      this.openArmed();
+    }
+  }
+
+  /** Inside a gesture's handler: opens the armed link once (ADR-0027 decisions 2 and 5). */
+  private openArmed(): void {
+    const link = this.armedLink;
+    if (link === undefined) return;
+    // It stays armed: after a refusal the next confirm tries again; leaving the row disarms it.
+    this.linkOutcome = this.environment.openLink(link.url) ? 'opened' : 'refused';
   }
 
   /** Inside a gesture's handler, the only place browsers allow audio and fullscreen (ADR-0009). */

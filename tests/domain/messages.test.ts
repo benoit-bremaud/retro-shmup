@@ -32,6 +32,28 @@ describe('message catalogue (GDD §9.6)', () => {
     for (const text of texts) expect(text).toMatch(/^[A-Z ]+$/);
   });
 
+  it.each(['en', 'fr'] as const)(
+    'gives the feedback offer header in %s, in the title glyph set (GDD v0.26 §9.1)',
+    (language) => {
+      expect(message('yourOpinion', language)).toMatch(/^[A-Z ]+$/);
+    },
+  );
+
+  it.each(['en', 'fr'] as const)(
+    'gives the other feedback texts in %s, in the menu glyph set',
+    (language) => {
+      const keys = [
+        'feedback',
+        'quickQuestions',
+        'giveFeedback',
+        'later',
+        'openBlocked',
+        'gesturePrompt',
+      ] as const;
+      for (const key of keys) expect(message(key, language), key).toMatch(/^[A-Z0-9 ?-]+$/);
+    },
+  );
+
   it('has a non-empty text in every language for every key', () => {
     for (const [key, texts] of Object.entries(MESSAGES)) {
       expect(Object.keys(texts).sort(), key).toEqual(['en', 'fr']);

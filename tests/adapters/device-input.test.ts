@@ -19,6 +19,14 @@ class FakeEnvironment implements InputEnvironment {
     Record<'down' | 'move' | 'up' | 'cancel', (event: PointerEventLike) => void>
   > = {};
   readonly prevented: string[] = [];
+  /** The addresses asked to open, and whether the browser lets them. */
+  readonly opened: string[] = [];
+  allowOpen = true;
+
+  openLink(url: string): boolean {
+    this.opened.push(url);
+    return this.allowOpen;
+  }
 
   onKeyDown(listener: (event: KeyEventLike) => void): void {
     this.keyDown = listener;
@@ -866,5 +874,159 @@ describe('DeviceInput — audio unlock (ADR-0009, GDD v0.23 §9.5)', () => {
     const { env } = setup();
     env.down('KeyR', false, 'ctrl');
     expect(env.unlocks).toBe(0);
+  });
+});
+
+describe('DeviceInput — opening an armed link inside a gesture (ADR-0027 decisions 2 and 5)', () => {
+  const ONE_TO_ONE = { left: 0, top: 0, width: 480, height: 320 };
+  const URL = 'https://tally.so/r/abc123?set=1';
+  const BAND = { top: 100, bottom: 132 };
+
+  function linkSetup(): ReturnType<typeof setup> {
+    const fixture = setup();
+    fixture.input.resize(LANDSCAPE, ONE_TO_ONE);
+    return fixture;
+  }
+
+  it('reports no outcome while nothing is armed, and opens nothing', () => {
+    const { env, input } = linkSetup();
+    env.down('Enter');
+    env.point('down', 'touch', 200, 110);
+    env.point('up', 'touch', 200, 110);
+    expect(env.opened).toEqual([]);
+    expect(input.takeOutcome()).toBe('none');
+  });
+
+  it.each(['Enter', 'NumpadEnter'])('opens on %s when the keys are confirm', (code) => {
+    const { env, input } = linkSetup();
+    input.arm({ url: URL, band: BAND, keys: 'confirm' });
+    env.down(code);
+    expect(env.opened).toEqual([URL]);
+    expect(input.takeOutcome()).toBe('opened');
+  });
+
+  it('does not open on another key when the keys are confirm', () => {
+    const { env, input } = linkSetup();
+    input.arm({ url: URL, band: BAND, keys: 'confirm' });
+    env.down('Space');
+    env.down('ArrowDown');
+    expect(env.opened).toEqual([]);
+    expect(input.takeOutcome()).toBe('none');
+  });
+
+  it('opens on any key when the keys are any', () => {
+    const { env, input } = linkSetup();
+    input.arm({ url: URL, band: undefined, keys: 'any' });
+    env.down('KeyQ');
+    expect(env.opened).toEqual([URL]);
+    expect(input.takeOutcome()).toBe('opened');
+  });
+
+  it('does not open on Escape when the keys are any: it goes back', () => {
+    const { env, input } = linkSetup();
+    input.arm({ url: URL, band: undefined, keys: 'any' });
+    env.down('Escape');
+    expect(env.opened).toEqual([]);
+    expect(input.takeOutcome()).toBe('none');
+  });
+
+  it('never opens on a key when the keys are none, even Enter', () => {
+    const { env, input } = linkSetup();
+    input.arm({ url: URL, band: BAND, keys: 'none' });
+    env.down('Enter');
+    env.down('KeyQ');
+    expect(env.opened).toEqual([]);
+    expect(input.takeOutcome()).toBe('none');
+  });
+
+  it('does not open on a key repeat', () => {
+    const { env, input } = linkSetup();
+    input.arm({ url: URL, band: undefined, keys: 'any' });
+    env.down('Enter', true);
+    expect(env.opened).toEqual([]);
+    expect(input.takeOutcome()).toBe('none');
+  });
+
+  it('opens when a touch lifts inside the band, and not outside it', () => {
+    const { env, input } = linkSetup();
+    input.arm({ url: URL, band: BAND, keys: 'none' });
+    env.point('down', 'touch', 200, 200);
+    env.point('up', 'touch', 200, 200);
+    expect(env.opened).toEqual([]);
+    env.point('down', 'touch', 200, 110);
+    env.point('up', 'touch', 200, 110);
+    expect(env.opened).toEqual([URL]);
+    expect(input.takeOutcome()).toBe('opened');
+  });
+
+  it('treats the band as top inclusive and bottom exclusive', () => {
+    const { env, input } = linkSetup();
+    input.arm({ url: URL, band: BAND, keys: 'none' });
+    env.point('up', 'touch', 200, BAND.bottom);
+    expect(env.opened).toEqual([]);
+    env.point('up', 'touch', 200, BAND.top);
+    expect(env.opened).toEqual([URL]);
+  });
+
+  it('does not open on a lift outside the play field', () => {
+    const { env, input } = linkSetup();
+    input.arm({ url: URL, band: BAND, keys: 'none' });
+    env.point('up', 'touch', 10, 110); // left of the field
+    expect(env.opened).toEqual([]);
+    expect(input.takeOutcome()).toBe('none');
+  });
+
+  it('opens on a lift anywhere in the field when there is no band', () => {
+    const { env, input } = linkSetup();
+    input.arm({ url: URL, band: undefined, keys: 'any' });
+    env.point('up', 'touch', 200, 300);
+    expect(env.opened).toEqual([URL]);
+  });
+
+  it('opens on a mouse left-button release in the band only', () => {
+    const { env, input } = linkSetup();
+    input.arm({ url: URL, band: BAND, keys: 'none' });
+    env.point('up', 'mouse', 200, 110, 0); // no left button was down: not a release
+    expect(env.opened).toEqual([]);
+    env.point('down', 'mouse', 200, 110, 1);
+    env.point('up', 'mouse', 200, 110, 0);
+    expect(env.opened).toEqual([URL]);
+  });
+
+  it('does not open on a mouse release outside the band', () => {
+    const { env, input } = linkSetup();
+    input.arm({ url: URL, band: BAND, keys: 'none' });
+    env.point('down', 'mouse', 200, 250, 1);
+    env.point('up', 'mouse', 200, 250, 0);
+    expect(env.opened).toEqual([]);
+  });
+
+  it('reports refused when the browser blocks the tab, and stays armed for a retry', () => {
+    const { env, input } = linkSetup();
+    env.allowOpen = false;
+    input.arm({ url: URL, band: BAND, keys: 'confirm' });
+    env.down('Enter');
+    expect(input.takeOutcome()).toBe('refused');
+    env.allowOpen = true;
+    env.down('Enter');
+    expect(input.takeOutcome()).toBe('opened');
+    expect(env.opened).toEqual([URL, URL]);
+  });
+
+  it('resets the outcome once taken', () => {
+    const { env, input } = linkSetup();
+    input.arm({ url: URL, band: BAND, keys: 'confirm' });
+    env.down('Enter');
+    expect(input.takeOutcome()).toBe('opened');
+    expect(input.takeOutcome()).toBe('none');
+  });
+
+  it('opens nothing after a disarm', () => {
+    const { env, input } = linkSetup();
+    input.arm({ url: URL, band: undefined, keys: 'any' });
+    input.arm(undefined);
+    env.down('Enter');
+    env.point('up', 'touch', 200, 110);
+    expect(env.opened).toEqual([]);
   });
 });

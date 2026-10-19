@@ -159,6 +159,19 @@ export class PointerModule {
   }
 
   /**
+   * The field y a finger lifts or the left button is released at, or `undefined` outside the
+   * field (or for another mouse button). Read before `up`, inside the handler: where an armed
+   * link opens (ADR-0027 decision 5).
+   */
+  liftFieldY(event: PointerEventLike): number | undefined {
+    const leftReleased =
+      (this.mouseButtons & LEFT_BUTTON) !== 0 && (event.buttons & LEFT_BUTTON) === 0;
+    if (event.pointerType === 'mouse' && !leftReleased) return undefined;
+    if (!this.map(event) || !this.inField()) return undefined;
+    return this.y - this.fieldOrigin().fieldY;
+  }
+
+  /**
    * A cancelled finger is released with no tap (ADR-0018 decision 8): a tap it made that is still
    * pending is taken back, so a palm or a system gesture never starts, resumes or pauses.
    */

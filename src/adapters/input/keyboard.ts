@@ -15,6 +15,16 @@ const FIXED: Readonly<Record<string, number>> = {
   Escape: Button.Pause | Button.Back,
 };
 
+/** `Enter` or `NumpadEnter`: the fixed keys that confirm, so may open an armed link. */
+export function isConfirmKey(code: string): boolean {
+  return ((FIXED[code] ?? 0) & Button.Confirm) !== 0;
+}
+
+/** `Esc`, the fixed key that goes back: it never opens a link armed for any key. */
+export function isBackKey(code: string): boolean {
+  return ((FIXED[code] ?? 0) & Button.Back) !== 0;
+}
+
 /**
  * A bound key, `Enter` or `NumpadEnter` loses its browser action; `Esc` never does, so it can
  * still leave fullscreen (ADR-0015 decisions 6 and 8).

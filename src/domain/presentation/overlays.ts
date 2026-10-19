@@ -148,13 +148,31 @@ export function drawWarning(
 export function drawMenuScreen(render: RenderPort, screen: MenuScreen, language: Language): void {
   drawVeil(render);
   const header = screen.header;
+  const note = screen.note;
+  if (note !== undefined)
+    drawMenuLine(render, message(note, language), screen.menu.top - MENU_ROW_HEIGHT);
   if (header !== undefined) {
-    const headerY = screen.menu.top - MENU_HEADER_GAP[header.font];
+    const noteGap = note === undefined ? 0 : MENU_ROW_HEIGHT;
+    const headerY = screen.menu.top - MENU_HEADER_GAP[header.font] - noteGap;
     const text = message(header.key, language);
     if (header.font === 'title') drawBanner(render, text, headerY);
     else drawMenuLine(render, text, headerY);
   }
   drawMenu(render, screen.menu, language, screen.value);
+}
+
+/**
+ * A one-line status at the foot of the field (GDD v0.26 §9.1): *OPEN BLOCKED* when the browser
+ * refused the form's tab, over the screen that tried.
+ */
+export function drawStatusLine(render: RenderPort, key: MessageKey, language: Language): void {
+  drawMenuLine(render, message(key, language), FIELD_HEIGHT - 2 * MENU_ROW_HEIGHT);
+}
+
+/** The gesture prompt (ADR-0009, GDD v0.26 §9.1): a gamepad waits for a tap, click or key. */
+export function drawGesturePrompt(render: RenderPort, language: Language): void {
+  drawVeil(render);
+  drawMenuLine(render, message('gesturePrompt', language), (FIELD_HEIGHT - MENU_ROW_HEIGHT) / 2);
 }
 
 /**

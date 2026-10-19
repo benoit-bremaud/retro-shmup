@@ -8,6 +8,7 @@ import type { RunView, Simulation } from '../game/run';
 import { ResultsTuning, SceneTuning, STEP_SECONDS, toSteps } from '../game/tuning';
 import { Button } from '../ports/input-port';
 import type { IntentFrame } from '../ports/input-port';
+import type { LinkOutcome } from '../ports/link-port';
 import type { RenderPort } from '../ports/render-port';
 import { message } from '../i18n/messages';
 import type { MessageKey } from '../i18n/messages';
@@ -18,20 +19,23 @@ import {
   drawControlsScreen,
   drawCountIn,
   drawEnding,
+  drawGesturePrompt,
   drawHighScores,
   drawMenuScreen,
   drawNameEntry,
+  drawStatusLine,
   drawVeil,
   drawWarning,
 } from '../presentation/overlays';
 import { drawResults, formatTallyValues, tallyLineAppears } from '../presentation/results';
+import type { FeedbackContext } from '../feedback/feedback-link';
 import { RunPresenter } from '../presentation/run-presenter';
 import { EFFECT_ROWS, LiveOptions } from '../options';
 import type { Options, RowValue, VolumeRow } from '../options';
 import { ChampionName } from '../presentation/champion-name';
 import { STARFIELD_LAYERS } from '../presentation/starfield';
 import type { Starfield } from '../presentation/starfield';
-import { MENU_HEADER_GAP } from '../presentation/menu-layout';
+import { MENU_HEADER_GAP, MENU_ROW_HEIGHT } from '../presentation/menu-layout';
 import type { MenuScreen } from '../presentation/menu-layout';
 import { HighScoreTable } from '../hall-of-fame/high-scores';
 import type { HighScoreEntry } from '../hall-of-fame/high-scores';
@@ -39,6 +43,8 @@ import { ControlsScreen } from './controls-screen';
 import { HighScoresScreen } from './high-scores-screen';
 import { Menu } from './menu';
 import { CountryChoice } from './country-choice';
+import { ANY_GESTURE, FeedbackFlow, NO_FEEDBACK } from './feedback-flow';
+import type { ArmedAt, FeedbackSettings } from './feedback-flow';
 import { NameEntry } from './name-entry';
 import { NO_HOST } from './scene-host';
 import type { SceneHost } from './scene-host';
@@ -77,6 +83,9 @@ export const Scene = {
   StartCountry: 'START_COUNTRY',
   TitleCountry: 'TITLE_COUNTRY',
   PauseCountry: 'PAUSE_COUNTRY',
+  /** The feedback offer after a run end, and the gesture prompt a gamepad opens it through. */
+  FeedbackOffer: 'FEEDBACK_OFFER',
+  FeedbackGesture: 'FEEDBACK_GESTURE',
 } as const;
 export type Scene = (typeof Scene)[keyof typeof Scene];
 
@@ -96,6 +105,8 @@ const PAUSE_MIX_SCENES: ReadonlySet<Scene> = new Set([
 export interface SceneOutputs {
   readonly champion?: ChampionName;
   readonly audio?: AudioPort;
+  /** The feedback form (GDD v0.26 §9.1); off by default. */
+  readonly feedback?: FeedbackSettings;
 }
 
 /** What differs between scenes for drawing, read by `render`. */
@@ -140,6 +151,8 @@ const SCENE_TRAITS: Readonly<Record<Scene, SceneTraits>> = {
   [Scene.StartCountry]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
   [Scene.TitleCountry]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
   [Scene.PauseCountry]: { frozen: true, scrolls: false, drawsRun: true, pauseButton: false },
+  [Scene.FeedbackOffer]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
+  [Scene.FeedbackGesture]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
 };
 
 /** Where each options scene's Back and sub-screen lead (meta/05-state-scenes). */
@@ -223,6 +236,8 @@ const SCENE_MUSIC: Readonly<Record<Scene, Track | 'run'>> = {
   [Scene.StartCountry]: Track.Title,
   [Scene.TitleCountry]: Track.Title,
   [Scene.PauseCountry]: 'run',
+  [Scene.FeedbackOffer]: Track.Title,
+  [Scene.FeedbackGesture]: Track.Title,
 };
 
 const COUNT_IN_STEPS = toSteps(SceneTuning.countInSeconds);
@@ -236,6 +251,29 @@ const ENDING_STEPS = toSteps(SceneTuning.endingSeconds);
 /** The attract mode's wait on the title and its time on screen (GDD v0.16 §9.1). */
 const ATTRACT_IDLE_STEPS = toSteps(SceneTuning.attractIdleSeconds);
 const ATTRACT_STEPS = toSteps(SceneTuning.attractSeconds);
+/** The feedback offer leaves after 20 s without input (GDD v0.26 §9.1). */
+const OFFER_IDLE_STEPS = toSteps(SceneTuning.feedbackOfferIdleSeconds);
+/** The vertical slice has one level; the run snapshot gains its level with level 2. */
+const SLICE_LEVEL = 1;
+
+/** The title's rows; *Feedback* is last, only when the build holds a form address (§9.1). */
+type TitleRow = 'play' | 'highScores' | 'options' | 'feedback';
+
+/**
+ * The two armings of a menu's feedback row `index`: a tap or click lifting over the row always
+ * opens the form; `Enter` only while the row is highlighted (`[off, on]`).
+ */
+function rowArmings(
+  menu: { readonly top: number; readonly rowHeight: number },
+  index: number,
+): readonly [ArmedAt, ArmedAt] {
+  const top = menu.top + index * menu.rowHeight;
+  const band = { top, bottom: top + menu.rowHeight };
+  return [
+    { band, keys: 'none' },
+    { band, keys: 'confirm' },
+  ];
+}
 
 function isConfirmOrTap(frame: Readonly<IntentFrame>): boolean {
   return (frame.pressed & Button.Confirm) !== 0 || frame.tapRegion !== 'none';
@@ -298,7 +336,21 @@ export class SceneMachine {
   /** Every step since Boot: the menus' clock (the re-press guard), never wall time. */
   private steps = 0;
   /** The five menus (GDD v0.13 and v0.14 §9.1), built once. */
-  private readonly titleMenu = new Menu(['play', 'highScores', 'options'] as const);
+  private readonly titleMenu: Menu<TitleRow>;
+  private readonly titleScreen: MenuScene;
+  /** The *Feedback* row's armings on the title, or `undefined` without a form address. */
+  private readonly titleArmings: readonly [ArmedAt, ArmedAt] | undefined;
+  /** The feedback offer (GDD v0.26 §9.1): *Give feedback* first, then *Later*. */
+  private readonly offerMenu = new Menu(['giveFeedback', 'later'] as const, {
+    headerGap: MENU_HEADER_GAP.title + MENU_ROW_HEIGHT,
+  });
+  private readonly offerArmings = rowArmings(this.offerMenu, 0);
+  private readonly feedback: FeedbackFlow;
+  private readonly feedbackVersion: string;
+  /** The last run's score and level, sent with the form; 0 and 1 before any run (§9.1). */
+  private lastScore = 0;
+  /** The high scores were reached from a run end, so they lead to the feedback offer. */
+  private highScoresAfterRun = false;
   private readonly pauseMenu = new Menu(['resume', 'options', 'quit'] as const, {
     headerGap: MENU_HEADER_GAP.title,
   });
@@ -342,7 +394,11 @@ export class SceneMachine {
    * screen is one entry here plus its step method.
    */
   private readonly menuScreens: Readonly<Partial<Record<Scene, MenuScene>>> = {
-    [Scene.Title]: { menu: this.titleMenu },
+    [Scene.FeedbackOffer]: {
+      menu: this.offerMenu,
+      header: { key: 'yourOpinion', font: 'title' },
+      note: 'quickQuestions',
+    },
     [Scene.Paused]: { menu: this.pauseMenu, header: { key: 'pause', font: 'title' } },
     [Scene.ConfirmQuit]: { menu: this.quitMenu, header: { key: 'quitQuestion', font: 'menu' } },
     [Scene.TitleOptions]: this.optionsScreen(),
@@ -393,6 +449,17 @@ export class SceneMachine {
     this.createRun = createRun;
     this.host = host;
     this.options = new LiveOptions(options);
+    this.feedback = new FeedbackFlow(outputs.feedback ?? NO_FEEDBACK);
+    this.feedbackVersion = outputs.feedback?.version ?? '';
+    this.titleMenu = new Menu<TitleRow>(
+      this.feedback.enabled
+        ? ['play', 'highScores', 'options', 'feedback']
+        : ['play', 'highScores', 'options'],
+    );
+    this.titleScreen = { menu: this.titleMenu };
+    this.titleArmings = this.feedback.enabled
+      ? rowArmings(this.titleMenu, this.titleMenu.rows.indexOf('feedback'))
+      : undefined;
     this.controls = new ControlsScreen(this.options, host);
     this.handlers = this.buildHandlers();
     this.applyVolumes();
@@ -404,7 +471,18 @@ export class SceneMachine {
     const country = this.overlayCountry.bind(this);
     return {
       [Scene.Boot]: { step: this.stepBoot.bind(this), overlay: NO_OVERLAY },
-      [Scene.Title]: { step: this.stepTitle.bind(this), overlay: menu },
+      [Scene.Title]: {
+        step: this.stepTitle.bind(this),
+        overlay: this.overlayFeedbackMenu.bind(this),
+      },
+      [Scene.FeedbackOffer]: {
+        step: this.stepFeedbackOffer.bind(this),
+        overlay: this.overlayFeedbackMenu.bind(this),
+      },
+      [Scene.FeedbackGesture]: {
+        step: this.stepFeedbackGesture.bind(this),
+        overlay: this.overlayGesture.bind(this),
+      },
       [Scene.Playing]: { step: this.stepPlaying.bind(this), overlay: NO_OVERLAY },
       [Scene.Paused]: { step: this.stepPaused.bind(this), overlay: menu },
       [Scene.CountIn]: {
@@ -529,6 +607,8 @@ export class SceneMachine {
     // The title and its menus scroll the background; the scenes with a run count it themselves.
     if (traits.scrolls && !traits.drawsRun) this.backgroundSteps += 1;
     this.steps += 1;
+    // The form's address names the device: a new one re-arms it with a fresh context (ADR-0027).
+    if (frame.device !== this.lastDevice) this.feedback.refresh();
     this.lastDevice = frame.device;
     this.handlers[this.current].step(dt, frame);
     this.audio.music(this.track());
@@ -560,10 +640,16 @@ export class SceneMachine {
     if (this.locked()) {
       // The lock ignores the whole menu: what is held now counts as held when it ends.
       this.titleMenu.ignore(frame);
+      this.feedback.disarm();
       return;
     }
+    const onFeedback = this.titleMenu.rows[this.titleMenu.highlighted] === 'feedback' ? 1 : 0;
+    const outcome = this.feedback.step(this.titleArmings?.[onFeedback], this.feedbackContext);
     const row = this.stepMenu(this.titleMenu, frame);
-    if (row === 'options') {
+    // An opened tab counts even when the menu saw no activation (a drag, a guarded release).
+    if (row === 'feedback' || outcome === 'opened') {
+      this.feedbackOutcome(outcome, frame);
+    } else if (row === 'options') {
       this.openMenu(Scene.TitleOptions, frame);
     } else if (row === 'highScores') {
       this.openHighScores(-1);
@@ -573,6 +659,79 @@ export class SceneMachine {
     } else if (row === 'play') {
       this.startRun();
     }
+  }
+
+  /** The context sent with the form, read when the opening is armed (ADR-0027 decision 3). */
+  private readonly feedbackContext = (): FeedbackContext => ({
+    count: this.options.feedbackCount ?? 0,
+    version: this.feedbackVersion,
+    score: this.lastScore,
+    level: SLICE_LEVEL,
+    country: this.options.country,
+    device: this.lastDevice,
+    lang: this.options.language,
+  });
+
+  /**
+   * What an activated feedback row does with the gesture's outcome (ADR-0027 decision 5): opened
+   * counts and returns to the title; refused shows *OPEN BLOCKED* and stays; no opening (a gamepad,
+   * no user activation) asks for a tap, click or key.
+   */
+  private feedbackOutcome(outcome: LinkOutcome, frame: Readonly<IntentFrame>): void {
+    if (outcome === 'opened') this.feedbackOpened(frame);
+    else if (outcome === 'refused') this.feedback.block();
+    else this.enter(Scene.FeedbackGesture);
+  }
+
+  private feedbackOpened(frame: Readonly<IntentFrame>): void {
+    this.feedback.disarm(); // the next arming builds the address of the next question set
+    this.options.countFeedback();
+    this.host.optionsChanged(this.options);
+    if (this.current !== Scene.Title) this.toTitle(frame);
+  }
+
+  /**
+   * After a run end (GDD v0.26 §9.1): the feedback offer when the build holds a form address,
+   * else the title; the run is released either way.
+   */
+  private afterRun(frame: Readonly<IntentFrame>): void {
+    if (!this.feedback.enabled) {
+      this.toTitle(frame);
+      return;
+    }
+    this.releaseRun();
+    this.openMenu(Scene.FeedbackOffer, frame);
+    this.lockLeft = LOCK_STEPS; // as on the title: hammering Confirm never opens a tab
+  }
+
+  // Give feedback opens the form; Later, back or 20 s without input return to the title. Pause
+  // is ignored, as on the high scores (GDD v0.26 §9.1).
+  private stepFeedbackOffer(_dt: number, frame: Readonly<IntentFrame>): void {
+    this.sceneSteps = frame.active ? 0 : this.sceneSteps + 1;
+    if (this.locked()) {
+      this.offerMenu.ignore(frame);
+      this.feedback.disarm();
+      return;
+    }
+    const onGive = this.offerMenu.highlighted === 0 ? 1 : 0;
+    const outcome = this.feedback.step(this.offerArmings[onGive], this.feedbackContext);
+    const row = this.stepMenu(this.offerMenu, frame);
+    if (row === 'giveFeedback' || outcome === 'opened') this.feedbackOutcome(outcome, frame);
+    else if (row === 'later' || this.backed(frame) || this.sceneSteps >= OFFER_IDLE_STEPS) {
+      this.toTitle(frame);
+    }
+  }
+
+  // A gamepad cannot open a tab: the next click, tap or key opens it in its handler (ADR-0009);
+  // back returns to the title, a refusal too, with *OPEN BLOCKED*.
+  private stepFeedbackGesture(_dt: number, frame: Readonly<IntentFrame>): void {
+    const outcome = this.feedback.step(ANY_GESTURE, this.feedbackContext);
+    if (outcome === 'opened') {
+      this.feedbackOpened(frame);
+      return;
+    }
+    if (outcome === 'refused') this.feedback.block();
+    if (outcome === 'refused' || this.backed(frame)) this.toTitle(frame);
   }
 
   /** InRun entry creates the run and its presenter. */
@@ -833,8 +992,9 @@ export class SceneMachine {
   /** After Game over or the Ending: the name entry when the score enters the table, else the title. */
   private endRun(frame: Readonly<IntentFrame>): void {
     const score = this.run?.snapshot().score ?? 0;
+    this.lastScore = score;
     if (!this.table.qualifies(score)) {
-      this.toTitle(frame);
+      this.afterRun(frame);
       return;
     }
     this.enter(Scene.NameEntry);
@@ -853,13 +1013,13 @@ export class SceneMachine {
     if (exit !== undefined || typed) this.audio.play(Sfx.MenuConfirm);
     else if (this.nameEntry.grid.cursor !== cursor) this.audio.play(Sfx.MenuMove);
     if (exit === 'skipped') {
-      this.toTitle(frame);
+      this.afterRun(frame);
     } else if (exit === 'entered') {
       const rank = this.table.insert(this.nameEntry.entry(this.host.today()));
       this.host.highScoresChanged(this.table.entries);
-      this.run = undefined;
-      this.presenter = undefined;
+      this.releaseRun();
       this.openHighScores(rank);
+      this.highScoresAfterRun = true;
     }
   }
 
@@ -879,23 +1039,34 @@ export class SceneMachine {
   private openHighScores(highlighted: number): void {
     this.enter(Scene.HighScores);
     this.highScores.open(this.table, highlighted);
+    this.highScoresAfterRun = false;
   }
 
-  // Back, confirm or a tap started here returns to the title, locked as after Game over.
+  // Back, confirm or a tap started here returns to the title, locked as after Game over; after a
+  // run, through the feedback offer (GDD v0.26 §9.1).
   private stepHighScores(_dt: number, frame: Readonly<IntentFrame>): void {
-    if (this.highScores.step(frame)) this.toTitle(frame);
+    if (!this.highScores.step(frame)) return;
+    if (this.highScoresAfterRun) this.afterRun(frame);
+    else this.toTitle(frame);
   }
 
   /** The run is released at the title, locked for 1 s so hammering never starts a new run. */
   private toTitle(frame: Readonly<IntentFrame>): void {
-    this.run = undefined;
-    this.presenter = undefined;
+    this.releaseRun();
     this.openMenu(Scene.Title, frame);
     this.lockLeft = LOCK_STEPS;
   }
 
+  /** The run and its presenter are released. */
+  private releaseRun(): void {
+    this.run = undefined;
+    this.presenter = undefined;
+  }
+
   /** Every scene change goes through here, so each scene's timer starts at 0. */
   private enter(scene: Scene): void {
+    // An opening stays armed on its own screen only (ADR-0027 decision 5).
+    if (scene !== this.current) this.feedback.disarm();
     this.current = scene;
     this.sceneSteps = 0;
     // The pause mix (ADR-0009 decision 3): on in the pause and its menus, off from the count-in.
@@ -918,6 +1089,7 @@ export class SceneMachine {
 
   /** The menu screen of a scene: the table's, or the options without *Controls* on touch. */
   private screenOf(scene: Scene): MenuScene | undefined {
+    if (scene === Scene.Title) return this.titleScreen;
     const touchOptions = scene === Scene.TitleOptions || scene === Scene.PauseOptions;
     return touchOptions && this.optionsTouch ? this.touchOptions : this.menuScreens[scene];
   }
@@ -988,6 +1160,16 @@ export class SceneMachine {
   private overlayMenu(): void {
     const menuScreen = this.screenOf(this.current);
     if (menuScreen !== undefined) drawMenuScreen(this.renderer, menuScreen, this.options.language);
+  }
+
+  /** The title or the offer, with *OPEN BLOCKED* over it for 2 s after a refused tab. */
+  private overlayFeedbackMenu(): void {
+    this.overlayMenu();
+    if (this.feedback.blocked) drawStatusLine(this.renderer, 'openBlocked', this.options.language);
+  }
+
+  private overlayGesture(): void {
+    drawGesturePrompt(this.renderer, this.options.language);
   }
 
   private overlayControls(): void {
