@@ -38,6 +38,7 @@ const OPTIONS: Options = {
   bindings: DEFAULT_BINDINGS,
   musicVolume: 7,
   sfxVolume: 8,
+  country: 'FR',
 };
 
 /** A boss that one shot kills, on the ship's line: the run is cleared in a few seconds. */

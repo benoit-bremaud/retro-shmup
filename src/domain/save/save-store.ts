@@ -1,9 +1,11 @@
 import { DefaultVolume, isVolumeStep } from '../audio/volume';
 import type { Language } from '../i18n/messages';
 import { isRecord } from '../guards';
+import { COUNTRY_CODES } from '../hall-of-fame/country-codes';
 import { parseHighScores, type HighScoreEntry } from '../hall-of-fame/high-scores';
 import { DEFAULT_BINDINGS } from '../input/default-bindings';
 import { parseBindings } from '../input/parse-bindings';
+import { NO_COUNTRY } from '../options';
 import type { EffectSettings, Options } from '../options';
 import type { StoragePort } from '../ports/storage-port';
 
@@ -51,6 +53,15 @@ function parseVolume(value: unknown, fallback: number): number | undefined {
 }
 
 /**
+ * The stored country choice, by allowlist (GDD v0.26 §9.8): `none` or a code of `COUNTRY_CODES`;
+ * anything else, absence included, reads as never asked, so the question comes again.
+ */
+function parseCountry(value: unknown): string | undefined {
+  if (value === NO_COUNTRY) return NO_COUNTRY;
+  return typeof value === 'string' && COUNTRY_CODES.has(value) ? value : undefined;
+}
+
+/**
  * Rebuilds the effects from the known keys only; `undefined` if any is not a boolean. The
  * champion's name came after save version 2, so a missing key reads as on (GDD v0.22 §9.4.1).
  */
@@ -88,7 +99,17 @@ function parseOptions(value: unknown, version: number): Options | undefined {
   const sfxVolume = parseVolume(value.sfxVolume, DefaultVolume.sfx);
   if (musicVolume === undefined || sfxVolume === undefined) return undefined;
   const bindings = version === FIRST_VERSION ? DEFAULT_BINDINGS : parseBindings(value.bindings);
-  return { effects, autofire, language: known, fullscreen, bindings, musicVolume, sfxVolume };
+  const options = {
+    effects,
+    autofire,
+    language: known,
+    fullscreen,
+    bindings,
+    musicVolume,
+    sfxVolume,
+  };
+  const country = parseCountry(value.country);
+  return country === undefined ? options : { ...options, country };
 }
 
 function parseJson(raw: string): unknown {

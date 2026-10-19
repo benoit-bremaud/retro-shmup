@@ -116,6 +116,9 @@ const MENU_HIGHLIGHT = { r: 0x3b, g: 0x4a, b: 0x8a };
 const PAUSE_PIXEL = { x: 90, y: 113 };
 /** The middle of the PLAY row of the title menu (three 32 px rows from y 112), in play-field pixels. */
 const PLAY_ROW = { x: 120, y: 128 };
+
+/** The middle of the country grid's NONE cell (row 3, columns 3 and 4; GDD v0.26), in play-field pixels. */
+const NONE_CELL = { x: 120, y: 104 + 3 * 32 + 16 };
 /** The middle of the RESUME row (three 32 px rows from y 112), in play-field pixels. */
 const RESUME_ROW = { x: 120, y: 128 };
 
@@ -278,6 +281,10 @@ test('a phone starts, pauses and resumes by touch; a rotation pauses without res
   await page.waitForTimeout(300);
   const start = await geometry(page);
   await tapScreen(page, start.fieldX + PLAY_ROW.x, start.fieldY + PLAY_ROW.y);
+  // A fresh save holds no country: the first PLAY asks it (GDD v0.26 §9.1). A tap on NONE, the
+  // same on every engine's language, chooses and starts the run.
+  await page.waitForTimeout(300);
+  await tapScreen(page, start.fieldX + NONE_CELL.x, start.fieldY + NONE_CELL.y);
   await expect.poll(() => hullAtRest(page), { timeout: 5000 }).toBe(true);
   // Past the 2 s fly-in and invulnerability blink, the ship is always drawn: the single checks
   // below never catch an "off" blink frame.

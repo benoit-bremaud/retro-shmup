@@ -2,7 +2,51 @@ import { Button } from '../ports/input-port';
 import type { IntentFrame } from '../ports/input-port';
 import { LETTER_GRID } from '../presentation/menu-layout';
 import type { GridCell, LetterGridView } from '../presentation/menu-layout';
+import type { MessageKey } from '../i18n/messages';
 import { NO_ROW, PressGuard, sidewaysOf, verticalOf } from './menu-input';
+
+/** The letters of both grids. */
+export const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+/** What a grid cell does: a character, or one of the actions (GDD v0.16 §9.1). */
+export type GridAction = 'char' | 'space' | 'delete' | 'ok' | 'skip' | 'none';
+export type EntryCell = GridCell<GridAction>;
+
+/** The characters, eight to a row, then the actions on the places left. */
+export function gridCells(
+  characters: string,
+  actions: readonly { action: GridAction; label: MessageKey; span: number }[],
+): EntryCell[] {
+  const cells: EntryCell[] = [];
+  const columns = LETTER_GRID.columns;
+  for (let i = 0; i < characters.length; i += 1) {
+    const text = characters.charAt(i);
+    cells.push({
+      action: 'char',
+      text,
+      row: Math.floor(i / columns),
+      column: i % columns,
+      span: 1,
+    });
+  }
+  let place = characters.length;
+  for (let i = 0; i < actions.length; i += 1) {
+    const action = actions[i];
+    if (action === undefined) continue;
+    // An action never straddles two rows: a wide one too long for the row starts the next.
+    if ((place % columns) + action.span > columns) place += columns - (place % columns);
+    cells.push({
+      action: action.action,
+      text: '',
+      label: action.label,
+      row: Math.floor(place / columns),
+      column: place % columns,
+      span: action.span,
+    });
+    place += action.span;
+  }
+  return cells;
+}
 
 /**
  * The name entry's two-dimensional menu (GDD v0.16 §9.1, meta/04-class-menus): the directions move

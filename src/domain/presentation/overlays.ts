@@ -7,6 +7,7 @@ import type { BossSnapshot } from '../game/run';
 import { BossHudTuning, SceneTuning, toSteps } from '../game/tuning';
 import { message } from '../i18n/messages';
 import type { Language, MessageKey } from '../i18n/messages';
+import type { RowValue } from '../options';
 import { HUD_FONT_CELL, MENU_FONT_CELL, TITLE_FONT_CELL } from '../ports/render-port';
 import type { RenderPort } from '../ports/render-port';
 import {
@@ -51,6 +52,12 @@ const STEP_LABELS: readonly string[] = Array.from({ length: MAX_VOLUME_STEP + 1 
   String(i),
 );
 
+/** The text a row value shows: a volume step's label, a code as is, or a catalogue text. */
+function valueText(value: RowValue, language: Language): string {
+  if (typeof value === 'number') return STEP_LABELS[value] ?? '';
+  return typeof value === 'object' ? value.text : message(value, language);
+}
+
 /**
  * A menu (GDD v0.13 and v0.14 §9.1): each row's catalogue text centred in its row (16 to 32 px tall,
  * GDD v0.25), or, for a
@@ -61,7 +68,7 @@ export function drawMenu(
   render: RenderPort,
   menu: MenuView,
   language: Language,
-  value?: (row: MessageKey) => MessageKey | number | undefined,
+  value?: (row: MessageKey) => RowValue | undefined,
 ): void {
   render.setRegion('field');
   const rowHeight = menu.rowHeight;
@@ -81,8 +88,7 @@ export function drawMenu(
       const x = Math.round((FIELD_WIDTH - width) / 2);
       render.drawRect(x, y, width, rowHeight, Palette.menuHighlight);
     }
-    const shown =
-      typeof valueKey === 'number' ? (STEP_LABELS[valueKey] ?? '') : message(valueKey, language);
+    const shown = valueText(valueKey, language);
     render.drawText(text, MENU_VALUE_MARGIN, y + textTop, 'menu');
     render.drawText(
       shown,
@@ -301,7 +307,8 @@ export function drawNameEntry(render: RenderPort, view: NameEntryView, language:
     const y = LETTER_GRID.top + cell.row * LETTER_GRID.cellHeight;
     const cellWidth = cell.span * LETTER_GRID.cellWidth;
     if (i === grid.cursor) {
-      render.drawRect(x, y, cellWidth, LETTER_GRID.cellHeight, Palette.menuHighlight);
+      // The whole cell is the tap target; the bar keeps a 1 px gap above and below (GDD v0.26).
+      render.drawRect(x, y + 1, cellWidth, LETTER_GRID.cellHeight - 2, Palette.menuHighlight);
     }
     const text = cell.label === undefined ? cell.text : message(cell.label, language);
     render.drawText(

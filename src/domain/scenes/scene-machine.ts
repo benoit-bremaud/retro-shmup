@@ -27,7 +27,7 @@ import {
 import { drawResults, formatTallyValues, tallyLineAppears } from '../presentation/results';
 import { RunPresenter } from '../presentation/run-presenter';
 import { EFFECT_ROWS, LiveOptions } from '../options';
-import type { Options, VolumeRow } from '../options';
+import type { Options, RowValue, VolumeRow } from '../options';
 import { ChampionName } from '../presentation/champion-name';
 import { STARFIELD_LAYERS } from '../presentation/starfield';
 import type { Starfield } from '../presentation/starfield';
@@ -38,6 +38,7 @@ import type { HighScoreEntry } from '../hall-of-fame/high-scores';
 import { ControlsScreen } from './controls-screen';
 import { HighScoresScreen } from './high-scores-screen';
 import { Menu } from './menu';
+import { CountryChoice } from './country-choice';
 import { NameEntry } from './name-entry';
 import { NO_HOST } from './scene-host';
 import type { SceneHost } from './scene-host';
@@ -72,6 +73,10 @@ export const Scene = {
   NameEntry: 'NAME_ENTRY',
   /** The high scores shown on their own after the title waits (G2-3b). */
   Attract: 'ATTRACT',
+  /** The country choice (GDD v0.26 §9.1): before the first run, and from each options screen. */
+  StartCountry: 'START_COUNTRY',
+  TitleCountry: 'TITLE_COUNTRY',
+  PauseCountry: 'PAUSE_COUNTRY',
 } as const;
 export type Scene = (typeof Scene)[keyof typeof Scene];
 
@@ -84,6 +89,7 @@ const PAUSE_MIX_SCENES: ReadonlySet<Scene> = new Set([
   Scene.PauseAudio,
   Scene.PauseControls,
   Scene.PauseRestore,
+  Scene.PauseCountry,
 ]);
 
 /** The scene machine's optional outputs besides the renderer: silent and nameless by default. */
@@ -131,6 +137,9 @@ const SCENE_TRAITS: Readonly<Record<Scene, SceneTraits>> = {
   [Scene.NameEntry]: { frozen: true, scrolls: true, drawsRun: true, pauseButton: false },
   // The attract has the title's traits: the stars scroll, no run, no pause button.
   [Scene.Attract]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
+  [Scene.StartCountry]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
+  [Scene.TitleCountry]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
+  [Scene.PauseCountry]: { frozen: true, scrolls: false, drawsRun: true, pauseButton: false },
 };
 
 /** Where each options scene's Back and sub-screen lead (meta/05-state-scenes). */
@@ -140,17 +149,24 @@ const OPTIONS_ROUTES = {
     effects: Scene.TitleEffects,
     audio: Scene.TitleAudio,
     controls: Scene.TitleControls,
+    country: Scene.TitleCountry,
   },
   [Scene.PauseOptions]: {
     parent: Scene.Paused,
     effects: Scene.PauseEffects,
     audio: Scene.PauseAudio,
     controls: Scene.PauseControls,
+    country: Scene.PauseCountry,
   },
 } as const;
 const CONTROLS_ROUTES = {
   [Scene.TitleControls]: { parent: Scene.TitleOptions, restore: Scene.TitleRestore },
   [Scene.PauseControls]: { parent: Scene.PauseOptions, restore: Scene.PauseRestore },
+} as const;
+/** Where each country choice leads once chosen or cancelled; the start one leads to play. */
+const COUNTRY_PARENT = {
+  [Scene.TitleCountry]: Scene.TitleOptions,
+  [Scene.PauseCountry]: Scene.PauseOptions,
 } as const;
 const RESTORE_PARENT = {
   [Scene.TitleRestore]: Scene.TitleControls,
@@ -159,7 +175,14 @@ const RESTORE_PARENT = {
 
 /** The options rows; *Controls* is hidden when the last device used is touch (GDD v0.15 §4.2). */
 type OptionsRow =
-  'visualEffects' | 'audio' | 'controls' | 'autofire' | 'language' | 'fullscreen' | 'back';
+  | 'visualEffects'
+  | 'audio'
+  | 'controls'
+  | 'autofire'
+  | 'language'
+  | 'country'
+  | 'fullscreen'
+  | 'back';
 const EFFECTS_PARENT = {
   [Scene.TitleEffects]: Scene.TitleOptions,
   [Scene.PauseEffects]: Scene.PauseOptions,
@@ -197,6 +220,9 @@ const SCENE_MUSIC: Readonly<Record<Scene, Track | 'run'>> = {
   [Scene.Ending]: Track.Results,
   [Scene.NameEntry]: Track.Title,
   [Scene.Attract]: Track.Title,
+  [Scene.StartCountry]: Track.Title,
+  [Scene.TitleCountry]: Track.Title,
+  [Scene.PauseCountry]: 'run',
 };
 
 const COUNT_IN_STEPS = toSteps(SceneTuning.countInSeconds);
@@ -278,17 +304,18 @@ export class SceneMachine {
   });
   private readonly quitMenu = new Menu(['no', 'yes'] as const, { headerGap: MENU_HEADER_GAP.menu });
   // Called only after the constructor has set `options` (field initialisers run first).
-  // Left and right flip exactly the rows that show a value (GDD v0.14 §9.1).
-  private readonly hasValue = (row: MessageKey): boolean => this.options.value(row) !== undefined;
+  // Left and right flip exactly the rows that show a value (GDD v0.14 §9.1); the Country row
+  // shows its code but opens a screen, so a sideways press leaves it alone (GDD v0.26 §9.3).
+  private readonly hasValue = (row: MessageKey): boolean =>
+    row !== 'country' && this.options.value(row) !== undefined;
   /** The value each options row shows, read at each draw; built once. */
-  private readonly value = (row: MessageKey): MessageKey | number | undefined =>
-    this.options.value(row);
+  private readonly value = (row: MessageKey): RowValue | undefined => this.options.value(row);
   private readonly fullOptionsMenu = new Menu<OptionsRow>(
-    ['visualEffects', 'audio', 'controls', 'autofire', 'language', 'fullscreen', 'back'],
+    ['visualEffects', 'audio', 'controls', 'autofire', 'language', 'country', 'fullscreen', 'back'],
     { flips: this.hasValue, headerGap: MENU_HEADER_GAP.title },
   );
   private readonly touchOptionsMenu = new Menu<OptionsRow>(
-    ['visualEffects', 'audio', 'autofire', 'language', 'fullscreen', 'back'],
+    ['visualEffects', 'audio', 'autofire', 'language', 'country', 'fullscreen', 'back'],
     { flips: this.hasValue, headerGap: MENU_HEADER_GAP.title },
   );
   /** Whether the options opened without *Controls* (touch used last), frozen until they reopen. */
@@ -335,6 +362,7 @@ export class SceneMachine {
   /** The final score on the Ending card, formatted once on entry. */
   private endingScore = '';
   private readonly nameEntry = new NameEntry();
+  private readonly countryChoice = new CountryChoice();
   /** Every scene's step and overlay, bound once: the one place a scene is dispatched. */
   private readonly handlers: Readonly<Record<Scene, SceneHandler>>;
 
@@ -373,6 +401,7 @@ export class SceneMachine {
   private buildHandlers(): Record<Scene, SceneHandler> {
     const menu = this.overlayMenu.bind(this);
     const controls = this.overlayControls.bind(this);
+    const country = this.overlayCountry.bind(this);
     return {
       [Scene.Boot]: { step: this.stepBoot.bind(this), overlay: NO_OVERLAY },
       [Scene.Title]: { step: this.stepTitle.bind(this), overlay: menu },
@@ -437,6 +466,18 @@ export class SceneMachine {
       [Scene.Attract]: {
         step: this.stepAttract.bind(this),
         overlay: this.overlayHighScores.bind(this),
+      },
+      [Scene.StartCountry]: {
+        step: this.stepCountry.bind(this, Scene.StartCountry),
+        overlay: country,
+      },
+      [Scene.TitleCountry]: {
+        step: this.stepCountry.bind(this, Scene.TitleCountry),
+        overlay: country,
+      },
+      [Scene.PauseCountry]: {
+        step: this.stepCountry.bind(this, Scene.PauseCountry),
+        overlay: country,
       },
     };
   }
@@ -526,20 +567,60 @@ export class SceneMachine {
       this.openMenu(Scene.TitleOptions, frame);
     } else if (row === 'highScores') {
       this.openHighScores(-1);
+    } else if (row === 'play' && this.options.country === undefined) {
+      // Never asked yet: the country choice first, preselected from the language (GDD v0.26 §9.1).
+      this.openCountry(Scene.StartCountry, frame, this.host.countryOfLanguage());
     } else if (row === 'play') {
-      const run = this.createRun(); // InRun entry creates the run and its presenter.
-      this.run = run;
-      this.presenter = new RunPresenter(
-        this.renderer,
-        this.options.effects,
-        run.events(),
-        this.audio,
-      );
-      this.runStartSteps = this.backgroundSteps;
-      this.champion.setName(this.table.entries[0]?.name ?? '');
-      this.enter(Scene.Playing);
-      this.host.releaseMovement();
+      this.startRun();
     }
+  }
+
+  /** InRun entry creates the run and its presenter. */
+  private startRun(): void {
+    const run = this.createRun();
+    this.run = run;
+    this.presenter = new RunPresenter(
+      this.renderer,
+      this.options.effects,
+      run.events(),
+      this.audio,
+    );
+    this.runStartSteps = this.backgroundSteps;
+    this.champion.setName(this.table.entries[0]?.name ?? '');
+    this.enter(Scene.Playing);
+    this.host.releaseMovement();
+  }
+
+  private openCountry(
+    scene: Scene,
+    frame: Readonly<IntentFrame>,
+    preselected: string | undefined,
+  ): void {
+    this.enter(scene);
+    this.countryChoice.open(this.steps, frame, preselected);
+  }
+
+  // A code or NONE is saved at once; the start choice then starts the run, the options' one returns
+  // to its options. Back on an empty code saves nothing: to the title or to the options (GDD v0.26).
+  private stepCountry(
+    scene: typeof Scene.StartCountry | keyof typeof COUNTRY_PARENT,
+    _dt: number,
+    frame: Readonly<IntentFrame>,
+  ): void {
+    const cursor = this.countryChoice.grid.cursor;
+    const filled = this.countryChoice.nextSlot;
+    const exit = this.countryChoice.step(frame, this.steps);
+    if (exit !== undefined || this.countryChoice.nextSlot !== filled)
+      this.audio.play(Sfx.MenuConfirm);
+    else if (this.countryChoice.grid.cursor !== cursor) this.audio.play(Sfx.MenuMove);
+    if (exit === 'chosen') {
+      this.options.setCountry(this.countryChoice.choice);
+      this.host.optionsChanged(this.options);
+    }
+    if (exit === undefined) return;
+    if (scene !== Scene.StartCountry) this.openMenu(COUNTRY_PARENT[scene], frame);
+    else if (exit === 'chosen') this.startRun();
+    else this.openMenu(Scene.Title, frame);
   }
 
   // Each change applies at once and reaches the host; Back and the Back row return to the
@@ -555,7 +636,10 @@ export class SceneMachine {
     if (row === 'visualEffects') this.openMenu(OPTIONS_ROUTES[scene].effects, frame);
     else if (row === 'audio') this.openMenu(OPTIONS_ROUTES[scene].audio, frame);
     else if (row === 'controls') this.openControls(OPTIONS_ROUTES[scene].controls, frame);
-    else this.change(row);
+    else if (row === 'country') {
+      // From the options the grid starts on the saved code, empty for NONE (GDD v0.26 §9.1).
+      this.openCountry(OPTIONS_ROUTES[scene].country, frame, this.options.country);
+    } else this.change(row);
   }
 
   private stepEffects(
@@ -754,7 +838,7 @@ export class SceneMachine {
       return;
     }
     this.enter(Scene.NameEntry);
-    this.nameEntry.open(this.steps, frame, score, this.host.countryOfLanguage());
+    this.nameEntry.open(this.steps, frame, score, this.options.country);
   }
 
   // Pause is ignored: no run steps here. SKIP, or OK on an empty name, records nothing; an entry
@@ -764,9 +848,8 @@ export class SceneMachine {
     this.backgroundSteps += 1;
     const cursor = this.nameEntry.grid.cursor;
     const filled = this.nameEntry.nextSlot;
-    const heading = this.nameEntry.heading;
     const exit = this.nameEntry.step(frame, this.steps);
-    const typed = this.nameEntry.nextSlot !== filled || this.nameEntry.heading !== heading;
+    const typed = this.nameEntry.nextSlot !== filled;
     if (exit !== undefined || typed) this.audio.play(Sfx.MenuConfirm);
     else if (this.nameEntry.grid.cursor !== cursor) this.audio.play(Sfx.MenuMove);
     if (exit === 'skipped') {
@@ -930,6 +1013,10 @@ export class SceneMachine {
 
   private overlayEnding(): void {
     drawEnding(this.renderer, this.endingScore, this.options.language);
+  }
+
+  private overlayCountry(): void {
+    drawNameEntry(this.renderer, this.countryChoice, this.options.language);
   }
 
   private overlayNameEntry(): void {
