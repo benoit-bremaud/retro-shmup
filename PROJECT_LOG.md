@@ -6,6 +6,28 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ---
 
+## 2026-10-19
+
+### Country first and the feedback form (#116 `b8f91c8`, #115 → #121 `c0c3eee`, #122 → #123 `90f2a3a`)
+
+- Design (#116): GDD v0.26 §9.1/§9.3/§9.8, ADR-0027 (an external Tally form opened in a new
+  tab, no network call by the game, rotating question sets, allowlisted context fields), UML.
+- Country first (#121): the country is asked once, at the first *Play*, saved and changeable in
+  the options; the name entry loses its country step; bigger letter-grid rows for touch (#115).
+- Feedback form (#123): *FEEDBACK* / *AVIS* title row and a *YOUR OPINION* offer after each run
+  (Later, back or 20 s → title; 1 s lock). The tab opens inside the keydown / pointerup handler:
+  the domain arms a link through `LinkPort`, `DeviceInput` opens it, the next step reads
+  `opened | refused | none`; refused shows *OPEN BLOCKED*, a gamepad goes through a gesture
+  prompt. Query: `set`, `version`, `score`, `level`, `country`, `device`, `lang`, no name.
+  `VITE_FEEDBACK_FORM_URL` unset hides it; a non-`https://tally.so/` address fails the build.
+- Review fixes: the title font has no `?` (offer header threw), Esc never opens from the prompt,
+  the set rotates on a second title opening, a lift the menu ignored still counts, the offer got
+  the title's lock, a tap sends `device=touch`; Codex: a device change kept the same key's
+  outcome. Gate: 1 616 tests (99.3 % / 95.8 %), docs 99.5 %, smoke 6/6, SonarQube passed,
+  gitleaks clean, QA mobile and desktop with screenshots.
+- Open: the owner creates the Tally form (three sets, hidden fields) and sets the address in the
+  Cloudflare Pages and itch.io builds; until then the feature stays hidden.
+
 ## 2026-10-16
 
 ### Mobile tap targets: menu rows as tall as fit (#95 → #112 `9b4d5f8`, #113 `0fc7985`)
