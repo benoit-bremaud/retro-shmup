@@ -61,7 +61,8 @@ step depends on them.
       charge, chain and score carry over between levels.
   11. After level 3 the game shows the Ending; the game compares the final score with the local
       top 10 (*run end*).
-  12. The game returns to the title screen.
+  12. *(v0.26)* The game offers UC8 (*Give feedback* or *Later*) when the build holds a form
+      address, then returns to the title screen.
 - **Extensions**:
   - 1a. Start comes from a gamepad before any click, tap or key press: the game asks for one,
     then continues at step 2 (browsers unlock audio and fullscreen only on such a gesture).
@@ -137,11 +138,11 @@ step depends on them.
   3. The game inserts the entry at its rank — after earlier entries of equal score — keeps the 10
      best, and saves the table.
   4. The game shows the high scores with the new entry highlighted.
-  5. Player returns to the title screen.
+  5. Player leaves the high scores; UC1 step 12 follows (the feedback offer, then the title).
 - **Extensions**:
   - 2a. The letter picker works the same on keyboard, gamepad, touch and mouse.
-  - 2b. Player skips the entry (*SKIP*), or confirms an empty name: nothing is recorded and the
-    game returns to the title (owner decision, ADR-0021 amendment).
+  - 2b. Player skips the entry (*SKIP*), or confirms an empty name: nothing is recorded and
+    UC1 step 12 follows (owner decision, ADR-0021 amendment).
   - 2c. Player presses `back`: the last character is deleted.
   - 3a. Storage is unavailable or full: the save is skipped silently; the in-memory table is
     shown for the session.

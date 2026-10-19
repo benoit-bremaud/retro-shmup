@@ -959,8 +959,9 @@ after Game over.
 
 **The country choice** *(v0.26, owner 2026-10-19)*: the player picks a flag once, before
 playing, not at every name entry. The screen is the name entry's former country step (the letter
-grid with the letters only, *DEL* / *EFF*, *NONE* / *AUCUN* and *OK*, the code preselected from
-the browser language, ADR-0021 decision 4), heading *COUNTRY* / *PAYS*, with the rows of #115.
+grid with the letters only, *DEL* / *EFF*, *NONE* / *AUCUN* and *OK*; at the first *Play* the code is
+preselected from the browser language, ADR-0021 decision 4, and from the options it starts on
+the saved code, empty for *NONE*), heading *COUNTRY* / *PAYS*, with the rows of #115.
 - It opens at a *Play* from the title while the save holds **no country choice** (a first launch,
   or a save written before v0.26); *OK* or *NONE* saves the choice (a code, or "none") and the run
   starts as from the title (through the gesture prompt when a gamepad starts before any gesture).
