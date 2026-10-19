@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The country is asked once, before the first run, and kept; it can be changed in the options
+  (GDD v0.26 §9.1, #115).
 - Menu rows are as tall as the screen allows, up to 32 px, so a phone can tap them without
   zooming: about 43–49 CSS px on the title, pause and options menus (GDD v0.25 §9.1, #95).
 - The ship's hitbox grows from 4 × 4 to a 6 × 6 body core; bullets through the wings still pass,
@@ -21,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- An optional feedback questionnaire: a *Feedback* title row and an offer after each run open a
+  short external form in a new tab; hidden when the build sets no form address (ADR-0027, #122).
 - Sound: synthesised retro sound effects for play and menus, kept for menus during the pause
   (GDD v0.23 §9.3, #105).
 - Music by scene — title, level 1, boss intro and loop, Results and Game over jingles (CC0, by
