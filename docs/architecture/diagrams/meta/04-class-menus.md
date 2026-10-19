@@ -193,6 +193,10 @@ classDiagram
     +qualifies(score: number) boolean
     +insert(entry: HighScoreEntry) number
   }
+  class DEFAULT_HIGH_SCORES {
+    <<constant>>
+    ten fictional HighScoreEntry, 150 000 to 30 000
+  }
   class PressGuard {
     +open(now) void
     +cancel() void
@@ -297,6 +301,7 @@ classDiagram
   NameEntry ..> HighScoreEntry : builds with the host's date
   SceneMachine *-- NameEntry
   SceneMachine *-- HighScoreTable
+  SaveStore ..> DEFAULT_HIGH_SCORES : used while the save holds no table
   SaveStore --> StoragePort
   LocalStorageStore ..|> StoragePort
   SceneHost ..> SaveStore : composition root
@@ -465,7 +470,10 @@ classDiagram
   `highScores` written since G1a-1 is parsed by the same allowlist, no version bump and no
   migration (ADR-0021 decision 7's "version 1" overtaken, noted in the ADR). `parseHighScores`
   (`src/domain/hall-of-fame/high-scores.ts`) still accepts the name `???`: a legacy value only,
-  since *SKIP* records nothing.
+  since *SKIP* records nothing. *(GDD v0.28, #128)* While the save holds no `highScores` (first
+  launch, missing or unreadable document), `SaveStore.load` starts the table with
+  `DEFAULT_HIGH_SCORES` (`high-scores.ts`): ten fictional players the real entries push out by the
+  usual rules; a stored table, even empty, is kept as stored.
 - **One dispatch table (refactor, owner-approved 2026-10-15, option B)**: the scene machine keeps one `Record<Scene, SceneHandler>` of its own methods
   (`step`, `overlay`), bound once in the constructor (the routed Title / Pause steps take their
   scene first and get it bound with `bind(this, scene)`), in place of the `switch` in `step` and the `if` chain in the overlay drawing; the

@@ -8,6 +8,23 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-19
 
+### Pixel country flags (#125: design #126 `b950f50`, code #127 `c8bbc53`)
+
+- Owner MCDA: keep the letter grid and draw a 16 × 11 flag beside the code (410/500, over a flag
+  picker 235 and codes only 390; emoji flags rejected: none on Windows). Source: the
+  public-domain famfamfam set (450/500), packed once by `scripts/build-flag-sheet.py` into
+  `public/assets/sprites/flags.png` (240 flags) with a generated code index; the flag right of
+  the code (460/500) in the options, the High scores and the country choice; none in the
+  far-background champion name (410/500, GDD §9.4.1 unchanged). GDD v0.27, ADR-0028.
+- `RenderPort.drawFlag(code, x, y): boolean`; BL/MF → FR, BQ → NL; AQ, CW, GG (CC-BY add-on left
+  out), IM, SS, SX and an unloaded sheet show the code alone.
+- Review: Codex on #126 (the country choice's flag would have read an allocating getter →
+  `CountryChoice.knownCode` cached on input); local review fixed a displaced JSDoc and a 4 px vs
+  2 px gap; SonarQube blocked one negated condition. Gate: 1 629 tests (99.2 % / 95.7 %), docs
+  99.5 %, smoke 6/6, gitleaks clean, QA screenshots.
+- Next: #128, a default High scores table of ten fictional players (owner: tightened scale
+  150 000 → 30 000).
+
 ### Country first and the feedback form (#116 `b8f91c8`, #115 → #121 `c0c3eee`, #122 → #123 `90f2a3a`)
 
 - Design (#116): GDD v0.26 §9.1/§9.3/§9.8, ADR-0027 (an external Tally form opened in a new
