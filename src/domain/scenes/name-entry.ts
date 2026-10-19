@@ -4,54 +4,14 @@ import { Button } from '../ports/input-port';
 import type { IntentFrame } from '../ports/input-port';
 import type { MessageKey } from '../i18n/messages';
 import { LETTER_GRID } from '../presentation/menu-layout';
-import type { GridCell, LetterGridView, NameEntryView } from '../presentation/menu-layout';
-import { LetterGrid } from './letter-grid';
+import type { LetterGridView, NameEntryView } from '../presentation/menu-layout';
+import { gridCells, LETTERS, LetterGrid } from './letter-grid';
+import type { EntryCell } from './letter-grid';
 
-const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const DIGITS = '0123456789';
 /** The longest name (ADR-0021 decision 2). */
 const NAME_LENGTH = 8;
 const EMPTY_SLOT = '-';
-
-/** What a grid cell does: a character, or one of the actions (GDD v0.16 §9.1). */
-export type GridAction = 'char' | 'space' | 'delete' | 'ok' | 'skip' | 'none';
-type EntryCell = GridCell<GridAction>;
-
-/** The characters, eight to a row, then the actions on the places left. */
-function gridCells(
-  characters: string,
-  actions: readonly { action: GridAction; label: MessageKey; span: number }[],
-): EntryCell[] {
-  const cells: EntryCell[] = [];
-  const columns = LETTER_GRID.columns;
-  for (let i = 0; i < characters.length; i += 1) {
-    const text = characters.charAt(i);
-    cells.push({
-      action: 'char',
-      text,
-      row: Math.floor(i / columns),
-      column: i % columns,
-      span: 1,
-    });
-  }
-  let place = characters.length;
-  for (let i = 0; i < actions.length; i += 1) {
-    const action = actions[i];
-    if (action === undefined) continue;
-    // An action never straddles two rows: a wide one too long for the row starts the next.
-    if ((place % columns) + action.span > columns) place += columns - (place % columns);
-    cells.push({
-      action: action.action,
-      text: '',
-      label: action.label,
-      row: Math.floor(place / columns),
-      column: place % columns,
-      span: action.span,
-    });
-    place += action.span;
-  }
-  return cells;
-}
 
 /** The name grid (GDD v0.16 §9.1): `A`–`Z`, `0`–`9`, *SPACE*, *DEL*, *OK*, then *SKIP*. */
 export const NAME_CELLS: readonly EntryCell[] = gridCells(LETTERS + DIGITS, [
@@ -59,13 +19,6 @@ export const NAME_CELLS: readonly EntryCell[] = gridCells(LETTERS + DIGITS, [
   { action: 'delete', label: 'delete', span: 1 },
   { action: 'ok', label: 'ok', span: 1 },
   { action: 'skip', label: 'skip', span: LETTER_GRID.columns },
-]);
-
-/** The country grid: the letters, *DEL*, *NONE* and *OK*. */
-export const COUNTRY_CELLS: readonly EntryCell[] = gridCells(LETTERS, [
-  { action: 'delete', label: 'delete', span: 1 },
-  { action: 'none', label: 'noCountry', span: 2 },
-  { action: 'ok', label: 'ok', span: 1 },
 ]);
 
 /** How the name entry ends: *SKIP* or an empty name records nothing, `entered` records. */
@@ -97,6 +50,7 @@ export class NameEntry implements NameEntryView {
   ): void {
     this.score = score;
     this.nameChars.length = 0;
+    // A known code only: `NO_COUNTRY` and anything else store no country.
     this.country = country !== undefined && COUNTRY_CODES.has(country) ? country : undefined;
     this.nameGrid.reset(now, opening);
   }

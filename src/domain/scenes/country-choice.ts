@@ -1,16 +1,22 @@
 import { COUNTRY_CODES } from '../hall-of-fame/country-codes';
 import { NO_COUNTRY } from '../options';
-import type { CountryChoice as SavedCountry } from '../options';
+import type { SavedCountry } from '../options';
 import { Button } from '../ports/input-port';
 import type { IntentFrame } from '../ports/input-port';
 import type { MessageKey } from '../i18n/messages';
 import type { LetterGridView, NameEntryView } from '../presentation/menu-layout';
-import { COUNTRY_CELLS } from './name-entry';
-import type { GridAction } from './name-entry';
-import { LetterGrid } from './letter-grid';
+import { gridCells, LETTERS, LetterGrid } from './letter-grid';
+import type { EntryCell, GridAction } from './letter-grid';
 
 const CODE_LENGTH = 2;
 const EMPTY_SLOT = '-';
+
+/** The country grid: the letters, *DEL*, *NONE* and *OK*. */
+export const COUNTRY_CELLS: readonly EntryCell[] = gridCells(LETTERS, [
+  { action: 'delete', label: 'delete', span: 1 },
+  { action: 'none', label: 'noCountry', span: 2 },
+  { action: 'ok', label: 'ok', span: 1 },
+]);
 
 /** The country grid's *OK* cell. */
 const COUNTRY_OK = COUNTRY_CELLS.findIndex((cell) => cell.action === 'ok');
@@ -37,7 +43,7 @@ export class CountryChoice implements NameEntryView {
   );
 
   /** Opens at step `now` on `preselected`, kept only if it is a known code. */
-  open(now: number, opening: Readonly<IntentFrame>, preselected: SavedCountry): void {
+  open(now: number, opening: Readonly<IntentFrame>, preselected: SavedCountry | undefined): void {
     this.letters.length = 0;
     this.chosenNone = false;
     if (preselected !== undefined && COUNTRY_CODES.has(preselected)) {
@@ -88,10 +94,9 @@ export class CountryChoice implements NameEntryView {
     this.countryGrid.settle();
   }
 
-  /** Compares character by character: no string is built on input. */
+  /** Runs on input only, never per frame. */
   private checkCode(): void {
-    const [first, second] = this.letters;
     this.codeValid =
-      first !== undefined && second !== undefined && COUNTRY_CODES.has(first + second);
+      this.letters.length === CODE_LENGTH && COUNTRY_CODES.has(this.letters.join(''));
   }
 }

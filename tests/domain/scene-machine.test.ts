@@ -1806,6 +1806,59 @@ describe('SceneMachine — the country first (GDD v0.26 §9.1, ADR-0027)', () =>
     expect(host.saved.map((options) => options.country)).toEqual(['DE']);
   });
 
+  it('ignores left and right on the Country row', () => {
+    const { machine } = withCountry('DE');
+    downBy(machine, 2);
+    press(machine, Button.Confirm);
+    idle(machine);
+    downBy(machine, 5);
+    machine.step(DT, right());
+    machine.step(DT, createIntentFrame());
+    expect(machine.scene).toBe(Scene.TitleOptions);
+  });
+
+  it('saves none on NONE at the start, then starts the run', () => {
+    const { machine, host } = withCountry(undefined);
+    press(machine, Button.Confirm);
+    const none = createIntentFrame();
+    none.hovered = true;
+    none.hoverX = 120;
+    none.hoverY = 104 + 3 * 32 + 16; // NONE, row 3, columns 3 and 4
+    machine.step(DT, none);
+    press(machine, Button.Confirm);
+    expect(host.saved.map((options) => options.country)).toEqual(['none']);
+    expect(machine.scene).toBe(Scene.Playing);
+  });
+
+  it('returns to the options and saves nothing on back with an empty code', () => {
+    const { machine, host } = withCountry('DE');
+    downBy(machine, 2);
+    press(machine, Button.Confirm);
+    idle(machine);
+    downBy(machine, 5);
+    press(machine, Button.Confirm);
+    press(machine, Button.Back);
+    press(machine, Button.Back);
+    press(machine, Button.Back);
+    expect(machine.scene).toBe(Scene.TitleOptions);
+    expect(host.saved).toEqual([]);
+  });
+
+  it('opens the country from the pause options and returns there, the run frozen', () => {
+    const { machine, host } = withCountry('DE');
+    press(machine, Button.Confirm); // Play
+    machine.step(DT, pressed(Button.Pause));
+    downBy(machine, 1);
+    press(machine, Button.Confirm); // Options
+    idle(machine);
+    downBy(machine, 5);
+    press(machine, Button.Confirm);
+    expect(machine.scene).toBe(Scene.PauseCountry);
+    press(machine, Button.Confirm); // OK on DE
+    expect(machine.scene).toBe(Scene.PauseOptions);
+    expect(host.saved.map((options) => options.country)).toEqual(['DE']);
+  });
+
   it('shows -- on the Country row while no country is chosen', () => {
     const { machine, render } = withCountry('none');
     downBy(machine, 2);

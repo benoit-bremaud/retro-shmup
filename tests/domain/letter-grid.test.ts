@@ -5,8 +5,9 @@ import type { IntentFrame } from '../../src/domain/ports/input-port';
 import { LETTER_GRID } from '../../src/domain/presentation/menu-layout';
 import { LetterGrid } from '../../src/domain/scenes/letter-grid';
 import { MenuTuning } from '../../src/domain/scenes/menu-input';
-import { COUNTRY_CELLS, NAME_CELLS } from '../../src/domain/scenes/name-entry';
-import type { GridAction } from '../../src/domain/scenes/name-entry';
+import { NAME_CELLS } from '../../src/domain/scenes/name-entry';
+import { COUNTRY_CELLS } from '../../src/domain/scenes/country-choice';
+import type { GridAction } from '../../src/domain/scenes/letter-grid';
 
 const GUARD = toSteps(MenuTuning.rePressGuardSeconds);
 

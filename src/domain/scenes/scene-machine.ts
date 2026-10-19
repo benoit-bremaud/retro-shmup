@@ -304,8 +304,10 @@ export class SceneMachine {
   });
   private readonly quitMenu = new Menu(['no', 'yes'] as const, { headerGap: MENU_HEADER_GAP.menu });
   // Called only after the constructor has set `options` (field initialisers run first).
-  // Left and right flip exactly the rows that show a value (GDD v0.14 §9.1).
-  private readonly hasValue = (row: MessageKey): boolean => this.options.value(row) !== undefined;
+  // Left and right flip exactly the rows that show a value (GDD v0.14 §9.1); the Country row
+  // shows its code but opens a screen, so a sideways press leaves it alone (GDD v0.26 §9.3).
+  private readonly hasValue = (row: MessageKey): boolean =>
+    row !== 'country' && this.options.value(row) !== undefined;
   /** The value each options row shows, read at each draw; built once. */
   private readonly value = (row: MessageKey): RowValue | undefined => this.options.value(row);
   private readonly fullOptionsMenu = new Menu<OptionsRow>(
