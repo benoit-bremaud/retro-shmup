@@ -119,4 +119,6 @@ export interface NameEntryView {
   /** The slot on the bar: the next one to fill, or −1 when full. */
   readonly nextSlot: number;
   readonly grid: LetterGridView;
+  /** A complete known country code to draw with its flag, else `''` (GDD v0.27 §9.1). */
+  readonly knownCode: string;
 }

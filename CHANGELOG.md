@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A 16 × 11 pixel flag beside the country code in the options, the High scores and the
+  country choice; the code alone where the flag set has none (GDD v0.27 §9.1, #125).
 - An optional feedback questionnaire: a *Feedback* title row and an offer after each run open a
   short external form in a new tab; hidden when the build sets no form address (ADR-0027, #122).
 - Sound: synthesised retro sound effects for play and menus, kept for menus during the pause

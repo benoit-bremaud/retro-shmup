@@ -4,6 +4,7 @@ import {
   drawControlsScreen,
   drawCountIn,
   drawGesturePrompt,
+  drawHighScores,
   drawMenu,
   drawMenuScreen,
   drawNameEntry,
@@ -213,5 +214,63 @@ describe('the feedback screens (GDD v0.26 §9.1)', () => {
     expect(render.texts[0]).toMatchObject({ text: 'TAP OR PRESS A KEY', font: 'menu' });
     expect(render.texts[0]?.y).toBeGreaterThan(FIELD_HEIGHT / 3);
     expect(render.texts[0]?.y).toBeLessThan((2 * FIELD_HEIGHT) / 3);
+  });
+});
+
+describe('country flags beside the code (GDD v0.27 §9.1, ADR-0028)', () => {
+  function countryChoice(code: string | undefined): CountryChoice {
+    const choice = new CountryChoice();
+    choice.open(0, createIntentFrame(), code);
+    return choice;
+  }
+
+  it('draws the flag 2 px right of the slots, 1 px above the text, once the code is known', () => {
+    const render = new RecordingRender();
+    drawNameEntry(render, countryChoice('FR'), 'en');
+    const slotY = render.texts[1]?.y ?? 0;
+    expect(render.flags).toEqual([{ code: 'FR', x: 104 + 2 * 16 + 2, y: slotY - 1 }]);
+  });
+
+  it('draws no flag for an incomplete code', () => {
+    const render = new RecordingRender();
+    drawNameEntry(render, countryChoice(undefined), 'en');
+    expect(render.flags).toEqual([]);
+  });
+
+  it('right-aligns the code then its flag in an options row', () => {
+    const render = new RecordingRender();
+    const menu = new Menu(['country'] as const);
+    drawMenu(render, menu, 'en', () => ({ text: 'FR', flag: true }));
+    const flagX = FIELD_WIDTH - MENU_VALUE_MARGIN - 16;
+    const code = render.texts.find((text) => text.text === 'FR');
+    expect(render.flags).toEqual([{ code: 'FR', x: flagX, y: (code?.y ?? 0) - 1 }]);
+    expect(code?.x).toBe(flagX - 2 - 14);
+  });
+
+  it('keeps the code right-aligned alone when the flag is not drawn', () => {
+    const render = new RecordingRender();
+    render.flagsLoaded = false;
+    drawMenu(render, new Menu(['country'] as const), 'en', () => ({ text: 'AQ', flag: true }));
+    expect(render.texts.find((text) => text.text === 'AQ')?.x).toBe(
+      FIELD_WIDTH - MENU_VALUE_MARGIN - 14,
+    );
+  });
+
+  it('draws no flag for a text value without one (`--`)', () => {
+    const render = new RecordingRender();
+    drawMenu(render, new Menu(['country'] as const), 'en', () => ({ text: '--' }));
+    expect(render.flags).toEqual([]);
+  });
+
+  it('draws each high-score flag 2 px after the code, at x 120, none for a row without a country', () => {
+    const render = new RecordingRender();
+    const row = { rank: '1', name: 'ALICE', country: 'FR', score: '100', level: '1' };
+    drawHighScores(
+      render,
+      { rows: [row, { ...row, rank: '2', country: '' }], highlighted: -1 },
+      'en',
+    );
+    const code = render.texts.find((text) => text.text === 'FR');
+    expect(render.flags).toEqual([{ code: 'FR', x: 104 + 14 + 2, y: (code?.y ?? 0) - 1 }]);
   });
 });

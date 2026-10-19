@@ -26,6 +26,8 @@ export const NO_COUNTRY = 'none';
 /** A row value shown as is, not through the catalogue: the country code. */
 export interface TextValue {
   readonly text: string;
+  /** The text is a country code drawn with its flag (GDD v0.27 §9.3). */
+  readonly flag?: boolean;
 }
 
 /** What the *Country* row shows for no choice or *NONE* (GDD v0.26 §9.3). */
@@ -38,7 +40,7 @@ function countryValue(choice: string | undefined): TextValue {
   if (choice === undefined || choice === NO_COUNTRY) return NO_CODE;
   let value = CODE_VALUES.get(choice);
   if (value === undefined) {
-    value = { text: choice };
+    value = { text: choice, flag: true };
     CODE_VALUES.set(choice, value);
   }
   return value;

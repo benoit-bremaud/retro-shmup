@@ -21,6 +21,16 @@ recorded in its entry below, and lives under `public/assets/` (governed by
 
 Development placeholders (GDD §3.2.1), to be replaced by custom assets before release.
 
+## Flag icons (famfamfam, Mark James)
+
+- Files: public/assets/sprites/flags.png
+- Author: Mark James (www.famfamfam.com)
+- Source: https://github.com/legacy-icons/famfamfam-flags (dist/png, commit a79ec57)
+- Licence: public domain ("free for any use", per the set's LICENSE.md)
+- Modifications: the 240 flags of `COUNTRY_CODES` packed into one 16 × 11 sheet by
+  `scripts/build-flag-sheet.py`, CH, NP centred and ME cropped to 16 × 11; `gg.png` left out (a
+  CC-BY 2.5 add-on)
+
 ## NES Shooter Music (5 tracks, 3 jingles) (SketchyLogic)
 
 - Files: public/assets/audio/*.mp3

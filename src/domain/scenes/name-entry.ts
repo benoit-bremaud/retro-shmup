@@ -33,6 +33,8 @@ export type NameEntryExit = 'skipped' | 'entered';
 export class NameEntry implements NameEntryView {
   readonly heading: MessageKey = 'yourName';
   readonly slotCount = NAME_LENGTH;
+  /** A name has no flag. */
+  readonly knownCode = '';
   /** The score being recorded, read from the finished run when the entry opens. */
   private score = 0;
   /** The saved country code, or `undefined` for none. */

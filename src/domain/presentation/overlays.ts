@@ -8,7 +8,13 @@ import { BossHudTuning, SceneTuning, toSteps } from '../game/tuning';
 import { message } from '../i18n/messages';
 import type { Language, MessageKey } from '../i18n/messages';
 import type { RowValue } from '../options';
-import { HUD_FONT_CELL, MENU_FONT_CELL, TITLE_FONT_CELL } from '../ports/render-port';
+import {
+  FLAG_GAP,
+  FLAG_SIZE,
+  HUD_FONT_CELL,
+  MENU_FONT_CELL,
+  TITLE_FONT_CELL,
+} from '../ports/render-port';
 import type { RenderPort } from '../ports/render-port';
 import {
   CONTROLS_COLUMNS,
@@ -39,6 +45,11 @@ const HIGHLIGHT_PAD = 8;
 /** The width in logical pixels of `text` in the menu font. */
 function menuTextWidth(text: string): number {
   return (text.length - 1) * MENU_FONT_CELL.width + MENU_FONT_CELL.glyphWidth;
+}
+
+/** The flag's top for a line of menu text at `textY`: its 11 px centred on the 10 px cell. */
+function flagTop(textY: number): number {
+  return textY + Math.floor((MENU_FONT_CELL.height - FLAG_SIZE.height) / 2);
 }
 
 /** A line of menu text centred on the field at the top `y`. */
@@ -90,12 +101,12 @@ export function drawMenu(
     }
     const shown = valueText(valueKey, language);
     render.drawText(text, MENU_VALUE_MARGIN, y + textTop, 'menu');
-    render.drawText(
-      shown,
-      FIELD_WIDTH - MENU_VALUE_MARGIN - menuTextWidth(shown),
-      y + textTop,
-      'menu',
-    );
+    let right = FIELD_WIDTH - MENU_VALUE_MARGIN;
+    if (typeof valueKey === 'object' && valueKey.flag === true) {
+      const flagX = right - FLAG_SIZE.width;
+      if (render.drawFlag(shown, flagX, flagTop(y + textTop))) right = flagX - FLAG_GAP;
+    }
+    render.drawText(shown, right - menuTextWidth(shown), y + textTop, 'menu');
   }
 }
 
@@ -278,7 +289,14 @@ export function drawHighScores(render: RenderPort, view: HighScoresView, languag
     const textY = y + textTop;
     render.drawText(row.rank, SCORE_COLUMNS.rankEnd - menuTextWidth(row.rank), textY, 'menu');
     render.drawText(row.name, SCORE_COLUMNS.name, textY, 'menu');
-    if (row.country !== '') render.drawText(row.country, SCORE_COLUMNS.country, textY, 'menu');
+    if (row.country !== '') {
+      render.drawText(row.country, SCORE_COLUMNS.country, textY, 'menu');
+      render.drawFlag(
+        row.country,
+        SCORE_COLUMNS.country + menuTextWidth(row.country) + FLAG_GAP,
+        flagTop(textY),
+      );
+    }
     render.drawText(row.score, SCORE_COLUMNS.scoreEnd - menuTextWidth(row.score), textY, 'menu');
     if (row.level !== '') render.drawText(row.level, SCORE_COLUMNS.level, textY, 'menu');
   }
@@ -315,6 +333,10 @@ export function drawNameEntry(render: RenderPort, view: NameEntryView, language:
       slotsY + textTop,
       'menu',
     );
+  }
+  if (view.knownCode !== '') {
+    const flagX = left + view.slotCount * width + FLAG_GAP;
+    render.drawFlag(view.knownCode, flagX, flagTop(slotsY + textTop));
   }
   const grid = view.grid;
   const cellTextTop = (LETTER_GRID.cellHeight - MENU_FONT_CELL.height) / 2;

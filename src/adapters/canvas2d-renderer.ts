@@ -1,4 +1,5 @@
 import {
+  FLAG_SIZE,
   HUD_FONT_CELL,
   MENU_FONT_CELL,
   SPRITE_FLASH_FRAME,
@@ -9,6 +10,7 @@ import { Palette } from '../domain/presentation/palette';
 import { FIELD_HEIGHT, FIELD_WIDTH, LANDSCAPE } from '../domain/presentation/screen';
 import type { ScreenLayout } from '../domain/presentation/screen';
 import { GLYPH_COLUMNS, GLYPH_ROWS, hudGlyph, menuGlyph, titleGlyph } from './hud-font';
+import { FlagBank } from './flag-bank';
 import type { SpriteBank } from './sprite-bank';
 import type { Viewport } from './viewport';
 
@@ -69,6 +71,7 @@ export class Canvas2DRenderer implements RenderPort {
   private readonly offscreenImage: CanvasImageSource;
   private readonly visible: RenderSurface;
   private readonly sprites: SpriteBank;
+  private readonly flags: FlagBank;
 
   /**
    * `offscreenImage` is the canvas behind `offscreen`, copied to `visible` by `present()`;
@@ -79,11 +82,13 @@ export class Canvas2DRenderer implements RenderPort {
     offscreenImage: CanvasImageSource,
     visible: RenderSurface,
     sprites: SpriteBank,
+    flags: FlagBank = new FlagBank(),
   ) {
     this.offscreen = offscreen;
     this.offscreenImage = offscreenImage;
     this.visible = visible;
     this.sprites = sprites;
+    this.flags = flags;
   }
 
   /**
@@ -131,6 +136,20 @@ export class Canvas2DRenderer implements RenderPort {
       frame === SPRITE_FLASH_FRAME ? sprite.flash : sprite.image,
       Math.round(this.originX() + x - width / 2),
       Math.round(this.originY() + y - height / 2),
+      width,
+      height,
+    );
+    return true;
+  }
+
+  drawFlag(code: string, x: number, y: number): boolean {
+    const flag = this.flags.get(code);
+    if (flag === undefined) return false;
+    const { width, height } = FLAG_SIZE;
+    this.offscreen.drawImage(
+      flag,
+      Math.round(this.originX() + x),
+      Math.round(this.originY() + y),
       width,
       height,
     );

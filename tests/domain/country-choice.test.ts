@@ -121,3 +121,13 @@ describe('CountryChoice (GDD v0.26 §9.1, ADR-0027 decision 6)', () => {
     expect(choice.grid.cursor).toBe(0);
   });
 });
+
+describe('CountryChoice.knownCode (GDD v0.27, ADR-0028)', () => {
+  it('holds a complete known code, else the empty string', () => {
+    expect(opened('FR').knownCode).toBe('FR');
+    expect(opened(undefined).knownCode).toBe('');
+    const choice = opened('FR');
+    choice.step(BACK, (clock += 20));
+    expect(choice.knownCode).toBe('');
+  });
+});
