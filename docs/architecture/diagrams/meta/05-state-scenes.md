@@ -1,6 +1,6 @@
 # State machine diagram — meta — screens and their transitions (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.10 §3.2, §3.4,
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.10 §3.2, §3.4, v0.26 §9.1 (country choice, feedback offer),
 > §4.2, §4.3–§4.6, §5.2.1, §6, §7.2.1, §7.2.2, §7.3, §8, §9.1, §9.2, §9.3, §9.4, §9.7; v0.13 §9.1 menus, §9.3 options layout
 > **Related ADRs**: ADR-0006 (save document), ADR-0009 (gestures, automatic pause), ADR-0010
 > (one run, one bus), ADR-0015 (pause in the first playable), ADR-0018 (taps, locks, pause button),
@@ -29,6 +29,9 @@ stateDiagram-v2
   state "Audio" as AudioScreen
   state "Game over" as GameOver
   state "Name entry" as NameEntry
+  state "Country choice" as CountryChoice
+  state "Country choice" as OptionsCountry
+  state "Feedback offer" as FeedbackOffer
 
   [*] --> Boot
   Boot --> Title : loaded
@@ -38,13 +41,20 @@ stateDiagram-v2
   Effects --> Options : back
   Options --> AudioScreen : audio
   AudioScreen --> Options : back
+  Options --> OptionsCountry : country
+  OptionsCountry --> Options : OK, NONE or back / save the choice on OK or NONE
+  Title --> CountryChoice : start [no country choice saved]
+  CountryChoice --> Title : back on an empty code
+  CountryChoice --> GesturePrompt : OK or NONE [from a gamepad, no gesture yet] / save the choice
+  CountryChoice --> InRun : OK or NONE [gesture done] / save the choice
+  Title --> Title : feedback / open the form, count + 1
   Title --> HighScores : high scores
   HighScores --> Title : back, confirm or a tap
   Title --> Credits : credits
   Credits --> Title : back
   Title --> GesturePrompt : start [from a gamepad, no gesture yet]
   GesturePrompt --> InRun : click, tap or key
-  Title --> InRun : start [gesture done]
+  Title --> InRun : start [gesture done, country choice saved]
 
   state InRun {
     state "Intro card" as IntroCard
@@ -81,10 +91,14 @@ stateDiagram-v2
   InRun --> GameOver : run outcome is GAME_OVER
 
   Ending --> NameEntry : confirm or after(ending time) [score enters the top 10]
-  Ending --> Title : confirm or after(ending time) [otherwise]
+  Ending --> FeedbackOffer : confirm or after(ending time) [otherwise]
   GameOver --> NameEntry : confirm or after(game over time) [score enters the top 10]
-  GameOver --> Title : confirm after the lock, or after(game over time) [otherwise]
-  NameEntry --> HighScores : confirm / save the table
+  GameOver --> FeedbackOffer : confirm after the lock, or after(game over time) [otherwise]
+  NameEntry --> HighScores : OK / save the table with the saved country
+  NameEntry --> FeedbackOffer : SKIP or OK on an empty name
+  HighScores --> FeedbackOffer : back, confirm or a tap [after a run]
+  FeedbackOffer --> Title : give feedback / open the form, count + 1
+  FeedbackOffer --> Title : later, back or after(20 s)
 ```
 
 ## Notes
@@ -115,6 +129,13 @@ stateDiagram-v2
   pair keeps the simulation frozen like `Paused`.
 - **Gesture prompt** exists only for a start from a gamepad before any click, tap or key press;
   the audio unlock itself happens in the input adapter's handler (ADR-0009).
+- **v0.26 (GDD §9.1, ADR-0027)**: `Country choice` opens at a start while the save holds no
+  choice, and from the options' *Country* row (a second state on the same screen, as for
+  Options); its saved choice also guards `Title --> InRun`. The name entry has no country step:
+  the entry takes the saved choice. `Feedback offer` follows every run end that is not a quit from
+  the pause; it and the title's *Feedback* row are absent when the build holds no form address.
+  Opening the form from a gamepad passes by the gesture prompt (not drawn: a self-transition on
+  the offer or the title, ADR-0009). `HighScores --> Title` stays for the title's own visit.
 - **Name entry** follows both Ending and Game over when the score qualifies (GDD v0.2 §9.1); a run
   quit from the pause never reaches it. High scores then show the new entry highlighted (UC3).
 

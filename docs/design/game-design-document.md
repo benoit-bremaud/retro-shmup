@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Vertical slice — v0.25 (2026-10-16): v0.25 makes the menu rows taller where they fit, so a phone can tap them without zooming (#95, §9.1): each menu's row height is 32 logical px or less, by its row count and its header. v0.24 (2026-10-16): v0.24 makes the Laser bolt stop on the first enemy or boss it touches (#107, owner playtest): the Laser keeps its width and damage per level but no longer passes through; and it grows the ship's hitbox from 4 × 4 to a 6 × 6 body core, the wings still harmless (#106, §4.1). v0.23 (2026-10-16): v0.23 settles the audio brick G3 (§9.5): sound effects from a small in-house 8-bit synthesiser, CC0 NES-style music for the slice's screens, the *Audio* options sub-screen with two volumes. v0.22 (2026-10-16): v0.22 lets the hall-of-fame number 1's name drift now and then, very dimly, in the far background of a run (§9.4.1), on its own effect switch. v0.21 (2026-10-16): v0.21 fills the empty stretches of level 1 with filler rows that pay no P (§7.2.3): the average player saw no enemy for 83 s of the first 116 s, 65 s since. v0.20 (2026-10-16): v0.20 shows the game version to the player as a small page text outside the canvas (§9.9, ADR-0025 decision 6). v0.19 (2026-10-16): v0.19 makes the shield ring the shape that collides while a charge is held (#74): any enemy bullet or body touching the drawn 36 × 36 square consumes the charge, once. v0.18 (2026-10-16): v0.18 is the third rebalance of level 1 (#56), after the owner found it far too easy and a committed measurement bot confirmed it: enemy aimed, fan and triple bullets at 85 px/s, the Gunner tougher and faster-firing, the Heavy tougher, the Cruiser at 1 800 shots with faster volleys, and the 70 s formation no longer paying its P. v0.17 (2026-10-15): v0.17 draws the ships with the CC0 placeholder sprites of G4-1 (§3.2.1: the sprite per role, the small enemies drawn at 1× over their 16 × 16 hitbox, the Cruiser built from three ships, the shapes kept as the fallback). v0.16 (2026-10-14; amended 2026-10-15 by the owner after a design-versus-code audit: the High scores columns as built, the browser-shortcut rule of the capture, the name entry as built in G2-3, the attract mode of G2-3b): v0.16 settles the hall of fame of G2 (the letter grid for the name and the country, the high-score table and screen, the Ending card, leaving the slice-end interim). v0.15 (2026-10-14): v0.15 settles the controls screen of G1b (layout, key labels, the device edited, restore confirmation, save version 2). v0.14 (2026-10-14): v0.14 settles the options screens of G1a-3 (row texts and values, the title menu replacing tap-to-start, leaving a menu frees the ship's movement). v0.13 (2026-10-14): v0.13 designs the menus and the options of the screens brick, first part (G1a: title and pause menus, the options screen and its visual-effects sub-screen, menu navigation by touch and mouse, the save document's options). v0.12 (2026-10-14): v0.12 is the second rebalance iteration of level 1 (#45): the Cruiser takes 1 450 level-1 shots and three of the seven formations no longer pay the formation P. v0.11 (2026-10-13): v0.11 rebalances level 1 after the friends' playtest (harder, fewer drops, the ship slightly weaker than the attack; #45). v0.10 (2026-10-12): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot); v0.6 adds the initial values of the enemies brick; v0.7 settles the devices brick (portrait HUD strip, touch pause button, resuming and leaving Game over by tap or Start, mouse takeover, rotation pause); v0.8 settles the player kit (Spread and Laser tables, the death release hop, bomb, shield and pickup rules, P colours, the Carrier, HUD icons); v0.9 follows the brick-E playtest (difficulty ramp by script, a named top 10 with an optional country, pointer fire held by the left button or a steering finger with an autofire option, shot proportions for readability); v0.10 settles the level brick (the 120 s level-1 script, the Heavy, the Cruiser, the WARNING, the boss HP bar and timer, the end-of-level tally and the Results screen, a vertical slice ending after level 1) |
+| **Status** | Vertical slice — v0.26 (2026-10-19): v0.26 asks the player's country once, at the first *Play*, and keeps it in the save (changeable in the options), so the name entry loses its country step; it grows the letter grid's rows for touch (#115); and it adds an optional feedback questionnaire, an external form opened in a new tab from a screen after each run and from the title menu (§9.1, §9.3, §9.8, ADR-0027). v0.25 (2026-10-16): v0.25 makes the menu rows taller where they fit, so a phone can tap them without zooming (#95, §9.1): each menu's row height is 32 logical px or less, by its row count and its header. v0.24 (2026-10-16): v0.24 makes the Laser bolt stop on the first enemy or boss it touches (#107, owner playtest): the Laser keeps its width and damage per level but no longer passes through; and it grows the ship's hitbox from 4 × 4 to a 6 × 6 body core, the wings still harmless (#106, §4.1). v0.23 (2026-10-16): v0.23 settles the audio brick G3 (§9.5): sound effects from a small in-house 8-bit synthesiser, CC0 NES-style music for the slice's screens, the *Audio* options sub-screen with two volumes. v0.22 (2026-10-16): v0.22 lets the hall-of-fame number 1's name drift now and then, very dimly, in the far background of a run (§9.4.1), on its own effect switch. v0.21 (2026-10-16): v0.21 fills the empty stretches of level 1 with filler rows that pay no P (§7.2.3): the average player saw no enemy for 83 s of the first 116 s, 65 s since. v0.20 (2026-10-16): v0.20 shows the game version to the player as a small page text outside the canvas (§9.9, ADR-0025 decision 6). v0.19 (2026-10-16): v0.19 makes the shield ring the shape that collides while a charge is held (#74): any enemy bullet or body touching the drawn 36 × 36 square consumes the charge, once. v0.18 (2026-10-16): v0.18 is the third rebalance of level 1 (#56), after the owner found it far too easy and a committed measurement bot confirmed it: enemy aimed, fan and triple bullets at 85 px/s, the Gunner tougher and faster-firing, the Heavy tougher, the Cruiser at 1 800 shots with faster volleys, and the 70 s formation no longer paying its P. v0.17 (2026-10-15): v0.17 draws the ships with the CC0 placeholder sprites of G4-1 (§3.2.1: the sprite per role, the small enemies drawn at 1× over their 16 × 16 hitbox, the Cruiser built from three ships, the shapes kept as the fallback). v0.16 (2026-10-14; amended 2026-10-15 by the owner after a design-versus-code audit: the High scores columns as built, the browser-shortcut rule of the capture, the name entry as built in G2-3, the attract mode of G2-3b): v0.16 settles the hall of fame of G2 (the letter grid for the name and the country, the high-score table and screen, the Ending card, leaving the slice-end interim). v0.15 (2026-10-14): v0.15 settles the controls screen of G1b (layout, key labels, the device edited, restore confirmation, save version 2). v0.14 (2026-10-14): v0.14 settles the options screens of G1a-3 (row texts and values, the title menu replacing tap-to-start, leaving a menu frees the ship's movement). v0.13 (2026-10-14): v0.13 designs the menus and the options of the screens brick, first part (G1a: title and pause menus, the options screen and its visual-effects sub-screen, menu navigation by touch and mouse, the save document's options). v0.12 (2026-10-14): v0.12 is the second rebalance iteration of level 1 (#45): the Cruiser takes 1 450 level-1 shots and three of the seven formations no longer pay the formation P. v0.11 (2026-10-13): v0.11 rebalances level 1 after the friends' playtest (harder, fewer drops, the ship slightly weaker than the attack; #45). v0.10 (2026-10-12): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot); v0.6 adds the initial values of the enemies brick; v0.7 settles the devices brick (portrait HUD strip, touch pause button, resuming and leaving Game over by tap or Start, mouse takeover, rotation pause); v0.8 settles the player kit (Spread and Laser tables, the death release hop, bomb, shield and pickup rules, P colours, the Carrier, HUD icons); v0.9 follows the brick-E playtest (difficulty ramp by script, a named top 10 with an optional country, pointer fire held by the left button or a steering finger with an autofire option, shot proportions for readability); v0.10 settles the level brick (the 120 s level-1 script, the Heavy, the Cruiser, the WARNING, the boss HP bar and timer, the end-of-level tally and the Results screen, a vertical slice ending after level 1) |
 | **Working title** | *retro-shmup* (codename; the commercial title is still open) |
 | **Genre** | Retro vertical-scrolling shoot'em up (shmup), 16-bit aesthetic |
 | **Platform** | Web browser (desktop first, mobile playable), TypeScript + native Canvas 2D |
@@ -857,6 +857,11 @@ Playing → Level results → Playing (next level) | Ending
 Ending | Game over → Name entry (if top 10) → High scores → Title
 ```
 
+*(v0.26)* `Title → Country choice → Playing` at a *Play* while no country choice is saved;
+`Options → Country choice → Options` at any time; and the run's end passes by the feedback offer:
+`Ending | Game over → [Name entry → High scores] → Feedback offer → Title`. The title menu's
+*Feedback* row opens the form directly, without the offer screen.
+
 **The vertical slice** *(v0.10)*: one level, so the run is cleared when level 1 ends:
 `Playing → Level results → Title`. The Ending card and the name entry come with the screens
 brick (G); until then a cleared run, like Game over, returns to the title (an interim deviation
@@ -920,6 +925,16 @@ everything else in the menu font.
   skipping empty places and a hidden *OK*; when *OK* disappears under the cursor, the cursor
   steps to the previous cell of its row. Spaces fill slots like characters; trimming happens on
   *OK*. The stored level is 1 while the slice has one level.
+- *(v0.26, owner 2026-10-19)* **The country step is gone from the name entry**: the country is
+  chosen once, before the first run (the country choice below), and the entry stores the saved
+  choice, or no country when the player chose *NONE*. *OK* on the name, or `confirm` on it, stores
+  the entry at once.
+- *(v0.26, #115)* **Rows for touch**: the grid's rows are as tall as fit, by the rule of the menus
+  (v0.25): `min(32, max(16, floor(free height / rows)))`, the columns staying 30 px (eight to a
+  row fill the 240 px field). The heading moves to y 40 and the slots to y 72; the grid starts at
+  y 104. The name grid's 5 rows and *SKIP* (6 rows) and the country grid's 4 rows get 32 px each,
+  about 43 CSS px on a 390 px-wide phone in portrait instead of 27. The cell is the whole 30 × 32
+  box for a tap; the drawn highlight keeps a 1 px gap.
 - Then the entry is stored (ADR-0021: name, optional country, score, the last level played, and
   the date as `YYYY-MM-DD`, given by the host — the domain reads no clock) and the high scores
   show it highlighted.
@@ -938,6 +953,56 @@ the highlight spans x 8–232. The new entry is highlighted after a name entry, 
 the title menu's *High scores* row (between *Play* and *Options*) and after a name entry; `back`,
 `confirm` or a tap — a press started on the screen — returns to the title, locked for 1 s as
 after Game over.
+
+**The country choice** *(v0.26, owner 2026-10-19)*: the player picks a flag once, before
+playing, not at every name entry. The screen is the name entry's former country step (the letter
+grid with the letters only, *DEL* / *EFF*, *NONE* / *AUCUN* and *OK*, the code preselected from
+the browser language, ADR-0021 decision 4), heading *COUNTRY* / *PAYS*, with the rows of #115.
+- It opens at a *Play* from the title while the save holds **no country choice** (a first launch,
+  or a save written before v0.26); *OK* or *NONE* saves the choice (a code, or "none") and the run
+  starts as from the title (through the gesture prompt when a gamepad starts before any gesture).
+  `back` deletes a letter, and on an empty code returns to the title without saving: the question
+  comes back at the next *Play*.
+- The options gain a *COUNTRY* / *PAYS* row (§9.3) showing the saved code, or `--` for none or no
+  choice yet; activating it opens the same screen, which returns to the options, `back` included.
+- The code is shown in the bitmap font until the pixel flags land with the assets brick (G4).
+- Changing the country changes later entries only; the table keeps each entry's own country.
+
+**The feedback questionnaire** *(v0.26, owner 2026-10-19, ADR-0027)*: playtesters say what works,
+what does not and what they would change, without the owner asking each by hand. It is
+**optional** and never in the way.
+- **Where the answers go**: an external form (Tally) that the owner edits on its site; the game
+  only opens its address in a **new browser tab**. The game sends nothing itself, shows no e-mail
+  address, and the questions change without a new game release.
+- **The offer**: after every run end — Ending or Game over, after the name entry and the high
+  scores when they show, never after a run quit from the pause — a *Feedback offer* screen:
+  heading *YOUR OPINION?* / *TON AVIS ?*, one line *2 QUICK QUESTIONS* / *2 QUESTIONS RAPIDES*,
+  then two menu rows, *GIVE FEEDBACK* / *DONNER MON AVIS* (the cursor starts on it) and *LATER* /
+  *PLUS TARD*. *Later*, `back` or 20 s without input return to the title; *Give feedback* opens the
+  form and returns to the title. `Pause` is ignored there, like on the high scores.
+- **Always available**: the title menu gains *FEEDBACK* / *AVIS* as its last row, after
+  *Options*; it opens the form at once (the title has four rows: *Play*, *High scores*, *Options*,
+  *Feedback*).
+- **The form**: one form with several **question sets**; each opening shows one set — **two
+  questions** answered with one click, then *Did you meet a bug?* (yes / no) and an optional free
+  text. The sets turn: the game counts the openings in the save and sends `set` = the count
+  modulo **3** (3 sets, a constant of the game), plus `1`. Initial sets *(owner, in the form,
+  editable there)*: 1 difficulty (too easy / just right / too hard) and wish to replay (yes /
+  maybe / no); 2 controls (precise / fine / frustrating) and bullet readability (I see everything /
+  sometimes lost / unreadable); 3 the boss (too easy / fine / too hard) and what made you lose
+  (bullets / collisions / the boss / too few power-ups). In reserve, for later sets: level length,
+  favourite weapon, music and sounds, overall rating, age band, P frequency.
+- **The context sent**, as the address's query parameters (the form's hidden fields), never
+  personal data: `set`, `version` (§9.9, without the commit), `score` and `level` of the last run
+  (0 and 1 from the title before any run of the session), `country` (the saved code, or empty),
+  `device` (the device last used: `keyboard`, `gamepad`, `touch` or `mouse`) and `lang` (`en` or
+  `fr`). Every value comes from an allowlist or is a number; the name is never sent.
+- **Opening needs a gesture**: browsers block a new tab outside a click, tap or key press. A tap,
+  click or key opens the tab at once; a gamepad press shows the gesture prompt, and the next click,
+  tap or key opens it (ADR-0009). If the browser still refuses, the screen shows *OPEN BLOCKED* /
+  *OUVERTURE BLOQUEE* for 2 s and the offer stays.
+- **No form address configured** (a build without one): the *Feedback* row and the offer are not
+  shown.
 
 **The attract mode** *(v0.16, G2-3b, owner 2026-10-14 and 2026-10-15)*: after **10 s** on the
 title without any input, the High scores show on their own for **6 s**, then the title comes
@@ -1061,6 +1126,8 @@ motion, the champion's name *(v0.22, §9.4.1)*; a switch appears with its effect
 *Audio* (the two volumes) with the audio brick (G3); neither is shown before. Every change
 applies at once and is saved at once (ADR-0006).
 *(v0.15)* *Controls* (*COMMANDES*) sits between *Visual effects* and *Autofire* (§4.2).
+*(v0.26)* *COUNTRY* / *PAYS* ▸ sits between *Language* and *Fullscreen*; its value is the saved
+code, or `--`; activating it opens the country choice (§9.1), which returns here.
 *(v0.23)* *Audio* ▸ (*AUDIO*) sits between *Visual effects* and *Controls*. It opens a sub-screen:
 *MUSIC* / *MUSIQUE*, *SOUND EFFECTS* / *BRUITAGES*, then *BACK* / *RETOUR*. Each volume is a step
 from 0 to 10 shown as its number; left / right move it by one (stopping at 0 and 10), an
@@ -1173,6 +1240,11 @@ country the player chose. The document is untrusted input, validated by allowlis
 without ever throwing (ADR-0006): the name matches A–Z, 0–9 and space with a length of 1 to 8, or
 is exactly `???`; the country is absent or one code of the ISO 3166-1 alpha-2 allowlist kept in the
 code; an entry failing either check is dropped (ADR-0021).
+*(v0.26)* The options also hold the **country choice** — absent (never asked), `none`, or a code
+of the allowlist; any other value reads as absent, so the question comes again — and the
+**feedback count**, a whole number from 0 (absent or invalid reads as 0), raised by one at each
+opening of the form. The save version stays 2: both fields are optional, as the volumes were in
+v0.23.
 
 ### 9.9 Version label *(v0.20)*
 
@@ -1402,3 +1474,5 @@ fully playable at release quality, used to validate the design before producing 
 | Audio *(v0.23)* | Owner, 2026-10-16, G3: SFX from an in-house sfxr-style synthesiser rendered once at unlock (440/500); the slice's music = SketchyLogic *NES Shooter Music*, CC0 (450/500); volumes 0–10 per step, defaults 7 / 8, gain (step / 10)², *Audio* between *Visual effects* and *Controls*, 16 voices, a repeat within 33 ms skipped (one batch); save kept at version 2, missing volumes = defaults (470/500); design then two code PRs (425/500) | The jsfxr npm package at run time (395/500: first runtime dependency); pre-rendered WAV files (350/500: ~22 files, no reproducible source); ppeak's *Action Chiptune* pack, CC-BY (325/500: modern sound, no game-over cue); no music in the slice (250/500); a save version 3 with a migration (300/500); one code PR (305/500) or three (375/500) |
 | Laser stops on the first hit *(v0.24)* | Owner, 2026-10-16 playtest (#107): a bolt is spent on the first enemy or boss it touches, nearest along its path; width and damage per level unchanged; the pass-through memory stays in the code with zero pass-throughs (data only) | The v0.8 pass-through 1 → 3 (read as a bullet going through an enemy); removing the pass-through machinery from the code (a refactor with no player-visible gain) |
 | Player hitbox *(v0.24)* | Owner, 2026-10-16 (#106): the hitbox grows from 4 × 4 to a 6 × 6 body core (cockpit and fuselage), to be playtested (415/500); the level-1 balance bot measured 6 × 6 outside the v0.18 bands, which are widened to the measured values until the playtest settles them (the balance guard of #56); the wings still let bullets through; the cockpit square drawn on it grows with it; no tunnelling (3.9 px per step for a 10 px window) | Keeping 4 × 4 (first recommended, 430/500: the owner found it too forgiving in play); 8 × 8 as is (400/500: the bot's good player at 74–81 % Game over, the beginner at 1–2 % boss kills); 8 × 8 with a compensating rebalance in the same PR (320/500: two changes in one playtest); the hitbox as the 32 × 24 sprite (unfair deaths on the wings, a full rebalance) |
+| Country first *(v0.26)* | Owner, 2026-10-19: the country is chosen once, at the first *Play* while none is saved, and changed in the options; the name entry loses its country step (440/500); the screen at the first *Play* rather than at boot (425/500: the attract mode keeps running); the letter grid's rows grown for touch in the same brick (#115, 430/500) | The country before every run (340/500: a step per run); asked first and kept preselected in the name entry (385/500: one step per entry still); the screen at boot (345/500: blocks the attract mode); #115 as its own PR later (320/500: two passes on the same grid) |
+| Feedback questionnaire *(v0.26)* | Owner, 2026-10-19 (ADR-0027): optional; an external Tally form opened in a new tab, no e-mail address shown, questions edited in the form without a release (445/500); one form whose question set is picked by a hidden `set` field, one form per set as the fallback if the form cannot branch on a hidden field (445/500); 3 sets of two one-click questions, then *bug?* and a free text (400/500: about twice the answers per question with ~10 testers); offered after every run end and always in the title menu (400/500) | A pre-filled `mailto:` link (375/500: the owner's address public, no mail client on many computers); answers kept locally with an export (330/500); a fixed form (380/500: no rotation); 5 sets (305/500) or 6 (280/500: ~2 answers per question); multiple-choice questions drawn in the canvas (325/500); an HTML form over the canvas (370/500: a text field in the page, against the no-field rule); offered once a session (380/500) or only from the title (350/500) |
