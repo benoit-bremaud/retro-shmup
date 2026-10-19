@@ -23,12 +23,6 @@ export interface EffectSettings {
 /** The saved choice that stands for *NONE*: no country (GDD v0.26 §9.8). */
 export const NO_COUNTRY = 'none';
 
-/**
- * The country chosen before the first run (GDD v0.26 §9.1, ADR-0027 decision 6): a code of
- * `COUNTRY_CODES` or `NO_COUNTRY`; an absent value means never asked.
- */
-export type SavedCountry = string;
-
 /** A row value shown as is, not through the catalogue: the country code. */
 export interface TextValue {
   readonly text: string;
@@ -40,7 +34,7 @@ const NO_CODE: TextValue = { text: '--' };
 /** One value per code, built at its first draw: the allowlist bounds it, and no draw allocates twice. */
 const CODE_VALUES = new Map<string, TextValue>();
 
-function countryValue(choice: SavedCountry | undefined): TextValue {
+function countryValue(choice: string | undefined): TextValue {
   if (choice === undefined || choice === NO_COUNTRY) return NO_CODE;
   let value = CODE_VALUES.get(choice);
   if (value === undefined) {
@@ -62,8 +56,11 @@ export interface Options {
   /** The volume steps, 0 to 10 (GDD v0.23 §9.3). */
   readonly musicVolume: number;
   readonly sfxVolume: number;
-  /** Absent until the player first chooses (GDD v0.26 §9.8). */
-  readonly country?: SavedCountry | undefined;
+  /**
+   * A code of `COUNTRY_CODES` or `NO_COUNTRY`; absent until the player first chooses (GDD v0.26
+   * §9.1, §9.8, ADR-0027 decision 6).
+   */
+  readonly country?: string | undefined;
 }
 
 /** The *Audio* sub-screen's value rows (GDD v0.23 §9.3). */
@@ -107,7 +104,7 @@ export class LiveOptions implements Options {
   bindings: Bindings;
   musicVolume: number;
   sfxVolume: number;
-  country: SavedCountry | undefined;
+  country: string | undefined;
 
   /** A copy of the saved options. */
   constructor(saved: Readonly<Options>) {
@@ -122,7 +119,7 @@ export class LiveOptions implements Options {
   }
 
   /** Saves the country choice (GDD v0.26 §9.1): a code or `NO_COUNTRY`. */
-  setCountry(choice: SavedCountry): void {
+  setCountry(choice: string): void {
     this.country = choice;
   }
 

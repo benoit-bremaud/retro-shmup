@@ -6,7 +6,7 @@ import { parseHighScores, type HighScoreEntry } from '../hall-of-fame/high-score
 import { DEFAULT_BINDINGS } from '../input/default-bindings';
 import { parseBindings } from '../input/parse-bindings';
 import { NO_COUNTRY } from '../options';
-import type { SavedCountry, EffectSettings, Options } from '../options';
+import type { EffectSettings, Options } from '../options';
 import type { StoragePort } from '../ports/storage-port';
 
 /** The one key of the save document (ADR-0006 decision 2, GDD §9.8). */
@@ -56,7 +56,7 @@ function parseVolume(value: unknown, fallback: number): number | undefined {
  * The stored country choice, by allowlist (GDD v0.26 §9.8): `none` or a code of `COUNTRY_CODES`;
  * anything else, absence included, reads as never asked, so the question comes again.
  */
-function parseCountry(value: unknown): SavedCountry | undefined {
+function parseCountry(value: unknown): string | undefined {
   if (value === NO_COUNTRY) return NO_COUNTRY;
   return typeof value === 'string' && COUNTRY_CODES.has(value) ? value : undefined;
 }

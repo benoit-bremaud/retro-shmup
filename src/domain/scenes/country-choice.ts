@@ -1,6 +1,5 @@
 import { COUNTRY_CODES } from '../hall-of-fame/country-codes';
 import { NO_COUNTRY } from '../options';
-import type { SavedCountry } from '../options';
 import { Button } from '../ports/input-port';
 import type { IntentFrame } from '../ports/input-port';
 import type { MessageKey } from '../i18n/messages';
@@ -43,7 +42,7 @@ export class CountryChoice implements NameEntryView {
   );
 
   /** Opens at step `now` on `preselected`, kept only if it is a known code. */
-  open(now: number, opening: Readonly<IntentFrame>, preselected: SavedCountry | undefined): void {
+  open(now: number, opening: Readonly<IntentFrame>, preselected: string | undefined): void {
     this.letters.length = 0;
     this.chosenNone = false;
     if (preselected !== undefined && COUNTRY_CODES.has(preselected)) {
