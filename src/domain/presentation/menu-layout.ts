@@ -1,5 +1,6 @@
 import type { FontId } from '../ports/render-port';
 import type { MessageKey } from '../i18n/messages';
+import type { RowValue } from '../options';
 import { FIELD_HEIGHT } from './screen';
 
 /** The shortest menu row, 16 logical px: the menu font's line, and the high scores' row (§9.1). */
@@ -46,7 +47,7 @@ export interface MenuScreen {
   /** The line above the rows, in its font; the title menu has none. */
   readonly header?: { readonly key: MessageKey; readonly font: Extract<FontId, 'title' | 'menu'> };
   /** The value a row shows on its right (a switch, a choice or a volume step), if any; built once. */
-  readonly value?: (row: MessageKey) => MessageKey | number | undefined;
+  readonly value?: (row: MessageKey) => RowValue | undefined;
 }
 
 /** A row with a value: its label starts here and its value ends at the mirror edge. */
@@ -74,13 +75,14 @@ export interface ControlsView {
 }
 
 /**
- * The name entry's letter grid (GDD v0.16 §9.1): cells of 30 × 20 px, eight to a row, filling the
- * field's width under the name being built; *SKIP* is one more row, the grid's width.
+ * The name entry's letter grid (GDD v0.16 §9.1, v0.26 #115): cells of 30 × 32 px, eight to a row,
+ * filling the field's width under the name being built; *SKIP* is one more row, the grid's width.
+ * The rows are as tall as fit for touch: the name grid's six rows end at y 296.
  */
-export const LETTER_GRID = { top: 120, cellWidth: 30, cellHeight: 20, columns: 8 } as const;
+export const LETTER_GRID = { top: 104, cellWidth: 30, cellHeight: 32, columns: 8 } as const;
 
 /** The name entry above its grid: the heading, then the slots of the name or the code. */
-export const NAME_ENTRY_LAYOUT = { headingY: 48, slotsY: 88, slotWidth: 16 } as const;
+export const NAME_ENTRY_LAYOUT = { headingY: 40, slotsY: 72, slotWidth: 16 } as const;
 
 /**
  * One cell of the letter grid, placed on it: `span` columns wide from `column`. The scene reads its

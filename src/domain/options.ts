@@ -20,7 +20,37 @@ export interface EffectSettings {
   championName: boolean;
 }
 
-/** The player's options (GDD v0.13 §9.3, v0.15 §4.2, v0.23 the volumes). */
+/** The saved choice that stands for *NONE*: no country (GDD v0.26 §9.8). */
+export const NO_COUNTRY = 'none';
+
+/**
+ * The country chosen before the first run (GDD v0.26 §9.1, ADR-0027 decision 6): a code of
+ * `COUNTRY_CODES`, `NO_COUNTRY`, or `undefined` while never asked.
+ */
+export type CountryChoice = string | undefined;
+
+/** A row value shown as is, not through the catalogue: the country code. */
+export interface TextValue {
+  readonly text: string;
+}
+
+/** What the *Country* row shows for no choice or *NONE* (GDD v0.26 §9.3). */
+const NO_CODE: TextValue = { text: '--' };
+
+/** One value per code, built at its first draw: the allowlist bounds it, and no draw allocates twice. */
+const CODE_VALUES = new Map<string, TextValue>();
+
+function countryValue(choice: CountryChoice): TextValue {
+  if (choice === undefined || choice === NO_COUNTRY) return NO_CODE;
+  let value = CODE_VALUES.get(choice);
+  if (value === undefined) {
+    value = { text: choice };
+    CODE_VALUES.set(choice, value);
+  }
+  return value;
+}
+
+/** The player's options (GDD v0.13 §9.3, v0.15 §4.2, v0.23 the volumes, v0.26 the country). */
 export interface Options {
   readonly effects: Readonly<EffectSettings>;
   /** Touch and mouse fire all the time (ADR-0020 decision 4). */
@@ -32,13 +62,15 @@ export interface Options {
   /** The volume steps, 0 to 10 (GDD v0.23 §9.3). */
   readonly musicVolume: number;
   readonly sfxVolume: number;
+  /** Absent until the player first chooses (GDD v0.26 §9.8). */
+  readonly country?: CountryChoice;
 }
 
 /** The *Audio* sub-screen's value rows (GDD v0.23 §9.3). */
 export type VolumeRow = 'music' | 'soundEffects';
 
-/** What a value row shows: a catalogue key (a switch, a choice) or a volume step. */
-export type RowValue = MessageKey | number;
+/** What a value row shows: a catalogue key (a switch, a choice), a volume step or a code. */
+export type RowValue = MessageKey | number | TextValue;
 
 /** The effect switches, in screen order; each row's message key is its `EffectSettings` key. */
 export const EFFECT_ROWS = [
@@ -75,6 +107,7 @@ export class LiveOptions implements Options {
   bindings: Bindings;
   musicVolume: number;
   sfxVolume: number;
+  country: CountryChoice;
 
   /** A copy of the saved options. */
   constructor(saved: Readonly<Options>) {
@@ -85,10 +118,17 @@ export class LiveOptions implements Options {
     this.bindings = saved.bindings;
     this.musicVolume = saved.musicVolume;
     this.sfxVolume = saved.sfxVolume;
+    this.country = saved.country;
+  }
+
+  /** Saves the country choice (GDD v0.26 §9.1): a code or `NO_COUNTRY`. */
+  setCountry(choice: CountryChoice): void {
+    this.country = choice;
   }
 
   /** The value a row shows on its right, or `undefined` for a row without one. */
   value(row: MessageKey): RowValue | undefined {
+    if (row === 'country') return countryValue(this.country);
     if (row === 'music') return this.musicVolume;
     if (row === 'soundEffects') return this.sfxVolume;
     if (row === 'autofire') return onOff(this.autofire);

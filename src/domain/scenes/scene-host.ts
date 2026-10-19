@@ -21,7 +21,8 @@ export interface SceneHost {
   keyLabel(code: string): string;
   /**
    * The region of the browser's first language, as a code (`FR` from `fr-FR`), or `undefined`:
-   * the name entry's preselected country (ADR-0021 decision 4); the domain checks it is known.
+   * the country choice's preselection at the first Play (ADR-0021 decision 4, GDD v0.26); the
+   * domain checks it is known.
    */
   countryOfLanguage(): string | undefined;
   /** Today's date as `YYYY-MM-DD`: the domain reads no clock (ADR-0006). */

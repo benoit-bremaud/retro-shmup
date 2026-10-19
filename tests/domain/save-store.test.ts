@@ -154,6 +154,18 @@ describe('SaveStore.load (ADR-0006: untrusted input, never throws)', () => {
     expect(new SaveStore(stored(document), false).load()).toEqual(defaultOptions(false));
   });
 
+  it.each(['FR', 'none'])('reads back the country choice %j (GDD v0.26 §9.8)', (country) => {
+    const document = { version: 2, options: { ...CUSTOM, country }, highScores: [] };
+    expect(new SaveStore(stored(document), false).load().country).toBe(country);
+  });
+
+  it.each(['ZZ', 'fr', '', 7, null])('reads a country choice of %j as not chosen', (country) => {
+    const document = { version: 2, options: { ...CUSTOM, country }, highScores: [] };
+    const options = new SaveStore(stored(document), false).load();
+    expect('country' in options).toBe(false);
+    expect(options.musicVolume).toBe(CUSTOM.musicVolume); // the other options kept
+  });
+
   it('reads a document saved before the champion name with that switch on (GDD v0.22)', () => {
     const { championName: _new, ...before } = { ...CUSTOM.effects, championName: false };
     const document = { version: 2, options: { ...CUSTOM, effects: before }, highScores: [] };

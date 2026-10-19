@@ -9,9 +9,8 @@ import { LetterGrid } from './letter-grid';
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const DIGITS = '0123456789';
-/** The longest name (ADR-0021 decision 2) and a country code's length. */
+/** The longest name (ADR-0021 decision 2). */
 const NAME_LENGTH = 8;
-const CODE_LENGTH = 2;
 const EMPTY_SLOT = '-';
 
 /** What a grid cell does: a character, or one of the actions (GDD v0.16 §9.1). */
@@ -69,78 +68,49 @@ export const COUNTRY_CELLS: readonly EntryCell[] = gridCells(LETTERS, [
   { action: 'ok', label: 'ok', span: 1 },
 ]);
 
-/** The country grid's *OK* cell. */
-const COUNTRY_OK = COUNTRY_CELLS.findIndex((cell) => cell.action === 'ok');
-
 /** How the name entry ends: *SKIP* or an empty name records nothing, `entered` records. */
 export type NameEntryExit = 'skipped' | 'entered';
 
 /**
- * The name entry (GDD v0.16 §9.1, meta/04-class-menus, SD-score): the name on its grid, then the
- * country on the letters-only grid, preselected from the browser language. `back` deletes the last
- * character and never leaves; *OK* on the name trims it, and an empty name records nothing, as
- * *SKIP* does; the country's *OK* shows only for a code of `COUNTRY_CODES`, *NONE* stores none.
- * It builds the entry with the date the scene machine gets from the host.
+ * The name entry (GDD v0.16 §9.1, v0.26 without its country step; meta/04-class-menus, SD-score):
+ * the name on its grid. `back` deletes the last character and never leaves; *OK* trims the name,
+ * and an empty name records nothing, as *SKIP* does. The entry takes the country saved before the
+ * first run (v0.26), and the date the scene machine gets from the host.
  */
 export class NameEntry implements NameEntryView {
-  private currentStage: 'name' | 'country' = 'name';
+  readonly heading: MessageKey = 'yourName';
+  readonly slotCount = NAME_LENGTH;
   /** The score being recorded, read from the finished run when the entry opens. */
   private score = 0;
+  /** The saved country code, or `undefined` for none. */
+  private country: string | undefined;
   private readonly nameGrid = new LetterGrid(NAME_CELLS);
-  private readonly countryGrid = new LetterGrid(
-    COUNTRY_CELLS,
-    (cell) => cell.action !== 'ok' || this.codeValid,
-  );
-  /** The name's characters, then the code's: single-character strings of the grid's cells. */
+  /** The name's characters: single-character strings of the grid's cells. */
   private readonly nameChars: string[] = [];
-  private readonly codeChars: string[] = [];
-  /** The code is complete and known: *OK* shows. Kept up to date, so a draw joins nothing. */
-  private codeValid = false;
-  /** No country: *NONE* was chosen. */
-  private noCountry = false;
 
-  /** Opens on the name at step `now` for `score`; `country` is the host's guess, kept if known. */
+  /** Opens at step `now` for `score`; `country` is the saved choice, kept only if a known code. */
   open(
     now: number,
     opening: Readonly<IntentFrame>,
     score: number,
     country: string | undefined,
   ): void {
-    this.currentStage = 'name';
     this.score = score;
     this.nameChars.length = 0;
-    this.codeChars.length = 0;
-    this.noCountry = false;
-    if (country !== undefined && COUNTRY_CODES.has(country)) {
-      this.codeChars.push(country.charAt(0), country.charAt(1));
-    }
-    this.checkCode();
+    this.country = country !== undefined && COUNTRY_CODES.has(country) ? country : undefined;
     this.nameGrid.reset(now, opening);
   }
 
-  get stage(): 'name' | 'country' {
-    return this.currentStage;
-  }
-
-  get heading(): MessageKey {
-    return this.stage === 'name' ? 'yourName' : 'country';
-  }
-
   get grid(): LetterGridView {
-    return this.activeGrid();
-  }
-
-  get slotCount(): number {
-    return this.stage === 'name' ? NAME_LENGTH : CODE_LENGTH;
+    return this.nameGrid;
   }
 
   get nextSlot(): number {
-    const filled = this.chars().length;
-    return filled < this.slotCount ? filled : -1;
+    return this.nameChars.length < NAME_LENGTH ? this.nameChars.length : -1;
   }
 
   slot(index: number): string {
-    return this.chars()[index] ?? EMPTY_SLOT;
+    return this.nameChars[index] ?? EMPTY_SLOT;
   }
 
   /** The name typed, trimmed at both ends. */
@@ -149,35 +119,21 @@ export class NameEntry implements NameEntryView {
   }
 
   /**
-   * The entry to record once `entered`: the name, the country unless *NONE*, the score and the
+   * The entry to record once `entered`: the name, the saved country if any, the score and the
    * host's `date`. The slice plays level 1 only, so the last level played is 1 (ADR-0022 decision 9).
    */
   entry(date: string): HighScoreEntry {
     const entry = { name: this.name, score: this.score, level: 1, date } as const;
-    return this.noCountry ? entry : { ...entry, country: this.codeChars.join('') };
+    return this.country === undefined ? entry : { ...entry, country: this.country };
   }
 
   /** One scene step; returns how the entry ends, or `undefined` while it goes on. */
   step(frame: Readonly<IntentFrame>, now: number): NameEntryExit | undefined {
     if ((frame.pressed & Button.Back) !== 0) this.deleteLast();
-    const cell = this.activeGrid().step(frame, now);
+    const cell = this.nameGrid.step(frame, now);
     if (cell === undefined) return undefined;
-    return this.stage === 'name' ? this.pickName(cell, frame, now) : this.pickCountry(cell);
-  }
-
-  private pickName(
-    cell: EntryCell,
-    frame: Readonly<IntentFrame>,
-    now: number,
-  ): NameEntryExit | undefined {
     if (cell.action === 'skip') return 'skipped';
-    if (cell.action === 'ok') {
-      if (this.name === '') return 'skipped';
-      this.currentStage = 'country';
-      // A preselected known code opens on OK: one press keeps it (owner, 2026-10-15).
-      this.countryGrid.reset(now, frame, this.codeValid ? COUNTRY_OK : 0);
-      return undefined;
-    }
+    if (cell.action === 'ok') return this.name === '' ? 'skipped' : 'entered';
     if (cell.action === 'delete') this.deleteLast();
     else if (this.nameChars.length < NAME_LENGTH) {
       this.nameChars.push(cell.action === 'space' ? ' ' : cell.text);
@@ -185,36 +141,8 @@ export class NameEntry implements NameEntryView {
     return undefined;
   }
 
-  private pickCountry(cell: EntryCell): NameEntryExit | undefined {
-    if (cell.action === 'none') this.noCountry = true;
-    if (cell.action === 'none' || cell.action === 'ok') return 'entered';
-    if (cell.action === 'delete') {
-      this.deleteLast();
-    } else if (this.codeChars.length < CODE_LENGTH) {
-      this.codeChars.push(cell.text);
-      this.checkCode();
-    }
-    return undefined;
-  }
-
-  private activeGrid(): LetterGrid<GridAction> {
-    return this.stage === 'name' ? this.nameGrid : this.countryGrid;
-  }
-
-  private chars(): string[] {
-    return this.stage === 'name' ? this.nameChars : this.codeChars;
-  }
-
   private deleteLast(): void {
-    this.chars().pop();
-    this.checkCode();
-    this.activeGrid().settle();
-  }
-
-  /** Compares character by character: no string is built on input. */
-  private checkCode(): void {
-    const [first, second] = this.codeChars;
-    this.codeValid =
-      first !== undefined && second !== undefined && COUNTRY_CODES.has(first + second);
+    this.nameChars.pop();
+    this.nameGrid.settle();
   }
 }

@@ -8,10 +8,10 @@ import {
   drawVeil,
 } from '../../src/domain/presentation/overlays';
 import { CONTROLS_COLUMNS, MENU_VALUE_MARGIN } from '../../src/domain/presentation/menu-layout';
-import type { ControlsView } from '../../src/domain/presentation/menu-layout';
+import type { ControlsView, NameEntryView } from '../../src/domain/presentation/menu-layout';
 import { Menu } from '../../src/domain/scenes/menu';
-import { NameEntry } from '../../src/domain/scenes/name-entry';
-import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
+import { CountryChoice } from '../../src/domain/scenes/country-choice';
+import { createIntentFrame } from '../../src/domain/ports/input-port';
 import { Palette } from '../../src/domain/presentation/palette';
 import { FIELD_HEIGHT, FIELD_WIDTH } from '../../src/domain/presentation/screen';
 import { RecordingRender } from '../support/recording-render';
@@ -138,24 +138,15 @@ describe('drawControlsScreen (GDD v0.15 §4.2)', () => {
   });
 });
 
-describe('drawNameEntry (GDD v0.16 §9.1)', () => {
-  /** A name entry on its country step, the code preselected from `country`. */
-  function onCountry(country: string | undefined): NameEntry {
-    const entry = new NameEntry();
-    entry.open(0, createIntentFrame(), 500, country);
-    const confirm = createIntentFrame();
-    confirm.pressed = Button.Confirm;
-    entry.step(confirm, 100); // A
-    const ok = createIntentFrame(); // hovers the name grid's OK (row 4, column 7)
-    ok.hovered = true;
-    ok.hoverX = 7 * 30 + 15;
-    ok.hoverY = 120 + 4 * 20 + 10;
-    entry.step(ok, 101);
-    entry.step(confirm, 102);
-    return entry;
+describe('drawNameEntry (GDD v0.16 §9.1, v0.26)', () => {
+  /** The country choice (GDD v0.26 §9.1), the code preselected from `country`. */
+  function onCountry(country: string | undefined): CountryChoice {
+    const choice = new CountryChoice();
+    choice.open(0, createIntentFrame(), country);
+    return choice;
   }
 
-  function texts(entry: NameEntry): string[] {
+  function texts(entry: NameEntryView): string[] {
     const render = new RecordingRender();
     drawNameEntry(render, entry, 'fr');
     return render.texts.map((text) => text.text);
@@ -173,8 +164,8 @@ describe('drawNameEntry (GDD v0.16 §9.1)', () => {
     drawNameEntry(render, onCountry(undefined), 'en');
     const bars = render.rectsOf(Palette.menuHighlight).map((rect) => [rect.x, rect.y, rect.w]);
     expect(bars).toEqual([
-      [104, 88, 16],
-      [0, 120, 30],
+      [104, 72, 16],
+      [0, 105, 30], // the 32 px cell's bar keeps a 1 px gap (GDD v0.26, #115)
     ]);
   });
 });

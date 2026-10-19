@@ -42,6 +42,7 @@ function withEffects(effects: EffectSettings): Options {
     bindings: DEFAULT_BINDINGS,
     musicVolume: 7,
     sfxVolume: 8,
+    country: 'FR',
   };
 }
 
@@ -1148,6 +1149,8 @@ describe('SceneMachine — the options screens (GDD v0.14 §9.1, §9.3, G1a-3)',
       'OFF',
       'LANGUAGE',
       'ENGLISH',
+      'COUNTRY',
+      'FR',
       'FULLSCREEN',
       'OFF',
       'BACK',
@@ -1509,7 +1512,7 @@ describe('SceneMachine — the name entry (GDD v0.16 §9.1, SD-score, G2-3)', ()
     expect(machine.scene).toBe(Scene.Title);
   });
 
-  it('records the entry with the preselected country, saves the table, shows it highlighted', () => {
+  it('records the entry with the saved country, saves the table, shows it highlighted', () => {
     const { machine, render, host } = afterGameOver(12000);
     confirm(machine, 2); // AA
     upBy(machine, 2); // SKIP, then the last grid row
@@ -1518,15 +1521,7 @@ describe('SceneMachine — the name entry (GDD v0.16 §9.1, SD-score, G2-3)', ()
     left.moveX = -1;
     machine.step(DT, left); // wraps to OK, the row's last cell
     machine.step(DT, createIntentFrame());
-    confirm(machine); // the name
-    expect(machine.scene).toBe(Scene.NameEntry);
-    // The country grid's OK (row 3, column 5), shown for the preselected FR: hovered.
-    const hover = createIntentFrame();
-    hover.hovered = true;
-    hover.hoverX = 5 * 30 + 15;
-    hover.hoverY = 120 + 3 * 20 + 10;
-    machine.step(DT, hover);
-    confirm(machine);
+    confirm(machine); // the name: the saved FR is copied, no country step (GDD v0.26)
     expect(machine.scene).toBe(Scene.HighScores);
     expect(host.tables).toEqual([
       [{ name: 'AA', score: 12000, level: 1, date: '2026-10-15', country: 'FR' }, ACE],
@@ -1737,5 +1732,87 @@ describe('SceneMachine — the champion name (GDD v0.22 §9.4.1)', () => {
     for (let i = 0; i < 41 * 60; i += 1) machine.step(DT, createIntentFrame());
     machine.render(0, 16);
     expect(render.texts.some((text) => text.font === 'far')).toBe(false);
+  });
+});
+
+describe('SceneMachine — the country first (GDD v0.26 §9.1, ADR-0027)', () => {
+  /** A hosted machine on the title, its save holding `country`. */
+  function withCountry(country: Options['country']): ReturnType<typeof hosted> {
+    const render = new RecordingRender();
+    const host = new RecordingHost();
+    host.country = 'FR';
+    const machine = new SceneMachine(
+      render,
+      new Starfield(() => 0.5),
+      { ...withEffects(ALL_ON), country },
+      () => new Run(),
+      host,
+    );
+    machine.step(DT, createIntentFrame()); // Boot → Title
+    idle(machine, 70); // past the title's input lock
+    return { machine, render, host };
+  }
+
+  function press(machine: SceneMachine, button: number): void {
+    machine.step(DT, pressed(button));
+    machine.step(DT, createIntentFrame());
+  }
+
+  it('asks the country at Play while none is saved, preselected from the language', () => {
+    const { machine, render } = withCountry(undefined);
+    press(machine, Button.Confirm);
+    expect(machine.scene).toBe(Scene.StartCountry);
+    machine.render(1, 16);
+    expect(fieldTextsOf(render).slice(0, 3)).toEqual(['COUNTRY', 'F', 'R']);
+  });
+
+  it('saves the chosen code, then starts the run', () => {
+    const { machine, host } = withCountry(undefined);
+    press(machine, Button.Confirm);
+    press(machine, Button.Confirm); // OK, preselected for the known FR
+    expect(host.saved.map((options) => options.country)).toEqual(['FR']);
+    expect(machine.scene).toBe(Scene.Playing);
+  });
+
+  it('returns to the title and saves nothing on back with an empty code', () => {
+    const { machine, host } = withCountry(undefined);
+    press(machine, Button.Confirm);
+    press(machine, Button.Back);
+    press(machine, Button.Back); // the code is empty
+    expect(machine.scene).toBe(Scene.StartCountry);
+    press(machine, Button.Back);
+    expect(machine.scene).toBe(Scene.Title);
+    expect(host.saved).toEqual([]);
+  });
+
+  it('starts the run at once when a choice is saved, even none', () => {
+    const { machine } = withCountry('none');
+    press(machine, Button.Confirm);
+    expect(machine.scene).toBe(Scene.Playing);
+  });
+
+  it('opens the country from the options on the saved code and returns there', () => {
+    const { machine, render, host } = withCountry('DE');
+    downBy(machine, 2);
+    press(machine, Button.Confirm); // Options
+    idle(machine);
+    downBy(machine, 5); // the Country row
+    press(machine, Button.Confirm);
+    expect(machine.scene).toBe(Scene.TitleCountry);
+    machine.render(1, 16);
+    expect(fieldTextsOf(render).slice(0, 3)).toEqual(['COUNTRY', 'D', 'E']);
+    press(machine, Button.Confirm); // OK on the saved code
+    expect(machine.scene).toBe(Scene.TitleOptions);
+    expect(host.saved.map((options) => options.country)).toEqual(['DE']);
+  });
+
+  it('shows -- on the Country row while no country is chosen', () => {
+    const { machine, render } = withCountry('none');
+    downBy(machine, 2);
+    press(machine, Button.Confirm);
+    idle(machine);
+    machine.render(1, 16);
+    const texts = fieldTextsOf(render);
+    expect(texts[texts.indexOf('COUNTRY') + 1]).toBe('--');
   });
 });

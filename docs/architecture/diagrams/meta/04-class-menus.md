@@ -219,11 +219,15 @@ classDiagram
     +grid: LetterGridView
   }
   class NameEntry {
-    +stage: name | country, read-only
     +name: string
     +open(now, opening, score, country) void
     +step(frame, now) skipped | entered | undefined
     +entry(date) HighScoreEntry
+  }
+  class CountryChoice {
+    +choice: string, a code or none
+    +open(now, opening, preselected) void
+    +step(frame, now) chosen | cancelled | undefined
   }
   class SaveStore {
     +load() Options, parseBindings and parseHighScores
@@ -265,7 +269,11 @@ classDiagram
   SaveStore ..> SaveDocument : load parses, never throws
   SaveDocument *-- "0..10" HighScoreEntry
   HighScoreTable o-- "0..10" HighScoreEntry
-  NameEntry *-- "2" LetterGrid
+  NameEntry *-- LetterGrid
+  CountryChoice *-- LetterGrid
+  CountryChoice ..|> NameEntryView
+  SceneMachine *-- CountryChoice
+  LiveOptions ..> CountryChoice : setCountry on chosen
   NameEntry ..|> NameEntryView
   NameEntryView --> LetterGridView
   LetterGrid ..|> LetterGridView
@@ -392,12 +400,10 @@ classDiagram
   set, every index from 0 to 15, primary present, no duplicate), a failing device getting its
   defaults back.
 - **Hall of fame (G2, GDD v0.16 §9.1)**: `LetterGrid` is the two-dimensional menu of the name
-  entry (cells of 30 × 20 px, eight to a row; the directions move a wrapping cursor, `confirm` or
+  entry (cells of 30 × 32 px since v0.26, eight to a row; the directions move a wrapping cursor, `confirm` or
   a release over the pressed cell picks it, with `Menu`'s guards); its cells are characters or
   the actions *SPACE*, *DEL*, *OK*, *SKIP* and *NONE*. `NameEntry` builds the name (8 at most,
-  `back` deletes; on *OK* trimmed; *SKIP*, or an empty or all-space name, records nothing) then the country (letters only, *OK* only for a code of
-  `COUNTRY_CODES`, *NONE* for none), preselected by the host from the browser language
-  (ADR-0021 decision 4), and builds the `HighScoreEntry` (`entry(date)`) once `step` returns
+  `back` deletes; on *OK* trimmed; *SKIP*, or an empty or all-space name, records nothing) (the country step moved to `CountryChoice` in v0.26), and builds the `HighScoreEntry` (`entry(date)`) once `step` returns
   `entered`, with the score given to `open` and the date the host gives (`SceneHost.today()`,
   the domain reads no clock); the level stored is 1, the slice having one level (owner,
   2026-10-15, ADR-0022 decision 9).
@@ -410,6 +416,13 @@ classDiagram
   `SceneTuning.attractIdleSeconds` 10), then `openAttract` enters the `Attract` scene, which
   reuses `HighScoresScreen` (`open(table, -1)`) and the High scores overlay, and leaves on any
   active frame or after `SceneTuning.attractSeconds` (6) through `openMenu`, with no lock.
+- **Country first (v0.26, ADR-0027 decision 6)**: `CountryChoice` is the former country step of
+  `NameEntry`, a scene of its own: opened before the first run while `Options.country` is absent
+  (`StartCountry`, preselected by `SceneHost.countryOfLanguage`), and from the options' *Country*
+  row (`TitleCountry`, `PauseCountry`, preselected with the saved code). `back` on an empty code
+  returns `cancelled`. `Options.country` is absent, `none` or a code of `COUNTRY_CODES`; the
+  options row shows the code, or `--`, as a `TextValue`. `NameEntry` has the name only and copies
+  the saved code into the entry. The grid is 32 px tall per row from y 104 (#115).
 - **Name entry, as built (G2-3, owner-approved 2026-10-15)**: the cells are data (`NAME_CELLS`,
   `COUNTRY_CELLS`, characters eight to a row, then the actions; an action never straddles two
   rows). `PressGuard` (`src/domain/scenes/menu-input.ts`, with the direction thresholds) holds the
@@ -417,9 +430,8 @@ classDiagram
   or down, any other tilt sideways; left and right wrap within the row, up and down over the rows
   in the cursor's column, skipping empty places and a hidden *OK*. A hover or a picking release
   moves the cursor and its column to the pointer. When *OK* disappears under the cursor
-  (`settle`), the cursor steps to the previous cell of its row. The country step opens with a new
-  opening guard, on *OK* when the preselected code is known, else on `A`; there is no way back to
-  the name, and *NONE* ends at once. The view interfaces (`NameEntryView`, `LetterGridView`,
+  (`settle`), the cursor steps to the previous cell of its row. The country choice opens on *OK* when
+  the preselected code is known, else on `A`, and *NONE* ends at once. The view interfaces (`NameEntryView`, `LetterGridView`,
   `GridCell`) live in `presentation/menu-layout.ts` with the grid geometry; `GridAction` is the
   scene's (`name-entry.ts`). `HighScoreTable` keeps ten entries, best
   first, a score above 0 entering only above the tenth, ties after the older; `SaveStore` parses
