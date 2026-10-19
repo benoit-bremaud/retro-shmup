@@ -1,44 +1,33 @@
-# Local review — retro-shmup (feat/ui-tap-targets: #95)
+# Local review — retro-shmup (design PR, GDD v0.26)
 
-- Date: 2026-10-16
-- Commit: 3dd28ed
-- Scope: branch diff origin/main...HEAD
-- Checks run: design · docs · tests · security · correctness
-- Verdict: ship — Must 0 · Should 0 open (4 fixed) · Nice 2 open
+- Date: 2026-10-19
+- Commit: 3d5e5ab
+- Scope: branch diff origin/main...HEAD (docs only: GDD v0.26, ADR-0027, UML, README privacy)
+- Checks run: design/consistency · docs · security/privacy (one Opus reviewer, docs-only diff) · execution checks
+- Verdict: ship — Must 5 → 0 · Should 8 → 0 · Nice 4 (2 applied, 2 no change)
 
-## Pre-merge gate (head SHA 3dd28ed)
-
+## Pre-merge gate (head SHA 3d5e5ab)
 | Step | Result |
 |---|---|
-| 1 Tests | ✅ 1480 unit / scene-machine / simulation · ✅ 6 smoke (Chromium, Firefox, WebKit) |
-| 2 Coverage | tests 99.27 % stmts / 95.63 % branches / 100 % funcs / 99.91 % lines (floor 80) · docs 100 % (342/342, floor 90) |
+| 1 Tests | ✅ 1480 unit/integration (make verify); smoke not run (docs-only diff, no runtime change) |
+| 2 Coverage | tests 99.27 % stmts / 95.63 % branches / 100 % funcs / 99.91 % lines · docs unchanged (no code) |
 | 3 SonarQube | ✅ PASSED |
-| 4 Secrets | ✅ gitleaks clean (pushed range) · only `.env.example` tracked · diff read: nothing sensitive |
-| 5 QA pass | ✅ full · 390 × 844: title → Options → Visual effects by taps, 32 px rows = 48 CSS px at ×3 · console: favicon 404 only (pre-existing) · screenshots: `docs/architecture/qa/2026-10-16-tap-targets-{title,options,effects}.png` |
-
-- Gate: **GREEN — merge authorised**
+| 4 Secrets | ✅ gitleaks clean · no tracked .env · diff read: no address, no token |
+| 5 QA pass | n/a — docs-only diff |
+- Gate: **GREEN for a docs PR**
 
 ## 🔴 Must Have
-
-_None._
+_None open._ Fixed in 3d5e5ab: G2 state diagram and old GDD country-step text marked superseded; title rows list updated; blocked-tab detection decided (no `noopener`, `opener = null`, `null` = refused); README privacy section added.
 
 ## 🟡 Should Have
-
-- ~~`src/domain/scenes/scene-machine.ts:275` `[design]` · header gap and header font declared apart~~ — fixed: `headerGap` exposed on `OpenableMenu`, a scene-machine test checks it against every screen's header font.
-- ~~`scene-machine.ts`, `controls-grid.ts:60` `[design]` · `undefined` passed to reach the third argument~~ — fixed: `Menu(rows, { flips, headerGap })`.
-- ~~`tests/domain/scene-machine.test.ts:928` `[tests]` · `rowTap` silently assumes 32 px rows~~ — fixed: it throws otherwise.
-- ~~`src/domain/scenes/menu.ts:24` `[docs]` · `rowHeight` undocumented~~ — fixed.
+_None open._ Fixed: §9.3 texts, ADR-0006/0021 status lines, opening inside the input handler, privacy (no personal data line, retention, age band held back), forged hidden fields noted, country-choice opening guard and cursor, gamepad path drawn, free-height defined.
 
 ## 🔵 Nice to Have
-
-- `src/domain/presentation/menu-layout.ts:6` `[design]` · `MENU_ROW_HEIGHT` is both the minimum row and the fixed line of the high scores / name entry; a `MENU_LINE_HEIGHT` split would read clearer.
-- `src/domain/presentation/menu-layout.ts` `[correctness]` · `menuTop` returns a half pixel for an odd `rows × rowHeight` total; no current menu does (2, 3, 6, 7, 9, 10 rows).
+- Applied: sequence `back` branch; `country=none` vs empty; version pinned to `MAJOR.MINOR.PATCH`.
+- No change: two states sharing the label "Country choice" is valid Mermaid.
 
 ## ⚪ Disagree / Intentional
-
-- `src/domain/scenes/menu.ts:4` `[design]` · the scene imports presentation layout: both are domain, pre-existing.
-- `tests/domain/scene-machine.test.ts` `[tests]` · bracket access to the private `menuScreens`: the invariant spans the private table; documented with its eslint exception.
+_None._
 
 ## Per-dimension summary
-
-- Design: proportionate, one pure function; drift risk closed by a test · Docs: 100 %, GDD v0.25 + UML aligned · Tests: rule, layout, scene-machine and smoke covered · Security: no finding · Correctness: formula matches the GDD, every gap matches its header.
+- Design: consistent after fixes · Docs: indexes and statuses updated · Tests: n/a · Security: allowlisted params, build-checked https base URL, no PII · Correctness: geometry 104 + 6 × 32 = 296 ≤ 320
