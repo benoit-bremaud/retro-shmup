@@ -17,6 +17,7 @@ import { ChampionName } from '../domain/presentation/champion-name';
 import { Starfield } from '../domain/presentation/starfield';
 import { SaveStore } from '../domain/save/save-store';
 import { SceneMachine } from '../domain/scenes/scene-machine';
+import { feedbackForm } from '../domain/feedback/feedback-link';
 import type { SceneHost } from '../domain/scenes/scene-host';
 import { FrameLoop } from './frame-loop';
 import { versionLabel } from './version-label';
@@ -143,6 +144,14 @@ const environment: InputEnvironment = {
     const keyboard: unknown = Reflect.get(navigator, 'keyboard');
     return hasLayoutMap(keyboard) ? keyboard.getLayoutMap() : undefined;
   },
+  openLink: (url) => {
+    // No `noopener`: with it the call returns null even when the tab opens, hiding a block; the
+    // opener is cut by hand and the page's Referrer-Policy keeps the referrer out (ADR-0027).
+    const opened = globalThis.open(url, '_blank');
+    if (opened === null) return false;
+    opened.opener = null;
+    return true;
+  },
   fullscreen: {
     active: () => document.fullscreenElement !== null,
     // A refusal (no permission, an iframe) leaves the page windowed: nothing to report.
@@ -264,7 +273,11 @@ const scenes: FrameTarget = new SceneMachine(
   () => new Run({ seed: Math.floor(Math.random() * 2 ** 32) }),
   host,
   save.highScores,
-  { champion: new ChampionName(Math.random), audio },
+  {
+    champion: new ChampionName(Math.random),
+    audio,
+    feedback: { form: feedbackForm(__FEEDBACK_FORM__), version: __APP_VERSION__, link: input },
+  },
 );
 const loop = new FrameLoop(new PerformanceClock(), input, scenes, (callback) => {
   requestAnimationFrame(callback);

@@ -61,6 +61,11 @@ export interface Options {
    * §9.1, §9.8, ADR-0027 decision 6).
    */
   readonly country?: string | undefined;
+  /**
+   * How many times the feedback form was opened, a whole number; absent reads as 0 (GDD v0.26
+   * §9.8, ADR-0027 decision 4).
+   */
+  readonly feedbackCount?: number | undefined;
 }
 
 /** The *Audio* sub-screen's value rows (GDD v0.23 §9.3). */
@@ -105,6 +110,7 @@ export class LiveOptions implements Options {
   musicVolume: number;
   sfxVolume: number;
   country: string | undefined;
+  feedbackCount: number | undefined;
 
   /** A copy of the saved options. */
   constructor(saved: Readonly<Options>) {
@@ -116,6 +122,12 @@ export class LiveOptions implements Options {
     this.musicVolume = saved.musicVolume;
     this.sfxVolume = saved.sfxVolume;
     this.country = saved.country;
+    this.feedbackCount = saved.feedbackCount;
+  }
+
+  /** One more opening of the feedback form: the next one shows the next question set. */
+  countFeedback(): void {
+    this.feedbackCount = (this.feedbackCount ?? 0) + 1;
   }
 
   /** Saves the country choice (GDD v0.26 §9.1): a code or `NO_COUNTRY`. */

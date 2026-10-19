@@ -46,6 +46,8 @@ export interface MenuScreen {
   readonly menu: MenuView;
   /** The line above the rows, in its font; the title menu has none. */
   readonly header?: { readonly key: MessageKey; readonly font: Extract<FontId, 'title' | 'menu'> };
+  /** A menu-font line between the header and the rows (the feedback offer's, GDD v0.26 §9.1). */
+  readonly note?: MessageKey;
   /** The value a row shows on its right (a switch, a choice or a volume step), if any; built once. */
   readonly value?: (row: MessageKey) => RowValue | undefined;
 }

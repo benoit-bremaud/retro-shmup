@@ -19,6 +19,14 @@ class FakeEnvironment implements InputEnvironment {
     Record<'down' | 'move' | 'up' | 'cancel', (event: PointerEventLike) => void>
   > = {};
   readonly prevented: string[] = [];
+  /** The addresses asked to open, and whether the browser lets them. */
+  readonly opened: string[] = [];
+  allowOpen = true;
+
+  openLink(url: string): boolean {
+    this.opened.push(url);
+    return this.allowOpen;
+  }
 
   onKeyDown(listener: (event: KeyEventLike) => void): void {
     this.keyDown = listener;

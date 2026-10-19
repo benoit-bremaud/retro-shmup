@@ -61,6 +61,11 @@ function parseCountry(value: unknown): string | undefined {
   return typeof value === 'string' && COUNTRY_CODES.has(value) ? value : undefined;
 }
 
+/** The stored feedback count (GDD v0.26 §9.8): a whole number from 0, anything else absent. */
+function parseCount(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : undefined;
+}
+
 /**
  * Rebuilds the effects from the known keys only; `undefined` if any is not a boolean. The
  * champion's name came after save version 2, so a missing key reads as on (GDD v0.22 §9.4.1).
@@ -109,7 +114,12 @@ function parseOptions(value: unknown, version: number): Options | undefined {
     sfxVolume,
   };
   const country = parseCountry(value.country);
-  return country === undefined ? options : { ...options, country };
+  const feedbackCount = parseCount(value.feedbackCount);
+  return {
+    ...options,
+    ...(country === undefined ? {} : { country }),
+    ...(feedbackCount === undefined ? {} : { feedbackCount }),
+  };
 }
 
 function parseJson(raw: string): unknown {

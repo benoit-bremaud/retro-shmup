@@ -12,7 +12,12 @@ import { BossState } from '../../src/domain/game/boss';
 import type { BossDefinition } from '../../src/domain/game/boss';
 import { swayMovement } from '../../src/domain/game/movements';
 import { Run, RunOutcome } from '../../src/domain/game/run';
-import { MENU_HEADER_GAP, menuRowHeight, menuTop } from '../../src/domain/presentation/menu-layout';
+import {
+  MENU_HEADER_GAP,
+  MENU_ROW_HEIGHT,
+  menuRowHeight,
+  menuTop,
+} from '../../src/domain/presentation/menu-layout';
 import { Scene, SceneMachine } from '../../src/domain/scenes/scene-machine';
 import type { HighScoreEntry } from '../../src/domain/hall-of-fame/high-scores';
 import { NO_HOST } from '../../src/domain/scenes/scene-host';
@@ -1196,7 +1201,8 @@ describe('SceneMachine — the options screens (GDD v0.14 §9.1, §9.3, G1a-3)',
     const screens = Object.values(machine['menuScreens']);
     expect(screens.length).toBeGreaterThan(8);
     for (const screen of screens) {
-      const gap = screen.header === undefined ? 0 : MENU_HEADER_GAP[screen.header.font];
+      const header = screen.header === undefined ? 0 : MENU_HEADER_GAP[screen.header.font];
+      const gap = header + (screen.note === undefined ? 0 : MENU_ROW_HEIGHT);
       expect(screen.menu.headerGap).toBe(gap);
     }
   });
