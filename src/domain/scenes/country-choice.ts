@@ -33,13 +33,12 @@ export class CountryChoice implements NameEntryView {
   readonly heading: MessageKey = 'country';
   readonly slotCount = CODE_LENGTH;
   private readonly letters: string[] = [];
-  /** The code is complete and known: *OK* shows. Kept up to date, so a draw joins nothing. */
-  private codeValid = false;
+  /** The complete known code, else `''`: *OK* shows when set. Kept up to date on input, so a draw joins nothing. */
   private known = '';
   private chosenNone = false;
   private readonly countryGrid = new LetterGrid<GridAction>(
     COUNTRY_CELLS,
-    (cell) => cell.action !== 'ok' || this.codeValid,
+    (cell) => cell.action !== 'ok' || this.known !== '',
   );
 
   /** Opens at step `now` on `preselected`, kept only if it is a known code. */
@@ -50,7 +49,7 @@ export class CountryChoice implements NameEntryView {
       this.letters.push(preselected.charAt(0), preselected.charAt(1));
     }
     this.checkCode();
-    this.countryGrid.reset(now, opening, this.codeValid ? COUNTRY_OK : 0);
+    this.countryGrid.reset(now, opening, this.known !== '' ? COUNTRY_OK : 0);
   }
 
   get grid(): LetterGridView {
@@ -102,7 +101,6 @@ export class CountryChoice implements NameEntryView {
   /** Runs on input only, never per frame. */
   private checkCode(): void {
     const code = this.letters.length === CODE_LENGTH ? this.letters.join('') : '';
-    this.codeValid = COUNTRY_CODES.has(code);
-    this.known = this.codeValid ? code : '';
+    this.known = COUNTRY_CODES.has(code) ? code : '';
   }
 }

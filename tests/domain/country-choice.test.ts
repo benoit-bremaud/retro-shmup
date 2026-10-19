@@ -130,9 +130,4 @@ describe('CountryChoice.knownCode (GDD v0.27, ADR-0028)', () => {
     choice.step(BACK, (clock += 20));
     expect(choice.knownCode).toBe('');
   });
-
-  it('returns the same string on every read: a draw allocates nothing', () => {
-    const choice = opened('JP');
-    expect(choice.knownCode).toBe(choice.knownCode);
-  });
 });

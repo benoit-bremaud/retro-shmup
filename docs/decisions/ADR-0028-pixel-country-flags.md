@@ -1,4 +1,4 @@
-# ADR-0028: Pixel country flags beside the code, from one CC0 sheet
+# ADR-0028: Pixel country flags beside the code, from one public-domain sheet
 
 **Status:** Accepted — 2026-10-19. **Extends ADR-0001** (the `RenderPort` gains `drawFlag`) and
 **ADR-0021** (the country code is shown with its flag). Values are GDD v0.27 values (§9.1
@@ -22,10 +22,10 @@
 
 1. **The letter grid stays the way to choose**; a 16 × 11 flag is drawn **2 px right of the
    code** wherever the code is shown: the options' *Country* row, each High scores row (code at
-   x 104, flag at x 122), the country choice once the code is complete and known. The far-
+   x 104, flag at x 120), the country choice once the code is complete and known. The far-
    background champion name stays a name only (GDD §9.4.1).
-2. **One CC0 sheet**: the famfamfam 16 × 11 flags (Mark James, CC0 / public domain, as published
-   on OpenGameArt), packed once by a development script into `public/assets/sprites/flags.png`
+2. **One public-domain sheet**: the famfamfam 16 × 11 flags (Mark James, public domain, from the
+   `legacy-icons/famfamfam-flags` mirror), packed once by a development script into `public/assets/sprites/flags.png`
    with an index of the cell of each code. The script is not part of the build; the sheet and the
    index are committed, credited in `CREDITS.md`.
 3. **Fallback**: the set already draws BV and SJ as NO, HM as AU and UM as US; BL and MF map to

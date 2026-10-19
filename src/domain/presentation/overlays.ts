@@ -47,12 +47,9 @@ function menuTextWidth(text: string): number {
   return (text.length - 1) * MENU_FONT_CELL.width + MENU_FONT_CELL.glyphWidth;
 }
 
-/** A two-letter code's advance: the flag starts `FLAG_GAP` after it (GDD v0.27 §9.1). */
-const CODE_ADVANCE = 2 * MENU_FONT_CELL.width;
-
 /** The flag's top for a line of menu text at `textY`: its 11 px centred on the 10 px cell. */
 function flagTop(textY: number): number {
-  return textY - 1;
+  return textY + Math.floor((MENU_FONT_CELL.height - FLAG_SIZE.height) / 2);
 }
 
 /** A line of menu text centred on the field at the top `y`. */
@@ -294,7 +291,11 @@ export function drawHighScores(render: RenderPort, view: HighScoresView, languag
     render.drawText(row.name, SCORE_COLUMNS.name, textY, 'menu');
     if (row.country !== '') {
       render.drawText(row.country, SCORE_COLUMNS.country, textY, 'menu');
-      render.drawFlag(row.country, SCORE_COLUMNS.country + CODE_ADVANCE + FLAG_GAP, flagTop(textY));
+      render.drawFlag(
+        row.country,
+        SCORE_COLUMNS.country + menuTextWidth(row.country) + FLAG_GAP,
+        flagTop(textY),
+      );
     }
     render.drawText(row.score, SCORE_COLUMNS.scoreEnd - menuTextWidth(row.score), textY, 'menu');
     if (row.level !== '') render.drawText(row.level, SCORE_COLUMNS.level, textY, 'menu');

@@ -34,13 +34,13 @@ export type SpriteId = (typeof SPRITE_IDS)[number];
  * French text is written in capitals without accents, arcade style, until the bitmap fonts of
  * the screens brick.
  */
+export type FontId = 'hud' | 'title' | 'menu' | 'far';
+
 /** A country flag's size in logical pixels (GDD v0.27 §9.1, ADR-0028). */
 export const FLAG_SIZE = { width: 16, height: 11 } as const;
 
 /** The gap between a country code and its flag, in logical pixels (GDD v0.27 §9.1). */
 export const FLAG_GAP = 2;
-
-export type FontId = 'hud' | 'title' | 'menu' | 'far';
 
 /**
  * Cell of the `hud` font in logical pixels: 3 × 5 glyphs drawn 2× (`glyphWidth` × 10) plus a 2 px

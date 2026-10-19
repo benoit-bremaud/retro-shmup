@@ -1,41 +1,49 @@
-# Local review — retro-shmup (feat/ui-feedback-form)
+# Local review — retro-shmup (feat/ui-country-flags)
 
 - Date: 2026-10-19
-- Scope: branch diff origin/main...HEAD (feedback form, #122, ADR-0027, GDD v0.26 §9.1)
-- Checks run: design (architecture-guardian) · security + correctness (opus review) · tests (test-engineer pass) · docs
-- Verdict: ship — all Must and Should fixed · Must 0 · Should 0 open · Nice 4 (below)
+- Scope: branch diff origin/main...HEAD (pixel country flags, #125, ADR-0028, GDD v0.27)
+- Checks run: design (architecture-guardian) · docs (doc-auditor) · tests (test-auditor) · security + correctness (read-only review)
+- Verdict: ship — every Must and Should fixed · Must 0 open · Should 0 open · Nice 5 (below)
 
 ## Pre-merge gate
+
 | Step | Result |
 |---|---|
-| 1 Tests | ✅ 1615 unit/integration (Vitest) · ✅ 6/6 browser smoke (`make smoke`) |
-| 2 Coverage | 99.3 % stmts / 95.8 % branches / 100 % funcs / 99.9 % lines (floor 80) · docs 100 % |
-| 3 SonarQube | ✅ PASSED |
-| 4 Secrets | ✅ gitleaks clean · no tracked .env · diff read: placeholder form address only |
-| 5 QA pass | ✅ full · console and page errors none · Tally stubbed by route · screenshots: `qa/2026-10-19-feedback-title-mobile.png`, `qa/2026-10-19-feedback-offer-desktop.png` |
-- Gate: **GREEN**
+| 1 Tests | ✅ 1629 unit/integration (Vitest) · ✅ 6 smoke (Chromium, Firefox, WebKit) |
+| 2 Coverage | tests 99.24 % stmts / 95.7 % branches / 100 % funcs / 99.91 % lines (floor 80) · docs 99.5 % (floor 90) |
+| 3 SonarQube | ✅ PASSED (make verify, before the fixes; re-run at the pre-push hook) |
+| 4 Secrets | ✅ gitleaks clean · only `.env.example` tracked · diff read: nothing sensitive |
+| 5 QA pass | ✅ full · console clean · screenshots: docs/architecture/qa/2026-10-19-flags-{country-choice,options,high-scores}.png |
 
-## 🔴 Must Have (fixed)
-- `device-input.ts` `[security|correctness]` · Esc opened the tab on the gesture prompt · `isBackKey` excluded from `keys: 'any'`.
-- `scene-machine.ts` `feedbackOpened` `[design|correctness]` · a second opening from the title reused set 1 · disarm after counting.
-- `device-input.ts` `openOnLift` vs `PressGuard` `[design|correctness]` · a lift the menu ignored opened a tab uncounted · an `opened` outcome now counts as the activation.
-- `scene-machine.ts` `step` `[correctness]` (found in QA) · a tap sent `device=keyboard` · a device change re-arms with a fresh context.
+- Gate: **GREEN** for the push; the merge gate re-runs on the merged SHA.
 
-## 🟡 Should Have (fixed)
-- Offer without the 1 s lock (hammered Enter opened a tab) · lock + disarm while locked.
-- `lastLevel` never assigned · `SLICE_LEVEL` constant until the snapshot carries a level.
-- Magic row index 3 · `rows.indexOf('feedback')`. Timings moved to `SceneTuning`. `releaseRun()` extracted (third copy).
-- Title font has no `?` (offer header threw) · *YOUR OPINION* / *TON AVIS*, GDD amended.
+## 🔴 Must Have
+
+- `src/domain/ports/render-port.ts` `[docs|design|security]` · `FLAG_SIZE` / `FLAG_GAP` split the `FontId` JSDoc from its type · **fixed**: constants moved below `FontId`.
+
+## 🟡 Should Have
+
+- `src/domain/presentation/overlays.ts` `[design]` · High scores flag 4 px after the code, 2 px elsewhere · **fixed**: `menuTextWidth(code) + FLAG_GAP` (x 120), `CODE_ADVANCE` removed, GDD/ADR/UML say x 120.
+- `src/domain/presentation/overlays.ts` `[design]` · magic `-1` in `flagTop` · **fixed**: derived from the font and flag heights.
+- `src/domain/scenes/country-choice.ts` `[design]` · `codeValid` duplicated `known` · **fixed**: one field.
+- `src/adapters/flag-bank.ts` `[docs]` · `get` undocumented · **fixed**.
+- GDD / ADR-0028 / CREDITS `[docs]` · "CC0" vs "public domain" · **fixed**: public domain everywhere; CREDITS pins commit a79ec57.
+- `tests/adapters/canvas2d-renderer.test.ts` `[tests]` · helper orphaned a JSDoc · **fixed**.
+- `tests/adapters/flag-bank.test.ts` `[tests]` · weak cell assertions, unused image id · **fixed**.
+- `tests/domain/country-choice.test.ts` `[tests]` · tautological same-string test · **removed**.
 
 ## 🔵 Nice to Have
-- Stale highlight within one frame (Up+Enter between two steps).
-- *OPEN BLOCKED* can last ~3 s after a refusal from the gesture prompt (title lock pauses the countdown).
-- Enter + click in one frame open two tabs, counted once.
-- `feedbackVersion` duplicated in `SceneMachine` and `FeedbackFlow` settings.
+
+- `src/adapters/flag-bank.ts:6` `[design]` · `SHEET_COLUMNS` duplicates the script's `COLUMNS`; the script could write it into `flag-codes.ts`.
+- `scripts/build-flag-sheet.py` `[security|design]` · parses `country-codes.ts` by text slicing, no usage check, Pillow not pinned; dev-only.
+- `src/app/main.ts` `[correctness]` · the options code shifts 18 px left once when the sheet arrives after the first frames.
+- `src/domain/presentation/overlays.ts` `[correctness]` · a 9-digit score would touch the flag (x 136 vs 138); level-1 scores stay far below.
+- `tests/domain/overlays.test.ts` `[tests]` · layout numbers in the flag tests duplicate constants.
 
 ## ⚪ Disagree / Intentional
-- `DeviceInput implements InputPort, LinkPort` · the tab must open in the input handler (ADR-0027 decision 5).
-- `window.open` without `noopener`, then `opener = null` · keeps the refused signal; COOP same-origin also isolates.
+
+- `src/adapters/canvas2d-renderer.ts` `[design]` · default `new FlagBank()` in the constructor keeps the older call sites; an unbaked bank answers `false` as ADR-0028 decision 3 requires.
 
 ## Per-dimension summary
-- Design: seams justified, small smells fixed · Docs: GDD/UML 04 updated, JSDoc 100 % · Tests: new feedback suites, regressions for each fix · Security: allowlisted URL, no PII, parse never throws · Correctness: four flow bugs fixed.
+
+- Design: no over-engineering, rules held (no browser in domain, no per-frame allocation). · Docs: one displaced JSDoc fixed, 99.5 %. · Tests: unit-level, port-mocked, assertions tightened. · Security: no finding; allowlisted codes, same-origin asset. · Correctness: layout verified, gap unified to 2 px.

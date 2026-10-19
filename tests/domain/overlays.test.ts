@@ -262,7 +262,7 @@ describe('country flags beside the code (GDD v0.27 §9.1, ADR-0028)', () => {
     expect(render.flags).toEqual([]);
   });
 
-  it('draws each high-score flag at x 122, none for a row without a country', () => {
+  it('draws each high-score flag 2 px after the code, at x 120, none for a row without a country', () => {
     const render = new RecordingRender();
     const row = { rank: '1', name: 'ALICE', country: 'FR', score: '100', level: '1' };
     drawHighScores(
@@ -271,6 +271,6 @@ describe('country flags beside the code (GDD v0.27 §9.1, ADR-0028)', () => {
       'en',
     );
     const code = render.texts.find((text) => text.text === 'FR');
-    expect(render.flags).toEqual([{ code: 'FR', x: 122, y: (code?.y ?? 0) - 1 }]);
+    expect(render.flags).toEqual([{ code: 'FR', x: 104 + 14 + 2, y: (code?.y ?? 0) - 1 }]);
   });
 });

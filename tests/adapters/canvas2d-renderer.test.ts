@@ -55,11 +55,6 @@ const bakeSurface: BakeSurface = {
 };
 
 /** Bakes every sprite into its own stand-in canvas and returns them by id. */
-/** A fresh image per baked flag, so each code's canvas is its own. */
-function newBakeCanvas(): BakeCanvas {
-  return { surface: bakeSurface, image: {} as CanvasImageSource };
-}
-
 function bakeOwnCanvases(sprites: SpriteBank): Map<SpriteId, CanvasImageSource> {
   const canvases = new Map<SpriteId, CanvasImageSource>();
   sprites.bake(image, image, () => ({ surface: bakeSurface, image: {} as CanvasImageSource }));
@@ -68,6 +63,11 @@ function bakeOwnCanvases(sprites: SpriteBank): Map<SpriteId, CanvasImageSource> 
     if (baked !== undefined) canvases.set(id, baked.image);
   }
   return canvases;
+}
+
+/** A fresh image per baked flag, so each code's canvas is its own. */
+function newBakeCanvas(): BakeCanvas {
+  return { surface: bakeSurface, image: {} as CanvasImageSource };
 }
 
 function setup(): {

@@ -45,6 +45,7 @@ export class FlagBank {
     staged.forEach((image, code) => this.baked.set(code, image));
   }
 
+  /** The baked flag of `code`, or `undefined` (not baked yet, or no flag): the code alone then. */
   get(code: string): CanvasImageSource | undefined {
     return this.baked.get(code);
   }

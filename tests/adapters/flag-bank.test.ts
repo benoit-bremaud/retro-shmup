@@ -19,7 +19,7 @@ function recordingCanvas(sources: string[]): BakeCanvas {
     translate: () => undefined,
     scale: () => undefined,
   };
-  return { surface, image: { id: sources.length } as unknown as CanvasImageSource };
+  return { surface, image: {} as CanvasImageSource };
 }
 
 /** The codes shown alone (ADR-0028 decision 3): no file in the set, no parent, or not CC0 (GG). */
@@ -34,9 +34,11 @@ describe('FlagBank (ADR-0028)', () => {
     const sources: string[] = [];
     const bank = new FlagBank();
     bank.bake(sheet, () => recordingCanvas(sources));
+    expect(sources).toHaveLength(FLAG_SHEET_CODES.length);
     expect(sources[0]).toBe('0,0,16,11,false');
     expect(sources[17]).toBe('16,11,16,11,false');
-    expect(bank.get('FR')).toBeDefined();
+    const fr = FLAG_SHEET_CODES.indexOf('FR');
+    expect(sources[fr]).toBe([(fr % 16) * 16, Math.floor(fr / 16) * 11, 16, 11, false].join(','));
   });
 
   it('gives an aliased territory its parent flag', () => {
