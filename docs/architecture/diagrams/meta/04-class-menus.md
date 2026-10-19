@@ -438,6 +438,12 @@ classDiagram
   returns `cancelled`. `Options.country` is absent, `none` or a code of `COUNTRY_CODES`; the
   options row shows the code, or `--`, as a `TextValue`. `NameEntry` has the name only and copies
   the saved code into the entry. The grid is 32 px tall per row from y 104 (#115).
+- **Flags (v0.27, ADR-0028, #125)**: the overlays that draw a country code — the options'
+  *Country* `TextValue`, `drawHighScores` (code at x 104, `drawFlag` at x 122) and the country
+  choice's slots once `CountryChoice.choice` is a code of `COUNTRY_CODES` — call
+  `RenderPort.drawFlag(code, codeRight + 2, textTop - 1)` right after the code; a `false` return
+  leaves the code alone. The options row and the slots centre the text plus 18 px as one line.
+  No scene, view or save field changes: the flag is presentation only.
 - **Name entry, as built (G2-3, owner-approved 2026-10-15)**: the cells are data (`NAME_CELLS`,
   `COUNTRY_CELLS`, characters eight to a row, then the actions; an action never straddles two
   rows). `PressGuard` (`src/domain/scenes/menu-input.ts`, with the direction thresholds) holds the
