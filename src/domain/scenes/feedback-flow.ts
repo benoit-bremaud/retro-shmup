@@ -66,6 +66,14 @@ export class FeedbackFlow {
     return this.settings.link.takeOutcome();
   }
 
+  /**
+   * The context changed (the device): the next step rebuilds the address. The link and its
+   * outcome stay, so an opening by the very input that changed the device is still read.
+   */
+  refresh(): void {
+    this.armed = undefined;
+  }
+
   /** Leaving the screens that offer the form: nothing stays armed, no outcome is kept. */
   disarm(): void {
     if (this.armed === undefined) return;

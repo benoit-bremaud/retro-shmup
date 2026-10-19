@@ -2010,6 +2010,13 @@ describe('SceneMachine — the feedback form (GDD v0.26 §9.1, ADR-0027)', () =>
       expect(link.armed?.url).toContain('device=touch');
     });
 
+    it('keeps an opening made by the input that changed the device (the gesture prompt)', () => {
+      const { machine, host, link } = onTitleWith(FORM);
+      link.outcome = 'opened';
+      machine.step(DT, { ...frame(0), device: 'touch' });
+      expect(host.saved.map((options) => options.feedbackCount)).toEqual([1]);
+    });
+
     it('counts and saves an opening, and stays on the title', () => {
       const { machine, host, link } = onFeedbackRow();
       link.outcome = 'opened';

@@ -608,7 +608,7 @@ export class SceneMachine {
     if (traits.scrolls && !traits.drawsRun) this.backgroundSteps += 1;
     this.steps += 1;
     // The form's address names the device: a new one re-arms it with a fresh context (ADR-0027).
-    if (frame.device !== this.lastDevice) this.feedback.disarm();
+    if (frame.device !== this.lastDevice) this.feedback.refresh();
     this.lastDevice = frame.device;
     this.handlers[this.current].step(dt, frame);
     this.audio.music(this.track());
