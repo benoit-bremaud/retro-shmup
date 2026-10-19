@@ -5,7 +5,7 @@ import type { Language } from '../i18n/messages';
 export const FEEDBACK_SETS = 3;
 
 /** The only form host a build may hold (ADR-0027 decision 1), checked at build and at start. */
-export const FEEDBACK_HOST = 'https://tally.so/';
+const FEEDBACK_HOST = 'https://tally.so/';
 
 /** The run context sent to the form as its hidden fields (ADR-0027 decision 3); never personal. */
 export interface FeedbackContext {

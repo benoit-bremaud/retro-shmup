@@ -1957,7 +1957,7 @@ describe('SceneMachine — the feedback form (GDD v0.26 §9.1, ADR-0027)', () =>
     const fixture = onTitleWith(FORM);
     afterRun(fixture);
     expect(fixture.machine.scene).toBe(Scene.FeedbackOffer);
-    idle(fixture.machine); // past the menu's opening guard
+    idle(fixture.machine, 70); // past the offer's 1 s lock, as on the title
     return fixture;
   }
 
@@ -2008,6 +2008,22 @@ describe('SceneMachine — the feedback form (GDD v0.26 §9.1, ADR-0027)', () =>
       const { machine, host, link } = onFeedbackRow();
       link.outcome = 'opened';
       press(machine, Button.Confirm);
+      expect(machine.scene).toBe(Scene.Title);
+      expect(host.saved.map((options) => options.feedbackCount)).toEqual([1]);
+    });
+
+    it('rebuilds the address after an opening: the second one shows set 2', () => {
+      const { machine, link } = onFeedbackRow();
+      expect(link.armed?.url).toContain('set=1');
+      link.outcome = 'opened';
+      press(machine, Button.Confirm); // its release step arms the title again
+      expect(link.armed?.url).toContain('set=2');
+    });
+
+    it('counts an opened tab even when no row was activated, as on a lift the menu ignored', () => {
+      const { machine, host, link } = onTitleWith(FORM); // the highlight is on Play
+      link.outcome = 'opened';
+      idle(machine, 1);
       expect(machine.scene).toBe(Scene.Title);
       expect(host.saved.map((options) => options.feedbackCount)).toEqual([1]);
     });
@@ -2067,6 +2083,25 @@ describe('SceneMachine — the feedback form (GDD v0.26 §9.1, ADR-0027)', () =>
       expect(fixture.machine.scene).toBe(Scene.Title);
     });
 
+    it('counts an opened tab even when no row was activated', () => {
+      const { machine, host, link } = onOffer();
+      link.outcome = 'opened';
+      idle(machine, 1);
+      expect(machine.scene).toBe(Scene.Title);
+      expect(host.saved.map((options) => options.feedbackCount)).toEqual([1]);
+    });
+
+    it('ignores Confirm and arms nothing during its 1 s lock', () => {
+      const fixture = onTitleWith(FORM);
+      afterRun(fixture);
+      expect(fixture.machine.scene).toBe(Scene.FeedbackOffer);
+      expect(fixture.link.armed).toBeUndefined();
+      for (let i = 0; i < 30; i += 1) fixture.machine.step(DT, pressed(Button.Confirm));
+      expect(fixture.machine.scene).toBe(Scene.FeedbackOffer);
+      idle(fixture.machine, 40);
+      expect(fixture.link.armed).toMatchObject({ keys: 'confirm' });
+    });
+
     it('leaves to the title on LATER, nothing counted, nothing armed', () => {
       const { machine, host, link } = onOffer();
       downBy(machine, 1);
@@ -2090,7 +2125,7 @@ describe('SceneMachine — the feedback form (GDD v0.26 §9.1, ADR-0027)', () =>
 
     it('leaves to the title after 20 s without input', () => {
       const { machine } = onOffer();
-      idle(machine, 20 * 60 - 12);
+      idle(machine, 20 * 60 - 80);
       expect(machine.scene).toBe(Scene.FeedbackOffer);
       idle(machine, 20);
       expect(machine.scene).toBe(Scene.Title);
@@ -2098,11 +2133,11 @@ describe('SceneMachine — the feedback form (GDD v0.26 §9.1, ADR-0027)', () =>
 
     it('restarts the 20 s on every input', () => {
       const { machine } = onOffer();
-      idle(machine, 20 * 60 - 30);
+      idle(machine, 20 * 60 - 100);
       const active = createIntentFrame();
       active.active = true;
       machine.step(DT, active);
-      idle(machine, 20 * 60 - 30);
+      idle(machine, 20 * 60 - 100);
       expect(machine.scene).toBe(Scene.FeedbackOffer);
     });
 
@@ -2120,7 +2155,7 @@ describe('SceneMachine — the feedback form (GDD v0.26 §9.1, ADR-0027)', () =>
       press(first.machine, Button.Confirm);
       idle(first.machine, 70);
       afterRun(first);
-      idle(first.machine, 1); // the offer arms on its first step
+      idle(first.machine, 70); // past the offer's lock, it arms
       expect(first.link.armed?.url).toContain('set=2');
     });
 

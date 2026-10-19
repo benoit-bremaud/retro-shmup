@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createSample } from '../../src/adapters/input/arbitration';
-import { KeyboardModule } from '../../src/adapters/input/keyboard';
+import { isBackKey, isConfirmKey, KeyboardModule } from '../../src/adapters/input/keyboard';
 import { DEFAULT_BINDINGS } from '../../src/domain/input/default-bindings';
 
 function keyboard(): KeyboardModule {
@@ -41,5 +41,22 @@ describe('KeyboardModule — sequence numbers for the arbitration (ADR-0018 deci
     module.keyDown('ArrowLeft', true, 2);
     module.keyDown('ArrowLeft', false, 3);
     expect(seqs(module)).toEqual({ start: 1, input: 1 });
+  });
+});
+
+describe('the fixed keys that open or refuse an armed link (ADR-0027 decision 5)', () => {
+  it.each(['Enter', 'NumpadEnter'])('treats %s as a confirm key, not a back key', (code) => {
+    expect(isConfirmKey(code)).toBe(true);
+    expect(isBackKey(code)).toBe(false);
+  });
+
+  it('treats Escape as a back key, not a confirm key', () => {
+    expect(isBackKey('Escape')).toBe(true);
+    expect(isConfirmKey('Escape')).toBe(false);
+  });
+
+  it.each(['Space', 'KeyQ', 'ArrowUp', ''])('treats %j as neither', (code) => {
+    expect(isConfirmKey(code)).toBe(false);
+    expect(isBackKey(code)).toBe(false);
   });
 });

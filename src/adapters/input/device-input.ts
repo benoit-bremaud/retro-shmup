@@ -15,7 +15,7 @@ import type { DeviceSamples } from './arbitration';
 import { GamepadModule } from './gamepad';
 import type { GamepadList } from './gamepad';
 import { KeyLabels } from './key-labels';
-import { isConfirmKey, KeyboardModule } from './keyboard';
+import { isBackKey, isConfirmKey, KeyboardModule } from './keyboard';
 import { PointerModule } from './pointer';
 import type { CanvasRect, PointerEventLike } from './pointer';
 
@@ -140,7 +140,9 @@ export class DeviceInput implements InputPort, LinkPort {
       this.seq += 1;
       this.onGesture();
       const keys = this.armedLink?.keys;
-      if (!event.repeat && (keys === 'any' || (keys === 'confirm' && isConfirmKey(event.code)))) {
+      const opens =
+        keys === 'confirm' ? isConfirmKey(event.code) : keys === 'any' && !isBackKey(event.code);
+      if (!event.repeat && opens) {
         this.openArmed();
       }
       this.keyLabels.learn(event.code, event.key);

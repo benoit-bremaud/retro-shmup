@@ -922,6 +922,14 @@ describe('DeviceInput — opening an armed link inside a gesture (ADR-0027 decis
     expect(input.takeOutcome()).toBe('opened');
   });
 
+  it('does not open on Escape when the keys are any: it goes back', () => {
+    const { env, input } = linkSetup();
+    input.arm({ url: URL, band: undefined, keys: 'any' });
+    env.down('Escape');
+    expect(env.opened).toEqual([]);
+    expect(input.takeOutcome()).toBe('none');
+  });
+
   it('never opens on a key when the keys are none, even Enter', () => {
     const { env, input } = linkSetup();
     input.arm({ url: URL, band: BAND, keys: 'none' });

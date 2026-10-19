@@ -1,11 +1,11 @@
 import { feedbackUrl } from '../feedback/feedback-link';
 import type { FeedbackContext } from '../feedback/feedback-link';
-import { toSteps } from '../game/tuning';
+import { SceneTuning, toSteps } from '../game/tuning';
 import { NO_LINK } from '../ports/link-port';
 import type { ArmedLink, LinkOutcome, LinkPort } from '../ports/link-port';
 
 /** How long *OPEN BLOCKED* shows after a refused tab (GDD v0.26 §9.1). */
-const BLOCKED_STEPS = toSteps(2);
+const BLOCKED_STEPS = toSteps(SceneTuning.openBlockedSeconds);
 
 /** Where an opening is armed, without its address: a menu row's band and keys, or the prompt's. */
 export type ArmedAt = Omit<ArmedLink, 'url'>;

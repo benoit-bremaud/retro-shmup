@@ -252,7 +252,9 @@ const ENDING_STEPS = toSteps(SceneTuning.endingSeconds);
 const ATTRACT_IDLE_STEPS = toSteps(SceneTuning.attractIdleSeconds);
 const ATTRACT_STEPS = toSteps(SceneTuning.attractSeconds);
 /** The feedback offer leaves after 20 s without input (GDD v0.26 §9.1). */
-const OFFER_IDLE_STEPS = toSteps(20);
+const OFFER_IDLE_STEPS = toSteps(SceneTuning.feedbackOfferIdleSeconds);
+/** The vertical slice has one level; the run snapshot gains its level with level 2. */
+const SLICE_LEVEL = 1;
 
 /** The title's rows; *Feedback* is last, only when the build holds a form address (§9.1). */
 type TitleRow = 'play' | 'highScores' | 'options' | 'feedback';
@@ -347,7 +349,6 @@ export class SceneMachine {
   private readonly feedbackVersion: string;
   /** The last run's score and level, sent with the form; 0 and 1 before any run (§9.1). */
   private lastScore = 0;
-  private lastLevel = 1;
   /** The high scores were reached from a run end, so they lead to the feedback offer. */
   private highScoresAfterRun = false;
   private readonly pauseMenu = new Menu(['resume', 'options', 'quit'] as const, {
@@ -456,7 +457,9 @@ export class SceneMachine {
         : ['play', 'highScores', 'options'],
     );
     this.titleScreen = { menu: this.titleMenu };
-    this.titleArmings = this.feedback.enabled ? rowArmings(this.titleMenu, 3) : undefined;
+    this.titleArmings = this.feedback.enabled
+      ? rowArmings(this.titleMenu, this.titleMenu.rows.indexOf('feedback'))
+      : undefined;
     this.controls = new ControlsScreen(this.options, host);
     this.handlers = this.buildHandlers();
     this.applyVolumes();
@@ -641,7 +644,8 @@ export class SceneMachine {
     const onFeedback = this.titleMenu.rows[this.titleMenu.highlighted] === 'feedback' ? 1 : 0;
     const outcome = this.feedback.step(this.titleArmings?.[onFeedback], this.feedbackContext);
     const row = this.stepMenu(this.titleMenu, frame);
-    if (row === 'feedback') {
+    // An opened tab counts even when the menu saw no activation (a drag, a guarded release).
+    if (row === 'feedback' || outcome === 'opened') {
       this.feedbackOutcome(outcome, frame);
     } else if (row === 'options') {
       this.openMenu(Scene.TitleOptions, frame);
@@ -660,7 +664,7 @@ export class SceneMachine {
     count: this.options.feedbackCount ?? 0,
     version: this.feedbackVersion,
     score: this.lastScore,
-    level: this.lastLevel,
+    level: SLICE_LEVEL,
     country: this.options.country,
     device: this.lastDevice,
     lang: this.options.language,
@@ -678,6 +682,7 @@ export class SceneMachine {
   }
 
   private feedbackOpened(frame: Readonly<IntentFrame>): void {
+    this.feedback.disarm(); // the next arming builds the address of the next question set
     this.options.countFeedback();
     this.host.optionsChanged(this.options);
     if (this.current !== Scene.Title) this.toTitle(frame);
@@ -692,19 +697,24 @@ export class SceneMachine {
       this.toTitle(frame);
       return;
     }
-    this.run = undefined;
-    this.presenter = undefined;
+    this.releaseRun();
     this.openMenu(Scene.FeedbackOffer, frame);
+    this.lockLeft = LOCK_STEPS; // as on the title: hammering Confirm never opens a tab
   }
 
   // Give feedback opens the form; Later, back or 20 s without input return to the title. Pause
   // is ignored, as on the high scores (GDD v0.26 §9.1).
   private stepFeedbackOffer(_dt: number, frame: Readonly<IntentFrame>): void {
     this.sceneSteps = frame.active ? 0 : this.sceneSteps + 1;
+    if (this.locked()) {
+      this.offerMenu.ignore(frame);
+      this.feedback.disarm();
+      return;
+    }
     const onGive = this.offerMenu.highlighted === 0 ? 1 : 0;
     const outcome = this.feedback.step(this.offerArmings[onGive], this.feedbackContext);
     const row = this.stepMenu(this.offerMenu, frame);
-    if (row === 'giveFeedback') this.feedbackOutcome(outcome, frame);
+    if (row === 'giveFeedback' || outcome === 'opened') this.feedbackOutcome(outcome, frame);
     else if (row === 'later' || this.backed(frame) || this.sceneSteps >= OFFER_IDLE_STEPS) {
       this.toTitle(frame);
     }
@@ -1005,8 +1015,7 @@ export class SceneMachine {
     } else if (exit === 'entered') {
       const rank = this.table.insert(this.nameEntry.entry(this.host.today()));
       this.host.highScoresChanged(this.table.entries);
-      this.run = undefined;
-      this.presenter = undefined;
+      this.releaseRun();
       this.openHighScores(rank);
       this.highScoresAfterRun = true;
     }
@@ -1041,10 +1050,15 @@ export class SceneMachine {
 
   /** The run is released at the title, locked for 1 s so hammering never starts a new run. */
   private toTitle(frame: Readonly<IntentFrame>): void {
-    this.run = undefined;
-    this.presenter = undefined;
+    this.releaseRun();
     this.openMenu(Scene.Title, frame);
     this.lockLeft = LOCK_STEPS;
+  }
+
+  /** The run and its presenter are released. */
+  private releaseRun(): void {
+    this.run = undefined;
+    this.presenter = undefined;
   }
 
   /** Every scene change goes through here, so each scene's timer starts at 0. */
