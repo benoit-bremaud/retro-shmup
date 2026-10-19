@@ -49,7 +49,7 @@ export class CountryChoice implements NameEntryView {
       this.letters.push(preselected.charAt(0), preselected.charAt(1));
     }
     this.checkCode();
-    this.countryGrid.reset(now, opening, this.known !== '' ? COUNTRY_OK : 0);
+    this.countryGrid.reset(now, opening, this.known === '' ? 0 : COUNTRY_OK);
   }
 
   get grid(): LetterGridView {
