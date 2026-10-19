@@ -95,12 +95,15 @@ stateDiagram-v2
   InRun --> GameOver : run outcome is GAME_OVER
 
   Ending --> NameEntry : confirm or after(ending time) [score enters the top 10]
-  Ending --> FeedbackOffer : confirm or after(ending time) [otherwise]
+  Ending --> FeedbackOffer : confirm or after(ending time) [otherwise, form address set]
+  Ending --> Title : confirm or after(ending time) [otherwise, no form address]
   GameOver --> NameEntry : confirm or after(game over time) [score enters the top 10]
-  GameOver --> FeedbackOffer : confirm after the lock, or after(game over time) [otherwise]
+  GameOver --> FeedbackOffer : confirm after the lock, or after(game over time) [otherwise, form address set]
+  GameOver --> Title : confirm after the lock, or after(game over time) [otherwise, no form address]
   NameEntry --> HighScores : OK / save the table with the saved country
-  NameEntry --> FeedbackOffer : SKIP or OK on an empty name
-  HighScores --> FeedbackOffer : back, confirm or a tap [after a run]
+  NameEntry --> FeedbackOffer : SKIP or OK on an empty name [form address set]
+  NameEntry --> Title : SKIP or OK on an empty name [no form address]
+  HighScores --> FeedbackOffer : back, confirm or a tap [after a run, form address set]
   FeedbackOffer --> Title : give feedback / open the form, count + 1
   FeedbackOffer --> Title : later, back or after(20 s)
 ```
