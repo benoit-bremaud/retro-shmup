@@ -1,6 +1,6 @@
 # ADR-0006: Player data in localStorage, versioned, no backend in 1.0
 
-**Status:** Accepted — 2026-10-07
+**Status:** Accepted — 2026-10-07. Decision 1 clarified by ADR-0027 (opening an external page in a new tab at the player's request is not a game network call).
 
 ## Context
 

@@ -177,6 +177,18 @@ Every numeric value is an initial setting to be tuned in playtests; the rules th
   CI keeps a light `ci.yml` (lint, typecheck, format, tests, build) and the security workflows
   (Gitleaks, CodeQL, Dependency Review, OSSF Scorecard).
 
+## Privacy
+
+The game keeps everything on your device (`localStorage`): your options, your country choice and
+the local top 10. It makes no network request and has no account.
+
+The optional **feedback** row opens an external form (Tally, hosted in the EU) in a new tab. It
+receives only what you type there and a few context values in its address: the question set, the
+game version, your last score and level, your country code if you chose one, the device you used
+and the game language — never your name. The form is anonymous: please do not write names,
+e-mail addresses or other personal data in it. Answers are read by the author to improve the game
+and deleted after 12 months.
+
 ## Licence
 
 The split is recorded in ADR-0005:

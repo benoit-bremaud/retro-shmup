@@ -61,7 +61,8 @@ step depends on them.
       charge, chain and score carry over between levels.
   11. After level 3 the game shows the Ending; the game compares the final score with the local
       top 10 (*run end*).
-  12. The game returns to the title screen.
+  12. *(v0.26)* The game offers UC8 (*Give feedback* or *Later*) when the build holds a form
+      address, then returns to the title screen.
 - **Extensions**:
   - 1a. Start comes from a gamepad before any click, tap or key press: the game asks for one,
     then continues at step 2 (browsers unlock audio and fullscreen only on such a gesture).
@@ -86,6 +87,9 @@ step depends on them.
   - 9a. Vertical slice (GDD v0.10 §9.1, ADR-0022): the level list holds level 1 only, so after
     its results the run is cleared; since GDD v0.16 (G2) it goes to the Ending and the top-10
     comparison (steps 10 and 11), the next levels arriving with level 2.
+  - 1a. *(v0.26)* No country choice is saved: the game shows the country grid, preselected from
+    the browser language; Player confirms a code with *OK* or chooses *NONE*, which is saved, then
+    step 2; `back` on an empty code returns to the title. Player changes it later in UC5.
   - 11a. The final score enters the top 10: UC3 runs at *run end*, then step 12.
   - *a. At any moment of play (steps 4–8), Player pauses: UC2.
   - *b. At any moment of play, the tab is hidden, the window loses focus, the gamepad in use
@@ -128,21 +132,40 @@ step depends on them.
   nothing crashes (ADR-0006).
 - **Main success scenario**:
   1. The game shows the arcade name entry with the score and the letter grid (GDD v0.16 §9.1).
-  2. Player picks up to 8 characters (A–Z, 0–9, space) on the grid and confirms with *OK*; then,
-     on the same grid with the letters only, keeps, changes or clears (*NONE*) the country
-     preselected from the browser language's region, and confirms; there is no timer.
+  2. Player picks up to 8 characters (A–Z, 0–9, space) on the grid and confirms with *OK*; there
+     is no timer. *(v0.26)* The entry takes the country saved before the first run (UC1 1a), with
+     no country step.
   3. The game inserts the entry at its rank — after earlier entries of equal score — keeps the 10
      best, and saves the table.
   4. The game shows the high scores with the new entry highlighted.
-  5. Player returns to the title screen.
+  5. Player leaves the high scores; UC1 step 12 follows (the feedback offer, then the title).
 - **Extensions**:
   - 2a. The letter picker works the same on keyboard, gamepad, touch and mouse.
-  - 2b. Player skips the entry (*SKIP*), or confirms an empty name: nothing is recorded and the
-    game returns to the title (owner decision, ADR-0021 amendment).
-  - 2c. Player presses `back`: the last character (or country letter) is deleted.
-  - 2d. The two letters typed are no country code: *OK* is not shown until they are.
+  - 2b. Player skips the entry (*SKIP*), or confirms an empty name: nothing is recorded and
+    UC1 step 12 follows (owner decision, ADR-0021 amendment).
+  - 2c. Player presses `back`: the last character is deleted.
   - 3a. Storage is unavailable or full: the save is skipped silently; the in-memory table is
     shown for the session.
+
+### UC8 — Give feedback on the game *(v0.26)*
+
+- **Primary actor**: Player. **Secondary actor**: the feedback form (external, Tally, owned by
+  the owner). **Level**: user goal.
+- **Preconditions**: the build holds a form address (ADR-0027).
+- **Success guarantee**: the form opens in a new tab with one question set and the run's context;
+  the game counts the opening.
+- **Main success scenario**:
+  1. Player chooses *Give feedback* on the offer after a run end, or *Feedback* on the title.
+  2. The game opens the form in a new tab with the set, version, score, level, country, device and
+     language (GDD v0.26 §9.1), never the name.
+  3. Player answers two one-click questions, the bug question and, if they wish, a free text, in
+     the form.
+  4. The game, still open, shows the title.
+- **Extensions**:
+  - 1a. Player chooses *Later* (or `back`, or waits 20 s) on the offer: the title shows, nothing
+    is opened.
+  - 1b. Player uses a gamepad: the gesture prompt asks for a click, tap or key, which opens it.
+  - 2a. The browser refuses the new tab: *OPEN BLOCKED* shows for 2 s and the offer stays.
 
 ### UC4 — Consult the high scores
 

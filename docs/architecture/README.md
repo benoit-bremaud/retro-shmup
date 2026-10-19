@@ -72,6 +72,7 @@ Status: complete for 1.0 (2026-10-08); the bomb sequence added with the player-k
 | `gameplay` | [05 state — boss](diagrams/gameplay/05-state-boss.md) | Boss phases and timer |
 | `meta` | [02 sequence — record a high score](diagrams/meta/02-sequence-record-high-score.md) | A finished run's score into the table and the save (G2) |
 | `meta` | [02 sequence — remap capture](diagrams/meta/02-sequence-remap-capture.md) | Rebinding one slot: capture, swap, save (G1b) |
+| `meta` | [02 sequence — country and feedback](diagrams/meta/02-sequence-country-feedback.md) | The country asked at the first Play, the feedback form opened in a new tab (v0.26) |
 | `meta` | [04 class — menus](diagrams/meta/04-class-menus.md) | One menu model, the options and their save (G1a) |
 | `meta` | [05 state — scenes](diagrams/meta/05-state-scenes.md) | The screens of GDD §9.1 and their transitions |
 | `meta` | [06 class — version label](diagrams/meta/06-class-version-label.md) | The build-time version shown as page text (v0.20) |
