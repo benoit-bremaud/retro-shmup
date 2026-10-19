@@ -34,6 +34,7 @@ classDiagram
     <<interface, domain>>
     +drawSprite(id: SpriteId, x: number, y: number, frame?: number, flipX?: boolean) boolean
     +drawRect(x, y, w, h, colour) void
+    +drawFlag(code: string, x: number, y: number) boolean
   }
   class RunPresenter {
     <<domain/presentation>>
@@ -74,10 +75,24 @@ classDiagram
     <<adapters>>
     -sprites: SpriteBank
     +drawSprite(id, x, y, frame) boolean
+    -flags: FlagBank
+    +drawFlag(code, x, y) boolean
+  }
+  class FLAG_CELLS {
+    <<const, adapters/flag-atlas, v0.27>>
+    code to cell index of flags.png
+    aliases BV SJ to NO, HM to AU, UM to US, BQ to NL
+    no entry, code alone
+  }
+  class FlagBank {
+    <<adapters/flag-bank, v0.27>>
+    -baked: Map of code to cell, built once
+    +bake(sheet) void
+    +get(code: string) FlagCell | undefined
   }
   class main {
     <<app/main.ts>>
-    loads the two sheets, then bakes
+    loads the two sheets and flags.png, then bakes
   }
   RenderPort <|.. Canvas2DRenderer
   RunPresenter --> RenderPort : drawSprite, else drawRect shapes
@@ -89,9 +104,18 @@ classDiagram
   SpriteBank ..> SPRITE_CELLS
   SPRITE_CELLS ..> SpriteCell
   main ..> SpriteBank : bake once loaded
+  Canvas2DRenderer --> FlagBank : get
+  FlagBank ..> FLAG_CELLS
+  main ..> FlagBank : bake once loaded
 ```
 
 ## Notes
+
+- **Flags (v0.27, ADR-0028, #125)**: `drawFlag` takes top-left coordinates like `drawText`, draws
+  the 16 × 11 cell of the code and returns `true`; with no cell (AQ, a flag missing from the set)
+  or before the sheet is baked it draws nothing and returns `false`, and the caller shows the code
+  alone. The aliases live in `FLAG_CELLS`, so the domain knows no image, cell or alias. The lookup
+  is a `Map.get` on a map built once: no allocation per frame.
 
 - **Coordinates**: unlike `drawRect` and `drawText` (top-left), `drawSprite`'s (x, y) is the
   **centre** of the sprite — the port's JSDoc says so. The adapter computes the top-left
