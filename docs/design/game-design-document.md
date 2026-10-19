@@ -888,7 +888,8 @@ and `back`: it pauses in play and resumes from the pause menu. *(v0.7)* A change
 **Name entry** *(v0.9; v0.2: three initials)*: a name of **up to 8 characters** from A–Z, 0–9
 and space, entered with an arcade **letter picker** usable on keyboard, gamepad, touch and mouse
 (no system keyboard, no HTML field); no timer. The entry is optional: **skip** stores the name
-`???`. Then an optional **country**, preselected from the region of the browser language (for
+`???`. *(Superseded in v0.26 for the country: it is chosen once before the first run, see the
+country choice below.)* Then an optional **country**, preselected from the region of the browser language (for
 example `fr-FR` → `FR`; none when the language has no region), changeable or clearable; no
 network call, no geolocation, nothing inferred beyond the language setting (privacy, PRIV-1). The
 country is shown as its 2-letter ISO 3166-1 code in the bitmap font, and as a pixel flag once the
@@ -909,7 +910,8 @@ everything else in the menu font.
   the gamepad's `B`) deletes the last one and never leaves; the name stops growing at eight
   characters. On *OK* the name is trimmed at both ends; an empty name, or one of spaces only,
   records nothing, like *SKIP* (ADR-0021, amended). The heading is *YOUR NAME* / *TON NOM*.
-- **Country**, the next step: the same grid with the letters only, then *DEL* / *EFF*, *NONE* /
+- **Country**, the next step *(superseded in v0.26: this step left the name entry; its grid, keys
+  and cursor rule are now those of the country choice screen below)*: the same grid with the letters only, then *DEL* / *EFF*, *NONE* /
   *AUCUN* (two cells wide: no country) and *OK* (30 places, 4 rows), under the two-letter code
   being built, preselected from the browser language (ADR-0021 decision 4). *OK* shows, and the
   cursor stops on it, only when the code is complete and in the allowlist; until then the cursor
@@ -917,7 +919,7 @@ everything else in the menu font.
   *PAYS*. The country step opens with the cursor on *OK* when the preselected code is known,
   else on `A` *(owner, 2026-10-15)*; there is no way back to the name, and *NONE* ends the entry
   at once.
-- **As built** *(G2-3, owner 2026-10-15)*: the heading at y 48, the eight (or two) slots 16 px
+- **As built** *(G2-3, owner 2026-10-15; the geometry superseded by v0.26 #115 below)*: the heading at y 48, the eight (or two) slots 16 px
   wide centred at y 88, the grid from y 120 (rows 20 px, *SKIP* ending at y 240); the name grid
   is 39 cells on 40 places, the country grid 29 cells on 30 places, the last two empty. A
   mostly-vertical tilt moves up or down, any other (a diagonal) sideways; left and right wrap
@@ -930,7 +932,8 @@ everything else in the menu font.
   choice, or no country when the player chose *NONE*. *OK* on the name, or `confirm` on it, stores
   the entry at once.
 - *(v0.26, #115)* **Rows for touch**: the grid's rows are as tall as fit, by the rule of the menus
-  (v0.25): `min(32, max(16, floor(free height / rows)))`, the columns staying 30 px (eight to a
+  (v0.25): `min(32, max(16, floor(free height / rows)))`, the free height being
+  320 − 104 − 16 = 200 px under the slots with a 16 px bottom margin, the columns staying 30 px (eight to a
   row fill the 240 px field). The heading moves to y 40 and the slots to y 72; the grid starts at
   y 104. The name grid's 5 rows and *SKIP* (6 rows) and the country grid's 4 rows get 32 px each,
   about 43 CSS px on a 390 px-wide phone in portrait instead of 27. The cell is the whole 30 × 32
@@ -962,7 +965,8 @@ the browser language, ADR-0021 decision 4), heading *COUNTRY* / *PAYS*, with the
   or a save written before v0.26); *OK* or *NONE* saves the choice (a code, or "none") and the run
   starts as from the title (through the gesture prompt when a gamepad starts before any gesture).
   `back` deletes a letter, and on an empty code returns to the title without saving: the question
-  comes back at the next *Play*.
+  comes back at the next *Play*. The menus' 150 ms opening guard applies (the *Play* tap never
+  lands on a cell); the cursor starts on *OK* when the preselected code is known, else on `A`.
 - The options gain a *COUNTRY* / *PAYS* row (§9.3) showing the saved code, or `--` for none or no
   choice yet; activating it opens the same screen, which returns to the options, `back` included.
 - The code is shown in the bitmap font until the pixel flags land with the assets brick (G4).
@@ -991,16 +995,21 @@ what does not and what they would change, without the owner asking each by hand.
   maybe / no); 2 controls (precise / fine / frustrating) and bullet readability (I see everything /
   sometimes lost / unreadable); 3 the boss (too easy / fine / too hard) and what made you lose
   (bullets / collisions / the boss / too few power-ups). In reserve, for later sets: level length,
-  favourite weapon, music and sounds, overall rating, age band, P frequency.
+  favourite weapon, music and sounds, overall rating, P frequency. *(An age band, picked by the
+  owner, waits for the privacy review: the testers include children, GDPR Art. 8.)*
+- **Privacy**: the form opens with a line saying the answers are anonymous and asking not to write
+  names, e-mails or other personal data; the form keeps no IP or partial answers and the owner
+  deletes answers after 12 months; the README's privacy section describes it (ADR-0027).
 - **The context sent**, as the address's query parameters (the form's hidden fields), never
-  personal data: `set`, `version` (§9.9, without the commit), `score` and `level` of the last run
-  (0 and 1 from the title before any run of the session), `country` (the saved code, or empty),
+  personal data: `set`, `version` (§9.9, the `MAJOR.MINOR.PATCH` string only, without the commit), `score` and `level` of the last run
+  (0 and 1 from the title before any run of the session), `country` (the saved code, `none` for no country, or empty when never asked),
   `device` (the device last used: `keyboard`, `gamepad`, `touch` or `mouse`) and `lang` (`en` or
   `fr`). Every value comes from an allowlist or is a number; the name is never sent.
 - **Opening needs a gesture**: browsers block a new tab outside a click, tap or key press. A tap,
   click or key opens the tab at once; a gamepad press shows the gesture prompt, and the next click,
-  tap or key opens it (ADR-0009). If the browser still refuses, the screen shows *OPEN BLOCKED* /
-  *OUVERTURE BLOQUEE* for 2 s and the offer stays.
+  tap or key opens it (ADR-0009). The tab is opened inside that input event's handler, never on a
+  later frame. If the browser still refuses (it returns no window), the screen shows *OPEN
+  BLOCKED* / *OUVERTURE BLOQUEE* for 2 s and the offer stays, and the count does not rise.
 - **No form address configured** (a build without one): the *Feedback* row and the offer are not
   shown.
 
@@ -1037,7 +1046,8 @@ scrolling (at most 12 rows of at least 16 logical px: 192 px of the 320). One ro
   the controls rows (24 px) 32 to 36 — against 21 to 24 CSS px before v0.25 (16 px rows).
   The page itself never zooms or scrolls under a finger (ADR-0018 decision 10); a deliberate
   pinch-zoom stays possible (WCAG 1.4.4). The name entry's letter grid is not changed here.
-- **Title**: *Play*, *Options*; *(v0.16)* *High scores* between them. *Credits*
+- **Title**: *Play*, *Options*; *(v0.16)* *High scores* between them; *(v0.26)* *Feedback* last,
+  only when the build holds a form address. *Credits*
   with the assets (G4); a row is never shown before its screen exists. *(v0.14)* The title is a
   menu like the others: a run starts from *Play* (highlighted first, so `Confirm` still starts at
   once); a tap elsewhere on the screen no longer starts a run.
@@ -1139,7 +1149,10 @@ effects volume) and is saved at once.
 VISUELS*, *AUTOFIRE* / *TIR AUTO*, *LANGUAGE* / *LANGUE*, *FULLSCREEN* / *PLEIN ECRAN*, *BACK* /
 *RETOUR*, *ALL ON* / *TOUT ACTIVER*, *ALL OFF* / *TOUT COUPER*, *BLINK* / *CLIGNOTEMENT*, *HIT
 FLASH* / *FLASH IMPACT*, *EXPLOSIONS* / *EXPLOSIONS*, *SHAKE* / *SECOUSSE*, *BOMB FLASH* / *FLASH
-BOMBE*, *SLOW MOTION* / *RALENTI*, *CHAMPION NAME* / *NOM DU CHAMPION* *(v0.22)*; the title menu *PLAY* / *JOUER*, *OPTIONS*. Hit-stop, muzzle
+BOMBE*, *SLOW MOTION* / *RALENTI*, *CHAMPION NAME* / *NOM DU CHAMPION* *(v0.22)*; the title menu *PLAY* / *JOUER*, *OPTIONS*, *HIGH SCORES* / *MEILLEURS SCORES*, *FEEDBACK* / *AVIS*
+*(v0.26)*; *(v0.26)* *COUNTRY* / *PAYS*, and the feedback offer's *YOUR OPINION?* / *TON AVIS ?*, *2 QUICK
+QUESTIONS* / *2 QUESTIONS RAPIDES*, *GIVE FEEDBACK* / *DONNER MON AVIS*, *LATER* / *PLUS TARD*,
+*OPEN BLOCKED* / *OUVERTURE BLOQUEE*. Hit-stop, muzzle
 flash and score pop-ups get their texts with their effects. On the title the 1 s lock after Game
 over or the Results ignores the whole menu (no highlight move, no activation).
 

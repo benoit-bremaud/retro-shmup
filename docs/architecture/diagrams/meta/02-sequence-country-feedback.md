@@ -34,9 +34,14 @@ sequenceDiagram
       Player->>Scenes: a direction, confirm, back or a tap
       Scenes->>Choice: step(frame)
     end
-    Choice-->>Scenes: FR, or none
-    Scenes->>Host: optionsChanged(country choice)
-    Note over Host: saves the document (version 2)
+    alt OK or NONE
+      Choice-->>Scenes: FR, or none
+      Scenes->>Host: optionsChanged(country choice)
+      Note over Host: saves the document (version 2)
+    else back on an empty code
+      Choice-->>Scenes: cancelled
+      Scenes->>Scenes: Title, nothing saved
+    end
   end
   Scenes->>Scenes: start the run (gesture prompt first from a gamepad)
 
@@ -61,13 +66,12 @@ sequenceDiagram
 ## Notes
 
 - `FeedbackLink.url` is a pure domain function: every value comes from an allowlist (the set 1–3,
-  the version string fixed at build, whole numbers, a `COUNTRY_CODES` code or empty, one of four
+  the version string fixed at build, whole numbers, a `COUNTRY_CODES` code, `none` or empty, one of four
   device names, `en` or `fr`) and is encoded with `encodeURIComponent`; the player's name is never
   an input.
 - The domain never touches `window`: the host forwards to a `LinkPort` whose browser adapter calls
-  `window.open(url, '_blank', 'noopener,noreferrer')`; with `noopener` the call returns `null`
-  even when it opens, so the adapter reports a refusal only when it throws or the gesture check
-  fails (decided in the code PR, tested at the port).
+  `window.open(url, '_blank')` inside the input event's handler and sets `opener` to `null` on the
+  returned window; `null` returned means refused (ADR-0027 decisions 2 and 5).
 - From a gamepad the opening waits in the gesture prompt for the next click, tap or key, like the
   run start (ADR-0009); the opening happens in that event's handler.
 - The title's *Feedback* row takes the same path from `url(...)` on, with the last run's score and

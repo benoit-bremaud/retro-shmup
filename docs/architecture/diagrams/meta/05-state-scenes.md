@@ -47,7 +47,11 @@ stateDiagram-v2
   CountryChoice --> Title : back on an empty code
   CountryChoice --> GesturePrompt : OK or NONE [from a gamepad, no gesture yet] / save the choice
   CountryChoice --> InRun : OK or NONE [gesture done] / save the choice
-  Title --> Title : feedback / open the form, count + 1
+  Title --> Title : feedback [tap, click or key] / open the form, count + 1
+  Title --> GesturePrompt : feedback [from a gamepad]
+  FeedbackOffer --> GesturePrompt : give feedback [from a gamepad]
+  GesturePrompt --> Title : click, tap or key [opening the form] / open it, count + 1
+  GesturePrompt --> Title : back
   Title --> HighScores : high scores
   HighScores --> Title : back, confirm or a tap
   Title --> Credits : credits
@@ -134,8 +138,8 @@ stateDiagram-v2
   Options); its saved choice also guards `Title --> InRun`. The name entry has no country step:
   the entry takes the saved choice. `Feedback offer` follows every run end that is not a quit from
   the pause; it and the title's *Feedback* row are absent when the build holds no form address.
-  Opening the form from a gamepad passes by the gesture prompt (not drawn: a self-transition on
-  the offer or the title, ADR-0009). `HighScores --> Title` stays for the title's own visit.
+  Opening the form from a gamepad passes by the gesture prompt, which then opens the form and
+  returns where it came from (drawn below). `HighScores --> Title` stays for the title's own visit.
 - **Name entry** follows both Ending and Game over when the score qualifies (GDD v0.2 §9.1); a run
   quit from the pause never reaches it. High scores then show the new entry highlighted (UC3).
 
@@ -507,7 +511,7 @@ stateDiagram-v2
 
 ```mermaid
 ---
-title: stm — the hall of fame
+title: stm — the hall of fame (G2; superseded in part by v0.26, see the main diagram: no country step, run ends pass by the feedback offer)
 ---
 stateDiagram-v2
   state "Level results" as Results

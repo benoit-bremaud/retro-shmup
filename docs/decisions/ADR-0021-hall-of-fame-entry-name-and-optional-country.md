@@ -1,6 +1,6 @@
 # ADR-0021: Hall of fame entry — an 8-character name and an optional country
 
-**Status:** Accepted — 2026-10-12. **Partially supersedes ADR-0006**: decision 3 (the
+**Status:** Accepted — 2026-10-12. Decision 4 amended by ADR-0027 (the country chosen once and saved in the options). **Partially supersedes ADR-0006**: decision 3 (the
 `HighScoreEntry.initials` field of exactly 3 characters becomes `name` and an optional
 `country`), decision 7 ("No personal data beyond three initials" becomes "no personal data beyond
 this name and this optional country") and the matching code-review follow-up (`initials` validated
