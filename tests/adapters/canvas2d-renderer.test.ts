@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { Canvas2DRenderer } from '../../src/adapters/canvas2d-renderer';
 import type { RenderSurface } from '../../src/adapters/canvas2d-renderer';
+import { FlagBank } from '../../src/adapters/flag-bank';
 import { SpriteBank } from '../../src/adapters/sprite-bank';
-import type { BakeSurface } from '../../src/adapters/sprite-bank';
+import type { BakeCanvas, BakeSurface } from '../../src/adapters/sprite-bank';
 import { computeViewport } from '../../src/adapters/viewport';
 import { HUD_FONT_CELL, SPRITE_FLASH_FRAME, SPRITE_IDS } from '../../src/domain/ports/render-port';
 import type { SpriteId } from '../../src/domain/ports/render-port';
@@ -54,6 +55,11 @@ const bakeSurface: BakeSurface = {
 };
 
 /** Bakes every sprite into its own stand-in canvas and returns them by id. */
+/** A fresh image per baked flag, so each code's canvas is its own. */
+function newBakeCanvas(): BakeCanvas {
+  return { surface: bakeSurface, image: {} as CanvasImageSource };
+}
+
 function bakeOwnCanvases(sprites: SpriteBank): Map<SpriteId, CanvasImageSource> {
   const canvases = new Map<SpriteId, CanvasImageSource>();
   sprites.bake(image, image, () => ({ surface: bakeSurface, image: {} as CanvasImageSource }));
@@ -189,6 +195,43 @@ describe('Canvas2DRenderer (ADR-0001, ADR-0010, ADR-0014)', () => {
 
     expect(renderer.drawSprite('heavy', 100.4, 50.6)).toBe(true);
     expect(offscreen.calls.at(-1)).toBe('drawImage smoothing=true 68,19,64,64');
+  });
+});
+
+describe('Canvas2DRenderer — country flags (ADR-0028)', () => {
+  it('answers false and draws nothing before the bake or for a code with no flag', () => {
+    const flags = new FlagBank();
+    const offscreen = new RecordingSurface();
+    const renderer = new Canvas2DRenderer(
+      offscreen,
+      image,
+      new RecordingSurface(),
+      new SpriteBank(),
+      flags,
+    );
+    renderer.resize(computeViewport(1920, 1080, 1));
+    expect(renderer.drawFlag('FR', 10, 20)).toBe(false);
+    flags.bake(image, newBakeCanvas);
+    expect(renderer.drawFlag('AQ', 10, 20)).toBe(false);
+    expect(offscreen.calls).toEqual([]);
+  });
+
+  it('draws the 16 x 11 flag top-left at (x, y) after the field origin, whole pixels', () => {
+    const flags = new FlagBank();
+    flags.bake(image, newBakeCanvas);
+    const offscreen = new RecordingSurface();
+    const renderer = new Canvas2DRenderer(
+      offscreen,
+      image,
+      new RecordingSurface(),
+      new SpriteBank(),
+      flags,
+    );
+    renderer.resize(computeViewport(1920, 1080, 1));
+    renderer.setRegion('field');
+    expect(renderer.drawFlag('FR', 122.4, 80.6)).toBe(true);
+    expect(offscreen.images.at(-1)).toBe(flags.get('FR'));
+    expect(offscreen.calls.at(-1)).toBe('drawImage smoothing=true 242,81,16,11');
   });
 });
 

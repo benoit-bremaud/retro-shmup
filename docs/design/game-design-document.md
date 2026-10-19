@@ -976,11 +976,12 @@ the saved code, empty for *NONE*), heading *COUNTRY* / *PAYS*, with the rows of 
 
 **Country flags** *(v0.27, owner 2026-10-19, #125, ADR-0028)*: wherever a country code is shown,
 its pixel flag (16 × 11, CC0 famfamfam set) is drawn **2 px right of the code**, its top 1 px
-above the text's top (the 10 px font cell, centred on it): the options' *Country* row (the row's
-text and the flag centred as one line), each High scores row (the code stays at x 104, the flag
+above the text's top (the 10 px font cell, centred on it): the options' *Country* row (the code
+and the flag right-aligned together), each High scores row (the code stays at x 104, the flag
 at x 122–138, left of the score), and the country choice. The letter grid stays the way to
 choose (no flag picker: it would need scrolling). A territory with no flag of its own shows its
-parent's (BV and SJ → NO, HM → AU, UM → US, BQ → NL); a code with no flag in the set (AQ…) or
+parent's (the set already draws BV and SJ as NO, HM as AU, UM as US; BL and MF show FR, BQ NL);
+a code with no flag in the set (AQ, CW, IM, SS, SX, and GG, whose file is not public domain) or
 a flag sheet not loaded shows **the code alone**, never a box or a placeholder. The champion's
 name in the far background stays a name only (§9.4.1). Flags never flash or move, so they need
 no switch.

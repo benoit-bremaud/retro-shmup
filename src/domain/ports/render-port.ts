@@ -34,6 +34,12 @@ export type SpriteId = (typeof SPRITE_IDS)[number];
  * French text is written in capitals without accents, arcade style, until the bitmap fonts of
  * the screens brick.
  */
+/** A country flag's size in logical pixels (GDD v0.27 §9.1, ADR-0028). */
+export const FLAG_SIZE = { width: 16, height: 11 } as const;
+
+/** The gap between a country code and its flag, in logical pixels (GDD v0.27 §9.1). */
+export const FLAG_GAP = 2;
+
 export type FontId = 'hud' | 'title' | 'menu' | 'far';
 
 /**
@@ -73,6 +79,12 @@ export interface RenderPort {
    * load failed), the caller then drawing its own placeholder shape (ADR-0001 amendment).
    */
   drawSprite(id: SpriteId, x: number, y: number, frame?: number, flipX?: boolean): boolean;
+  /**
+   * Draws the 16 × 11 flag of a country code, top-left at (x, y) like `drawText` (ADR-0028);
+   * `false` when nothing was drawn (no flag for the code, or the sheet not loaded yet), so the
+   * caller shows the code alone.
+   */
+  drawFlag(code: string, x: number, y: number): boolean;
   drawRect(x: number, y: number, w: number, h: number, colour: string): void;
   /**
    * Draws `text` with the top-left of its first cell at (x, y) in the selected region, in the

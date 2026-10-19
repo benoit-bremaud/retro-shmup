@@ -79,16 +79,16 @@ classDiagram
     +drawFlag(code, x, y) boolean
   }
   class FLAG_CELLS {
-    <<const, adapters/flag-atlas, v0.27>>
+    <<const, adapters/flag-codes and flag-bank, v0.27>>
     code to cell index of flags.png
-    aliases BV SJ to NO, HM to AU, UM to US, BQ to NL
+    FLAG_SHEET_CODES in cell order, FLAG_ALIASES BL MF to FR, BQ to NL
     no entry, code alone
   }
   class FlagBank {
     <<adapters/flag-bank, v0.27>>
     -baked: Map of code to cell, built once
     +bake(sheet) void
-    +get(code: string) FlagCell | undefined
+    +get(code: string) CanvasImageSource | undefined
   }
   class main {
     <<app/main.ts>>

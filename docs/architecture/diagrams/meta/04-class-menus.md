@@ -443,7 +443,8 @@ classDiagram
   *Country* `TextValue`, `drawHighScores` (code at x 104, `drawFlag` at x 122) and the country
   choice's slots once `CountryChoice.knownCode` is not empty — call
   `RenderPort.drawFlag(code, codeRight + 2, textTop - 1)` right after the code; a `false` return
-  leaves the code alone. The options row and the slots centre the text plus 18 px as one line.
+  leaves the code alone. The options row right-aligns the code and the flag together (a
+  `TextValue` with `flag: true`); the slots do not move, the flag follows them.
   `CountryChoice.knownCode` is a string cached when a letter is typed or deleted: the code once
   complete and in `COUNTRY_CODES`, else `''`; never `choice`, whose `join` would allocate every
   frame. No save field changes: the flag is presentation only.

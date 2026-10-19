@@ -81,6 +81,7 @@ export class RecordingRender implements RenderPort {
     this.rects.length = 0;
     this.texts.length = 0;
     this.sprites.length = 0;
+    this.flags.length = 0;
     this.order.length = 0;
   }
   /**
@@ -95,6 +96,13 @@ export class RecordingRender implements RenderPort {
       this.order.push(`sprite ${id}`);
     }
     return this.spritesLoaded;
+  }
+  /** What `drawFlag` answers; tests set it to `false` to check the code-alone fallback. */
+  flagsLoaded = true;
+  readonly flags: { code: string; x: number; y: number }[] = [];
+  drawFlag(code: string, x: number, y: number): boolean {
+    if (this.flagsLoaded) this.flags.push({ code, x, y });
+    return this.flagsLoaded;
   }
   /** Sprites and rectangles in drawing order, as `sprite <id>` and `rect <colour>`. */
   readonly order: string[] = [];

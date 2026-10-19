@@ -35,6 +35,7 @@ export class CountryChoice implements NameEntryView {
   private readonly letters: string[] = [];
   /** The code is complete and known: *OK* shows. Kept up to date, so a draw joins nothing. */
   private codeValid = false;
+  private known = '';
   private chosenNone = false;
   private readonly countryGrid = new LetterGrid<GridAction>(
     COUNTRY_CELLS,
@@ -62,6 +63,11 @@ export class CountryChoice implements NameEntryView {
 
   slot(index: number): string {
     return this.letters[index] ?? EMPTY_SLOT;
+  }
+
+  /** The code once complete and known, else `''`: cached on input, for the flag (GDD v0.27). */
+  get knownCode(): string {
+    return this.known;
   }
 
   /** The choice once `chosen`: the code, or `NO_COUNTRY` for *NONE*. */
@@ -95,7 +101,8 @@ export class CountryChoice implements NameEntryView {
 
   /** Runs on input only, never per frame. */
   private checkCode(): void {
-    this.codeValid =
-      this.letters.length === CODE_LENGTH && COUNTRY_CODES.has(this.letters.join(''));
+    const code = this.letters.length === CODE_LENGTH ? this.letters.join('') : '';
+    this.codeValid = COUNTRY_CODES.has(code);
+    this.known = this.codeValid ? code : '';
   }
 }

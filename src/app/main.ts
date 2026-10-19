@@ -7,6 +7,7 @@ import { Canvas2DRenderer } from '../adapters/canvas2d-renderer';
 import { DeviceInput } from '../adapters/input/device-input';
 import type { InputEnvironment } from '../adapters/input/device-input';
 import { PerformanceClock } from '../adapters/performance-clock';
+import { FlagBank } from '../adapters/flag-bank';
 import { SpriteBank } from '../adapters/sprite-bank';
 import type { BakeCanvas } from '../adapters/sprite-bank';
 import { LocalStorageStore } from '../adapters/local-storage-store';
@@ -63,7 +64,14 @@ if (versionText !== null) versionText.textContent = versionLabel(__APP_VERSION__
 
 const offscreen = document.createElement('canvas');
 const sprites = new SpriteBank();
-const renderer = new Canvas2DRenderer(context2d(offscreen), offscreen, context2d(visible), sprites);
+const flags = new FlagBank();
+const renderer = new Canvas2DRenderer(
+  context2d(offscreen),
+  offscreen,
+  context2d(visible),
+  sprites,
+  flags,
+);
 
 /** A decoded image from the game's own origin (CSP `img-src 'self'`, ADR-0008). */
 async function loadImage(path: string): Promise<HTMLImageElement> {
@@ -93,6 +101,15 @@ async function loadSprites(): Promise<void> {
     sprites.bake(ships, tiles, newCanvas);
   } catch (error) {
     console.warn('Sprites not loaded, drawing the placeholder shapes', error);
+  }
+}
+
+/** Loads the flag sheet and bakes it (ADR-0028); on failure every code is shown alone. */
+async function loadFlags(): Promise<void> {
+  try {
+    flags.bake(await loadImage('assets/sprites/flags.png'), newCanvas);
+  } catch (error) {
+    console.warn('Flags not loaded, showing the country codes alone', error);
   }
 }
 
@@ -285,4 +302,4 @@ const loop = new FrameLoop(new PerformanceClock(), input, scenes, (callback) => 
 loop.start();
 
 // Awaited after the loop started: the first frames draw the shapes while the sheets load.
-await loadSprites();
+await Promise.all([loadSprites(), loadFlags()]);

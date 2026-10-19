@@ -28,9 +28,9 @@
    on OpenGameArt), packed once by a development script into `public/assets/sprites/flags.png`
    with an index of the cell of each code. The script is not part of the build; the sheet and the
    index are committed, credited in `CREDITS.md`.
-3. **Fallback**: a territory without a flag of its own maps to its parent's cell in the index
-   (BV and SJ → NO, HM → AU, UM → US, BQ → NL); a code with no cell (AQ, or any flag missing from
-   the set), or a sheet not loaded yet or failed, draws nothing — the code alone is shown, never a
+3. **Fallback**: the set already draws BV and SJ as NO, HM as AU and UM as US; BL and MF map to
+   FR and BQ to NL (`FLAG_ALIASES`); a code with no cell (AQ, CW, IM, SS, SX, and GG, whose file
+   in the set is a CC-BY add-on and is left out), or a sheet not loaded yet or failed, draws nothing — the code alone is shown, never a
    placeholder box.
 4. **Port**: `RenderPort.drawFlag(code: string, x: number, y: number): boolean`, top-left
    coordinates like `drawText`, `true` when drawn. The domain passes the code it already holds;
@@ -46,8 +46,10 @@
   or is on the code-alone list.
 - Tests mock the port: the overlays call `drawFlag` with the code at the documented position; the
   adapter test checks the alias and the missing-code fallback.
-- The High scores keep their columns; the options row and the country choice centre the text and
-  the flag as one line.
+- The High scores keep their columns; the options row right-aligns the code and the flag
+  together; the country choice draws the flag right of its slots without moving them.
+- Three cells are not 16 × 11 in the set (CH 11 × 11, NP 9 × 11, ME 16 × 12): the script centres
+  them in their cell and crops ME's last row.
 
 ## Rejected alternatives
 
