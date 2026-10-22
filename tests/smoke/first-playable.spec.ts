@@ -301,6 +301,7 @@ test('a phone starts, pauses and resumes by touch; a rotation pauses without res
   await page.waitForTimeout(300);
   const g = await geometry(page);
   await tapScreen(page, g.fieldX + RESUME_ROW.x, g.fieldY + RESUME_ROW.y);
+  // Past the 1 s count-in, so the scene is Playing: leaving Paused alone only starts the count-in.
   await page.waitForTimeout(1200);
   expect(await paused(page)).toBe(false);
   await expect.poll(() => hullAtRest(page), { timeout: 2000 }).toBe(true);
@@ -311,6 +312,7 @@ test('a phone starts, pauses and resumes by touch; a rotation pauses without res
   await expect.poll(async () => (await geometry(page)).portrait).toBe(false);
   await expect.poll(() => paused(page), { timeout: 2000 }).toBe(true);
   await page.keyboard.press('Escape');
+  // Past the 1 s count-in, so the scene is Playing: leaving Paused alone only starts the count-in.
   await page.waitForTimeout(1200);
   expect(await paused(page)).toBe(false);
   expect(await hullAtRest(page)).toBe(true);
