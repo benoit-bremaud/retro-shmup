@@ -8,7 +8,7 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-22
 
-### Default High scores table: design #129 `dbcc9f2`, code #128 (this PR)
+### Default High scores table (#128: design #129 `dbcc9f2`, code #132 `7c0ff3d`)
 
 - Design (#129 `dbcc9f2`): owner MCDA validated scale D (150 000 → 30 000, the balance bot's
   level-1 medians 88 500 / 94 750 / 101 600 land mid-table) and ten fictional players. GDD v0.28
@@ -18,7 +18,7 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   key absent). A stored table, even `[]`, is kept; the first real save writes the whole table.
 - Surprises surfaced to the owner: a run of 30 000 or less no longer reaches the name entry;
   the champion's background name is `ACE` on a fresh profile. Left as designed.
-- Follow-up: #130 (losing a life resets to the base weapon, needs its own design PR).
+- Follow-ups: #130 (losing a life resets to the base weapon, own design PR); #131 (country preselected from the browser time zone, offline; owner chose option A, MCDA 450/500).
 
 ---
 
