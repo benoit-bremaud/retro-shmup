@@ -157,17 +157,12 @@ export class Weapon {
   }
 
   /**
-   * A death (GDD v0.8 §4.4): the level drops by one, never below 1, the kind unchanged. Returns
-   * whether it dropped, so the run releases the lost level as a P only above level 1.
+   * A death (GDD v0.29 §4.4, #130): back to the Spread at level 1, the last life included, and the
+   * cooldown cleared so the new ship fires at once after its fly-in (05-state-player).
    */
-  powerDown(): boolean {
-    if (this.currentLevel <= 1) return false;
-    this.currentLevel -= 1;
-    return true;
-  }
-
-  /** A new ship fires at once (05-state-player, fly-in). */
   reset(): void {
+    this.currentKind = WeaponKind.Spread;
+    this.currentLevel = 1;
     this.cooldown = 0;
   }
 

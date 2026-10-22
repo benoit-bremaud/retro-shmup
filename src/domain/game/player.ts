@@ -149,12 +149,12 @@ export class Player {
   }
 
   /**
-   * The death effects, applied at once (GDD v0.8 §4.4): the power level drops by one and the
-   * bombs reset to the profile's stock. Returns whether a level was lost, to be released as a P.
+   * The death effects, applied at once (GDD v0.29 §4.4): the weapon goes back to the Spread at
+   * level 1 and the bombs reset to the profile's stock. Nothing is released.
    */
-  applyDeathPenalty(): boolean {
+  applyDeathPenalty(): void {
     this.bombStock = NORMAL.bombsPerLife;
-    return this.weapon.powerDown();
+    this.weapon.reset();
   }
 
   /**

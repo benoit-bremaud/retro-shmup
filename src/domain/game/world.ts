@@ -8,7 +8,7 @@ import { FIELD_HEIGHT, overlapsField } from './geometry';
 import type { Box } from './geometry';
 import type { ScriptEvent } from './level-script';
 import type { WorldView } from './movements';
-import { Pickup, PickupMotion } from './pickup';
+import { Pickup } from './pickup';
 import type { PickupKind } from './pickup';
 import { Player } from './player';
 import {
@@ -119,25 +119,19 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, WorldView {
   }
 
   /**
-   * A pickup at (x, y) with `motion`: a falling drop by default, or the death release's hop. False
+   * A falling pickup at (x, y) (GDD §4.6; the death release is gone since v0.29). False
    * when the pool is full and the spawn is dropped (ADR-0019), so the caller publishes
    * `PICKUP_SPAWNED` only for a pickup that exists.
    */
-  spawnPickup(
-    kind: PickupKind,
-    x: number,
-    y: number,
-    motion: PickupMotion = PickupMotion.Fall,
-  ): boolean {
+  spawnPickup(kind: PickupKind, x: number, y: number): boolean {
     const pickup = this.pickups.add();
     if (pickup === undefined) return false;
-    pickup.spawn(kind, x, y, this.takeSerial(), motion);
+    pickup.spawn(kind, x, y, this.takeSerial());
     return true;
   }
 
   /**
-   * Step 4: pickups move as a closed form of their age (GDD v0.8 §4.4, §4.6): a drop falls and
-   * sways; the death release rises linearly to `riseTo`, then falls slowly, with no sway.
+   * Step 4: pickups move as a closed form of their age (GDD v0.8 §4.6): they fall and sway.
    */
   movePickups(): void {
     for (let i = 0; i < this.pickups.count; i += 1) {
@@ -147,11 +141,6 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, WorldView {
       pickup.previousPosition.y = pickup.position.y;
       pickup.age += 1;
       const seconds = pickup.age * STEP_SECONDS;
-      if (pickup.motion === PickupMotion.Release) {
-        pickup.position.x = pickup.origin.x;
-        pickup.position.y = releaseY(pickup, seconds);
-        continue;
-      }
       pickup.position.x =
         pickup.origin.x + PickupTuning.swayAmplitude * Math.sin(SWAY_RADIANS_PER_SECOND * seconds);
       pickup.position.y = pickup.origin.y + PickupTuning.fallSpeed * seconds;
@@ -220,15 +209,6 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, WorldView {
 }
 
 const SWAY_RADIANS_PER_SECOND = (2 * Math.PI) / PickupTuning.swayPeriodSeconds;
-
-// The release hop: a linear rise over 0.8 s, then a fall at 20 px/s.
-function releaseY(pickup: Pickup, seconds: number): number {
-  const rise = PickupTuning.releaseRiseSeconds;
-  if (seconds <= rise) {
-    return pickup.origin.y + ((pickup.riseTo - pickup.origin.y) * seconds) / rise;
-  }
-  return pickup.riseTo + PickupTuning.releaseFallSpeed * (seconds - rise);
-}
 
 function placeBullet(bullet: Bullet, x: number, y: number, vx: number, vy: number): void {
   bullet.position.x = x;

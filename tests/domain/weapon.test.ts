@@ -221,3 +221,22 @@ describe('Weapon — firing the current table (GDD v0.8 §4.3)', () => {
     expect((bolt?.y ?? 0) + (bolt?.height ?? 0) / 2).toBe(ORIGIN.y - 16);
   });
 });
+
+describe('Weapon — reset at death (GDD v0.29 §4.4)', () => {
+  it('goes back to the Spread at level 1 from any kind and level', () => {
+    const weapon = new Weapon();
+    for (let i = 0; i < 4; i += 1) weapon.powerUp(WeaponKind.Laser);
+    expect([weapon.kind, weapon.level]).toEqual([WeaponKind.Laser, 5]);
+    weapon.reset();
+    expect([weapon.kind, weapon.level]).toEqual([WeaponKind.Spread, 1]);
+  });
+
+  it('fires at once after a reset: the cooldown is cleared', () => {
+    const weapon = new Weapon();
+    const spawner = new RecordingSpawner();
+    fire(weapon, spawner, [true]);
+    weapon.reset();
+    fire(weapon, spawner, [true]);
+    expect(spawner.shots.length).toBe(2);
+  });
+});
