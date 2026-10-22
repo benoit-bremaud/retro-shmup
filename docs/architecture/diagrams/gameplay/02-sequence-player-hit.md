@@ -72,7 +72,7 @@ sequenceDiagram
   `GAME_OVER` (GDD v0.4 §4.4 — the last explosion plays out).
 - **The player decides the outcome, the run applies the penalties**: `Player.hit()` returns
   `IGNORED`, `ABSORBED` or `DIED`; `RunRules.playerDied()` applies what needs the difficulty profile
-  and the world — bombs, power, release.
+  and the weapon — the bombs and the weapon reset (GDD v0.29: no release).
 - **The death resets the weapon, releases nothing** (GDD v0.29 §4.4, #130; v0.2 to v0.28: `powerDown()`
   and a released P with the `RELEASE` hop motion): `Weapon.reset()` sets the kind to `SPREAD` and the
   level to 1, on the last life too; no pickup spawns, so the `PickupMotion.RELEASE` motion is gone.
