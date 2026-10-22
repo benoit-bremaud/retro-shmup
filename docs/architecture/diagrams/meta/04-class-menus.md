@@ -347,7 +347,7 @@ classDiagram
   button going up, none for a cancelled finger) and the mouse hover (`hovered`, `hoverX`,
   `hoverY`, play-field pixels, only when the cursor reaches a new field point).
 - **`SaveStore` owns the schema rules, `StoragePort` only the strings** (ADR-0006 decision 3).
-  `load()` falls back to the defaults on a missing, unreadable or unknown document, and
+  `load()` falls back to the defaults (table included, #128) on a missing, unreadable or unknown document, and
   `prefers-reduced-motion` presets the effect switches on a first launch only (GDD §9.3).
   `saveOptions` writes the whole document once per change, never inside the fixed step
   (ADR-0006 decision 6); `false` means the session goes on without saving.

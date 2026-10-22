@@ -158,7 +158,10 @@ export class SaveStore {
     this.options = defaultOptions(reducedMotion);
   }
 
-  /** The stored options, or the defaults of a first launch. */
+  /**
+   * The stored options, or the defaults of a first launch; also fills `highScores`: the stored
+   * table, or the default one when the save holds none (GDD v0.28 §9.1).
+   */
   load(): Options {
     this.loaded = true;
     const fallback = defaultOptions(this.reducedMotion);

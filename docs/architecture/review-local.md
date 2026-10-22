@@ -1,49 +1,43 @@
 # Local review — retro-shmup (feat/game-default-high-scores)
 
 - Date: 2026-10-22
-- Scope: branch diff origin/main...HEAD (default High scores table, #128, GDD v0.28)
-- Checks run: design (architecture-guardian) · docs (doc-auditor) · tests (test-auditor) · security + correctness (read-only review)
-- Verdict: ship — every Must and Should fixed · Must 0 open · Should 0 open · Nice 5 (below)
+- Scope: branch diff origin/main...HEAD (default High scores table, #128, GDD v0.28 §9.1)
+- Checks run: design (architecture-guardian) · docs (doc-auditor) · tests (test-auditor) · security + correctness (read inline: no I/O, no new input path)
+- Verdict: ship — Must 0 · Should 0 open (6 fixed) · Nice 5 (below)
 
 ## Pre-merge gate
 
 | Step | Result |
 |---|---|
-| 1 Tests | ✅ 1629 unit/integration (Vitest) · ✅ 6 smoke (Chromium, Firefox, WebKit) |
-| 2 Coverage | tests 99.24 % stmts / 95.7 % branches / 100 % funcs / 99.91 % lines (floor 80) · docs 99.5 % (floor 90) |
-| 3 SonarQube | ✅ PASSED (make verify, before the fixes; re-run at the pre-push hook) |
-| 4 Secrets | ✅ gitleaks clean · only `.env.example` tracked · diff read: nothing sensitive |
-| 5 QA pass | ✅ full · console clean · screenshots: docs/architecture/qa/2026-10-19-flags-{country-choice,options,high-scores}.png |
+| 1 Tests | ✅ 1 651 unit/integration (Vitest) · ✅ 6 smoke (Chromium, Firefox, WebKit) |
+| 2 Coverage | tests 99.24 % stmts / 95.7 % branches (floor 80) · docs 99.5 % (floor 90) |
+| 3 SonarQube | ✅ PASSED (make verify) |
+| 4 Secrets | ✅ gitleaks clean (origin/main..HEAD) · only `.env.example` tracked · diff read: nothing sensitive |
+| 5 QA pass | ✅ fresh profile shows the ten fictional players with flags · console clean · docs/architecture/qa/2026-10-22-default-high-scores.png |
 
 - Gate: **GREEN** for the push; the merge gate re-runs on the merged SHA.
 
 ## 🔴 Must Have
 
-- `src/domain/ports/render-port.ts` `[docs|design|security]` · `FLAG_SIZE` / `FLAG_GAP` split the `FontId` JSDoc from its type · **fixed**: constants moved below `FontId`.
+_None._
 
 ## 🟡 Should Have
 
-- `src/domain/presentation/overlays.ts` `[design]` · High scores flag 4 px after the code, 2 px elsewhere · **fixed**: `menuTextWidth(code) + FLAG_GAP` (x 120), `CODE_ADVANCE` removed, GDD/ADR/UML say x 120.
-- `src/domain/presentation/overlays.ts` `[design]` · magic `-1` in `flagTop` · **fixed**: derived from the font and flag heights.
-- `src/domain/scenes/country-choice.ts` `[design]` · `codeValid` duplicated `known` · **fixed**: one field.
-- `src/adapters/flag-bank.ts` `[docs]` · `get` undocumented · **fixed**.
-- GDD / ADR-0028 / CREDITS `[docs]` · "CC0" vs "public domain" · **fixed**: public domain everywhere; CREDITS pins commit a79ec57.
-- `tests/adapters/canvas2d-renderer.test.ts` `[tests]` · helper orphaned a JSDoc · **fixed**.
-- `tests/adapters/flag-bank.test.ts` `[tests]` · weak cell assertions, unused image id · **fixed**.
-- `tests/domain/country-choice.test.ts` `[tests]` · tautological same-string test · **removed**.
+- `tests/domain/save-store.test.ts` `[tests]` · newer-save test name claimed more than it checked; v1 without key, invalid options with valid table and a present-but-unusable `highScores` were untested · **fixed**.
+- `src/domain/save/save-store.ts` `[docs]` · `load()` JSDoc omitted the table · **fixed**.
+- `docs/architecture/diagrams/meta/04-class-menus.md` `[docs]` · SaveStore bullet omitted the table · **fixed**.
 
 ## 🔵 Nice to Have
 
-- `src/adapters/flag-bank.ts:6` `[design]` · `SHEET_COLUMNS` duplicates the script's `COLUMNS`; the script could write it into `flag-codes.ts`.
-- `scripts/build-flag-sheet.py` `[security|design]` · parses `country-codes.ts` by text slicing, no usage check, Pillow not pinned; dev-only.
-- `src/app/main.ts` `[correctness]` · the options code shifts 18 px left once when the sheet arrives after the first frames.
-- `src/domain/presentation/overlays.ts` `[correctness]` · a 9-digit score would touch the flag (x 136 vs 138); level-1 scores stay far below.
-- `tests/domain/overlays.test.ts` `[tests]` · layout numbers in the flag tests duplicate constants.
+- `high-scores.test.ts` `[tests]` · the constant is pinned three ways; the `?? ''` hides a missing country.
+- `high-scores.ts` `[docs]` · say the date is fixed on purpose; say the array is shared, never mutated.
+- Smoke `fresh > empty * 2` is a weak proxy; content is pinned in unit tests (ADR-0026).
 
 ## ⚪ Disagree / Intentional
 
-- `src/adapters/canvas2d-renderer.ts` `[design]` · default `new FlagBank()` in the constructor keeps the older call sites; an unbaked bank answers `false` as ADR-0028 decision 3 requires.
+- A present but unusable `highScores` (`null`, a string) reads as a stored empty table, not the defaults: "kept as stored" (GDD §9.1, ADR-0021 allowlist).
+- Saving an option on a fresh profile also writes the fictional rows (same as the first real entry).
 
 ## Per-dimension summary
 
-- Design: no over-engineering, rules held (no browser in domain, no per-frame allocation). · Docs: one displaced JSDoc fixed, 99.5 %. · Tests: unit-level, port-mocked, assertions tightened. · Security: no finding; allowlisted codes, same-origin asset. · Correctness: layout verified, gap unified to 2 px.
+- Design: ship as-is · Docs: two one-liners fixed · Tests: edge rows added · Security: no new input path, same allowlist parser · Correctness: a score ≤ 30 000 no longer reaches the name entry (designed, flagged to owner)

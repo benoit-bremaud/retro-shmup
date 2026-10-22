@@ -418,6 +418,7 @@ describe('SaveStore — the default table (GDD v0.28 §9.1, ADR-0006 decision 5)
     ['a missing version', stored({ options: CUSTOM, highScores: [ACE] })],
     ['a newer version', stored({ version: 3, options: {}, highScores: [ACE] })],
     ['a document without a highScores key', stored({ version: 2, options: CUSTOM })],
+    ['a version 1 document without the key', stored({ version: 1, options: CUSTOM_V1 })],
   ])('starts with the ten fictional players on %s', (_label, storage) => {
     const store = new SaveStore(storage, false);
     store.load();
@@ -438,16 +439,33 @@ describe('SaveStore — the default table (GDD v0.28 §9.1, ADR-0006 decision 5)
     expect(store.highScores).toEqual([]);
   });
 
+  it.each([null, 'x', {}, [{ bad: 1 }]])(
+    'reads a present but unusable highScores (%j) as a stored empty table',
+    (highScores) => {
+      const store = new SaveStore(stored({ version: 2, options: CUSTOM, highScores }), false);
+      store.load();
+      expect(store.highScores).toEqual([]);
+    },
+  );
+
+  it('keeps a stored table although the options are invalid', () => {
+    const document = { version: 2, options: { language: 'xx' }, highScores: [ACE] };
+    const store = new SaveStore(stored(document), false);
+    store.load();
+    expect(store.highScores).toEqual([ACE]);
+  });
+
   it('keeps a stored table as stored, without the fictional rows', () => {
     const store = new SaveStore(stored({ version: 2, options: CUSTOM, highScores: [ACE] }), false);
     store.load();
     expect(store.highScores).toEqual([ACE]);
   });
 
-  it('reloads fresh defaults for a session that read a newer save, and never writes it', () => {
+  it('shows the defaults in a session that read a newer save, and never writes it', () => {
     const storage = stored({ version: 3, options: {} });
     const store = new SaveStore(storage, false);
     store.load();
+    expect(store.highScores).toEqual(DEFAULT_HIGH_SCORES);
     expect(store.saveHighScores([ACE])).toBe(false);
     expect(storage.writes).toBe(0);
   });
