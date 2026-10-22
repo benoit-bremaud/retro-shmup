@@ -1,43 +1,30 @@
-# Local review — retro-shmup (feat/game-default-high-scores)
+# Local review — retro-shmup (branch chore/sonar-gate, #134)
 
 - Date: 2026-10-22
-- Scope: branch diff origin/main...HEAD (default High scores table, #128, GDD v0.28 §9.1)
-- Checks run: design (architecture-guardian) · docs (doc-auditor) · tests (test-auditor) · security + correctness (read inline: no I/O, no new input path)
-- Verdict: ship — Must 0 · Should 0 open (6 fixed) · Nice 5 (below)
+- Scope: branch diff origin/main...HEAD (`sonar-project.properties`, `tests/smoke/first-playable.spec.ts`)
+- Checks run: design · docs · tests · security · correctness (read by hand, two files) and the execution checks
+- Verdict: ship · Must 0 · Should 0 · Nice 1
 
-## Pre-merge gate
-
+## Pre-merge gate (execution checks)
 | Step | Result |
 |---|---|
-| 1 Tests | ✅ 1 651 unit/integration (Vitest) · ✅ 6 smoke (Chromium, Firefox, WebKit) |
-| 2 Coverage | tests 99.24 % stmts / 95.7 % branches (floor 80) · docs 99.5 % (floor 90) |
-| 3 SonarQube | ✅ PASSED (make verify) |
-| 4 Secrets | ✅ gitleaks clean (origin/main..HEAD) · only `.env.example` tracked · diff read: nothing sensitive |
-| 5 QA pass | ✅ fresh profile shows the ten fictional players with flags · console clean · docs/architecture/qa/2026-10-22-default-high-scores.png |
-
-- Gate: **GREEN** for the push; the merge gate re-runs on the merged SHA.
+| 1 Tests | ✅ 1 651 unit/simulation · ✅ smoke 6/6 (Chromium, Firefox, WebKit), three runs in a row |
+| 2 Coverage | 99.24 % stmts / 95.7 % branches / 100 % funcs / 99.91 % lines |
+| 3 SonarQube | ✅ PASSED (failed before: 12 new violations from the 26.10 rules S2925 and S9382) |
+| 4 Secrets | ✅ gitleaks clean · no tracked .env · diff read: nothing sensitive |
+| 5 QA pass | smoke suite only (no runtime code changed) |
 
 ## 🔴 Must Have
-
 _None._
 
 ## 🟡 Should Have
-
-- `tests/domain/save-store.test.ts` `[tests]` · newer-save test name claimed more than it checked; v1 without key, invalid options with valid table and a present-but-unusable `highScores` were untested · **fixed**.
-- `src/domain/save/save-store.ts` `[docs]` · `load()` JSDoc omitted the table · **fixed**.
-- `docs/architecture/diagrams/meta/04-class-menus.md` `[docs]` · SaveStore bullet omitted the table · **fixed**.
+_None._
 
 ## 🔵 Nice to Have
-
-- `high-scores.test.ts` `[tests]` · the constant is pinned three ways; the `?? ''` hides a missing country.
-- `high-scores.ts` `[docs]` · say the date is fixed on purpose; say the array is shared, never mutated.
-- Smoke `fresh > empty * 2` is a weak proxy; content is pinned in unit tests (ADR-0026).
+- `sonar-project.properties` `[ci]` · the new-code period (PREVIOUS_VERSION since 2026-10-08, no `sonar.projectVersion`) makes any new profile rule block the whole repository · separate follow-up.
 
 ## ⚪ Disagree / Intentional
-
-- A present but unusable `highScores` (`null`, a string) reads as a stored empty table, not the defaults: "kept as stored" (GDD §9.1, ADR-0021 allowlist).
-- Saving an option on a fresh profile also writes the fictional rows (same as the first real entry).
+- `tests/smoke/**` S2925, `src/adapters/web-audio-player.ts` S9382 `[tests]` · waits on the game's own time rules and a sequential decode on purpose · scoped, commented exclusions e4/e5, as e1–e3.
 
 ## Per-dimension summary
-
-- Design: ship as-is · Docs: two one-liners fixed · Tests: edge rows added · Security: no new input path, same allowlist parser · Correctness: a score ≤ 30 000 no longer reaches the name entry (designed, flagged to owner)
+- Design: none. Docs: exclusions commented. Tests: two fixed waits now poll the pause state. Security: none. Correctness: the smoke assertions are unchanged in meaning.

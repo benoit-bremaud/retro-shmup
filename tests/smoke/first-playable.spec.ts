@@ -301,8 +301,7 @@ test('a phone starts, pauses and resumes by touch; a rotation pauses without res
   await page.waitForTimeout(300);
   const g = await geometry(page);
   await tapScreen(page, g.fieldX + RESUME_ROW.x, g.fieldY + RESUME_ROW.y);
-  await page.waitForTimeout(1200);
-  expect(await paused(page)).toBe(false);
+  await expect.poll(() => paused(page), { timeout: 3000 }).toBe(false);
   await expect.poll(() => hullAtRest(page), { timeout: 2000 }).toBe(true);
 
   // A rotation to landscape pauses (GDD v0.7 §9.1); Esc resumes the same run: after the count-in
@@ -311,8 +310,7 @@ test('a phone starts, pauses and resumes by touch; a rotation pauses without res
   await expect.poll(async () => (await geometry(page)).portrait).toBe(false);
   await expect.poll(() => paused(page), { timeout: 2000 }).toBe(true);
   await page.keyboard.press('Escape');
-  await page.waitForTimeout(1200);
-  expect(await paused(page)).toBe(false);
+  await expect.poll(() => paused(page), { timeout: 3000 }).toBe(false);
   expect(await hullAtRest(page)).toBe(true);
 
   // The enemies brick: the first wave is on screen.
