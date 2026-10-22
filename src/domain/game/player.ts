@@ -149,12 +149,12 @@ export class Player {
   }
 
   /**
-   * The death effects, applied at once (GDD v0.8 §4.4): the power level drops by one and the
-   * bombs reset to the profile's stock. Returns whether a level was lost, to be released as a P.
+   * The death effects, applied at once (GDD v0.29 §4.4): the weapon goes back to the Spread at
+   * level 1 and the bombs reset to the profile's stock. Nothing is released.
    */
-  applyDeathPenalty(): boolean {
+  applyDeathPenalty(): void {
     this.bombStock = NORMAL.bombsPerLife;
-    return this.weapon.powerDown();
+    this.weapon.reset();
   }
 
   /**
@@ -230,7 +230,8 @@ export class Player {
     this.position.y = PlayerTuning.spawnY;
     this.previousPosition.x = PlayerTuning.spawnX;
     this.previousPosition.y = PlayerTuning.spawnY;
-    // The cooldown froze while Dead: the first shot after the fly-in is immediate.
+    // Already reset at the death (applyDeathPenalty); kept so the first shot after the fly-in is
+    // immediate whatever path led here.
     this.weapon.reset();
   }
 

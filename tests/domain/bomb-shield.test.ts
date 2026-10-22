@@ -3,7 +3,7 @@ import { CARRIER, GUNNER, HEAVY_RING, POPCORN } from '../../src/domain/game/enem
 import { GameEventKind } from '../../src/domain/game/events';
 import type { GameEvent } from '../../src/domain/game/events';
 import type { LevelScript, ScriptEvent } from '../../src/domain/game/level-script';
-import { Pickup, PickupKind, PickupMotion } from '../../src/domain/game/pickup';
+import { Pickup, PickupKind } from '../../src/domain/game/pickup';
 import { HitOutcome, Player, PlayerState } from '../../src/domain/game/player';
 import { Run } from '../../src/domain/game/run';
 import { WeaponKind } from '../../src/domain/game/weapon';
@@ -128,18 +128,17 @@ describe('Player — shield and death (GDD v0.8 §4.4)', () => {
     expect(player.hit()).toBe(HitOutcome.Died);
   });
 
-  it('drops the power by one, never below 1, and resets the bombs to 2 at death', () => {
+  it('resets the weapon to the Spread at level 1 and the bombs to 2 at death (GDD v0.29)', () => {
     const player = playerAfter(120);
+    player.collect(PickupKind.PBlue);
     player.collect(PickupKind.PBlue);
     player.collect(PickupKind.Bomb);
     player.useBomb();
     player.useBomb();
     player.useBomb();
-    expect(player.bombs).toBe(0);
-    expect(player.applyDeathPenalty()).toBe(true);
-    expect([player.power, player.weaponKind, player.bombs]).toEqual([1, WeaponKind.Laser, 2]);
-    expect(player.applyDeathPenalty()).toBe(false);
-    expect(player.power).toBe(1);
+    expect([player.power, player.weaponKind, player.bombs]).toEqual([3, WeaponKind.Laser, 0]);
+    player.applyDeathPenalty();
+    expect([player.power, player.weaponKind, player.bombs]).toEqual([1, WeaponKind.Spread, 2]);
   });
 });
 
@@ -269,67 +268,37 @@ describe('Run — shield and death through the collisions (GDD v0.8 §4.4)', () 
     expect([run.snapshot().lives, run.snapshot().shield]).toEqual([3, false]);
   });
 
-  it('releases the lost level as a P before PLAYER_DIED, and resets the bombs', () => {
+  it('resets the weapon and the bombs before PLAYER_DIED, and releases nothing (GDD v0.29)', () => {
     const run = new Run({ levels: [testScript([GUNNER_ABOVE])] });
     collect(run, PickupKind.PBlue);
+    collect(run, PickupKind.PBlue);
     collect(run, PickupKind.Bomb);
-    expect([run.snapshot().power, run.snapshot().bombs]).toEqual([2, 3]);
-    const log = logOf(run, [GameEventKind.PickupSpawned, GameEventKind.PlayerDied]);
+    expect([run.snapshot().power, run.snapshot().bombs]).toEqual([3, 3]);
+    const seen: string[] = [];
+    run.events().subscribe(GameEventKind.PlayerDied, () => {
+      seen.push(`${String(run.snapshot().power)}:${run.snapshot().weaponKind}`);
+    });
+    const spawned = logOf(run, [GameEventKind.PickupSpawned]);
     expect(stepUntil(run, GameEventKind.PlayerDied, 600)).toBe(true);
-    expect(log).toEqual([
-      `${String(GameEventKind.PickupSpawned)}:${String(PickupKind.PBlue)}`,
-      `${String(GameEventKind.PlayerDied)}:0`,
-    ]);
-    expect([run.snapshot().power, run.snapshot().bombs]).toEqual([1, 2]);
-    expect(run.snapshot().pickups.at(0).motion).toBe(PickupMotion.Release);
-  });
-
-  it('releases a red P when the ship dies holding the Spread', () => {
-    const run = new Run({ levels: [testScript([GUNNER_ABOVE])] });
-    collect(run, PickupKind.PRed);
-    expect([run.snapshot().power, run.snapshot().weaponKind]).toEqual([2, WeaponKind.Spread]);
-    const log = logOf(run, [GameEventKind.PickupSpawned]);
-    expect(stepUntil(run, GameEventKind.PlayerDied, 600)).toBe(true);
-    expect(log).toEqual([`${String(GameEventKind.PickupSpawned)}:${String(PickupKind.PRed)}`]);
-    expect(run.snapshot().pickups.at(0).kind).toBe(PickupKind.PRed);
-  });
-
-  it('releases nothing at level 1', () => {
-    const run = new Run({ levels: [testScript([GUNNER_ABOVE])] });
-    expect(stepUntil(run, GameEventKind.PlayerDied, 600)).toBe(true);
+    expect(seen).toEqual([`1:${WeaponKind.Spread}`]);
+    expect(spawned).toEqual([]);
+    expect([run.snapshot().weaponKind, run.snapshot().bombs]).toEqual([WeaponKind.Spread, 2]);
     expect(run.snapshot().pickups.count).toBe(0);
   });
-});
 
-describe('Pickup — the death release hop (GDD v0.8 §4.4)', () => {
-  it('rises 48 px linearly over 0.8 s, then falls at 20 px/s, with no sway', () => {
+  it('resets the weapon on the last life too (GDD v0.29)', () => {
+    const player = new Player();
     const world = new World();
-    world.spawnPickup(PickupKind.PRed, 100, 272, PickupMotion.Release);
-    const pickup = world.pickups.at(0);
-    for (let i = 0; i < 24; i += 1) world.movePickups();
-    expect(pickup.position).toEqual({ x: 100, y: 272 - 24 });
-    for (let i = 0; i < 24; i += 1) world.movePickups();
-    expect(pickup.position.y).toBeCloseTo(224, 9);
-    for (let i = 0; i < 60; i += 1) world.movePickups();
-    expect(pickup.position.y).toBeCloseTo(244, 9);
-    expect(pickup.position.x).toBe(100);
-  });
-
-  it('never rises above y 24', () => {
-    const pickup = new Pickup();
-    pickup.spawn(PickupKind.PRed, 100, 50, 1, PickupMotion.Release);
-    expect(pickup.riseTo).toBe(24);
-  });
-
-  it('stays on the field until about 4 s after the ship is back in control', () => {
-    const world = new World();
-    world.spawnPickup(PickupKind.PRed, 120, 272, PickupMotion.Release);
-    // Control returns 2 s after the death (1.5 s death sequence + 0.5 s fly-in).
-    for (let i = 0; i < 120 + 236; i += 1) {
-      world.movePickups();
-      world.sweep();
+    for (let death = 0; death < 3; death += 1) {
+      while (player.state !== PlayerState.Vulnerable) {
+        player.update(idle(), DT, world);
+        player.advanceTimers();
+      }
+      if (death === 2) player.collect(PickupKind.PBlue);
+      expect(player.hit()).toBe(HitOutcome.Died);
+      player.applyDeathPenalty();
     }
-    expect(world.pickups.count).toBe(1);
+    expect([player.lives, player.power, player.weaponKind]).toEqual([0, 1, WeaponKind.Spread]);
   });
 });
 

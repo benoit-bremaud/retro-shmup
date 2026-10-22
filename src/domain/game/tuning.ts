@@ -204,11 +204,6 @@ export const PickupTuning = {
   /** The sway axis is clamped so the whole box always stays on the field. */
   minAxisX: 16,
   maxAxisX: 224,
-  /** The death release (GDD v0.8 §4.4): rises linearly, never above this y, then falls slowly. */
-  releaseRise: 48,
-  releaseRiseSeconds: 0.8,
-  releaseTopY: 24,
-  releaseFallSpeed: 20,
 } as const;
 
 /** Bombs and the shield (GDD v0.8 §4.4, §4.5). */

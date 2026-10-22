@@ -10,10 +10,9 @@ import type { EventBus, GameEvent } from './events';
 import type { Formation } from './formation';
 import type { EnemySpawner } from './level-director';
 import type { LevelScript, ScriptEvent } from './level-script';
-import { PickupKind, PickupMotion } from './pickup';
+import { PickupKind } from './pickup';
 import type { Pickup } from './pickup';
 import { KitTuning } from './tuning';
-import { WeaponKind } from './weapon';
 import type { World } from './world';
 
 const NONE = -1;
@@ -179,21 +178,14 @@ export class RunRules implements HitRules, EnemySpawner {
   }
 
   /**
-   * `HitRules`: the ship died this step (02-sequence-player-hit). The death effects apply at once
-   * — the power drops a level and the bombs reset — and a lost level is released as a P of the
-   * current weapon's colour, spawned before `PLAYER_DIED` is published, last life included.
+   * `HitRules`: the ship died this step (02-sequence-player-hit). The death effects apply at once,
+   * before `PLAYER_DIED` is published and on the last life too: the weapon goes back to the Spread
+   * at level 1 and the bombs reset; nothing is released (GDD v0.29 §4.4, #130).
    */
   playerDied(): void {
     const player = this.world.player;
-    const x = player.position.x;
-    const y = player.position.y;
-    if (player.applyDeathPenalty()) {
-      const colour = player.weaponKind === WeaponKind.Laser ? PickupKind.PBlue : PickupKind.PRed;
-      if (this.world.spawnPickup(colour, x, y, PickupMotion.Release)) {
-        this.publishAt(this.pickupSpawnedEvent, x, y, 0, colour);
-      }
-    }
-    this.publishAt(this.playerDiedEvent, x, y, 0, 0);
+    player.applyDeathPenalty();
+    this.publishAt(this.playerDiedEvent, player.position.x, player.position.y, 0, 0);
   }
 
   /** `HitRules`: the shield charge took the hit (GDD v0.8 §4.4). */

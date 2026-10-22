@@ -9,10 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Design only (no code yet): losing a life will put the ship back on the base weapon, the Spread
-  at power level 1, and no P is released at the death; bombs, chain and the last life are
-  unchanged. The level-1 balance and the default High scores scale are re-measured with the
-  code (GDD v0.29 §4.4, #130).
+- Losing a life puts the ship back on the base weapon, the Spread at power level 1, and no P
+  is released at the death; bombs, chain and the last life are unchanged. Level 1 is much
+  harder (bot game over about 98 %), the default High scores scale is unchanged
+  (GDD v0.29 §4.4, #130).
 - A first launch (or a missing, unreadable or newer save) starts the High scores with ten
   fictional players, 150 000 down to 30 000, that real scores push out one by one; a stored
   table, even empty, is kept as stored (GDD v0.28 §9.1, #128).

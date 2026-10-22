@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { WeaponKind } from '../../src/domain/game/weapon';
 import { Pickup, PickupKind } from '../../src/domain/game/pickup';
 import { PlayerState } from '../../src/domain/game/player';
 import type { Bullet } from '../../src/domain/game/bullet';
@@ -164,21 +165,18 @@ describe('Run — a refused lone enemy', () => {
   });
 });
 
-describe('Run — the death release of a lost power level', () => {
-  function raisedLaser(): Run {
+describe('Run — the death resets the weapon (GDD v0.29 §4.4, #130)', () => {
+  it('puts a raised Laser back to the Spread at level 1 and releases nothing', () => {
     const run = new Run();
     const pickup = new Pickup();
     pickup.spawn(PickupKind.PBlue, 100, 200, 1);
     run.rules.pickupCollected(pickup);
     run.rules.pickupCollected(pickup);
-    return run;
-  }
-
-  it('releases a blue P for a lost Laser level and announces it', () => {
-    const run = raisedLaser();
     const heard: number[] = [];
     run.events().subscribe(GameEventKind.PickupSpawned, (e) => heard.push(e.detail));
     run.rules.playerDied();
-    expect(heard).toEqual([PickupKind.PBlue]);
+    expect(heard).toEqual([]);
+    expect([run.snapshot().power, run.snapshot().weaponKind]).toEqual([1, WeaponKind.Spread]);
+    expect(run.snapshot().pickups.count).toBe(0);
   });
 });

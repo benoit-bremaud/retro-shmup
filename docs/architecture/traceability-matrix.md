@@ -50,7 +50,7 @@ SD-boss (added with the level brick) uses `Run`, `RunRules`, `World`, `LevelDire
 | `Player`, `PlayerState`, `HitOutcome` | | ✓ (`collect`) | ✓ | ✓ (`useBomb`) | STM-player | §4.1, §4.4, §4.5 |
 | `Weapon`, `WeaponKind`, `WeaponLevel`, `ShotSpec` | | | ✓ (`reset`) | | | §4.3 |
 | `Bullet` | | ✓ (`canHit`, `recordHit`) | ✓ (released) | ✓ (cancelled) | | §4.3 |
-| `Pickup`, `PickupKind`, `PickupMotion` | | ✓ (spawned, moved, collected) | ✓ | ✓ (drops of bomb kills) | STM-player (collection guard) | §4.4, §4.6 |
+| `Pickup`, `PickupKind` | | ✓ (spawned, moved, collected) | ✓ | ✓ (drops of bomb kills) | STM-player (collection guard) | §4.4, §4.6 |
 | `FixedPool<T>` | | ✓ (releases) | ✓ | ✓ | | ADR-0002, ADR-0024 |
 | `ScoreKeeper`, `LevelTally`, `TallyTuning` | | ✓ (`formationsCleared`) | ✓ (`lifeLost`) | ✓ (`bombUsed`) | STM-boss (bonuses), STM-scenes (`Results`), SD-boss | §8 |
 | `CollisionResolver` | | ✓ (passes 1 and 4) | ✓ (passes 2 and 3) | | | §4.1, §4.6, §5.2 |
@@ -131,7 +131,7 @@ is a calculation covered by unit tests (ADR-0003), not by a diagram.
 | GDD v0.15 controls screen (G1b): §4.2 layout, capture, labels, device, restore, save v2 | SD-remap, STM-scenes (G1b), CD-menus, UC6 text (1a, 3c); tests with the G1b code PRs |
 | GDD v0.16 hall of fame (G2): §9.1 letter grid, table, High scores, Ending | SD-score, STM-scenes (G2), CD-menus (`LetterGrid`, `NameEntry`, `HighScoreTable`, `HighScoreEntry`), UC3, UC4; tests `high-scores.test.ts`, `high-scores-screen.test.ts`, `letter-grid.test.ts`, `name-entry.test.ts`, `scene-machine.test.ts` |
 | Scene machine refactor (architecture-guardian, G2-3b review; owner option B, 2026-10-15): one dispatch table, one `sceneSteps` | CD-menus (`SceneHandler`, `SceneMachine.handlers`, `sceneSteps`), STM-scenes (implementation-shape note); no behaviour change: `scene-machine.test.ts` passes unchanged |
-| GDD v0.29 death resets the weapon (§4.4 steps 1 and 2, §4.6, §10, #130): the Spread at level 1, no pickup released | STM-player (death step note), SD-hit (`Weapon.reset()`, no release), CD (`Weapon.reset`, `PickupMotion` without `RELEASE`, rule table); tests: with the code PR |
+| GDD v0.29 death resets the weapon (§4.4 steps 1 and 2, §4.6, §10, #130): the Spread at level 1, no pickup released | STM-player (death step note), SD-hit (`Weapon.reset()`, no release), CD (`Weapon.reset`, `PickupMotion` removed, rule table); tests: `weapon.test.ts` (reset from any kind and level, cooldown cleared), `bomb-shield.test.ts` (reset before `PLAYER_DIED`, last life included, nothing spawned), `run.test.ts`, `level-1-balance.test.ts` (bands re-anchored) |
 
 ## 5. Known gaps (accepted)
 
