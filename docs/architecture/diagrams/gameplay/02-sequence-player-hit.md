@@ -11,7 +11,7 @@
 
 What happens when an enemy bullet or an enemy or boss body overlaps the player's 6 × 6 hitbox (GDD v0.24; 4 × 4 before) (the 36 × 36 shield ring while a charge is held, GDD v0.19),
 with every branch of GDD §4.4: ignored, absorbed by a shield charge, or a life lost with the
-power penalty and its release. The timing — invulnerability, respawn, Game over at the end of
+weapon reset (GDD v0.29: no release any more). The timing — invulnerability, respawn, Game over at the end of
 the death sequence — belongs to the player's state machine.
 
 ## Diagram
@@ -51,16 +51,8 @@ sequenceDiagram
     Note over CR: the bullet's spent = true, released at step 6 (a body is unaffected)
     CR->>Rules: playerDied()
     Note over Rules: bombs = DifficultyProfile.bombsPerLife, at once — the HUD shows them during the explosion
-    Rules->>Wp: powerDown()
-    Wp-->>Rules: powerDropped — true if the level dropped, false at level 1
-    opt [powerDropped, the last life included]
-      Rules->>W: spawnPickup(P of the current weapon kind, death x, death y, RELEASE)
-      Note over W: rises linearly over 0.8 s to y = max(death y − 48, 24), then falls at 20 px/s — x fixed at the death x, no sway
-      W-->>Rules: spawned — false when the pickup pool is full
-      opt [spawned]
-        Rules->>Bus: publish PICKUP_SPAWNED (detail = kind)
-      end
-    end
+    Rules->>Wp: reset()
+    Note over Wp: kind = SPREAD, level = 1 (GDD v0.29, #130) — no pickup is released, the last life included
     Rules->>Bus: publish PLAYER_DIED
     activate Bus
     Bus->>SK: chain reset to ×1, LevelTally.lifeLost = true — the no-miss lost
@@ -81,20 +73,14 @@ sequenceDiagram
 - **The player decides the outcome, the run applies the penalties**: `Player.hit()` returns
   `IGNORED`, `ABSORBED` or `DIED`; `RunRules.playerDied()` applies what needs the difficulty profile
   and the world — bombs, power, release.
-- **No release at power 1** (GDD v0.2 §4.4): `powerDown()` returns `false` and nothing spawns.
-  The weapon kind never changes on death.
-- **The release hop** (GDD v0.8 §4.4): the v0.2 drift at 40 px/s left the field 1.4 s after the
-  death, before the ship returns at 2 s. The `RELEASE` motion first rises, then falls at half the
-  normal speed: the rise is linear over 0.8 s whatever its height (clamped at y 24 it simply
-  rises less); x stays at the death x, with no sway, during the rise and the fall. From the
-  resting line it stays catchable about 4 s after control returns. It is
-  an ordinary P (the cap rule applies), released on the last life too — the run plays on after
-  Game over, and the rule stays uniform.
+- **The death resets the weapon, releases nothing** (GDD v0.29 §4.4, #130; v0.2 to v0.28: `powerDown()`
+  and a released P with the `RELEASE` hop motion): `Weapon.reset()` sets the kind to `SPREAD` and the
+  level to 1, on the last life too; no pickup spawns, so the `PickupMotion.RELEASE` motion is gone.
 - **Shield** (GDD v0.8 §4.4; ring shape v0.19): a bullet or a body touching the 36 × 36 ring both
   consume the charge; the bullet is
   spent, the body survives. `PLAYER_HIT` is published by
   `HitRules.shieldBroken()`, which `RunRules` realizes.
-- **Order**: the release pickup spawns before `PLAYER_DIED` is published, so every listener sees
+- **Order**: the weapon is reset before `PLAYER_DIED` is published, so every listener sees
   a consistent world; `ScoreKeeper` resets the chain before the presenter reacts.
 - **Bombs reset to the difficulty value** (`bombsPerLife`, GDD §10), not to a literal.
 - **Tally** (GDD v0.10 §8): only `PLAYER_DIED` breaks the no-miss; an absorbed hit publishes
