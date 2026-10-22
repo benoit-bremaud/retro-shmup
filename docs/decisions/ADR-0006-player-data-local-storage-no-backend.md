@@ -75,7 +75,9 @@ The forces that shape the decision:
    version, missing fields) resolves to the defaults; it is never a fatal error.
 5. **Graceful degradation.** The adapter wraps every `localStorage` access in `try/catch` and
    reports `null` / `false`. When storage is unavailable the game runs with default options and an
-   empty top 10, and simply does not persist: no prompt, no error screen.
+   empty top 10, and simply does not persist: no prompt, no error screen. *(Amended 2026-10-19,
+   GDD v0.28, #128: "empty top 10" now reads "the default top 10 of fictional players"; a stored
+   table, even empty, is still kept as stored.)*
 6. **Writes happen at discrete moments only** — when an option changes and when a name is
    entered — never inside the fixed-timestep loop (ADR-0002: no allocation, no I/O in the loop).
 7. **No personal data beyond three initials.** Initials come from a constrained arcade alphabet

@@ -176,10 +176,10 @@ step depends on them.
   3. Player returns to the title screen.
 - **Extensions**:
   - 2a. Fewer than 10 entries exist: the empty rows show dashes.
-  - 2b. The stored document is unreadable: an empty table is shown; the document is not
-    rewritten until the next score or option change.
+  - 2b. The stored document is unreadable: the default table of fictional players is shown
+    (GDD v0.28); the document is not rewritten until the next score or option change.
   - 2c. The stored document has a higher, unknown version (newer data read by an older build):
-    an empty table is shown and nothing is written for the rest of the session (ADR-0006).
+    the default table is shown and nothing is written for the rest of the session (ADR-0006).
 
 ### UC5 — Configure the game
 
