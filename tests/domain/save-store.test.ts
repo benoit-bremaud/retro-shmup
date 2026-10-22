@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_BINDINGS } from '../../src/domain/input/default-bindings';
 import type { Options } from '../../src/domain/options';
 import type { Bindings } from '../../src/domain/ports/input-port';
+import {
+  DEFAULT_HIGH_SCORES,
+  HighScoreTable,
+  type HighScoreEntry,
+} from '../../src/domain/hall-of-fame/high-scores';
 import { defaultOptions, SAVE_KEY, SaveStore } from '../../src/domain/save/save-store';
 import type { StoragePort } from '../../src/domain/ports/storage-port';
 
@@ -252,7 +257,7 @@ describe('SaveStore.saveOptions (ADR-0006 decisions 2, 5, 6)', () => {
     expect(JSON.parse(storage.values.get(SAVE_KEY) ?? '')).toEqual({
       version: 2,
       options: CUSTOM,
-      highScores: [],
+      highScores: DEFAULT_HIGH_SCORES,
     });
     expect(storage.writes).toBe(1);
   });
@@ -385,13 +390,13 @@ describe('SaveStore — the hall of fame (GDD v0.16 §9.1, ADR-0021)', () => {
     expect(storage.writes).toBe(0);
   });
 
-  it('forgets a previous table when a reload finds no document', () => {
+  it('falls back to the default table when a reload finds no document', () => {
     const storage = stored({ version: 2, options: CUSTOM, highScores: [ACE] });
     const store = new SaveStore(storage, false);
     store.load();
     storage.values.clear();
     store.load();
-    expect(store.highScores).toEqual([]);
+    expect(store.highScores).toEqual(DEFAULT_HIGH_SCORES);
   });
 
   it('never writes the table over a newer document', () => {
@@ -399,5 +404,82 @@ describe('SaveStore — the hall of fame (GDD v0.16 §9.1, ADR-0021)', () => {
     const store = new SaveStore(storage, false);
     store.load();
     expect(store.saveHighScores([ACE])).toBe(false);
+  });
+});
+
+describe('SaveStore — the default table (GDD v0.28 §9.1, ADR-0006 decision 5)', () => {
+  const ACE: HighScoreEntry = { name: 'ACE', score: 1200, level: 1, date: '2026-10-14' };
+
+  it.each([
+    ['no save', new MemoryStorage()],
+    ['an unreadable document', stored('{"version":')],
+    ['a non-object document', stored(42)],
+    ['an unknown version', stored({ version: 0, options: CUSTOM })],
+    ['a missing version', stored({ options: CUSTOM, highScores: [ACE] })],
+    ['a newer version', stored({ version: 3, options: {}, highScores: [ACE] })],
+    ['a document without a highScores key', stored({ version: 2, options: CUSTOM })],
+    ['a version 1 document without the key', stored({ version: 1, options: CUSTOM_V1 })],
+  ])('starts with the ten fictional players on %s', (_label, storage) => {
+    const store = new SaveStore(storage, false);
+    store.load();
+    expect(store.highScores).toEqual(DEFAULT_HIGH_SCORES);
+  });
+
+  it('starts with them when storage is unavailable', () => {
+    const storage = new MemoryStorage();
+    storage.available = false;
+    const store = new SaveStore(storage, false);
+    store.load();
+    expect(store.highScores).toEqual(DEFAULT_HIGH_SCORES);
+  });
+
+  it('keeps a stored empty table empty', () => {
+    const store = new SaveStore(stored({ version: 2, options: CUSTOM, highScores: [] }), false);
+    store.load();
+    expect(store.highScores).toEqual([]);
+  });
+
+  it.each([null, 'x', {}, [{ bad: 1 }]])(
+    'reads a present but unusable highScores (%j) as a stored empty table',
+    (highScores) => {
+      const store = new SaveStore(stored({ version: 2, options: CUSTOM, highScores }), false);
+      store.load();
+      expect(store.highScores).toEqual([]);
+    },
+  );
+
+  it('keeps a stored table although the options are invalid', () => {
+    const document = { version: 2, options: { language: 'xx' }, highScores: [ACE] };
+    const store = new SaveStore(stored(document), false);
+    store.load();
+    expect(store.highScores).toEqual([ACE]);
+  });
+
+  it('keeps a stored table as stored, without the fictional rows', () => {
+    const store = new SaveStore(stored({ version: 2, options: CUSTOM, highScores: [ACE] }), false);
+    store.load();
+    expect(store.highScores).toEqual([ACE]);
+  });
+
+  it('shows the defaults in a session that read a newer save, and never writes it', () => {
+    const storage = stored({ version: 3, options: {} });
+    const store = new SaveStore(storage, false);
+    store.load();
+    expect(store.highScores).toEqual(DEFAULT_HIGH_SCORES);
+    expect(store.saveHighScores([ACE])).toBe(false);
+    expect(storage.writes).toBe(0);
+  });
+
+  it('writes the whole table, fictional rows included, with the first real entry', () => {
+    const storage = new MemoryStorage();
+    const store = new SaveStore(storage, false);
+    store.load();
+    const table = new HighScoreTable(store.highScores);
+    table.insert({ name: 'ME', score: 95000, level: 1, date: '2026-10-22' });
+    store.saveHighScores(table.entries);
+    const written = JSON.parse(storage.values.get(SAVE_KEY) ?? '') as { highScores: unknown[] };
+    expect(written.highScores).toHaveLength(10);
+    expect(written.highScores).toContainEqual(expect.objectContaining({ name: 'ME' }));
+    expect(written.highScores).not.toContainEqual(expect.objectContaining({ name: 'KITE' }));
   });
 });

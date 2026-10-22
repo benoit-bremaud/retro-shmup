@@ -2,7 +2,11 @@ import { DefaultVolume, isVolumeStep } from '../audio/volume';
 import type { Language } from '../i18n/messages';
 import { isRecord } from '../guards';
 import { COUNTRY_CODES } from '../hall-of-fame/country-codes';
-import { parseHighScores, type HighScoreEntry } from '../hall-of-fame/high-scores';
+import {
+  DEFAULT_HIGH_SCORES,
+  parseHighScores,
+  type HighScoreEntry,
+} from '../hall-of-fame/high-scores';
 import { DEFAULT_BINDINGS } from '../input/default-bindings';
 import { parseBindings } from '../input/parse-bindings';
 import { NO_COUNTRY } from '../options';
@@ -141,8 +145,8 @@ export class SaveStore {
   private readonly reducedMotion: boolean;
   /** A newer document read by an older build is never overwritten this session (UC4 2c). */
   private readOnly = false;
-  /** The stored top 10, read by allowlist (ADR-0021); saving an option writes it back. */
-  private table: readonly HighScoreEntry[] = [];
+  /** The stored top 10, read by allowlist (ADR-0021), or the default table; saving writes it back. */
+  private table: readonly HighScoreEntry[] = DEFAULT_HIGH_SCORES;
   /** False until `load`: nothing is written before the stored document has been read. */
   private loaded = false;
   /** The options last loaded or saved, written with the table. */
@@ -154,12 +158,15 @@ export class SaveStore {
     this.options = defaultOptions(reducedMotion);
   }
 
-  /** The stored options, or the defaults of a first launch. */
+  /**
+   * The stored options, or the defaults of a first launch; also fills `highScores`: the stored
+   * table, or the default one when the save holds none (GDD v0.28 §9.1).
+   */
   load(): Options {
     this.loaded = true;
     const fallback = defaultOptions(this.reducedMotion);
     this.options = fallback;
-    this.table = [];
+    this.table = DEFAULT_HIGH_SCORES;
     const raw = this.storage.read(SAVE_KEY);
     if (raw === null) return fallback;
     const document = parseJson(raw);
@@ -170,7 +177,8 @@ export class SaveStore {
       return fallback;
     }
     if (version !== VERSION && version !== FIRST_VERSION) return fallback;
-    this.table = parseHighScores(document.highScores);
+    // Only an absent key takes the fictional players; a stored table, empty included, is kept.
+    if (document.highScores !== undefined) this.table = parseHighScores(document.highScores);
     this.options = parseOptions(document.options, version) ?? fallback;
     return this.options;
   }

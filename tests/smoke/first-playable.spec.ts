@@ -449,9 +449,16 @@ test.describe('the hall of fame on a desktop with a keyboard', () => {
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
 
-    // An empty table first: the reference for the painted rows.
+    // A fresh profile shows the default table (GDD v0.28 §9.1); a stored empty one is the
+    // reference for the painted rows.
     await page.goto('./');
+    const fresh = await openHighScores(page);
+    await page.evaluate((key) => {
+      localStorage.setItem(key, JSON.stringify({ version: 2, highScores: [] }));
+    }, SAVE_KEY);
+    await page.reload();
     const empty = await openHighScores(page);
+    expect(fresh).toBeGreaterThan(empty * 2);
 
     // A stored top 10, read back after a reload and shown.
     await page.evaluate(
