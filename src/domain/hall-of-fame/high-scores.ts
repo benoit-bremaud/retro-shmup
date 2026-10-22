@@ -18,6 +18,29 @@ export interface HighScoreEntry {
 /** The table's size (GDD v0.16 §9.1). */
 export const TABLE_SIZE = 10;
 
+/** One fictional player of the default table: level 1, dated with the design (GDD v0.28 §9.1). */
+function fictional(name: string, country: string, score: number): HighScoreEntry {
+  return { name, country, score, level: 1, date: '2026-10-19' };
+}
+
+/**
+ * The table of a profile that holds none (GDD v0.28 §9.1, #128): ten fictional players, best
+ * first, so the High scores screen is never empty and a beginner has a target. Real entries follow
+ * the usual rules and push them out one by one.
+ */
+export const DEFAULT_HIGH_SCORES: readonly HighScoreEntry[] = [
+  fictional('ACE', 'JP', 150_000),
+  fictional('NOVA', 'FR', 125_000),
+  fictional('BLAZE', 'US', 110_000),
+  fictional('ORBIT', 'DE', 100_000),
+  fictional('COMET', 'GB', 90_000),
+  fictional('VEGA', 'IT', 80_000),
+  fictional('ZEPHYR', 'CA', 70_000),
+  fictional('PIXEL', 'BR', 60_000),
+  fictional('LUNA', 'ES', 45_000),
+  fictional('KITE', 'KR', 30_000),
+];
+
 const NAME = /^[A-Z\d ]{1,8}$/;
 const DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];

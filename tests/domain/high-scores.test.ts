@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { COUNTRY_CODES } from '../../src/domain/hall-of-fame/country-codes';
-import { HighScoreTable, parseHighScores } from '../../src/domain/hall-of-fame/high-scores';
+import {
+  DEFAULT_HIGH_SCORES,
+  HighScoreTable,
+  parseHighScores,
+} from '../../src/domain/hall-of-fame/high-scores';
 import type { HighScoreEntry } from '../../src/domain/hall-of-fame/high-scores';
 
 function entry(name: string, score: number, country?: string): HighScoreEntry {
@@ -142,5 +146,46 @@ describe('parseHighScores (ADR-0021 decisions 2, 3 and 6; untrusted input)', () 
     expect(parsed).toEqual([entry('ACE', 10, 'FR')]);
     expect(parseHighScores('nonsense')).toEqual([]);
     expect(parseHighScores(undefined)).toEqual([]);
+  });
+});
+
+describe('DEFAULT_HIGH_SCORES (GDD v0.28 §9.1)', () => {
+  it('holds the ten fictional players, best first, from 150 000 to 30 000', () => {
+    expect(
+      DEFAULT_HIGH_SCORES.map((e) => `${e.name} ${e.country ?? ''} ${String(e.score)}`),
+    ).toEqual([
+      'ACE JP 150000',
+      'NOVA FR 125000',
+      'BLAZE US 110000',
+      'ORBIT DE 100000',
+      'COMET GB 90000',
+      'VEGA IT 80000',
+      'ZEPHYR CA 70000',
+      'PIXEL BR 60000',
+      'LUNA ES 45000',
+      'KITE KR 30000',
+    ]);
+  });
+
+  it('is valid against the stored-entry rules: parsing keeps all ten unchanged', () => {
+    expect(parseHighScores(DEFAULT_HIGH_SCORES)).toEqual(DEFAULT_HIGH_SCORES);
+  });
+
+  it('uses known countries, level 1 and the date 2026-10-19', () => {
+    for (const e of DEFAULT_HIGH_SCORES) {
+      expect(COUNTRY_CODES.has(e.country ?? '')).toBe(true);
+      expect(e.level).toBe(1);
+      expect(e.date).toBe('2026-10-19');
+    }
+  });
+
+  it('lets a real score enter above the tenth and push the lowest out', () => {
+    const table = new HighScoreTable(DEFAULT_HIGH_SCORES);
+    expect(table.qualifies(30000)).toBe(false);
+    expect(table.insert(entry('ME', 30001))).toBe(9);
+    expect(table.entries).toHaveLength(10);
+    expect(table.entries.some((e) => e.name === 'KITE')).toBe(false);
+    expect(table.insert(entry('TOP', 200000))).toBe(0);
+    expect(table.entries[9]?.name).toBe('LUNA'); // the fictional rows go one by one
   });
 });

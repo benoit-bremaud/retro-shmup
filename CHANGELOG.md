@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- A first launch (or a missing, unreadable or newer save) starts the High scores with ten
+  fictional players, 150 000 down to 30 000, that real scores push out one by one; a stored
+  table, even empty, is kept as stored (GDD v0.28 §9.1, #128).
 - The country is asked once, before the first run, and kept; it can be changed in the options
   (GDD v0.26 §9.1, #115).
 - Menu rows are as tall as the screen allows, up to 32 px, so a phone can tap them without

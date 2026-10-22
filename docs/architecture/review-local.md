@@ -1,7 +1,7 @@
-# Local review — retro-shmup (feat/ui-country-flags)
+# Local review — retro-shmup (feat/game-default-high-scores)
 
-- Date: 2026-10-19
-- Scope: branch diff origin/main...HEAD (pixel country flags, #125, ADR-0028, GDD v0.27)
+- Date: 2026-10-22
+- Scope: branch diff origin/main...HEAD (default High scores table, #128, GDD v0.28)
 - Checks run: design (architecture-guardian) · docs (doc-auditor) · tests (test-auditor) · security + correctness (read-only review)
 - Verdict: ship — every Must and Should fixed · Must 0 open · Should 0 open · Nice 5 (below)
 
