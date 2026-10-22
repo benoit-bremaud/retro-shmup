@@ -8,6 +8,19 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-10-23
 
+### Death resets the weapon (#130, code #137 `02c66ca`)
+
+- `Weapon.powerDown()` → `Weapon.reset()` (Spread, level 1, cooldown cleared); `RunRules.playerDied()`
+  resets before `PLAYER_DIED`, last life included; the death release, `PickupMotion` and the hop
+  tuning are removed. TDD on the domain; UML class diagram and traceability matrix updated.
+- Re-measured with the bot (100 seeds, good / average / beginner): game over 60/61/97 → 98/98/100 %,
+  boss killed 40/40/3 → 2/2/0 %, average deaths 3.32 → 3.91; median scores unchanged, so the default
+  High scores scale (150 000 → 30 000) stays. Owner MCDA option A (415/500): guard bands re-anchored
+  on the measure; compensation (more P, Easy) waits for the playtest.
+- Gate: 1648 tests, smoke ×3 browsers, coverage 99.24 %, docs 99.5 %, SonarQube PASSED (one S5906
+  fixed), gitleaks clean, QA capture `qa/2026-10-23-death-reset-run.jpg`; Codex: no finding.
+- Follow-up: level-1 compensation after the playtest; ADR-0019/ADR-0010 still name the release.
+
 ### SonarQube gate unblocked (#134 → #135 `554ec5d`)
 
 - SonarQube 26.10 added the rules S2925 (fixed waits in tests) and S9382 (awaits in a loop) on
