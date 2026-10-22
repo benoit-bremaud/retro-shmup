@@ -75,8 +75,8 @@ step depends on them.
   - 5b. Player is hit while holding a shield charge: the charge absorbs the hit, short
     invulnerability, play continues (GDD §4.4).
   - 5c. Player is hit without a shield charge: one life is lost, chain resets to ×1, bombs reset
-    to 2, power drops by one level and that level is released as a pickup — at power 1 nothing
-    is released — then the ship respawns with temporary invulnerability (GDD §4.4).
+    to 2, the weapon goes back to the Spread at power level 1 and nothing is released (GDD v0.29,
+    #130) — then the ship respawns with temporary invulnerability (GDD §4.4).
     - 5c1. No life remains: the game shows Game over; continue at step 11 (comparison), then 12.
   - 6a. A pickup type appears for the first time in this run: a one-second label names it
     (GDD §7.3).

@@ -1,30 +1,21 @@
-# Local review — retro-shmup (branch chore/sonar-gate, #134)
+# Local review — retro-shmup (branch docs/death-resets-weapon, design PR #130)
 
 - Date: 2026-10-22
-- Scope: branch diff origin/main...HEAD (`sonar-project.properties`, `tests/smoke/first-playable.spec.ts`)
-- Checks run: design · docs · tests · security · correctness (read by hand, two files) and the execution checks
-- Verdict: ship · Must 0 · Should 0 · Nice 1
-
-## Pre-merge gate (execution checks)
-| Step | Result |
-|---|---|
-| 1 Tests | ✅ 1 651 unit/simulation · ✅ smoke 6/6 (Chromium, Firefox, WebKit), three runs in a row |
-| 2 Coverage | 99.24 % stmts / 95.7 % branches / 100 % funcs / 99.91 % lines |
-| 3 SonarQube | ✅ PASSED (failed before: 12 new violations from the 26.10 rules S2925 and S9382) |
-| 4 Secrets | ✅ gitleaks clean · no tracked .env · diff read: nothing sensitive |
-| 5 QA pass | smoke suite only (no runtime code changed) |
+- Scope: branch diff origin/main...HEAD, docs-only (GDD v0.29, UML, traceability, CHANGELOG, PROJECT_LOG); no code, no ADR edited
+- Checks run: cross-document consistency grep (design, docs, correctness), prettier, gitleaks; agents and the pre-merge execution steps are proportionate to a docs-only diff and are run on the merged SHA before merge
+- Verdict: ship (push) · Must 0 · Should 1 · Nice 0
 
 ## 🔴 Must Have
 _None._
 
 ## 🟡 Should Have
-_None._
+- `docs/architecture/diagrams/system/01-use-case.md:77` `[docs]` · UC step 5c still described the one-level penalty and the release · fixed in this branch (now the reset to the Spread at level 1, no release).
 
 ## 🔵 Nice to Have
-- `sonar-project.properties` `[ci]` · the new-code period (PREVIOUS_VERSION since 2026-10-08, no `sonar.projectVersion`) makes any new profile rule block the whole repository · separate follow-up.
+_None._
 
 ## ⚪ Disagree / Intentional
-- `tests/smoke/**` S2925, `src/adapters/web-audio-player.ts` S9382 `[tests]` · waits on the game's own time rules and a sequential decode on purpose · scoped, commented exclusions e4/e5, as e1–e3.
+- `docs/decisions/ADR-0019-*.md:53,67`, `ADR-0010-*.md:45` `[docs]` · still name `powerDown` and the release hop · ADR text is not edited outside a dedicated PR (CLAUDE.md); the GDD decision record row v0.29 supersedes them; logged in PROJECT_LOG.
 
 ## Per-dimension summary
-- Design: none. Docs: exclusions commented. Tests: two fixed waits now poll the pause state. Security: none. Correctness: the smoke assertions are unchanged in meaning.
+- Design: the 4 owner decisions (MCDA 395 / 445 / 430 / 445) are in the decision record. Docs: prettier clean. Security: no code, gitleaks clean. Tests: none touched; code PR carries them. Correctness: sequence diagram `end` balance checked.
