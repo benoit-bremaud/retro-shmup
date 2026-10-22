@@ -117,7 +117,7 @@ classDiagram
     -enemies: FixedPool~Enemy~
     -formations: FixedPool~Formation~
     -boss: Boss
-    +spawnPickup(kind: PickupKind, x, y, motion: PickupMotion) boolean
+    +spawnPickup(kind: PickupKind, x, y) boolean
     +cancelEnemyBullets() void
     +spendPlayerBullets() void
     +sweep() void
@@ -221,10 +221,6 @@ classDiagram
     -age: number
     -spent: boolean
   }
-  class PickupMotion {
-    <<enumeration>>
-    FALL
-  }
   class PickupKind {
     <<enumeration>>
     P_RED
@@ -317,7 +313,6 @@ classDiagram
   Weapon ..> WeaponLevel : reads WEAPONS[kind][level − 1]
   WeaponLevel *-- "1..5" ShotSpec : shots
   Pickup --> "1" PickupKind : kind
-  Pickup --> "1" PickupMotion : motion
   ScoreKeeper *-- "1" LevelTally
   LevelTally ..> TallyTuning : reads
   ScoreKeeper ..> EventBus : subscribed first by Run
@@ -574,7 +569,7 @@ classDiagram
 | Spread and Laser levels (v0.5, v0.8 §4.3) | `WEAPONS.SPREAD[0]` is one `ShotSpec` from the nose (size, speed, rate: GDD §4.3); every level's velocities are computed once at load from the GDD angles; `Weapon.cooldown` in whole steps (6, then 4 at Spread level 5); bullets released once fully outside the field (any side) |
 | HP and damage in tenths (v0.8 §5.2.1, ADR-0019) | `EnemyStats.hp`, `ShotSpec.damage` and the bomb's damage are integers in tenths of a level-1 shot (Popcorn 10, Gunner 100 and Heavy 500 since GDD v0.18 (80 and 400 before), Carrier 40, bomb 300); `applyDamage` is unchanged |
 | Seeded drops and spawn order (v0.8 §4.6, §7.1, ADR-0019) | `Run(config: RunConfig)` owns the `Random`, built by the optional `RunConfig.createRandom(levelSeed)` (default `new SeededRandom(levelSeed)`, the test seam for a scripted `Random`) with mix(seed, 0) for level 1 and mix(seed, levelIndex) by `startNextLevel` (`levelIndex` 0-based); `World.spawnPickup` returns false when the pool of 8 is full, and `PICKUP_SPAWNED` is published only for a pickup actually spawned; one draw per killed enemy with a rate above 0 and no cargo picks both the drop and its kind; `DropTable.rate` × `DifficultyProfile.dropRateScale` |
-| Pickup motion and lifetime (v0.8 §4.4, §4.6) | `Pickup.position` is a closed form of `age` and `motion` from `origin` (fall: 40 px/s with the 8 px, 2 s sway around x0 clamped to 16–224; the v0.8 release motion is gone since GDD v0.29); `World.sweep` releases a spent pickup or one whose top edge reached y 320; a spawn on the full pool of 8 is dropped |
+| Pickup motion and lifetime (v0.8 §4.4, §4.6) | `Pickup.position` is a closed form of `age` from `origin` (fall: 40 px/s with the 8 px, 2 s sway around x0 clamped to 16–224; the v0.8 release motion is gone since GDD v0.29); `World.sweep` releases a spent pickup or one whose top edge reached y 320; a spawn on the full pool of 8 is dropped |
 | Shield (v0.8 §4.4) | `Player.shield`; `hit()` in `Vulnerable` with a charge clears it, sets 0.5 s of `Invulnerable` with the blink count restarted and returns `ABSORBED`; the resolver spends the bullet (a body survives) and calls `HitRules.shieldBroken()`, which publishes `PLAYER_HIT`; while the charge is held the resolver tests the 36 × 36 ring (`PlayerTuning.shieldSize`) instead of the 4 × 4 hitbox, so any touch of the ring consumes it (GDD v0.19) |
 | Carrier (v0.8 §5.2.1) | `CARRIER` = `CrossMovement` (a closed form of the age: 60 px/s, y constant; spawn x < 120 → moves right, otherwise left; the load check rejects with a `RangeError` a Carrier whose spawn box overlaps the field, and one whose height never crosses the field — it would never enter, so never be released) + `NoAttack` + `DropTable` none + script cargo |
 

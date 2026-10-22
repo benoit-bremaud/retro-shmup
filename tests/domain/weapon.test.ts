@@ -237,6 +237,6 @@ describe('Weapon — reset at death (GDD v0.29 §4.4)', () => {
     fire(weapon, spawner, [true]);
     weapon.reset();
     fire(weapon, spawner, [true]);
-    expect(spawner.shots.length).toBe(2);
+    expect(spawner.shots).toHaveLength(2);
   });
 });

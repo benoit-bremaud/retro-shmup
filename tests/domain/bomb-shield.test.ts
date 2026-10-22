@@ -285,6 +285,21 @@ describe('Run — shield and death through the collisions (GDD v0.8 §4.4)', () 
     expect([run.snapshot().weaponKind, run.snapshot().bombs]).toEqual([WeaponKind.Spread, 2]);
     expect(run.snapshot().pickups.count).toBe(0);
   });
+
+  it('resets the weapon on the last life too (GDD v0.29)', () => {
+    const player = new Player();
+    const world = new World();
+    for (let death = 0; death < 3; death += 1) {
+      while (player.state !== PlayerState.Vulnerable) {
+        player.update(idle(), DT, world);
+        player.advanceTimers();
+      }
+      if (death === 2) player.collect(PickupKind.PBlue);
+      expect(player.hit()).toBe(HitOutcome.Died);
+      player.applyDeathPenalty();
+    }
+    expect([player.lives, player.power, player.weaponKind]).toEqual([0, 1, WeaponKind.Spread]);
+  });
 });
 
 describe('Effects — bomb flash and shake (GDD v0.8 §9.4)', () => {

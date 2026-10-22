@@ -230,7 +230,8 @@ export class Player {
     this.position.y = PlayerTuning.spawnY;
     this.previousPosition.x = PlayerTuning.spawnX;
     this.previousPosition.y = PlayerTuning.spawnY;
-    // The cooldown froze while Dead: the first shot after the fly-in is immediate.
+    // Already reset at the death (applyDeathPenalty); kept so the first shot after the fly-in is
+    // immediate whatever path led here.
     this.weapon.reset();
   }
 
