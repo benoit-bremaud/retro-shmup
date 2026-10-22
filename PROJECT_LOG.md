@@ -17,8 +17,11 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   save holds no table (no storage, missing, unreadable, unknown or newer version, `highScores`
   key absent). A stored table, even `[]`, is kept; the first real save writes the whole table.
 - Surprises surfaced to the owner: a run of 30 000 or less no longer reaches the name entry;
-  the champion's background name is `ACE` on a fresh profile. Left as designed.
-- Follow-ups: #130 (losing a life resets to the base weapon, own design PR); #131 (country preselected from the browser time zone, offline; owner chose option A, MCDA 450/500).
+  the champion's background name is `ACE` on a fresh profile; a present but unusable
+  `highScores` (`null`, a string) reads as a stored empty table, not the defaults. Left as
+  designed.
+- Follow-ups: #130 (losing a life resets to the base weapon, own design PR); #131 (country
+  preselected from the browser time zone, offline; owner chose option A, MCDA 450/500).
 
 ---
 
