@@ -171,6 +171,6 @@ sequenceDiagram
   of the tables has a pass-through — Spread bullets and Laser bolts alike are spent on their first
   hit, the nearest along their path. Damage is in tenths of a level-1 shot
   (ADR-0019).
-- **First-time labels** cover every spawn path (drop, cargo, formation reward, death release),
+- **First-time labels** cover every spawn path (drop, cargo, formation reward; the death release is gone since GDD v0.29),
   including the very first formation of level 1 (GDD §7.3); they wait for the bitmap fonts
   (interim deviation, meta/05-state-scenes).

@@ -76,10 +76,10 @@ stateDiagram-v2
 - **Shield** (GDD v0.8 §4.4): a charge is held in any state and kept until used; only a hit in
   `Vulnerable` consumes it, since the other states ignore hits. The absorbed hit restarts the
   blink count, unlike the bomb from `Invulnerable`.
-- **A life is lost on the transition to `Dead`**: lives −1, bombs reset to `bombsPerLife`, power
-  −1 with its release (none at level 1, released on the last life too), chain reset — all at the
-  death step, so the HUD shows them during the explosion (GDD v0.8 §4.4); see the sequence
-  diagram.
+- **A life is lost on the transition to `Dead`**: lives −1, bombs reset to `bombsPerLife`, weapon
+  back to the Spread at level 1 with no pickup released (GDD v0.29 §4.4, #130; v0.8: power −1 with
+  a release), chain reset — all at the death step, so the HUD shows them during the explosion
+  (GDD v0.8 §4.4); see the sequence diagram.
 - **Game over after the explosion** (GDD v0.4 §4.4): the `Player` holds no reference to the run;
   when the death sequence ends with no life left, `Run` reads it at step 8 of `Run.step` and sets
   the outcome to `GAME_OVER`; the scene machine then shows Game over.

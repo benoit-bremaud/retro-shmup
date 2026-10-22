@@ -6,6 +6,35 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ---
 
+## 2026-10-23
+
+### SonarQube gate unblocked (#134 → #135 `554ec5d`)
+
+- SonarQube 26.10 added the rules S2925 (fixed waits in tests) and S9382 (awaits in a loop) on
+  2026-10-22. With the new-code period at PREVIOUS_VERSION since 2026-10-08 and no
+  `sonar.projectVersion`, 12 existing lines counted as new code: the gate failed on every branch.
+- Owner MCDA option A (425/500): replace the smoke test's fixed waits with polls where a state is
+  visible, exclude the rest with scoped, commented exclusions (e4 S9382 on `web-audio-player.ts`,
+  e5 S2925 on `tests/smoke/**`). The Codex review showed the only candidates (the count-in waits)
+  were not replaceable: `paused()` turns false at the start of the count-in. So in the end the
+  fix is option B: exclusions only, smoke test unchanged.
+- Gotcha: port 4173 can be held by another project's `vite preview`; the smoke test then fails
+  at start-up (run it on another port with a temporary config, never kill the other process).
+- Follow-up: the new-code definition, so a profile change cannot block the repository again.
+
+### Design: losing a life resets the weapon (#130, design PR)
+
+- Owner playtest request reverses the v0.2/v0.8 death penalty. GDD v0.29 §4.4/§4.6/§10 and the
+  decision record; UML `05-state-player`, `02-sequence-player-hit`, `04-class-domain`,
+  traceability matrix. No code.
+- Owner MCDA answers: Q1 reset to the Spread at level 1 (395/500 vs 390 same kind at level 1);
+  Q2 no pickup released any more (445 vs 295 one-level P, 235 whole power); Q3 bombs (2), chain
+  (×1) and last life unchanged (430); Q4 re-measure the level-1 balance bot and the default
+  High scores scale in the code PR (445), figures of v0.28 stand until then.
+- Left open on purpose: ADR-0019 and ADR-0010 still mention `powerDown` and the release hop
+  (ADRs are not edited here); the GDD decision record supersedes them.
+- Follow-up: the code PR (`Weapon.reset()`, drop `PickupMotion.RELEASE`, tests, re-measure).
+
 ## 2026-10-22
 
 ### Default High scores table (#128: design #129 `dbcc9f2`, code #132 `7c0ff3d`)

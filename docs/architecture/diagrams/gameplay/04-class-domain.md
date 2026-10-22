@@ -172,7 +172,7 @@ classDiagram
     -cooldown: number
     +tick(origin: Readonly~Vec2~, firing: boolean, spawner: PlayerShotSpawner) void
     +powerUp(kind: WeaponKind) boolean
-    +powerDown() boolean
+    +reset() void
   }
   class WeaponKind {
     <<enumeration>>
@@ -224,7 +224,6 @@ classDiagram
   class PickupMotion {
     <<enumeration>>
     FALL
-    RELEASE
   }
   class PickupKind {
     <<enumeration>>
@@ -544,7 +543,7 @@ classDiagram
 | Laser width and the hit order (§4.3, v0.8; stops on its first hit since v0.24) | 48 px bolts from the player bullet pool with `pierceLeft` (the pass-throughs: 1 to 3 in v0.8, 0 at every level since GDD v0.24, #107, the memory kept for data that sets one) and `alreadyHit` — the **serials** of the bodies already hit, enemies and boss alike, 3 at most — so one body is hit once per bolt, even when a pooled enemy is reused or the bolt overlaps a large boss for several steps; when a bolt overlaps more bodies than it can hit, it hits them in the order it meets them along its path (nearest first: smallest position · velocity), never in the active list's order; every body crossed takes the full damage; a hit with `pierceLeft` = 0 spends the bolt |
 | One hit = one life, shield charge, invulnerability (§4.4) | `Player.hit(): HitOutcome` — `IGNORED` while entering, invulnerable or dead (the bullet passes through), `ABSORBED` by the shield, `DIED` otherwise; Game over is decided when the death sequence ends (`05-state-player`) |
 | Next level, run cleared (§2, §7, v0.10 §9.1) | `RunConfig.levels` is the ordered level list (data); `Run.startNextLevel()` resets the outcome, the tally and the level script, reseeds `Random` from the run seed and the level index; the outcome is `LEVEL_CLEARED` after a level that has a successor, `RUN_CLEARED` after the last — in the vertical slice the list holds level 1 only, so its end is `RUN_CLEARED` (ADR-0022) |
-| Death: −1 level and release, none at level 1 (§4.4, v0.8) | `Weapon.powerDown(): boolean`; `Run.playerDied()` resets the bombs to `DifficultyProfile.bombsPerLife`, calls `powerDown()` and, when it returns `true`, spawns a P of the current kind with `PickupMotion.RELEASE` (the hop, then the slow fall) before publishing `PLAYER_DIED`; on the last life too |
+| Death: back to the Spread at level 1, no release (§4.4, v0.29, #130; v0.8: −1 level and a released P) | `Weapon.reset()` sets `kind` to `SPREAD` and `level` to 1; `Run.playerDied()` resets the bombs to `DifficultyProfile.bombsPerLife`, calls `reset()` before publishing `PLAYER_DIED`; on the last life too; nothing is spawned |
 | Bombs per life, cap, empty stock, hit the boss (§4.5, v0.8) | at step slot (3), on a `Bomb` press, `Player.useBomb(): boolean` (stock > 0, `Vulnerable` or `Invulnerable`; sets the timer to max(time left, 1 s)); on `true` the run publishes `BOMB_USED`, calls `World.cancelEnemyBullets()` and deals 300 tenths once to every live enemy overlapping the field through `applyDamage`, `enemyHit` and `destroyEnemy(enemy, BOMB)`; the boss through `damageBoss` (02-sequence-bomb) |
 | Counter stop at 99 999 999 (§8, v0.16, owner 2026-10-15) | Every point goes through `ScoreKeeper.add`, which stops at `ScoreTuning.counterStop`; `parseHighScores` drops a stored score above it |
 | Pickup at its cap → 1 000 points (§4.6, v0.8) | `Player.collect(kind): number` returns the bonus, 0 or 1 000 (an other-colour P at level 5 switches **and** returns 1 000); `PICKUP_COLLECTED` carries the kind in `detail` and the bonus in `value`; `ScoreKeeper` adds `value` flat, outside the chain |
@@ -575,7 +574,7 @@ classDiagram
 | Spread and Laser levels (v0.5, v0.8 §4.3) | `WEAPONS.SPREAD[0]` is one `ShotSpec` from the nose (size, speed, rate: GDD §4.3); every level's velocities are computed once at load from the GDD angles; `Weapon.cooldown` in whole steps (6, then 4 at Spread level 5); bullets released once fully outside the field (any side) |
 | HP and damage in tenths (v0.8 §5.2.1, ADR-0019) | `EnemyStats.hp`, `ShotSpec.damage` and the bomb's damage are integers in tenths of a level-1 shot (Popcorn 10, Gunner 100 and Heavy 500 since GDD v0.18 (80 and 400 before), Carrier 40, bomb 300); `applyDamage` is unchanged |
 | Seeded drops and spawn order (v0.8 §4.6, §7.1, ADR-0019) | `Run(config: RunConfig)` owns the `Random`, built by the optional `RunConfig.createRandom(levelSeed)` (default `new SeededRandom(levelSeed)`, the test seam for a scripted `Random`) with mix(seed, 0) for level 1 and mix(seed, levelIndex) by `startNextLevel` (`levelIndex` 0-based); `World.spawnPickup` returns false when the pool of 8 is full, and `PICKUP_SPAWNED` is published only for a pickup actually spawned; one draw per killed enemy with a rate above 0 and no cargo picks both the drop and its kind; `DropTable.rate` × `DifficultyProfile.dropRateScale` |
-| Pickup motion and lifetime (v0.8 §4.4, §4.6) | `Pickup.position` is a closed form of `age` and `motion` from `origin` (fall: 40 px/s with the 8 px, 2 s sway around x0 clamped to 16–224; release: up to max(y − 48, 24), then 20 px/s — the rise is linear over 0.8 s whatever its height (clamped at y 24 it simply rises less); x stays at the death x, with no sway, during the rise and the fall); `World.sweep` releases a spent pickup or one whose top edge reached y 320; a spawn on the full pool of 8 is dropped |
+| Pickup motion and lifetime (v0.8 §4.4, §4.6) | `Pickup.position` is a closed form of `age` and `motion` from `origin` (fall: 40 px/s with the 8 px, 2 s sway around x0 clamped to 16–224; the v0.8 release motion is gone since GDD v0.29); `World.sweep` releases a spent pickup or one whose top edge reached y 320; a spawn on the full pool of 8 is dropped |
 | Shield (v0.8 §4.4) | `Player.shield`; `hit()` in `Vulnerable` with a charge clears it, sets 0.5 s of `Invulnerable` with the blink count restarted and returns `ABSORBED`; the resolver spends the bullet (a body survives) and calls `HitRules.shieldBroken()`, which publishes `PLAYER_HIT`; while the charge is held the resolver tests the 36 × 36 ring (`PlayerTuning.shieldSize`) instead of the 4 × 4 hitbox, so any touch of the ring consumes it (GDD v0.19) |
 | Carrier (v0.8 §5.2.1) | `CARRIER` = `CrossMovement` (a closed form of the age: 60 px/s, y constant; spawn x < 120 → moves right, otherwise left; the load check rejects with a `RangeError` a Carrier whose spawn box overlaps the field, and one whose height never crosses the field — it would never enter, so never be released) + `NoAttack` + `DropTable` none + script cargo |
 
@@ -653,7 +652,7 @@ classDiagram
   `value` = score, `detail` = size tier — since the body is released at step 6, before the frame
   is drawn. `Run`'s constructor subscribes its own `ScoreKeeper` first, the only handler allowed
   to change state; the scene machine then subscribes the run's `RunPresenter` through
-  `RunView.events()`, a subscribe-only view that also drops the `Unsubscribe` result `EventBus.subscribe` returns (ADR-0003). Spawns (death release, formation P,
+  `RunView.events()`, a subscribe-only view that also drops the `Unsubscribe` result `EventBus.subscribe` returns (ADR-0003). Spawns (formation P,
   cargo) are direct calls inside `Run.step`, never handlers.
 - **Interpolation**: every moving object keeps `previousPosition`; `RunView.snapshot()` exposes
   previous and current positions so `RunPresenter` interpolates with `alpha` (ADR-0002) without
@@ -686,7 +685,7 @@ classDiagram
   `warningAt` and the `BossDefinition` arrive, required, with the level brick; the player-kit
   brick adds `dominantColour` and `ScriptEvent.cargo`, and builds `DifficultyProfile` with the
   knobs it reads only (`lives`, `bombsPerLife`, `dropRateScale`), the `NORMAL` profile
-  replacing `PlayerTuning.lives`; `powerLossOnDeath` stays a later knob (the rule is one level).
+  replacing `PlayerTuning.lives`; `powerLossOnDeath` stays a later knob (v0.29: the rule is a reset to the base weapon).
   The level brick (F, ADR-0022) adds `StrategyFactories`, `SwayMovement`, `RingAttack`,
   `FanAttack`, `SequenceAttack` (groups), `Body.volleys`, `SizeTier.LARGE`, the Heavy archetypes, `Boss`,
   `BossState`, `BossDefinition`, `BossPhaseSpec`, `EnemySpawner.startBoss`, `HitRules.damageBoss`,
