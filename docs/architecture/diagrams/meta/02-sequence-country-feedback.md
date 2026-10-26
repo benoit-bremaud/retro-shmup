@@ -27,8 +27,8 @@ sequenceDiagram
 
   Player->>Scenes: Play on the title
   alt the save holds no country choice
-    Scenes->>Host: countryOfLanguage()
-    Host-->>Scenes: FR, or none
+    Scenes->>Host: preselectedCountry()
+    Host-->>Scenes: FR (time zone, else language region), or none
     Scenes->>Choice: open(FR)
     loop each step until OK or NONE
       Player->>Scenes: a direction, confirm, back or a tap

@@ -88,7 +88,7 @@ step depends on them.
     its results the run is cleared; since GDD v0.16 (G2) it goes to the Ending and the top-10
     comparison (steps 10 and 11), the next levels arriving with level 2.
   - 1a. *(v0.26)* No country choice is saved: the game shows the country grid, preselected from
-    the browser language; Player confirms a code with *OK* or chooses *NONE*, which is saved, then
+    the browser time zone, else the browser language's region (v0.30); Player confirms a code with *OK* or chooses *NONE*, which is saved, then
     step 2; `back` on an empty code returns to the title. Player changes it later in UC5.
   - 11a. The final score enters the top 10: UC3 runs at *run end*, then step 12.
   - *a. At any moment of play (steps 4–8), Player pauses: UC2.

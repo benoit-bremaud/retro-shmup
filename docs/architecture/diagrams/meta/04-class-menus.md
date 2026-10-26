@@ -86,7 +86,7 @@ classDiagram
     +captureNext() BindingCapture
     +cancelCapture() void
     +keyLabel(code: string) string
-    +countryOfLanguage() string | undefined
+    +preselectedCountry() string | undefined
     +today() string
     +highScoresChanged(entries) void
   }
@@ -403,7 +403,7 @@ classDiagram
   saves and pushes new bindings with `setBindings`.
 - **The stored top 10** (decision A3) reaches the scene machine as its constructor parameter
   `highScores` (`main.ts` passes `save.highScores`), built into a `HighScoreTable`.
-  `SceneHost.countryOfLanguage`, `today` and `highScoresChanged`, `NameEntry` and `LetterGrid`
+  `SceneHost.preselectedCountry` (*planned*, #131: renamed from `countryOfLanguage`, time zone first), `today` and `highScoresChanged`, `NameEntry` and `LetterGrid`
   are built (G2-3).
 - **Menu members** (decision A4): `Menu` implements `OpenableMenu` (`reset(now, opening)`, what a
   scene needs to open and draw any menu); `ignore(frame)` is the title lock's step; `lastSideways`
@@ -439,7 +439,7 @@ classDiagram
   active frame or after `SceneTuning.attractSeconds` (6) through `openMenu`, with no lock.
 - **Country first (v0.26, ADR-0027 decision 6)**: `CountryChoice` is the former country step of
   `NameEntry`, a scene of its own: opened before the first run while `Options.country` is absent
-  (`StartCountry`, preselected by `SceneHost.countryOfLanguage`), and from the options' *Country*
+  (`StartCountry`, preselected by `SceneHost.preselectedCountry`), and from the options' *Country*
   row (`TitleCountry`, `PauseCountry`, preselected with the saved code). `back` on an empty code
   returns `cancelled`. `Options.country` is absent, `none` or a code of `COUNTRY_CODES`; the
   options row shows the code, or `--`, as a `TextValue`. `NameEntry` has the name only and copies
