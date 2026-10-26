@@ -17,7 +17,7 @@ class CaptureHost implements SceneHost {
   releaseMovement(): void {
     // Not used by the controls screen.
   }
-  countryOfLanguage(): undefined {
+  preselectedCountry(): undefined {
     return undefined; // Not used by the controls screen, nor are today and highScoresChanged.
   }
   today(): string {

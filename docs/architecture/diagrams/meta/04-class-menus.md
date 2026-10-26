@@ -403,7 +403,7 @@ classDiagram
   saves and pushes new bindings with `setBindings`.
 - **The stored top 10** (decision A3) reaches the scene machine as its constructor parameter
   `highScores` (`main.ts` passes `save.highScores`), built into a `HighScoreTable`.
-  `SceneHost.preselectedCountry` (*planned*, #131: renamed from `countryOfLanguage`, time zone first), `today` and `highScoresChanged`, `NameEntry` and `LetterGrid`
+  `SceneHost.preselectedCountry` (#131: renamed from `countryOfLanguage`, time zone first, computed by `preselectedCountry` in `hall-of-fame/preselection.ts`), `today` and `highScoresChanged`, `NameEntry` and `LetterGrid`
   are built (G2-3).
 - **Menu members** (decision A4): `Menu` implements `OpenableMenu` (`reset(now, opening)`, what a
   scene needs to open and draw any menu); `ignore(frame)` is the title lock's step; `lastSideways`

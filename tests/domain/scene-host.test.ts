@@ -10,7 +10,7 @@ describe('NO_HOST (the tests’ default host)', () => {
 
   it('knows no key label, no country and a fixed date', () => {
     expect(NO_HOST.keyLabel('KeyA')).toBe('');
-    expect(NO_HOST.countryOfLanguage()).toBeUndefined();
+    expect(NO_HOST.preselectedCountry()).toBeUndefined();
     expect(NO_HOST.today()).toBe('2026-01-01');
   });
 

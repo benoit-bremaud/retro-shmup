@@ -655,7 +655,7 @@ export class SceneMachine {
       this.openHighScores(-1);
     } else if (row === 'play' && this.options.country === undefined) {
       // Never asked yet: the country choice first, preselected from the language (GDD v0.26 §9.1).
-      this.openCountry(Scene.StartCountry, frame, this.host.countryOfLanguage());
+      this.openCountry(Scene.StartCountry, frame, this.host.preselectedCountry());
     } else if (row === 'play') {
       this.startRun();
     }

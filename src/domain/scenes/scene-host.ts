@@ -20,11 +20,11 @@ export interface SceneHost {
   /** `InputPort.label`: a letter or digit key's printed character, else `''`. */
   keyLabel(code: string): string;
   /**
-   * The region of the browser's first language, as a code (`FR` from `fr-FR`), or `undefined`:
-   * the country choice's preselection at the first Play (ADR-0021 decision 4, GDD v0.26); the
-   * domain checks it is known.
+   * The country choice's preselection at the first Play, or `undefined`: the browser time zone's
+   * country, else the region of its first language (ADR-0021 decision 4 and its 2026-10-26
+   * amendment, GDD v0.30); the domain checks it is known.
    */
-  countryOfLanguage(): string | undefined;
+  preselectedCountry(): string | undefined;
   /** Today's date as `YYYY-MM-DD`: the domain reads no clock (ADR-0006). */
   today(): string;
   /** After a new entry: the whole table, to save with the options (SD-score). */
@@ -41,7 +41,7 @@ export const NO_HOST: SceneHost = {
   captureNext: () => CANCELLED,
   cancelCapture: () => undefined,
   keyLabel: () => '',
-  countryOfLanguage: () => undefined,
+  preselectedCountry: () => undefined,
   today: () => '2026-01-01',
   highScoresChanged: () => undefined,
 };
