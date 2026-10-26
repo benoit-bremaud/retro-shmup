@@ -13,7 +13,7 @@ describe('preselectedCountry (ADR-0021 amendment of 2026-10-26)', () => {
     expect(preselectedCountry('Europe/Kiev', undefined)).toBe('UA');
   });
 
-  it.each(['UTC', 'Etc/UTC', 'Etc/GMT+3', 'Mars/Olympus', ''])(
+  it.each(['UTC', 'Etc/UTC', 'Etc/GMT+3', 'CET', 'EST5EDT', 'Mars/Olympus', ''])(
     'falls back to the language region for the zone %j',
     (zone) => {
       expect(preselectedCountry(zone, 'BE')).toBe('BE');

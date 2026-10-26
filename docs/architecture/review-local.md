@@ -1,23 +1,22 @@
-# Local review — retro-shmup (docs/design, #131)
+# Local review — retro-shmup (feat/game, #131)
 
 - Date: 2026-10-26
-- Commit: 113bc61 (+ review fixes)
-- Scope: branch diff origin/main...HEAD — docs only (GDD v0.30, ADR-0021 amendment, ADR-0009,
-  UML meta and use-case, traceability matrix)
-- Checks run: docs · correctness (design, tests, security agents not applicable: no code changed)
-- Verdict: ship as-is · Must 0 · Should 3 (fixed) · Nice 2
+- Commit: 6de0359
+- Scope: branch diff origin/main...HEAD — country preselected from the browser time zone
+- Checks run: design · docs · tests · security · correctness (architecture-guardian, own reading)
+- Verdict: ship as-is · Must 0 · Should 1 (fixed) · Nice 3 (2 fixed)
 
-## Pre-merge gate (head SHA 113bc61)
+## Pre-merge gate (head SHA b42dfd9, re-run by the pre-push hook on 6de0359)
 
 | Step | Result |
 |---|---|
-| 1 Tests | ✅ 1 648 unit/simulation tests (77 files) · smoke not run (docs diff, `--push` mode) |
-| 2 Coverage | tests 99.24 % stmts / 95.68 % branches / 100 % funcs / 99.91 % lines (floor 80) · docs 99.5 % (floor 90) |
+| 1 Tests | ✅ 1 660 unit/simulation tests · ✅ smoke 6/6 (Chromium, Firefox, WebKit) |
+| 2 Coverage | tests 99.24 % stmts / 95.6 % branches / 100 % funcs / 99.91 % lines (floor 80) · docs 99.5 % (floor 90) |
 | 3 SonarQube | ✅ PASSED |
-| 4 Secrets | ✅ gitleaks clean (pushed range) · no tracked .env · diff read: nothing sensitive |
-| 5 QA pass | ⚠️ not run (`--push` mode; docs-only diff, no runtime change) |
+| 4 Secrets | ✅ gitleaks clean · no tracked .env · diff read: nothing sensitive (IANA public data) |
+| 5 QA pass | ✅ smoke in three engines; the preselection runs once at startup (no visible change for a matching language) |
 
-- Gate: **GREEN for push**; QA smoke before merge.
+- Gate: **GREEN**.
 
 ## 🔴 Must Have
 
@@ -25,24 +24,25 @@ _None._
 
 ## 🟡 Should Have
 
-- `docs/design/game-design-document.md:891` `[docs]` · superseded UC3 country step still named the
-  language only · fixed: *v0.30: the browser time zone first* note.
-- `docs/design/game-design-document.md:915` `[docs]` · same · fixed.
-- `docs/architecture/diagrams/system/01-use-case.md:91` `[docs]` · UC step said "browser language"
-  · fixed: time zone, else the language's region.
+- `scripts/build-time-zone-table.py:33` `[correctness]` · generic zones (`CET`, `EST5EDT`, `MST`…)
+  inherited a city's country since tzdata 2024b · fixed: link names without a slash are skipped;
+  `CET` and `EST5EDT` added to the fall-through test.
 
 ## 🔵 Nice to Have
 
-- `src/domain/scenes/scene-host.ts:27` `[docs]` · code still names `countryOfLanguage` · intended:
-  the rename is tagged *planned* in `04-class-menus.md`, done in the code PR.
-- `CHANGELOG.md` `[docs]` · add the Unreleased entry with the code PR.
+- `scripts/build-time-zone-table.py:16` `[correctness]` · code list parsing anchored on `'AD` · fixed.
+- `src/domain/scenes/scene-machine.ts:657` `[docs]` · stale comment · fixed.
+- `tests/domain/preselection.test.ts` `[tests]` · no check that the committed table matches the
+  script output · left: the script needs the host's tzdata, the table is refreshed with releases.
 
 ## ⚪ Disagree / Intentional
 
-_None._
+- `src/app/main.ts` `[design]` · the composition root calls the pure domain function once at
+  startup · ADR-0009 decision 4 (startup snapshot).
 
 ## Per-dimension summary
 
-- Docs: consistent across GDD, ADRs, UML, matrix after the three fixes; IANA claims verified.
-- Correctness: no contradiction with ADR-0021 decisions 1–3 or ADR-0009.
-- Design · Tests · Security: not applicable (no code).
+- Design: domain free of browser APIs, no loop allocation, named exports. · Docs: UML tag lifted,
+  CHANGELOG and PROJECT_LOG entries. · Tests: 8 cases on the pure function, table validated
+  against `COUNTRY_CODES`. · Security: the untrusted zone name is only a `Map` key. ·
+  Correctness: generic zones fixed.

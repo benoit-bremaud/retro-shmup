@@ -3,7 +3,7 @@
 Development only, not part of the build: run when the IANA data changes, then commit the output.
 Each zone of zone.tab keeps its one country; a link (tzdata.zi `L` lines, which carry the old
 names browsers still report, such as Asia/Calcutta) takes its target's country. Only codes of
-COUNTRY_CODES are kept. Usage:
+COUNTRY_CODES are kept. Then run Prettier on the output. Usage:
 python3 -I scripts/build-time-zone-table.py <dir with zone.tab and tzdata.zi> <repo root>
 """
 
@@ -13,7 +13,7 @@ from pathlib import Path
 
 def main(source: Path, root: Path) -> None:
     codes_text = (root / 'src/domain/hall-of-fame/country-codes.ts').read_text()
-    body = codes_text[codes_text.index('(\n') : codes_text.index(').split')]
+    body = codes_text[codes_text.index("'AD ") : codes_text.index(').split')]
     allowed = set(''.join(body.split("'")[1::2]).split())
     zones: dict[str, str] = {}
     for line in (source / 'zone.tab').read_text().splitlines():
@@ -29,7 +29,8 @@ def main(source: Path, root: Path) -> None:
     while changed:  # a link may point to another link
         changed = False
         for target, link in links:
-            if link not in zones and target in zones:
+            # Names without a slash are generic zones (CET, EST5EDT) or rare aliases: skipped.
+            if link not in zones and target in zones and '/' in link:
                 zones[link] = zones[target]
                 changed = True
     pairs = sorted(f'{name} {code}' for name, code in zones.items() if code in allowed)

@@ -64,34 +64,28 @@ export const TIME_ZONE_COUNTRY_PAIRS =
   'Australia/Eucla AU Australia/Hobart AU Australia/LHI AU Australia/Lindeman AU Australia/Lord_Howe AU Australia/Melbourne AU ' +
   'Australia/NSW AU Australia/North AU Australia/Perth AU Australia/Queensland AU Australia/South AU Australia/Sydney AU ' +
   'Australia/Tasmania AU Australia/Victoria AU Australia/West AU Australia/Yancowinna AU Brazil/Acre BR Brazil/DeNoronha BR ' +
-  'Brazil/East BR Brazil/West BR CET BE CST6CDT US Canada/Atlantic CA Canada/Central CA ' +
-  'Canada/Eastern CA Canada/Mountain CA Canada/Newfoundland CA Canada/Pacific CA Canada/Saskatchewan CA Canada/Yukon CA ' +
-  'Chile/Continental CL Chile/EasterIsland CL Cuba CU EET GR EST PA EST5EDT US ' +
-  'Egypt EG Eire IE Europe/Amsterdam NL Europe/Andorra AD Europe/Astrakhan RU Europe/Athens GR ' +
-  'Europe/Belfast GB Europe/Belgrade RS Europe/Berlin DE Europe/Bratislava SK Europe/Brussels BE Europe/Bucharest RO ' +
-  'Europe/Budapest HU Europe/Busingen DE Europe/Chisinau MD Europe/Copenhagen DK Europe/Dublin IE Europe/Gibraltar GI ' +
-  'Europe/Guernsey GG Europe/Helsinki FI Europe/Isle_of_Man IM Europe/Istanbul TR Europe/Jersey JE Europe/Kaliningrad RU ' +
-  'Europe/Kiev UA Europe/Kirov RU Europe/Kyiv UA Europe/Lisbon PT Europe/Ljubljana SI Europe/London GB ' +
-  'Europe/Luxembourg LU Europe/Madrid ES Europe/Malta MT Europe/Mariehamn AX Europe/Minsk BY Europe/Monaco MC ' +
-  'Europe/Moscow RU Europe/Nicosia CY Europe/Oslo NO Europe/Paris FR Europe/Podgorica ME Europe/Prague CZ ' +
-  'Europe/Riga LV Europe/Rome IT Europe/Samara RU Europe/San_Marino SM Europe/Sarajevo BA Europe/Saratov RU ' +
-  'Europe/Simferopol UA Europe/Skopje MK Europe/Sofia BG Europe/Stockholm SE Europe/Tallinn EE Europe/Tirane AL ' +
-  'Europe/Tiraspol MD Europe/Ulyanovsk RU Europe/Uzhgorod UA Europe/Vaduz LI Europe/Vatican VA Europe/Vienna AT ' +
-  'Europe/Vilnius LT Europe/Volgograd RU Europe/Warsaw PL Europe/Zagreb HR Europe/Zaporozhye UA Europe/Zurich CH ' +
-  'GB GB GB-Eire GB HST US Hongkong HK Iceland IS Indian/Antananarivo MG ' +
-  'Indian/Chagos IO Indian/Christmas CX Indian/Cocos CC Indian/Comoro KM Indian/Kerguelen TF Indian/Mahe SC ' +
-  'Indian/Maldives MV Indian/Mauritius MU Indian/Mayotte YT Indian/Reunion RE Iran IR Israel IL ' +
-  'Jamaica JM Japan JP Kwajalein MH Libya LY MET BE MST US ' +
-  'MST7MDT US Mexico/BajaNorte MX Mexico/BajaSur MX Mexico/General MX NZ NZ NZ-CHAT NZ ' +
-  'Navajo US PRC CN PST8PDT US Pacific/Apia WS Pacific/Auckland NZ Pacific/Bougainville PG ' +
-  'Pacific/Chatham NZ Pacific/Chuuk FM Pacific/Easter CL Pacific/Efate VU Pacific/Enderbury KI Pacific/Fakaofo TK ' +
-  'Pacific/Fiji FJ Pacific/Funafuti TV Pacific/Galapagos EC Pacific/Gambier PF Pacific/Guadalcanal SB Pacific/Guam GU ' +
-  'Pacific/Honolulu US Pacific/Johnston US Pacific/Kanton KI Pacific/Kiritimati KI Pacific/Kosrae FM Pacific/Kwajalein MH ' +
-  'Pacific/Majuro MH Pacific/Marquesas PF Pacific/Midway UM Pacific/Nauru NR Pacific/Niue NU Pacific/Norfolk NF ' +
-  'Pacific/Noumea NC Pacific/Pago_Pago AS Pacific/Palau PW Pacific/Pitcairn PN Pacific/Pohnpei FM Pacific/Ponape FM ' +
-  'Pacific/Port_Moresby PG Pacific/Rarotonga CK Pacific/Saipan MP Pacific/Samoa AS Pacific/Tahiti PF Pacific/Tarawa KI ' +
-  'Pacific/Tongatapu TO Pacific/Truk FM Pacific/Wake UM Pacific/Wallis WF Pacific/Yap FM Poland PL ' +
-  'Portugal PT ROC TW ROK KR Singapore SG Turkey TR US/Alaska US ' +
-  'US/Aleutian US US/Arizona US US/Central US US/East-Indiana US US/Eastern US US/Hawaii US ' +
-  'US/Indiana-Starke US US/Michigan US US/Mountain US US/Pacific US US/Samoa AS W-SU RU ' +
-  'WET PT';
+  'Brazil/East BR Brazil/West BR Canada/Atlantic CA Canada/Central CA Canada/Eastern CA Canada/Mountain CA ' +
+  'Canada/Newfoundland CA Canada/Pacific CA Canada/Saskatchewan CA Canada/Yukon CA Chile/Continental CL Chile/EasterIsland CL ' +
+  'Europe/Amsterdam NL Europe/Andorra AD Europe/Astrakhan RU Europe/Athens GR Europe/Belfast GB Europe/Belgrade RS ' +
+  'Europe/Berlin DE Europe/Bratislava SK Europe/Brussels BE Europe/Bucharest RO Europe/Budapest HU Europe/Busingen DE ' +
+  'Europe/Chisinau MD Europe/Copenhagen DK Europe/Dublin IE Europe/Gibraltar GI Europe/Guernsey GG Europe/Helsinki FI ' +
+  'Europe/Isle_of_Man IM Europe/Istanbul TR Europe/Jersey JE Europe/Kaliningrad RU Europe/Kiev UA Europe/Kirov RU ' +
+  'Europe/Kyiv UA Europe/Lisbon PT Europe/Ljubljana SI Europe/London GB Europe/Luxembourg LU Europe/Madrid ES ' +
+  'Europe/Malta MT Europe/Mariehamn AX Europe/Minsk BY Europe/Monaco MC Europe/Moscow RU Europe/Nicosia CY ' +
+  'Europe/Oslo NO Europe/Paris FR Europe/Podgorica ME Europe/Prague CZ Europe/Riga LV Europe/Rome IT ' +
+  'Europe/Samara RU Europe/San_Marino SM Europe/Sarajevo BA Europe/Saratov RU Europe/Simferopol UA Europe/Skopje MK ' +
+  'Europe/Sofia BG Europe/Stockholm SE Europe/Tallinn EE Europe/Tirane AL Europe/Tiraspol MD Europe/Ulyanovsk RU ' +
+  'Europe/Uzhgorod UA Europe/Vaduz LI Europe/Vatican VA Europe/Vienna AT Europe/Vilnius LT Europe/Volgograd RU ' +
+  'Europe/Warsaw PL Europe/Zagreb HR Europe/Zaporozhye UA Europe/Zurich CH Indian/Antananarivo MG Indian/Chagos IO ' +
+  'Indian/Christmas CX Indian/Cocos CC Indian/Comoro KM Indian/Kerguelen TF Indian/Mahe SC Indian/Maldives MV ' +
+  'Indian/Mauritius MU Indian/Mayotte YT Indian/Reunion RE Mexico/BajaNorte MX Mexico/BajaSur MX Mexico/General MX ' +
+  'Pacific/Apia WS Pacific/Auckland NZ Pacific/Bougainville PG Pacific/Chatham NZ Pacific/Chuuk FM Pacific/Easter CL ' +
+  'Pacific/Efate VU Pacific/Enderbury KI Pacific/Fakaofo TK Pacific/Fiji FJ Pacific/Funafuti TV Pacific/Galapagos EC ' +
+  'Pacific/Gambier PF Pacific/Guadalcanal SB Pacific/Guam GU Pacific/Honolulu US Pacific/Johnston US Pacific/Kanton KI ' +
+  'Pacific/Kiritimati KI Pacific/Kosrae FM Pacific/Kwajalein MH Pacific/Majuro MH Pacific/Marquesas PF Pacific/Midway UM ' +
+  'Pacific/Nauru NR Pacific/Niue NU Pacific/Norfolk NF Pacific/Noumea NC Pacific/Pago_Pago AS Pacific/Palau PW ' +
+  'Pacific/Pitcairn PN Pacific/Pohnpei FM Pacific/Ponape FM Pacific/Port_Moresby PG Pacific/Rarotonga CK Pacific/Saipan MP ' +
+  'Pacific/Samoa AS Pacific/Tahiti PF Pacific/Tarawa KI Pacific/Tongatapu TO Pacific/Truk FM Pacific/Wake UM ' +
+  'Pacific/Wallis WF Pacific/Yap FM US/Alaska US US/Aleutian US US/Arizona US US/Central US ' +
+  'US/East-Indiana US US/Eastern US US/Hawaii US US/Indiana-Starke US US/Michigan US US/Mountain US ' +
+  'US/Pacific US US/Samoa AS';
