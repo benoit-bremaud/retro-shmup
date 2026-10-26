@@ -114,3 +114,15 @@ records nothing (the player is never made to appear in the table). `???` is no l
 the save document's parser still accepts it, so an entry stored by an earlier build is kept. The
 other decisions and the status are unchanged.
 
+## Amendment (2026-10-26, GDD v0.30, #131)
+
+Decision 4's source of the preselection grows to two offline signals of the ADR-0009 snapshot, in
+this order: (1) the browser **time zone** (`Intl.DateTimeFormat().resolvedOptions().timeZone`)
+looked up in a zone → country table generated from the IANA `zone.tab` and its backward links
+(one country per zone, only codes in `COUNTRY_CODES`, domain data refreshed with releases);
+(2) the region subtag of the first language, as before; (3) none. `UTC`, `Etc/*` and an unknown
+or missing zone fall through to the language. Reason: the language alone gives `US` or `GB` to an
+English speaker living in France. It stays a UI default stored only on confirmation; still no
+network call, no IP lookup, no Geolocation API. The time zone is coarse, already exposed to every
+script and never stored. The other decisions and the status are unchanged.
+

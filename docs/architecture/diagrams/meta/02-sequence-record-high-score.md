@@ -24,8 +24,8 @@ sequenceDiagram
   participant Host as SceneHost
   Scenes->>Table: qualifies(run score)
   Table-->>Scenes: true
-  Scenes->>Host: countryOfLanguage()
-  Host-->>Scenes: FR, from fr-FR, or none
+  Scenes->>Host: preselectedCountry()
+  Host-->>Scenes: FR, from Europe/Paris or fr-FR, or none
   Scenes->>Entry: open(now, opening frame, score, FR)
   loop each step until the entry is complete
     Player->>Scenes: a direction, confirm, back or a tap
@@ -45,10 +45,10 @@ sequenceDiagram
 
 ## Notes
 
-- The browser language is read once at startup by the composition root (the ADR-0009 snapshot);
+- The browser time zone and language are read once at startup by the composition root (the ADR-0009 snapshot);
   the domain keeps the code only if it is in `COUNTRY_CODES`.
-- `countryOfLanguage` reads only the region of the browser's first language (ADR-0021 decision
-  4); nothing else is read or inferred, and the country is stored only once confirmed.
+- `preselectedCountry` reads the browser time zone through the generated zone → country table,
+  else the region of the browser's first language (ADR-0021 decision 4 and its 2026-10-26 amendment); nothing else is read or inferred, and the country is stored only once confirmed.
 - The table and the entries are domain data; the host only stores them (`SaveStore`), which keeps
   the stored top 10 written back with every option change (G1a-1).
 - When storage is unavailable the table still shows the entry for the session (UC3 3a).

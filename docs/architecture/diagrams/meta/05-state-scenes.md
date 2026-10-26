@@ -370,7 +370,7 @@ bricks deliver.
   the real ~120 s level-1 script rising to the Heavy, then the boss.
 - **Named top 10 and country** (GDD v0.9 §8, §9.1, §9.8): the screens brick G brings the name
   entry (8-character letter picker, skip as `???`, country preselected from the browser
-  language's region), the save-document schema and its allowlist validation (ADR-0006,
+  time zone, else the language's region, v0.30), the save-document schema and its allowlist validation (ADR-0006,
   ADR-0021: first `version: 1` with `name` and `country`, no migration), and the bitmap font glyphs the entry needs (A–Z, 0–9, space, `?`). The pixel flags wait for the
   assets brick.
 

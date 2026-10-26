@@ -95,7 +95,8 @@ stay accepted for everything else (back-links added in a dedicated PR).
    sounds. `setPaused(false)` restores the music over the 1 s
    count-in. The adapter suspends its `AudioContext` while the tab is hidden.
 4. **The environment is injected, never queried by the domain**: a startup snapshot
-   (`prefersReducedMotion`, the browser language, `touchCapable`, `fullscreenEnabled`) and a
+   (`prefersReducedMotion`, the browser language, the browser time zone *(added 2026-10-26, ADR-0021
+   amendment, #131)*, `touchCapable`, `fullscreenEnabled`) and a
    `today(): string` **function**, called when a high score is recorded — not at startup — so a
    page left open across midnight dates the score correctly.
 
