@@ -890,7 +890,7 @@ and space, entered with an arcade **letter picker** usable on keyboard, gamepad,
 `???`. *(Superseded in v0.26 for the country: it is chosen once before the first run, see the
 country choice below.)* Then an optional **country**, preselected from the region of the browser language (for
 example `fr-FR` → `FR`; none when the language has no region; *v0.30: the browser time zone first*), changeable or clearable; no
-network call, no geolocation, nothing inferred beyond the language setting (privacy, PRIV-1). The
+network call, no geolocation, nothing inferred beyond the language setting and, since v0.30, the browser time zone, both read offline (privacy, PRIV-1). The
 country is shown as its 2-letter ISO 3166-1 code in the bitmap font, and as a pixel flag once the
 sprites land (assets brick). *(Amended in v0.16: skipping, or confirming an empty name, records nothing; v0.9 stored `???`.)* the picker
 controls per device are specified with the screens brick (G) in its UML study.
