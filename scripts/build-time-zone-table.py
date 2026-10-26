@@ -3,7 +3,8 @@
 Development only, not part of the build: run when the IANA data changes, then commit the output.
 Each zone of zone.tab keeps its one country; a link (tzdata.zi `L` lines, which carry the old
 names browsers still report, such as Asia/Calcutta) takes its target's country. Only codes of
-COUNTRY_CODES are kept. Then run Prettier on the output. Usage:
+COUNTRY_CODES are kept. Then run Prettier on the output. Take tzdata from the system package or
+the signed IANA tarball (https://www.iana.org/time-zones). Usage:
 python3 -I scripts/build-time-zone-table.py <dir with zone.tab and tzdata.zi> <repo root>
 """
 
@@ -15,6 +16,8 @@ def main(source: Path, root: Path) -> None:
     codes_text = (root / 'src/domain/hall-of-fame/country-codes.ts').read_text()
     body = codes_text[codes_text.index("'AD ") : codes_text.index(').split')]
     allowed = set(''.join(body.split("'")[1::2]).split())
+    if len(allowed) < 200:
+        sys.exit(f'Only {len(allowed)} codes read from country-codes.ts: its shape changed')
     zones: dict[str, str] = {}
     for line in (source / 'zone.tab').read_text().splitlines():
         if line and not line.startswith('#'):

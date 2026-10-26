@@ -8,31 +8,46 @@ describe('preselectedCountry (ADR-0021 amendment of 2026-10-26)', () => {
     expect(preselectedCountry('Europe/Paris', 'US')).toBe('FR');
   });
 
-  it('knows the old zone names browsers still report', () => {
-    expect(preselectedCountry('Asia/Calcutta', undefined)).toBe('IN');
-    expect(preselectedCountry('Europe/Kiev', undefined)).toBe('UA');
+  it('keeps the time zone when the language region is unknown or lowercase', () => {
+    expect(preselectedCountry('Europe/Paris', 'XK')).toBe('FR');
+    expect(preselectedCountry('Europe/Paris', 'fr')).toBe('FR');
   });
 
-  it.each(['UTC', 'Etc/UTC', 'Etc/GMT+3', 'CET', 'EST5EDT', 'Mars/Olympus', ''])(
+  it.each([
+    ['America/Argentina/Cordoba', 'AR'], // one of a country's several zones
+    ['Asia/Calcutta', 'IN'], // old names browsers still report, from the links
+    ['Europe/Kiev', 'UA'],
+    ['Africa/Asmera', 'ER'],
+    ['America/Godthab', 'GL'],
+  ])('maps %s to %s', (zone, code) => {
+    expect(preselectedCountry(zone, undefined)).toBe(code);
+  });
+
+  it.each(['UTC', 'CET', 'Mars/Olympus', ''])(
     'falls back to the language region for the zone %j',
     (zone) => {
       expect(preselectedCountry(zone, 'BE')).toBe('BE');
     },
   );
 
-  it('falls back to the language region without a time zone', () => {
-    expect(preselectedCountry(undefined, 'CA')).toBe('CA');
+  it.each([
+    [undefined, 'CA', 'CA'],
+    [undefined, undefined, undefined],
+    ['UTC', 'XK', undefined], // user-assigned, not in the allowlist
+    ['UTC', '419', undefined], // a UN M.49 region, not a country
+  ])('with the zone %j and the region %j gives %j', (zone, region, expected) => {
+    expect(preselectedCountry(zone, region)).toBe(expected);
   });
 
-  it('gives none when neither signal names a known country', () => {
-    expect(preselectedCountry(undefined, undefined)).toBeUndefined();
-    expect(preselectedCountry('UTC', 'XK')).toBeUndefined();
-    expect(preselectedCountry('UTC', '419')).toBeUndefined();
-  });
-
-  it('maps every zone of the generated table to a known code', () => {
+  it('holds only zone names and known codes in the generated table', () => {
     const words = TIME_ZONE_COUNTRY_PAIRS.split(' ');
+    const bad: string[] = [];
+    for (let i = 0; i < words.length; i += 2) {
+      const zone = words[i] ?? '';
+      const code = words[i + 1] ?? '';
+      if (!zone.includes('/') || !COUNTRY_CODES.has(code)) bad.push(`${zone} ${code}`);
+    }
     expect(words.length % 2).toBe(0);
-    for (let i = 1; i < words.length; i += 2) expect(COUNTRY_CODES.has(words[i] ?? '')).toBe(true);
+    expect(bad).toEqual([]);
   });
 });
