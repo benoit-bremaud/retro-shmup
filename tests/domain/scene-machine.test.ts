@@ -65,6 +65,7 @@ function setup(): { machine: SceneMachine; render: RecordingRender } {
       bombFlash: true,
       slowMotion: true,
       championName: true,
+      graze: true,
     }),
     () => new Run(),
   );
@@ -349,6 +350,7 @@ function gameOverFixture(): ReturnType<typeof setup> {
       bombFlash: true,
       slowMotion: true,
       championName: true,
+      graze: true,
     }),
     () => new Run({ levels: [KILLER] }),
   );
@@ -457,6 +459,7 @@ describe('SceneMachine — effects per run (ADR-0010, 02-sequence-fixed-step-tic
         bombFlash: true,
         slowMotion: true,
         championName: true,
+        graze: true,
       }),
       () => new Run({ levels: [TARGET] }),
     );
@@ -508,6 +511,7 @@ describe('SceneMachine — effects per run (ADR-0010, 02-sequence-fixed-step-tic
         bombFlash: true,
         slowMotion: true,
         championName: true,
+        graze: true,
       }),
       () => new Run({ levels: [script] }),
       NO_HOST,
@@ -688,6 +692,7 @@ describe('SceneMachine — Results (meta/05-state-scenes, GDD v0.10 §8, F-3)', 
         bombFlash: true,
         slowMotion: true,
         championName: true,
+        graze: true,
       }),
       () => new Run({ levels: [testScript([], { warningAt: 5, boss: GLASS })] }),
       host,
@@ -822,6 +827,7 @@ describe('SceneMachine — the boss HUD (meta/05-state-scenes, F-2b)', () => {
         bombFlash: true,
         slowMotion: true,
         championName: true,
+        graze: true,
       }),
       () => new Run({ levels: [testScript([], { warningAt: 5, boss: STUB_BOSS })] }),
     );
@@ -892,6 +898,7 @@ describe('SceneMachine — the boss HUD (meta/05-state-scenes, F-2b)', () => {
         bombFlash: true,
         slowMotion: true,
         championName: true,
+        graze: true,
       }),
       () => ending,
     );
@@ -1114,6 +1121,7 @@ const ALL_ON: EffectSettings = {
   bombFlash: true,
   slowMotion: true,
   championName: true,
+  graze: true,
 };
 
 function idle(machine: SceneMachine, steps = 10): void {
@@ -1208,7 +1216,7 @@ describe('SceneMachine — the options screens (GDD v0.14 §9.1, §9.3, G1a-3)',
     }
   });
 
-  it('draws the title rows 32 px tall and the ten Visual effects rows 28 px (GDD v0.25, #95)', () => {
+  it('draws the title rows 32 px tall and the eleven Visual effects rows 26 px (GDD v0.25, #95; v0.31 adds Graze)', () => {
     const { machine, render } = hosted();
     machine.render(0, 16);
     expect(render.rectsOf(Palette.menuHighlight)).toMatchObject([{ y: 112, h: 32 }]);
@@ -1217,9 +1225,9 @@ describe('SceneMachine — the options screens (GDD v0.14 §9.1, §9.3, G1a-3)',
     machine.step(DT, pressed(Button.Confirm)); // Visual effects
     render.clear();
     machine.render(0, 16);
-    // 10 rows of 28 px from y 20, the header line 16 px above the first row.
-    expect(render.rectsOf(Palette.menuHighlight)).toMatchObject([{ y: 20, h: 28 }]);
-    expect(render.texts.find((text) => text.text === 'VISUAL EFFECTS')?.y).toBe(4);
+    // 11 rows of 26 px from y 17, the header line 16 px above the first row.
+    expect(render.rectsOf(Palette.menuHighlight)).toMatchObject([{ y: 17, h: 26 }]);
+    expect(render.texts.find((text) => text.text === 'VISUAL EFFECTS')?.y).toBe(1);
   });
 
   it('turns every effect off and on from Visual effects, one row flipping one switch', () => {
@@ -1238,6 +1246,7 @@ describe('SceneMachine — the options screens (GDD v0.14 §9.1, §9.3, G1a-3)',
       bombFlash: false,
       slowMotion: false,
       championName: false,
+      graze: false,
     });
     downBy(machine, 2); // Hit flash
     machine.step(DT, right());

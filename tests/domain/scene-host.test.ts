@@ -24,6 +24,7 @@ describe('NO_HOST (the tests’ default host)', () => {
         bombFlash: true,
         slowMotion: true,
         championName: true,
+        graze: true,
       },
       autofire: false,
       language: 'en',

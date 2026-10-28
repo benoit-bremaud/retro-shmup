@@ -48,6 +48,7 @@ export const MESSAGES = {
   bombFlash: { en: 'BOMB FLASH', fr: 'FLASH BOMBE' },
   slowMotion: { en: 'SLOW MOTION', fr: 'RALENTI' },
   championName: { en: 'CHAMPION NAME', fr: 'NOM DU CHAMPION' },
+  graze: { en: 'GRAZE', fr: 'FROLEMENT' },
   on: { en: 'ON', fr: 'OUI' },
   off: { en: 'OFF', fr: 'NON' },
   /** The controls screen (GDD v0.15 §4.2): header, devices, intents, the capture, restore. */

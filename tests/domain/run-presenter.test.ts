@@ -70,6 +70,7 @@ function presenter(
       bombFlash: true,
       slowMotion: true,
       championName: true,
+      graze: true,
       ...switches,
     },
     bus,
@@ -449,6 +450,30 @@ describe('RunPresenter — the boss fight game feel (GDD v0.10 §9.4, F-2c)', ()
   function newCores(render: RecordingRender, side: number): RecordedRect[] {
     return render.rectsOf(Palette.explosionHot).filter((rect) => Math.abs(rect.w - side) < 1e-6);
   }
+
+  it('draws the graze spark at the bullet on BULLET_GRAZED (GDD v0.31 §9.4)', () => {
+    const bus = new EventBus();
+    const render = new RecordingRender();
+    const view = presenter(render, false, bus);
+
+    publish(bus, GameEventKind.BulletGrazed, 132, 272);
+    view.draw(snapshot(ship()), 1, FRAME_MS);
+
+    const sparks = render.rectsOf(Palette.grazeSpark);
+    expect(sparks).toHaveLength(4);
+    expect(sparks.every((rect) => Math.hypot(rect.x - 132, rect.y - 272) < 8)).toBe(true);
+  });
+
+  it('draws no graze spark with the graze switch off', () => {
+    const bus = new EventBus();
+    const render = new RecordingRender();
+    const view = presenter(render, false, bus, { graze: false });
+
+    publish(bus, GameEventKind.BulletGrazed, 132, 272);
+    view.draw(snapshot(ship()), 1, FRAME_MS);
+
+    expect(render.drew(Palette.grazeSpark)).toBe(false);
+  });
 
   it('explodes the ship on PLAYER_DIED (medium tier, at the event position)', () => {
     const bus = new EventBus();

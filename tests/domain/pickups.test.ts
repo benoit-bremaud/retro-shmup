@@ -161,6 +161,9 @@ class Collected implements HitRules {
   damageBoss(): void {
     // Not exercised here.
   }
+  bulletGrazed(): void {
+    // Not exercised here.
+  }
 }
 
 /** A world whose ship sits at (120, 272) in `state` after `steps` idle steps. */

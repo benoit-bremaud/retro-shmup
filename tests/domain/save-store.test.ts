@@ -53,6 +53,7 @@ const CUSTOM: Options = {
     bombFlash: false,
     slowMotion: true,
     championName: true,
+    graze: true,
   },
   autofire: true,
   language: 'fr',
@@ -76,6 +77,7 @@ describe('defaultOptions (GDD §9.3)', () => {
         bombFlash: true,
         slowMotion: true,
         championName: true,
+        graze: true,
       },
       autofire: false,
       language: 'en',
@@ -96,6 +98,7 @@ describe('defaultOptions (GDD §9.3)', () => {
       bombFlash: false,
       slowMotion: false,
       championName: true,
+      graze: true,
     });
   });
 });
@@ -134,6 +137,10 @@ describe('SaveStore.load (ADR-0006: untrusted input, never throws)', () => {
     [
       'a null champion name',
       { version: 2, options: { ...CUSTOM, effects: { ...CUSTOM.effects, championName: null } } },
+    ],
+    [
+      'a non-boolean graze switch',
+      { version: 2, options: { ...CUSTOM, effects: { ...CUSTOM.effects, graze: 'on' } } },
     ],
     [
       'a non-boolean champion name',
@@ -190,6 +197,14 @@ describe('SaveStore.load (ADR-0006: untrusted input, never throws)', () => {
     const { championName: _new, ...before } = { ...CUSTOM.effects, championName: false };
     const document = { version: 2, options: { ...CUSTOM, effects: before }, highScores: [] };
     expect(new SaveStore(stored(document), false).load().effects.championName).toBe(true);
+  });
+
+  it('reads a version-2 document saved before the graze with that switch on (GDD v0.31, #146)', () => {
+    const { graze: _new, ...before } = { ...CUSTOM.effects, graze: false };
+    const document = { version: 2, options: { ...CUSTOM, effects: before }, highScores: [] };
+    const effects = new SaveStore(stored(document), false).load().effects;
+    expect(effects.graze).toBe(true);
+    expect(effects.blink).toBe(CUSTOM.effects.blink);
   });
 
   it('keeps only the known fields of a valid document', () => {

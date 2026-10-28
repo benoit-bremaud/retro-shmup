@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- An enemy bullet crossing the drawn ship outside its 6 × 6 hitbox now grazes: 100 points once
+  per bullet, flat and outside the chain, and a small pale spark on its own *GRAZE* /
+  *FROLEMENT* effect switch (on by default, no sound). The hitbox is unchanged
+  (GDD v0.31 §4.1, §8, §9.4, #146).
+
 ### Changed
 
 - The country is preselected from the browser time zone first (`Europe/Paris` → `FR`), then the

@@ -67,6 +67,7 @@ function screen(device: IntentFrame['device'] = 'keyboard'): {
       bombFlash: true,
       slowMotion: true,
       championName: true,
+      graze: true,
     },
     autofire: false,
     language: 'fr',

@@ -18,6 +18,8 @@ export interface EffectSettings {
   slowMotion: boolean;
   /** The hall-of-fame number 1's name in the far background (GDD v0.22 §9.4.1). */
   championName: boolean;
+  /** The graze spark (GDD v0.31 §9.4): the graze still scores with it off. */
+  graze: boolean;
 }
 
 /** The saved choice that stands for *NONE*: no country (GDD v0.26 §9.8). */
@@ -85,6 +87,7 @@ export const EFFECT_ROWS = [
   'bombFlash',
   'slowMotion',
   'championName',
+  'graze',
 ] as const satisfies readonly (keyof EffectSettings & MessageKey)[];
 type EffectRow = (typeof EFFECT_ROWS)[number];
 

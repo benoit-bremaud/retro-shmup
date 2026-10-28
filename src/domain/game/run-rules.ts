@@ -1,6 +1,7 @@
 import type { Random } from '../ports/random';
 import { applyDamage } from './body';
 import { BossAdvance } from './boss';
+import type { Bullet } from './bullet';
 import type { BossDefinition } from './boss';
 import type { HitRules } from './collision';
 import { NORMAL } from './difficulty';
@@ -12,7 +13,7 @@ import type { EnemySpawner } from './level-director';
 import type { LevelScript, ScriptEvent } from './level-script';
 import { PickupKind } from './pickup';
 import type { Pickup } from './pickup';
-import { KitTuning } from './tuning';
+import { KitTuning, ScoreTuning } from './tuning';
 import type { World } from './world';
 
 const NONE = -1;
@@ -43,6 +44,7 @@ export class RunRules implements HitRules, EnemySpawner {
   private readonly bossDestroyedEvent = createGameEvent(GameEventKind.BossDestroyed);
   private readonly bossFledEvent = createGameEvent(GameEventKind.BossFled);
   private readonly levelClearedEvent = createGameEvent(GameEventKind.LevelCleared);
+  private readonly bulletGrazedEvent = createGameEvent(GameEventKind.BulletGrazed);
 
   /**
    * `random` serves drops only (ADR-0010 decision 1); `script` gives the formation reward its
@@ -186,6 +188,17 @@ export class RunRules implements HitRules, EnemySpawner {
     const player = this.world.player;
     player.applyDeathPenalty();
     this.publishAt(this.playerDiedEvent, player.position.x, player.position.y, 0, 0);
+  }
+
+  /** `HitRules`: an enemy bullet grazed the ship; its points are scored flat (GDD v0.31 §8). */
+  bulletGrazed(bullet: Bullet): void {
+    this.publishAt(
+      this.bulletGrazedEvent,
+      bullet.position.x,
+      bullet.position.y,
+      ScoreTuning.graze,
+      0,
+    );
   }
 
   /** `HitRules`: the shield charge took the hit (GDD v0.8 §4.4). */

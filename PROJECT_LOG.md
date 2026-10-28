@@ -6,6 +6,26 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ---
 
+## 2026-10-28
+
+### Graze the wings (#146, code PR)
+
+- `CollisionResolver` pass 2: a live enemy bullet off the 6 × 6 hitbox but in the 32 × 24 graze box
+  (`PlayerTuning.grazeWidth`, `grazeHeight`), not yet `grazed`, with the ship `Vulnerable` and no
+  shield charge, sets `Bullet.grazed` (reset at spawn) and calls `HitRules.bulletGrazed`;
+  `RunRules` publishes `BULLET_GRAZED` (value `ScoreTuning.graze` = 100), `ScoreKeeper` adds it
+  flat, `RunPresenter` draws `GrazeSparks` (ring of 16, 4 fragments, 150 ms, `Palette.grazeSpark`).
+- `EffectSettings.graze` with its *GRAZE* / *FROLEMENT* row (Visual effects: 11 rows, 26 px);
+  a version-2 save without the key loads it on.
+- Bot (100 seeds): medians 100 700 / 93 850 / 100 100 → 103 000 / 95 550 / 101 150; game over and
+  boss kills unchanged; the High scores scale stays 150 000 → 30 000.
+
+### Design: graze (#146, design #148 `7c62410`)
+
+- GDD v0.31, UML (`Bullet.grazed`, `BULLET_GRAZED`, `HitRules.bulletGrazed`). Owner MCDA: graze
+  box = drawn ship minus core 445, 100 points 365, once per bullet 470, chain-neutral 410, spark
+  only 430. Codex: 2 findings fixed (graze through `HitRules`, absent save key defaults on).
+
 ## 2026-10-26
 
 ### Country preselected from the time zone (#131, code PR)

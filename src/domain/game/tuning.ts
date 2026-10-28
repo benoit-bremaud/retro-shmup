@@ -38,6 +38,9 @@ export const PlayerTuning = {
   shieldSize: 36,
   /** The full sprite box: pickups are caught with it, generously (GDD §4.6). */
   collectSize: 32,
+  /** The graze box, the drawn 32 × 24 ship: a bullet in it but off the hitbox grazes (GDD v0.31 §4.1). */
+  grazeWidth: 32,
+  grazeHeight: 24,
   /** The death sequence before the next fly-in (GDD §4.4). */
   respawnSeconds: 1.5,
 } as const;
@@ -72,6 +75,8 @@ export const LaserTuning = {
  */
 export const ScoreTuning = {
   counterStop: 99_999_999,
+  /** Points per grazing bullet, flat and outside the chain (GDD v0.31 §8, initial). */
+  graze: 100,
 } as const;
 
 /** How long each timed scene lasts, in seconds; the scene machine turns them into fixed steps. */

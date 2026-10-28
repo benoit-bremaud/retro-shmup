@@ -817,8 +817,9 @@ until then they are an interim deviation recorded in the scene machine.
   outside the chain (§4.6) *(v0.8)*.
 - **Graze** *(v0.31, #146, initial)*: **100** points per grazing bullet (§4.1), once per bullet,
   added flat — never multiplied by the chain, and it neither extends nor breaks the chain (like a
-  pickup). The value is re-measured with the balance bot in the code PR against the default High
-  scores scale (150 000 → 30 000, §9.1).
+  pickup). Measured on the code with the balance bot (100 seeds, good / average / beginner): median
+  scores 100 700 / 93 850 / 100 100 → **103 000 / 95 550 / 101 150** (+1 to +2 %), game over and
+  boss kills unchanged, so the default High scores scale (150 000 → 30 000, §9.1) stays.
 - **Chain multiplier ×1 … ×8** *(initial)*: every kill within **2 s** of the previous one extends the
   chain; the multiplier steps up every 5 chained kills (×2 at 5, ×3 at 10 … ×8 at 35) — a kill is
   scored at the current multiplier, then the chain steps up *(v0.4: the 5th kill scores ×1)*. The chain
@@ -1079,7 +1080,7 @@ scrolling (at most 12 rows of at least 16 logical px: 192 px of the 320). One ro
   free below the rows too. The rows stay centred on the field; the highlight bar, the hit area
   of a tap or click (the whole row band) and the text's centring follow the row height. At the
   usual phone scales (×4 portrait, 1.33 to 1.52 CSS px per logical px) the title, pause, quit
-  and options rows (32 px) measure 43 to 49 CSS px, the *Visual effects* rows (28 px) 37 to 43,
+  and options rows (32 px) measure 43 to 49 CSS px, the *Visual effects* rows (26 px since v0.31, 11 rows; 28 px before) 35 to 40,
   the controls rows (24 px) 32 to 36 — against 21 to 24 CSS px before v0.25 (16 px rows).
   The page itself never zooms or scrolls under a finger (ADR-0018 decision 10); a deliberate
   pinch-zoom stays possible (WCAG 1.4.4). The name entry's letter grid is not changed here.
@@ -1206,11 +1207,14 @@ runs the game at half speed for 0.5 s of wall time from the boss's destruction (
 the loop: the explosion sequence keeps its 2 s of simulation, ADR-0010); explosions gain a Large
 tier (the Heavy) and the boss's own; the debris is a burst of fragments where the broken part
 was.
-*(v0.31, #146, initial)* **Graze spark**: at a grazing bullet's position (§4.1), 4 small pale
-yellow fragments fly outward and fade over about **150 ms**; no flash of the field, no white
-burst, no sound (owner, 2026-10-28), so it stays within the photosensitivity rule (§9.7) at any
+*(v0.31, #146, initial)* **Graze spark**: at a grazing bullet's position (§4.1), 4 small 1 × 1
+fragments fly outward on the diagonals and fade over about **150 ms**: pale yellow for the first
+half, a dimmer amber for the second (the render port has no transparency); no flash of the field,
+no white, no sound (owner, 2026-10-28), so it stays within the photosensitivity rule (§9.7) at any
 bullet density. Its switch is on by default, `prefers-reduced-motion` included (it moves little
-and never flashes); off, the graze still scores, silently.
+and never flashes); off, the graze still scores, silently. A bullet grazing in the step the ship
+dies scores only if the collision pass meets it before the killing bullet (deterministic, at most
+100 points).
 
 ### 9.4.1 The champion's name in the far background *(v0.22)*
 

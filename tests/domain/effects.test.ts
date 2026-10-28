@@ -3,10 +3,12 @@ import {
   EffectTuning,
   ExplosionTier,
   Explosions,
+  GrazeSparks,
   HitFlashes,
 } from '../../src/domain/presentation/effects';
 import { Palette } from '../../src/domain/presentation/palette';
 import { RecordingRender } from '../support/recording-render';
+import type { RecordedRect } from '../support/recording-render';
 
 describe('HitFlashes — white flash on a hit (GDD §9.4, ADR-0010)', () => {
   it('lasts about 33 ms of wall time, keyed by serial', () => {
@@ -125,5 +127,76 @@ describe('Explosions — animated bursts, style A without white (GDD v0.10 §9.4
     const xs = render.rects.map((rect) => rect.x);
     expect(xs.some((x) => Math.abs(x - 99_000) < 20)).toBe(true);
     expect(xs.some((x) => Math.abs(x) < 20)).toBe(false); // the oldest, born first, was replaced
+  });
+});
+
+describe('GrazeSparks — the graze spark (GDD v0.31 §9.4, #146)', () => {
+  it('draws 4 pale fragments for about 150 ms, then nothing', () => {
+    const sparks = new GrazeSparks();
+    sparks.record(100, 200);
+
+    const fresh = new RecordingRender();
+    sparks.draw(fresh);
+    sparks.advance(EffectTuning.grazeSparkMs);
+    const late = new RecordingRender();
+    sparks.draw(late);
+
+    expect(fresh.rectsOf(Palette.grazeSpark)).toHaveLength(4);
+    expect(late.rectsOf(Palette.grazeSpark)).toHaveLength(0);
+  });
+
+  it('flies the fragments outward from the bullet, then dims them', () => {
+    const sparks = new GrazeSparks();
+    sparks.record(100, 200);
+    const birth = new RecordingRender();
+    sparks.draw(birth);
+    sparks.advance(EffectTuning.grazeSparkMs * 0.75);
+
+    const late = new RecordingRender();
+    sparks.draw(late);
+
+    // Fragments are 1 × 1 rectangles drawn centred: their centre is (x + 0.5, y + 0.5).
+    const reach = (rects: RecordedRect[]): number[] =>
+      rects.map((rect) => Math.hypot(rect.x + 0.5 - 100, rect.y + 0.5 - 200));
+    const atBirth = reach(birth.rectsOf(Palette.grazeSpark));
+    const dimmed = reach(late.rectsOf(Palette.grazeSparkDim));
+    expect(atBirth).toHaveLength(4);
+    expect(dimmed).toHaveLength(4);
+    expect(late.drew(Palette.grazeSpark)).toBe(false);
+    expect(Math.min(...dimmed)).toBeGreaterThan(Math.max(...atBirth));
+  });
+
+  it('never draws a white flash (GDD §9.7)', () => {
+    const sparks = new GrazeSparks();
+    sparks.record(10, 10);
+
+    const render = new RecordingRender();
+    sparks.draw(render);
+
+    expect(render.drew(Palette.hitFlash)).toBe(false);
+    expect(render.rects.every((rect) => rect.colour === Palette.grazeSpark)).toBe(true);
+  });
+
+  it('never ages while the frame time is 0 (frozen scenes)', () => {
+    const sparks = new GrazeSparks();
+    sparks.record(10, 10);
+    for (let i = 0; i < 100; i += 1) sparks.advance(0);
+
+    const render = new RecordingRender();
+    sparks.draw(render);
+
+    expect(render.rectsOf(Palette.grazeSpark)).toHaveLength(4);
+  });
+
+  it('recycles the oldest slot when every slot is live', () => {
+    const sparks = new GrazeSparks();
+    for (let i = 0; i <= EffectTuning.maxGrazeSparks; i += 1) sparks.record(i * 1000, 0);
+
+    const render = new RecordingRender();
+    sparks.draw(render);
+
+    const xs = render.rectsOf(Palette.grazeSpark).map((rect) => rect.x);
+    expect(xs).toHaveLength(4 * EffectTuning.maxGrazeSparks);
+    expect(xs.some((x) => Math.abs(x) < 20)).toBe(false);
   });
 });

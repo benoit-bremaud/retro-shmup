@@ -30,6 +30,10 @@ export class Rules implements HitRules {
   shieldBroken(): void {
     this.absorbed += 1;
   }
+  grazed = 0;
+  bulletGrazed(): void {
+    this.grazed += 1;
+  }
   readonly bossDamage: number[] = [];
   damageBoss(amount: number): void {
     this.bossDamage.push(amount);
