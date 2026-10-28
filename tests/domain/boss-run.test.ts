@@ -10,7 +10,7 @@ import { swayMovement } from '../../src/domain/game/movements';
 import { PlayerState } from '../../src/domain/game/player';
 import type { Player } from '../../src/domain/game/player';
 import { Run, RunOutcome } from '../../src/domain/game/run';
-import { BossTuning, KitTuning, ScoreTuning } from '../../src/domain/game/tuning';
+import { KitTuning, ScoreTuning } from '../../src/domain/game/tuning';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
 import { testScript } from '../support/script';
@@ -293,6 +293,7 @@ describe('Run — the end of the fight (GDD v0.10 §6)', () => {
   it('flees when the 90 s timer runs out: BOSS_FLED, no bonus, bullets cancelled', () => {
     const run = fighting(CRUISER);
     const log = logOf(run, [GameEventKind.BossFled, GameEventKind.BossDestroyed]);
+    const grazes = logOf(run, [GameEventKind.BulletGrazed]);
     // The Cruiser's fan is aimed at an idle ship: a ship that dodges lives, one that does not
     // dies; this test is about the timer, so the ship is kept alive.
     for (let i = 0; i < 5400; i += 1) {
@@ -302,9 +303,10 @@ describe('Run — the end of the fight (GDD v0.10 §6)', () => {
     }
     expect(log.map((e) => e.kind)).toEqual([GameEventKind.BossFled]);
     expect(run.snapshot().boss.state).toBe(BossState.Fleeing);
-    // No bonus: only the bullets that grazed the idle ship scored (GDD v0.31 §8).
-    expect(run.snapshot().score % ScoreTuning.graze).toBe(0);
-    expect(run.snapshot().score).toBeLessThan(BossTuning.bonus);
+    // No bonus: only the bullets that grazed the idle ship scored, 100 each (GDD v0.31 §8).
+    expect(grazes.length).toBeGreaterThan(0);
+    expect(grazes.every((e) => e.value === ScoreTuning.graze)).toBe(true);
+    expect(run.snapshot().score).toBe(grazes.length * ScoreTuning.graze);
     steps(run, 1);
     expect(run.snapshot().enemyBullets.count).toBe(0);
   });

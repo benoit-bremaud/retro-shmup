@@ -4,9 +4,9 @@ import { createGameEvent, EventBus, GameEventKind } from '../../src/domain/game/
 import { PickupKind } from '../../src/domain/game/pickup';
 import { PlayerState } from '../../src/domain/game/player';
 import { ScoreKeeper } from '../../src/domain/game/score-keeper';
-import { PlayerTuning, ScoreTuning } from '../../src/domain/game/tuning';
-import { World } from '../../src/domain/game/world';
-import { Rules, vulnerableWorld } from '../support/collision';
+import { ScoreTuning } from '../../src/domain/game/tuning';
+import type { World } from '../../src/domain/game/world';
+import { Rules, STEPS_TO_VULNERABLE, vulnerableWorld } from '../support/collision';
 
 // The ship rests at (120, 272); an enemy bullet is 4 × 4. The graze box is the drawn 32 × 24 ship
 // (GDD v0.31 §4.1): a bullet centred 12 px to the side is in a wing, outside the 6 × 6 hitbox.
@@ -74,10 +74,14 @@ describe('CollisionResolver — the graze (GDD v0.31 §4.1, #146)', () => {
     expect(resolve(world).grazed).toBe(1);
   });
 
-  it('does not graze while the ship is entering or invulnerable', () => {
-    const world = new World();
+  it.each([
+    ['entering', 0, PlayerState.Entering],
+    ['invulnerable', STEPS_TO_VULNERABLE - 1, PlayerState.Invulnerable],
+  ])('does not graze while the ship is %s', (_label, steps, state) => {
+    const world = vulnerableWorld(steps);
     world.spawnEnemyBullet(world.player.position.x + 12, world.player.position.y, 0, 85);
 
+    expect(world.player.state).toBe(state);
     expect(resolve(world).grazed).toBe(0);
     expect(world.enemyBullets.at(0).grazed).toBe(false);
   });
@@ -103,11 +107,6 @@ describe('CollisionResolver — the graze (GDD v0.31 §4.1, #146)', () => {
 
     expect(world.enemyBullets.at(0).grazed).toBe(false);
     expect(resolve(world).grazed).toBe(1);
-  });
-
-  it('sizes the graze box as the drawn ship, 32 × 24', () => {
-    expect(PlayerTuning.grazeWidth).toBe(32);
-    expect(PlayerTuning.grazeHeight).toBe(24);
   });
 });
 

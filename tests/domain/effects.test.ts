@@ -8,6 +8,7 @@ import {
 } from '../../src/domain/presentation/effects';
 import { Palette } from '../../src/domain/presentation/palette';
 import { RecordingRender } from '../support/recording-render';
+import type { RecordedRect } from '../support/recording-render';
 
 describe('HitFlashes — white flash on a hit (GDD §9.4, ADR-0010)', () => {
   it('lasts about 33 ms of wall time, keyed by serial', () => {
@@ -144,18 +145,25 @@ describe('GrazeSparks — the graze spark (GDD v0.31 §9.4, #146)', () => {
     expect(late.rectsOf(Palette.grazeSpark)).toHaveLength(0);
   });
 
-  it('flies the fragments outward from the bullet', () => {
+  it('flies the fragments outward from the bullet, then dims them', () => {
     const sparks = new GrazeSparks();
     sparks.record(100, 200);
-    sparks.advance(EffectTuning.grazeSparkMs / 2);
+    const birth = new RecordingRender();
+    sparks.draw(birth);
+    sparks.advance(EffectTuning.grazeSparkMs * 0.75);
 
-    const render = new RecordingRender();
-    sparks.draw(render);
+    const late = new RecordingRender();
+    sparks.draw(late);
 
-    const distances = render
-      .rectsOf(Palette.grazeSpark)
-      .map((rect) => Math.hypot(rect.x - 100, rect.y - 200));
-    expect(Math.min(...distances)).toBeGreaterThan(1);
+    // Fragments are 1 × 1 rectangles drawn centred: their centre is (x + 0.5, y + 0.5).
+    const reach = (rects: RecordedRect[]): number[] =>
+      rects.map((rect) => Math.hypot(rect.x + 0.5 - 100, rect.y + 0.5 - 200));
+    const atBirth = reach(birth.rectsOf(Palette.grazeSpark));
+    const dimmed = reach(late.rectsOf(Palette.grazeSparkDim));
+    expect(atBirth).toHaveLength(4);
+    expect(dimmed).toHaveLength(4);
+    expect(late.drew(Palette.grazeSpark)).toBe(false);
+    expect(Math.min(...dimmed)).toBeGreaterThan(Math.max(...atBirth));
   });
 
   it('never draws a white flash (GDD §9.7)', () => {

@@ -39,7 +39,22 @@ function overlaps(a: Box, b: Box): boolean {
 const HITBOX = PlayerTuning.hitboxSize;
 const SHIELD = PlayerTuning.shieldSize;
 
-// The drawn ship (GDD v0.31 §4.1): a bullet in it but off the hitbox grazes, once.
+// A width × height box centred on the ship against another box: the hitbox, the ring, the graze
+// box and the collection box all use it.
+function inShipBox(player: Player, box: Box, width: number, height: number): boolean {
+  return (
+    Math.abs(player.position.x - box.position.x) < (width + box.width) / 2 &&
+    Math.abs(player.position.y - box.position.y) < (height + box.height) / 2
+  );
+}
+
+function touchesPlayer(player: Player, box: Box): boolean {
+  const size = player.shield ? SHIELD : HITBOX;
+  return inShipBox(player, box, size, size);
+}
+
+// The drawn ship (GDD v0.31 §4.1): a bullet in it but off the hitbox grazes, once, and only a
+// vulnerable ship without a shield charge grazes.
 const GRAZE_WIDTH = PlayerTuning.grazeWidth;
 const GRAZE_HEIGHT = PlayerTuning.grazeHeight;
 
@@ -48,16 +63,7 @@ function grazes(player: Player, bullet: Bullet): boolean {
     !bullet.grazed &&
     player.state === PlayerState.Vulnerable &&
     !player.shield &&
-    Math.abs(player.position.x - bullet.position.x) < (GRAZE_WIDTH + bullet.width) / 2 &&
-    Math.abs(player.position.y - bullet.position.y) < (GRAZE_HEIGHT + bullet.height) / 2
-  );
-}
-
-function touchesPlayer(player: Player, box: Box): boolean {
-  const size = player.shield ? SHIELD : HITBOX;
-  return (
-    Math.abs(player.position.x - box.position.x) < (size + box.width) / 2 &&
-    Math.abs(player.position.y - box.position.y) < (size + box.height) / 2
+    inShipBox(player, bullet, GRAZE_WIDTH, GRAZE_HEIGHT)
   );
 }
 
@@ -172,10 +178,7 @@ function bodiesAgainstPlayer(world: World, rules: HitRules): void {
 const COLLECT = PlayerTuning.collectSize;
 
 function overlapsSprite(player: Player, box: Box): boolean {
-  return (
-    Math.abs(player.position.x - box.position.x) < (COLLECT + box.width) / 2 &&
-    Math.abs(player.position.y - box.position.y) < (COLLECT + box.height) / 2
-  );
+  return inShipBox(player, box, COLLECT, COLLECT);
 }
 
 // Pass 4: pickups against the ship, after the hazards: a ship dying this step catches nothing.
