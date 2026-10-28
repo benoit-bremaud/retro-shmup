@@ -1059,7 +1059,7 @@ class RecordingHost implements SceneHost {
   readonly tables: (readonly HighScoreEntry[])[] = [];
   released = 0;
   country: string | undefined = undefined;
-  countryOfLanguage(): string | undefined {
+  preselectedCountry(): string | undefined {
     return this.country;
   }
   today(): string {

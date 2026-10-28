@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The country is preselected from the browser time zone first (`Europe/Paris` → `FR`), then the
+  browser language's region, offline; an English speaker in France now gets `FR`
+  (GDD v0.30 §9.1, #131).
 - Losing a life puts the ship back on the base weapon, the Spread at power level 1, and no P
   is released at the death; bombs, chain and the last life are unchanged. Level 1 is much
   harder (bot game over about 98 %), the default High scores scale is unchanged
