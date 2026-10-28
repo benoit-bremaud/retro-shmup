@@ -813,7 +813,7 @@ by a screen: the **first time** the chain reaches ×2 in a run, **CHAIN ×2 - KI
 without a kill), **CHAIN BREAK** / **CHAINE ROMPUE** floats for **0.5 s**. A death resets the chain
 without a label (the explosion already says it). Both are drawn in the `menu` font, which gains
 the `×` glyph of the `hud` font, centred horizontally at the top of the play field (top edge at
-y 40), rising 8 px over their life, then gone; a new label replaces the one on screen. They follow
+field y 40, in play-field pixels whatever the layout), rising 8 px over their life, then gone; a new label replaces the one on screen. They follow
 their own effect switch (§9.3, §9.4); off, the chain works the same, silently.
 
 ---
@@ -1090,7 +1090,7 @@ scrolling (at most 12 rows of at least 16 logical px: 192 px of the 320). One ro
   free below the rows too. The rows stay centred on the field; the highlight bar, the hit area
   of a tap or click (the whole row band) and the text's centring follow the row height. At the
   usual phone scales (×4 portrait, 1.33 to 1.52 CSS px per logical px) the title, pause, quit
-  and options rows (32 px) measure 43 to 49 CSS px, the *Visual effects* rows (26 px since v0.31, 11 rows; 28 px before) 35 to 40,
+  and options rows (32 px) measure 43 to 49 CSS px, the *Visual effects* rows (24 px since v0.32, 12 rows; 26 px in v0.31, 28 px before) 32 to 36,
   the controls rows (24 px) 32 to 36 — against 21 to 24 CSS px before v0.25 (16 px rows).
   The page itself never zooms or scrolls under a finger (ADR-0018 decision 10); a deliberate
   pinch-zoom stays possible (WCAG 1.4.4). The name entry's letter grid is not changed here.
@@ -1228,7 +1228,7 @@ and never flashes); off, the graze still scores, silently. A bullet grazing in t
 dies scores only if the collision pass meets it before the killing bullet (deterministic, at most
 100 points).
 *(v0.32, #147)* **Chain labels** (§7.3): text only, no flash, no blink, so the switch is on by
-default, `prefers-reduced-motion` included. With it, the visual-effects sub-screen reaches 12 rows
+default, `prefers-reduced-motion` included. With it, the visual-effects sub-screen reaches 12 rows of 24 px
 (*All on*, *All off*, 9 switches, *Back*), the menu ceiling of v0.13.
 
 ### 9.4.1 The champion's name in the far background *(v0.22)*

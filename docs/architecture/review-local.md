@@ -1,56 +1,43 @@
-# Local review — retro-shmup (feat/game, #131)
+# Local review — retro-shmup (#147 design)
 
-- Date: 2026-10-26
-- Commit: 975025a
-- Scope: branch diff origin/main...HEAD — country preselected from the browser time zone
-- Checks run: design · docs · tests · security · correctness (architecture-guardian, test-auditor,
-  security review on Opus, own reading)
-- Verdict: ship as-is · Must 1 (fixed) · Should 4 (fixed) · Nice 5 (4 fixed)
+Local gate on the design-only PR for #147: GDD v0.32 and UML for the chain labels.
 
-## Pre-merge gate (head SHA 87fc35c; tests and SonarQube re-run on 975025a)
+- Date: 2026-10-28
+- Scope: branch diff `main...HEAD` (`docs/147-chain-hint-design`), docs only
+- Checks run: docs (doc-auditor, consistency with `src/domain/options.ts` and the fonts) · secrets
+- Verdict: ship · Must 0 · Should 2 (fixed) · Nice 3 (1 fixed, 2 for the code PR)
+
+## Pre-merge gate
 
 | Step | Result |
 |---|---|
-| 1 Tests | ✅ 1 664 unit/simulation tests · ✅ smoke 6/6 (Chromium, Firefox, WebKit) |
-| 2 Coverage | tests 99.24 % stmts / 95.6 % branches / 100 % funcs / 99.91 % lines (floor 80) · docs 99.5 % (floor 90) |
-| 3 SonarQube | ✅ PASSED |
-| 4 Secrets | ✅ gitleaks clean · no tracked .env · diff read: nothing sensitive (IANA public data) |
-| 5 QA pass | ✅ smoke in three engines · preview captures `qa/2026-10-26-country-preselect-{fr,utc}.png` (en-US + Europe/Paris → FR, en-US + UTC → US) |
+| 1 Tests | n/a — no code changed |
+| 2 Coverage | n/a — no code changed |
+| 3 SonarQube | n/a — no code changed |
+| 4 Secrets | ✅ gitleaks clean (`main..HEAD`) · only `.env.example` tracked · diff read: nothing sensitive |
+| 5 QA pass | n/a — docs diff, nothing runs differently |
 
-- Gate: **GREEN**.
+- Gate: **GREEN** for a docs-only design PR
 
 ## 🔴 Must Have
 
-- `tests/domain/preselection.test.ts` `[tests]` · the table test checked only the codes, one
-  `expect` per pair · fixed: zone names must contain `/`, bad pairs collected into one assertion.
+_None._
 
 ## 🟡 Should Have
 
-- `scripts/build-time-zone-table.py:33` `[correctness]` · generic zones (`CET`, `EST5EDT`, `MST`…)
-  inherited a city's country since tzdata 2024b · fixed: link names without a slash are skipped;
-  `CET` added to the fall-through test.
-- `tests/domain/preselection.test.ts` `[tests]` · missing cases (multi-zone country, link-only
-  names, zone wins over an unknown or lowercase region), redundant fall-through cases · fixed.
-- `src/domain/hall-of-fame/preselection.ts:21` `[security]` · zone codes not re-checked against
-  `COUNTRY_CODES` · covered by the table test (every code must be in the allowlist).
+- `docs/design/game-design-document.md:1093` `[docs]` · *Visual effects* row height still read 26 px / 11 rows · fixed: 24 px at 12 rows
+- `docs/architecture/diagrams/meta/04-class-menus.md:354` `[docs]` · "six switches today" was stale · fixed: nine with `chainHints`
 
 ## 🔵 Nice to Have
 
-- `scripts/build-time-zone-table.py:16` `[correctness]` · code list parsing anchored on `'AD` · fixed.
-- `src/domain/scenes/scene-machine.ts:657` `[docs]` · stale comment · fixed.
-- `scripts/build-time-zone-table.py:19` `[security]` · fails loudly when the code list cannot be
-  read; docstring names the tzdata source · fixed.
-- `tests/domain/preselection.test.ts` `[tests]` · no check that the committed table matches the
-  script output · left: the script needs the host's tzdata, the table is refreshed with releases.
+- `docs/design/game-design-document.md:816` `[docs]` · y 40 coordinate space unstated · fixed: play-field pixels
+- `src/domain/ports/render-port.ts:29` `[docs]` · `FontId` comment must mention `×` in `menu` · code PR
+- `docs/architecture/diagrams/gameplay/02-sequence-enemy-destroyed.md:150` `[docs]` · "step 7" matches `ScoreKeeper`'s doc comment (tick at step 7) · verified
 
 ## ⚪ Disagree / Intentional
 
-- `src/app/main.ts` `[design]` · the composition root calls the pure domain function once at
-  startup · ADR-0009 decision 4 (startup snapshot).
+_None._
 
 ## Per-dimension summary
 
-- Design: domain free of browser APIs, no loop allocation, named exports. · Docs: UML tag lifted,
-  CHANGELOG and PROJECT_LOG entries. · Tests: 16 cases on the pure function, table validated
-  against `COUNTRY_CODES`. · Security: the untrusted zone name is only a `Map` key. ·
-  Correctness: generic zones fixed.
+- Design: n/a · Docs: consistent after fixes · Tests: planned in the traceability matrix · Security: no surface · Correctness: row count and text widths verified
