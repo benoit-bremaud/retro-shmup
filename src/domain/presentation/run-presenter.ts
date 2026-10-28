@@ -31,9 +31,11 @@ import {
 import { drawBossBar } from './boss-hud';
 import { drawHud } from './hud';
 import { drawHollowSquare, drawPlusIcon, drawShipIcon } from './icons';
-import type { EffectSettings } from '../options';
+import type { EffectSettings, Options } from '../options';
 import { message } from '../i18n/messages';
-import type { Language } from '../i18n/messages';
+
+/** What the presenter reads of the live options: the effect switches and the language. */
+export type PresenterOptions = Pick<Options, 'effects' | 'language'>;
 import { Palette } from './palette';
 import type { PaletteColour } from './palette';
 
@@ -61,8 +63,8 @@ const SPRITE_OF_ROLE: Readonly<Record<EnemyArchetype['id'], SpriteId>> = {
 /** The phase index whose start breaks the Cruiser's turret off (phase 2). */
 const TURRET_BREAKS_AT_PHASE = 1;
 
-/** The chain labels' language until the scene machine hands its live options. */
-const ENGLISH: Readonly<{ language: Language }> = { language: 'en' };
+/** The multiplier the first chain label names: ×2 (GDD v0.32 §7.3). */
+const FIRST_CHAIN_STEP = 2;
 
 const BLINK_HALF_PERIOD_STEPS = STEPS_PER_SECOND / (PlayerTuning.blinksPerSecond * 2);
 
@@ -113,7 +115,7 @@ export class RunPresenter {
   private readonly chainLabel = new ChainLabel();
   /** The first ×2 of this run was labelled (GDD v0.32 §7.3): one presenter per run. */
   private chainStepLabelled = false;
-  private readonly text: Readonly<{ language: Language }>;
+  private readonly options: Readonly<PresenterOptions>;
   /** The boss died during this frame's steps: its slow motion and chain start on the next frame. */
   private bossDiedThisFrame = false;
 
@@ -121,14 +123,13 @@ export class RunPresenter {
 
   constructor(
     render: RenderPort,
-    effects: Readonly<EffectSettings>,
+    options: Readonly<PresenterOptions>,
     events: RunEvents,
     audio: AudioPort = SILENT_AUDIO,
-    text: Readonly<{ language: Language }> = ENGLISH,
   ) {
     this.render = render;
-    this.effects = effects;
-    this.text = text;
+    this.options = options;
+    this.effects = options.effects;
     this.sounds = new RunSounds(audio, events);
     events.subscribe(GameEventKind.EnemyHit, this.onEnemyHit);
     events.subscribe(GameEventKind.EnemyDestroyed, this.onEnemyDestroyed);
@@ -298,7 +299,9 @@ export class RunPresenter {
 
   // The first ×2 of the run, once; higher steps say nothing (GDD v0.32 §7.3).
   private readonly onChainStepped = (event: Readonly<GameEvent>): void => {
-    if (!this.effects.chainHints || this.chainStepLabelled || event.value !== 2) return;
+    if (!this.effects.chainHints || this.chainStepLabelled || event.value !== FIRST_CHAIN_STEP) {
+      return;
+    }
     this.chainStepLabelled = true;
     this.chainLabel.show('chainStep');
   };
@@ -311,11 +314,11 @@ export class RunPresenter {
   private drawChainLabel(): void {
     const key = this.chainLabel.key;
     if (key === undefined) return;
-    const text = message(key, this.text.language);
+    const label = message(key, this.options.language);
     // The last cell's advance is not ink: the label is centred on its glyphs.
     const width =
-      text.length * MENU_FONT_CELL.width - (MENU_FONT_CELL.width - MENU_FONT_CELL.glyphWidth);
-    this.render.drawText(text, (FIELD_WIDTH - width) / 2, Math.round(this.chainLabel.top), 'menu');
+      label.length * MENU_FONT_CELL.width - (MENU_FONT_CELL.width - MENU_FONT_CELL.glyphWidth);
+    this.render.drawText(label, (FIELD_WIDTH - width) / 2, Math.round(this.chainLabel.top), 'menu');
   }
 
   private readonly onEnemyDestroyed = (event: Readonly<GameEvent>): void => {

@@ -738,13 +738,7 @@ export class SceneMachine {
   private startRun(): void {
     const run = this.createRun();
     this.run = run;
-    this.presenter = new RunPresenter(
-      this.renderer,
-      this.options.effects,
-      run.events(),
-      this.audio,
-      this.options,
-    );
+    this.presenter = new RunPresenter(this.renderer, this.options, run.events(), this.audio);
     this.runStartSteps = this.backgroundSteps;
     this.champion.setName(this.table.entries[0]?.name ?? '');
     this.enter(Scene.Playing);

@@ -65,20 +65,21 @@ function presenter(
   return new RunPresenter(
     render,
     {
-      blink,
-      hitFlash: true,
-      explosions: true,
-      shake: true,
-      bombFlash: true,
-      slowMotion: true,
-      championName: true,
-      graze: true,
-      chainHints: true,
-      ...switches,
+      ...text,
+      effects: {
+        blink,
+        hitFlash: true,
+        explosions: true,
+        shake: true,
+        bombFlash: true,
+        slowMotion: true,
+        championName: true,
+        graze: true,
+        chainHints: true,
+        ...switches,
+      },
     },
     bus,
-    undefined,
-    text,
   );
 }
 
