@@ -6,6 +6,25 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ---
 
+## 2026-10-29
+
+### Chain labels (#147, code #151 `5a6d764`)
+
+- `ScoreKeeper` (now given the `EventBus`) publishes `CHAIN_STEPPED` (new multiplier) on each step
+  and `CHAIN_BROKEN` (multiplier lost) when a ×2+ chain runs out; a death resets silently.
+- `RunPresenter` takes `PresenterOptions` (effects + language) and shows one `ChainLabel` slot:
+  *CHAIN ×2 - KILL FAST* at the run's first ×2 (1 s), *CHAIN BREAK* on a break (0.5 s), field y 40
+  rising 8 px; `PLAYER_DIED` clears it. `menu` font gains `×`.
+- `EffectSettings.chainHints` (*CHAIN HINTS* / *AIDE CHAINE*): Visual effects 12 rows of 24 px, the
+  ceiling; absent in a version-2 save reads on.
+- Gate: 1 702 tests, coverage 99.26 / 95.73 %, SonarQube passed; architecture-guardian 2 Should
+  fixed. The 0.5 s break label is proven by unit tests only (too short to capture).
+
+### Design: chain labels (#147, design #150 `adf91e4`)
+
+- GDD v0.32, UML. Owner MCDA (triage option D 450): FR wording 475, timing 450, own switch 450,
+  fixed top-centre position 435. Codex: 1 finding fixed (a death clears the label on screen).
+
 ## 2026-10-28
 
 ### Graze the wings (#146, code PR)
