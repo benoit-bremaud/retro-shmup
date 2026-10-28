@@ -49,6 +49,9 @@ export const MESSAGES = {
   slowMotion: { en: 'SLOW MOTION', fr: 'RALENTI' },
   championName: { en: 'CHAMPION NAME', fr: 'NOM DU CHAMPION' },
   graze: { en: 'GRAZE', fr: 'FROLEMENT' },
+  chainHints: { en: 'CHAIN HINTS', fr: 'AIDE CHAINE' },
+  chainStep: { en: 'CHAIN ×2 - KILL FAST', fr: 'CHAINE ×2 - TUE VITE' },
+  chainBreak: { en: 'CHAIN BREAK', fr: 'CHAINE ROMPUE' },
   on: { en: 'ON', fr: 'OUI' },
   off: { en: 'OFF', fr: 'NON' },
   /** The controls screen (GDD v0.15 §4.2): header, devices, intents, the capture, restore. */

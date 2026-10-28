@@ -38,6 +38,7 @@ export function defaultOptions(reducedMotion: boolean): Options {
       slowMotion: !reducedMotion,
       championName: true,
       graze: true,
+      chainHints: true,
     },
     autofire: false,
     language: 'en',
@@ -81,6 +82,8 @@ function parseEffects(value: unknown): EffectSettings | undefined {
   const championName = value.championName === undefined ? true : value.championName;
   // Added in GDD v0.31 to a version-2 save: an absent key is the default, on (#146).
   const graze = value.graze === undefined ? true : value.graze;
+  // Added in GDD v0.32 the same way (#147).
+  const chainHints = value.chainHints === undefined ? true : value.chainHints;
   if (
     typeof blink !== 'boolean' ||
     typeof hitFlash !== 'boolean' ||
@@ -89,11 +92,22 @@ function parseEffects(value: unknown): EffectSettings | undefined {
     typeof bombFlash !== 'boolean' ||
     typeof slowMotion !== 'boolean' ||
     typeof championName !== 'boolean' ||
-    typeof graze !== 'boolean'
+    typeof graze !== 'boolean' ||
+    typeof chainHints !== 'boolean'
   ) {
     return undefined;
   }
-  return { blink, hitFlash, explosions, shake, bombFlash, slowMotion, championName, graze };
+  return {
+    blink,
+    hitFlash,
+    explosions,
+    shake,
+    bombFlash,
+    slowMotion,
+    championName,
+    graze,
+    chainHints,
+  };
 }
 
 /**

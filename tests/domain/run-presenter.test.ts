@@ -18,6 +18,7 @@ import { Palette } from '../../src/domain/presentation/palette';
 import { RunPresenter } from '../../src/domain/presentation/run-presenter';
 import { SPRITE_FLASH_FRAME } from '../../src/domain/ports/render-port';
 import type { EffectSettings } from '../../src/domain/options';
+import type { Language } from '../../src/domain/i18n/messages';
 import { CRUISER_TURRET } from '../../src/domain/game/cruiser';
 import { BossState } from '../../src/domain/game/boss';
 import { createGameEvent, EventBus, GameEventKind } from '../../src/domain/game/events';
@@ -59,6 +60,7 @@ function presenter(
   blink: boolean,
   bus = new EventBus(),
   switches: Partial<EffectSettings> = {},
+  text: { language: Language } = { language: 'en' },
 ): RunPresenter {
   return new RunPresenter(
     render,
@@ -71,9 +73,12 @@ function presenter(
       slowMotion: true,
       championName: true,
       graze: true,
+      chainHints: true,
       ...switches,
     },
     bus,
+    undefined,
+    text,
   );
 }
 
@@ -747,5 +752,68 @@ describe('RunPresenter — placeholder sprites (GDD v0.17 §3.2.1, render/04-cla
     const render = loaded();
     presenter(render, false).draw(snapshot(ship({ state: PlayerState.Dead })), 1, 16);
     expect(render.sprites).toEqual([]);
+  });
+});
+
+describe('RunPresenter — the chain labels (GDD v0.32 §7.3, #147)', () => {
+  function chain(bus: EventBus, kind: GameEventKind, value: number): void {
+    const event = createGameEvent(kind);
+    event.value = value;
+    bus.publish(event);
+  }
+
+  function setup(chainHints = true, language: { language: Language } = { language: 'en' }) {
+    const bus = new EventBus();
+    const render = new RecordingRender();
+    const view = presenter(render, false, bus, { chainHints }, language);
+    const frame = (ms = 16): string[] => {
+      render.clear();
+      view.draw(snapshot(ship()), 1, ms);
+      return render.texts.filter((text) => text.font === 'menu').map((text) => text.text);
+    };
+    return { bus, render, frame };
+  }
+
+  it('floats CHAIN ×2 - KILL FAST centred at field y 40 at the first ×2', () => {
+    const { bus, render, frame } = setup();
+    chain(bus, GameEventKind.ChainStepped, 2);
+    expect(frame()).toEqual(['CHAIN ×2 - KILL FAST']);
+    expect(render.texts.find((text) => text.font === 'menu')).toMatchObject({
+      region: 'field',
+      x: (240 - (20 * 8 - 2)) / 2,
+      y: 40,
+    });
+  });
+
+  it('shows the ×2 label once per run, and none for higher steps', () => {
+    const { bus, frame } = setup();
+    chain(bus, GameEventKind.ChainStepped, 2);
+    frame(1000);
+    expect(frame()).toEqual([]);
+    chain(bus, GameEventKind.ChainStepped, 3);
+    chain(bus, GameEventKind.ChainStepped, 2);
+    expect(frame()).toEqual([]);
+  });
+
+  it('floats CHAIN BREAK for 0.5 s on a break, in French too', () => {
+    const { bus, frame } = setup(true, { language: 'fr' });
+    chain(bus, GameEventKind.ChainBroken, 3);
+    expect(frame(499)).toEqual(['CHAINE ROMPUE']);
+    expect(frame(1)).toEqual(['CHAINE ROMPUE']);
+    expect(frame()).toEqual([]);
+  });
+
+  it('clears the label when the player dies', () => {
+    const { bus, frame } = setup();
+    chain(bus, GameEventKind.ChainStepped, 2);
+    bus.publish(createGameEvent(GameEventKind.PlayerDied));
+    expect(frame()).toEqual([]);
+  });
+
+  it('draws no label with the switch off', () => {
+    const { bus, frame } = setup(false);
+    chain(bus, GameEventKind.ChainStepped, 2);
+    chain(bus, GameEventKind.ChainBroken, 2);
+    expect(frame()).toEqual([]);
   });
 });

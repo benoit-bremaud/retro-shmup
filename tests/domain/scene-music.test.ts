@@ -32,6 +32,7 @@ const OPTIONS: Options = {
     slowMotion: true,
     championName: true,
     graze: true,
+    chainHints: true,
   },
   autofire: false,
   language: 'en',

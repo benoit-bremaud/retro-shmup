@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The chain multiplier explains itself in play: the first ×2 of a run floats *CHAIN ×2 - KILL
+  FAST* for 1 s, and every break from ×2 or more floats *CHAIN BREAK* for 0.5 s, near the top of
+  the field, on their own *CHAIN HINTS* / *AIDE CHAINE* effect switch (GDD v0.32 §7.3, #147).
 - An enemy bullet crossing the drawn ship outside its 6 × 6 hitbox now grazes: 100 points once
   per bullet, flat and outside the chain, and a small pale spark on its own *GRAZE* /
   *FROLEMENT* effect switch (on by default, no sound). The hitbox is unchanged

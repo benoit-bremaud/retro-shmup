@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ChainLabel,
   EffectTuning,
   ExplosionTier,
   Explosions,
@@ -127,6 +128,50 @@ describe('Explosions — animated bursts, style A without white (GDD v0.10 §9.4
     const xs = render.rects.map((rect) => rect.x);
     expect(xs.some((x) => Math.abs(x - 99_000) < 20)).toBe(true);
     expect(xs.some((x) => Math.abs(x) < 20)).toBe(false); // the oldest, born first, was replaced
+  });
+});
+
+describe('ChainLabel — the chain labels (GDD v0.32 §7.3, #147)', () => {
+  it('shows nothing until a label is shown', () => {
+    expect(new ChainLabel().key).toBeUndefined();
+  });
+
+  it('keeps the ×2 label 1 s, rising 8 px from y 40, then drops it', () => {
+    const label = new ChainLabel();
+    label.show('chainStep');
+    expect(label.key).toBe('chainStep');
+    expect(label.top).toBe(40);
+    label.advance(500);
+    expect(label.top).toBe(36);
+    label.advance(499);
+    expect(label.key).toBe('chainStep');
+    label.advance(1);
+    expect(label.key).toBeUndefined();
+  });
+
+  it('keeps the break label 0.5 s', () => {
+    const label = new ChainLabel();
+    label.show('chainBreak');
+    label.advance(499);
+    expect(label.key).toBe('chainBreak');
+    label.advance(1);
+    expect(label.key).toBeUndefined();
+  });
+
+  it('replaces the label on screen and restarts its life', () => {
+    const label = new ChainLabel();
+    label.show('chainStep');
+    label.advance(900);
+    label.show('chainBreak');
+    expect(label.key).toBe('chainBreak');
+    expect(label.top).toBe(40);
+  });
+
+  it('clears the label at once', () => {
+    const label = new ChainLabel();
+    label.show('chainStep');
+    label.clear();
+    expect(label.key).toBeUndefined();
   });
 });
 

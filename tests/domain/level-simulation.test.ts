@@ -401,6 +401,7 @@ describe('Level simulation — effects never change the run (ADR-0010)', () => {
           slowMotion: effectsOn,
           championName: effectsOn,
           graze: effectsOn,
+          chainHints: effectsOn,
         },
         run.events(),
       );

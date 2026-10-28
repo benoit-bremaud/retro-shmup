@@ -25,6 +25,7 @@ describe('NO_HOST (the tests’ default host)', () => {
         slowMotion: true,
         championName: true,
         graze: true,
+        chainHints: true,
       },
       autofire: false,
       language: 'en',

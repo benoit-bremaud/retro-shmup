@@ -82,12 +82,13 @@ export function hudGlyph(code: number): readonly number[] | undefined {
   return code === SPACE ? SPACE_GLYPH : undefined;
 }
 
-/** The rows of a `menu` glyph: the `title` set, the digits, the four arrows, `?` and `-`. */
+/** The rows of a `menu` glyph: the `title` set, the digits, the four arrows, `?`, `-` and `×` (GDD v0.32). */
 export function menuGlyph(code: number): readonly number[] | undefined {
   if (code >= ZERO && code <= NINE) return DIGITS[code - ZERO];
   if (code >= ARROW_LEFT && code <= ARROW_DOWN) return ARROWS[code - ARROW_LEFT];
   if (code === QUESTION) return QUESTION_GLYPH;
   if (code === DASH) return DASH_GLYPH;
+  if (code === TIMES) return TIMES_GLYPH;
   return titleGlyph(code);
 }
 

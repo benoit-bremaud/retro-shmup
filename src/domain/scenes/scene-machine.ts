@@ -743,6 +743,7 @@ export class SceneMachine {
       this.options.effects,
       run.events(),
       this.audio,
+      this.options,
     );
     this.runStartSteps = this.backgroundSteps;
     this.champion.setName(this.table.entries[0]?.name ?? '');

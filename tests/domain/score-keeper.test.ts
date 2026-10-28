@@ -161,3 +161,59 @@ describe('ScoreKeeper — the counter stop (GDD v0.16 §8)', () => {
     expect(keeper.score).toBe(99_999_999);
   });
 });
+
+describe('ScoreKeeper — chain events (GDD v0.32 §7.3, #147)', () => {
+  function record(bus: EventBus, kind: GameEventKind): number[] {
+    const values: number[] = [];
+    bus.subscribe(kind, (event) => values.push(event.value));
+    return values;
+  }
+
+  it('publishes CHAIN_STEPPED with the new multiplier at each step, not before', () => {
+    const { bus, keeper, kill } = setup();
+    const stepped = record(bus, GameEventKind.ChainStepped);
+    for (let i = 0; i < 4; i += 1) killStep(keeper, kill);
+    expect(stepped).toEqual([]);
+    killStep(keeper, kill);
+    expect(stepped).toEqual([2]);
+    for (let i = 0; i < 5; i += 1) killStep(keeper, kill);
+    expect(stepped).toEqual([2, 3]);
+  });
+
+  it('stops publishing CHAIN_STEPPED at the ×8 cap', () => {
+    const { bus, keeper, kill } = setup();
+    const stepped = record(bus, GameEventKind.ChainStepped);
+    for (let i = 0; i < 50; i += 1) killStep(keeper, kill);
+    expect(stepped).toEqual([2, 3, 4, 5, 6, 7, 8]);
+  });
+
+  it('publishes CHAIN_BROKEN with the multiplier lost when a ×2 chain runs out', () => {
+    const { bus, keeper, kill } = setup();
+    const broken = record(bus, GameEventKind.ChainBroken);
+    for (let i = 0; i < 5; i += 1) killStep(keeper, kill);
+    wait(keeper, 119);
+    expect(broken).toEqual([]);
+    wait(keeper, 1);
+    expect(broken).toEqual([2]);
+    wait(keeper, 5);
+    expect(broken).toEqual([2]);
+  });
+
+  it('breaks a ×1 chain silently', () => {
+    const { bus, keeper, kill } = setup();
+    const broken = record(bus, GameEventKind.ChainBroken);
+    for (let i = 0; i < 4; i += 1) killStep(keeper, kill);
+    wait(keeper, 200);
+    expect(broken).toEqual([]);
+  });
+
+  it('resets on a death without CHAIN_BROKEN', () => {
+    const { bus, keeper, kill } = setup();
+    const broken = record(bus, GameEventKind.ChainBroken);
+    for (let i = 0; i < 5; i += 1) killStep(keeper, kill);
+    bus.publish(createGameEvent(GameEventKind.PlayerDied));
+    wait(keeper, 200);
+    expect(broken).toEqual([]);
+    expect(keeper.multiplier).toBe(1);
+  });
+});

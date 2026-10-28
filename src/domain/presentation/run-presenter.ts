@@ -12,7 +12,7 @@ import type { BossSnapshot, PlayerSnapshot, WorldSnapshot } from '../game/run';
 import { FIELD_HEIGHT, FIELD_WIDTH } from '../game/geometry';
 import { PlayerTuning, STEPS_PER_SECOND } from '../game/tuning';
 import { WeaponKind } from '../game/weapon';
-import { SPRITE_FLASH_FRAME } from '../ports/render-port';
+import { MENU_FONT_CELL, SPRITE_FLASH_FRAME } from '../ports/render-port';
 import type { RenderPort, SpriteId } from '../ports/render-port';
 import { SILENT_AUDIO } from '../ports/audio-port';
 import type { AudioPort } from '../ports/audio-port';
@@ -20,6 +20,7 @@ import { RunSounds } from './run-sounds';
 import {
   BombFlash,
   BossChain,
+  ChainLabel,
   ExplosionTier,
   Explosions,
   GrazeSparks,
@@ -31,6 +32,8 @@ import { drawBossBar } from './boss-hud';
 import { drawHud } from './hud';
 import { drawHollowSquare, drawPlusIcon, drawShipIcon } from './icons';
 import type { EffectSettings } from '../options';
+import { message } from '../i18n/messages';
+import type { Language } from '../i18n/messages';
 import { Palette } from './palette';
 import type { PaletteColour } from './palette';
 
@@ -57,6 +60,9 @@ const SPRITE_OF_ROLE: Readonly<Record<EnemyArchetype['id'], SpriteId>> = {
 
 /** The phase index whose start breaks the Cruiser's turret off (phase 2). */
 const TURRET_BREAKS_AT_PHASE = 1;
+
+/** The chain labels' language until the scene machine hands its live options. */
+const ENGLISH: Readonly<{ language: Language }> = { language: 'en' };
 
 const BLINK_HALF_PERIOD_STEPS = STEPS_PER_SECOND / (PlayerTuning.blinksPerSecond * 2);
 
@@ -104,6 +110,10 @@ export class RunPresenter {
   private readonly shake = new Shake();
   private readonly bossChain = new BossChain();
   private readonly slowMotion = new SlowMotion();
+  private readonly chainLabel = new ChainLabel();
+  /** The first ×2 of this run was labelled (GDD v0.32 §7.3): one presenter per run. */
+  private chainStepLabelled = false;
+  private readonly text: Readonly<{ language: Language }>;
   /** The boss died during this frame's steps: its slow motion and chain start on the next frame. */
   private bossDiedThisFrame = false;
 
@@ -114,9 +124,11 @@ export class RunPresenter {
     effects: Readonly<EffectSettings>,
     events: RunEvents,
     audio: AudioPort = SILENT_AUDIO,
+    text: Readonly<{ language: Language }> = ENGLISH,
   ) {
     this.render = render;
     this.effects = effects;
+    this.text = text;
     this.sounds = new RunSounds(audio, events);
     events.subscribe(GameEventKind.EnemyHit, this.onEnemyHit);
     events.subscribe(GameEventKind.EnemyDestroyed, this.onEnemyDestroyed);
@@ -125,6 +137,8 @@ export class RunPresenter {
     events.subscribe(GameEventKind.BossPhaseChanged, this.onBossPhaseChanged);
     events.subscribe(GameEventKind.BossDestroyed, this.onBossDestroyed);
     events.subscribe(GameEventKind.BulletGrazed, this.onBulletGrazed);
+    events.subscribe(GameEventKind.ChainStepped, this.onChainStepped);
+    events.subscribe(GameEventKind.ChainBroken, this.onChainBroken);
   }
 
   /**
@@ -167,11 +181,13 @@ export class RunPresenter {
     this.drawEnemyBullets(snapshot.enemyBullets, alpha);
     this.sparks.draw(this.render);
     this.bombFlash.draw(this.render, FIELD_WIDTH, FIELD_HEIGHT);
+    this.drawChainLabel();
     drawBossBar(this.render, snapshot.boss);
     drawHud(this.render, snapshot);
     this.flashes.advance(wallDtMs);
     this.explosions.advance(wallDtMs);
     this.sparks.advance(wallDtMs);
+    this.chainLabel.advance(wallDtMs);
     // After the explosions age, so a chained burst is first drawn at age 0. The frame that ran the
     // killing step counts for neither: a long frame would otherwise eat the slow motion.
     const sinceDeathMs = this.bossDiedThisFrame ? 0 : wallDtMs;
@@ -250,6 +266,8 @@ export class RunPresenter {
   };
 
   private readonly onPlayerDied = (event: Readonly<GameEvent>): void => {
+    // A death resets the chain without a label and drops the one on screen (GDD v0.32 §7.3).
+    this.chainLabel.clear();
     if (this.effects.explosions) {
       this.explosions.record(event.position.x, event.position.y, ExplosionTier.Medium);
     }
@@ -277,6 +295,28 @@ export class RunPresenter {
   private readonly onBulletGrazed = (event: Readonly<GameEvent>): void => {
     if (this.effects.graze) this.sparks.record(event.position.x, event.position.y);
   };
+
+  // The first ×2 of the run, once; higher steps say nothing (GDD v0.32 §7.3).
+  private readonly onChainStepped = (event: Readonly<GameEvent>): void => {
+    if (!this.effects.chainHints || this.chainStepLabelled || event.value !== 2) return;
+    this.chainStepLabelled = true;
+    this.chainLabel.show('chainStep');
+  };
+
+  private readonly onChainBroken = (): void => {
+    if (this.effects.chainHints) this.chainLabel.show('chainBreak');
+  };
+
+  /** The label centred on the field's width, in the `menu` font (GDD v0.32 §7.3). */
+  private drawChainLabel(): void {
+    const key = this.chainLabel.key;
+    if (key === undefined) return;
+    const text = message(key, this.text.language);
+    // The last cell's advance is not ink: the label is centred on its glyphs.
+    const width =
+      text.length * MENU_FONT_CELL.width - (MENU_FONT_CELL.width - MENU_FONT_CELL.glyphWidth);
+    this.render.drawText(text, (FIELD_WIDTH - width) / 2, Math.round(this.chainLabel.top), 'menu');
+  }
 
   private readonly onEnemyDestroyed = (event: Readonly<GameEvent>): void => {
     if (this.effects.explosions) {

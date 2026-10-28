@@ -57,7 +57,7 @@ function isGlyph(code: number, font: FontId): boolean {
   if (font === 'title') return letter;
   if (font === 'menu' || font === 'far') {
     const arrow = code >= ARROW_LEFT && code <= ARROW_DOWN;
-    return letter || digit || arrow || code === 0x3f || code === 0x2d; // `?` and `-`
+    return letter || digit || arrow || code === 0x3f || code === 0x2d || code === TIMES; // `?`, `-`, `×`
   }
   return digit || code === TIMES || code === SPACE;
 }
