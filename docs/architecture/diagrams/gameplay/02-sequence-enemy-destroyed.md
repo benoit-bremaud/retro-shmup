@@ -61,7 +61,7 @@ sequenceDiagram
     Bus->>P: score pop-up
     opt [chain reaches a new step]
       SK->>Bus: publish CHAIN_STEPPED (value = new multiplier)
-      Bus->>P: chain feedback
+      Bus->>P: chain feedback (first ×2 of the run: CHAIN ×2 label, GDD v0.32)
     end
     deactivate SK
     Bus->>P: explosion sized by detail, SFX
@@ -147,7 +147,7 @@ sequenceDiagram
   state from a handler, and the presenter only reacts.
 - **Subscription order**: `ScoreKeeper` first (subscribed by `Run`'s constructor), `RunPresenter`
   second (subscribed by the scene machine). `ScoreKeeper` publishes
-  `SCORE_AWARDED` and `CHAIN_STEPPED` from its handler — other kinds than the one it handles, so
+  `SCORE_AWARDED` and `CHAIN_STEPPED` from its handler (and `CHAIN_BROKEN` from `tick`, step 7, GDD v0.32) — other kinds than the one it handles, so
   the reused event objects stay valid (ADR-0010 invariants).
 - **Chain rule** (GDD v0.4 §8): the kill is scored at the current multiplier, then the chain
   steps up; the chain timer restarts on every kill.
