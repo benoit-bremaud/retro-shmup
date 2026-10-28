@@ -811,7 +811,7 @@ until then they are an interim deviation recorded in the scene machine.
 by a screen: the **first time** the chain reaches ×2 in a run, **CHAIN ×2 - KILL FAST** /
 **CHAINE ×2 - TUE VITE** floats for **1 s**; **every time** a chain at ×2 or more breaks (2 s
 without a kill), **CHAIN BREAK** / **CHAINE ROMPUE** floats for **0.5 s**. A death resets the chain
-without a label (the explosion already says it). Both are drawn in the `menu` font, which gains
+without a label (the explosion already says it) and clears a label on screen. Both are drawn in the `menu` font, which gains
 the `×` glyph of the `hud` font, centred horizontally at the top of the play field (top edge at
 field y 40, in play-field pixels whatever the layout), rising 8 px over their life, then gone; a new label replaces the one on screen. They follow
 their own effect switch (§9.3, §9.4); off, the chain works the same, silently.
