@@ -26,6 +26,7 @@ function onTitle(): { machine: SceneMachine; audio: RecordingAudio } {
         slowMotion: true,
         championName: true,
         graze: true,
+        chainHints: true,
       },
       autofire: false,
       language: 'en',

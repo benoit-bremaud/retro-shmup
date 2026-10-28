@@ -54,6 +54,7 @@ const CUSTOM: Options = {
     slowMotion: true,
     championName: true,
     graze: true,
+    chainHints: false,
   },
   autofire: true,
   language: 'fr',
@@ -78,6 +79,7 @@ describe('defaultOptions (GDD §9.3)', () => {
         slowMotion: true,
         championName: true,
         graze: true,
+        chainHints: true,
       },
       autofire: false,
       language: 'en',
@@ -99,6 +101,7 @@ describe('defaultOptions (GDD §9.3)', () => {
       slowMotion: false,
       championName: true,
       graze: true,
+      chainHints: true,
     });
   });
 });
@@ -141,6 +144,10 @@ describe('SaveStore.load (ADR-0006: untrusted input, never throws)', () => {
     [
       'a non-boolean graze switch',
       { version: 2, options: { ...CUSTOM, effects: { ...CUSTOM.effects, graze: 'on' } } },
+    ],
+    [
+      'a non-boolean chain hints switch',
+      { version: 2, options: { ...CUSTOM, effects: { ...CUSTOM.effects, chainHints: 1 } } },
     ],
     [
       'a non-boolean champion name',
@@ -205,6 +212,14 @@ describe('SaveStore.load (ADR-0006: untrusted input, never throws)', () => {
     const effects = new SaveStore(stored(document), false).load().effects;
     expect(effects.graze).toBe(true);
     expect(effects.blink).toBe(CUSTOM.effects.blink);
+  });
+
+  it('reads a version-2 document saved before the chain labels with that switch on (GDD v0.32, #147)', () => {
+    const { chainHints: _new, ...before } = { ...CUSTOM.effects, chainHints: false };
+    const document = { version: 2, options: { ...CUSTOM, effects: before }, highScores: [] };
+    const effects = new SaveStore(stored(document), false).load().effects;
+    expect(effects.chainHints).toBe(true);
+    expect(effects.graze).toBe(CUSTOM.effects.graze);
   });
 
   it('keeps only the known fields of a valid document', () => {

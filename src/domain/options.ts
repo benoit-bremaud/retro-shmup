@@ -20,6 +20,8 @@ export interface EffectSettings {
   championName: boolean;
   /** The graze spark (GDD v0.31 §9.4): the graze still scores with it off. */
   graze: boolean;
+  /** The chain labels (GDD v0.32 §7.3): the chain works the same with it off. */
+  chainHints: boolean;
 }
 
 /** The saved choice that stands for *NONE*: no country (GDD v0.26 §9.8). */
@@ -88,6 +90,7 @@ export const EFFECT_ROWS = [
   'slowMotion',
   'championName',
   'graze',
+  'chainHints',
 ] as const satisfies readonly (keyof EffectSettings & MessageKey)[];
 type EffectRow = (typeof EFFECT_ROWS)[number];
 

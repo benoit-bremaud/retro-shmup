@@ -27,6 +27,10 @@ export const GameEventKind = {
   LevelCleared: 12,
   /** An enemy bullet grazed the ship; `position` = the bullet, `value` = the points. */
   BulletGrazed: 13,
+  /** A kill moved the chain multiplier up; `value` = the new multiplier (GDD v0.32 §7.3). */
+  ChainStepped: 14,
+  /** A chain at ×2 or more ran out; `value` = the multiplier lost. Never at a death. */
+  ChainBroken: 15,
 } as const;
 export type GameEventKind = (typeof GameEventKind)[keyof typeof GameEventKind];
 

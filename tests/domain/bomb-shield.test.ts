@@ -358,8 +358,9 @@ describe('Effects — bomb flash and shake (GDD v0.8 §9.4)', () => {
       slowMotion: on,
       championName: on,
       graze: on,
+      chainHints: on,
     };
-    const presenter = new RunPresenter(render, effects, run.events());
+    const presenter = new RunPresenter(render, { effects, language: 'en' }, run.events());
     run.step(DT, pressing(Button.Bomb));
     presenter.applyShake();
     presenter.draw(run.snapshot(), 1, 16);
@@ -382,8 +383,9 @@ describe('RunPresenter — the shield ring (GDD v0.8 §4.4)', () => {
       slowMotion: true,
       championName: true,
       graze: true,
+      chainHints: true,
     };
-    new RunPresenter(render, effects, run.events()).draw(run.snapshot(), 1, 16);
+    new RunPresenter(render, { effects, language: 'en' }, run.events()).draw(run.snapshot(), 1, 16);
     const ring = render.rectsOf(Palette.shieldRing);
     expect(ring).toHaveLength(4);
     expect(Math.min(...ring.map((r) => r.x))).toBe(102);

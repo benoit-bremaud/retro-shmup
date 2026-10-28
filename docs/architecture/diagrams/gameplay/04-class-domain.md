@@ -318,7 +318,7 @@ classDiagram
   Pickup --> "1" PickupKind : kind
   ScoreKeeper *-- "1" LevelTally
   LevelTally ..> TallyTuning : reads
-  ScoreKeeper ..> EventBus : subscribed first by Run
+  ScoreKeeper ..> EventBus : subscribed first by Run, publishes CHAIN_STEPPED and CHAIN_BROKEN
   EventBus ..> GameEvent : dispatches
   LevelDirector --> "1" LevelScript : walks
 ```

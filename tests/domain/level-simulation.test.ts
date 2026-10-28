@@ -393,14 +393,18 @@ describe('Level simulation — effects never change the run (ADR-0010)', () => {
       const presenter = new RunPresenter(
         render,
         {
-          blink: effectsOn,
-          hitFlash: effectsOn,
-          explosions: effectsOn,
-          shake: effectsOn,
-          bombFlash: effectsOn,
-          slowMotion: effectsOn,
-          championName: effectsOn,
-          graze: effectsOn,
+          language: 'en',
+          effects: {
+            blink: effectsOn,
+            hitFlash: effectsOn,
+            explosions: effectsOn,
+            shake: effectsOn,
+            bombFlash: effectsOn,
+            slowMotion: effectsOn,
+            championName: effectsOn,
+            graze: effectsOn,
+            chainHints: effectsOn,
+          },
         },
         run.events(),
       );

@@ -1,5 +1,5 @@
-import { GameEventKind } from './events';
-import type { GameEvent, RunEvents } from './events';
+import { createGameEvent, GameEventKind } from './events';
+import type { EventBus, GameEvent } from './events';
 import { LevelTally } from './level-tally';
 import type { TallyView } from './level-tally';
 import { BossTuning, ChainTuning, ScoreTuning, toSteps } from './tuning';
@@ -22,8 +22,13 @@ export class ScoreKeeper {
   private chainKills = 0;
   private chainTimer = NO_CHAIN;
   private readonly levelTally: LevelTally;
+  private readonly bus: EventBus;
+  // Reused events (ADR-0010): published from a handler of another kind or from `tick`.
+  private readonly chainStepped = createGameEvent(GameEventKind.ChainStepped);
+  private readonly chainBroken = createGameEvent(GameEventKind.ChainBroken);
 
-  constructor(events: RunEvents) {
+  constructor(events: EventBus) {
+    this.bus = events;
     // Subscribed before this keeper's LEVEL_CLEARED handler, so the bombs left are counted first.
     this.levelTally = new LevelTally(events);
     events.subscribe(GameEventKind.EnemyDestroyed, this.onEnemyDestroyed);
@@ -60,15 +65,26 @@ export class ScoreKeeper {
   tick(): void {
     if (this.chainTimer < 0) return;
     this.chainTimer -= 1;
-    if (this.chainTimer < 0) this.chainKills = 0;
+    if (this.chainTimer >= 0) return;
+    const lost = this.multiplier;
+    this.chainKills = 0;
+    if (lost > 1) this.publishChain(this.chainBroken, lost);
   }
 
   // A kill is scored at the current multiplier, then the chain steps up (GDD v0.4 §8).
   private readonly onEnemyDestroyed = (event: Readonly<GameEvent>): void => {
-    this.add(event.value * this.multiplier);
+    const before = this.multiplier;
+    this.add(event.value * before);
     this.chainKills += 1;
     this.chainTimer = WINDOW_STEPS;
+    const after = this.multiplier;
+    if (after > before) this.publishChain(this.chainStepped, after);
   };
+
+  private publishChain(event: GameEvent, multiplier: number): void {
+    event.value = multiplier;
+    this.bus.publish(event);
+  }
 
   // The cap bonus is flat: never multiplied, and the chain does not move (GDD v0.8 §4.6).
   private readonly onPickupCollected = (event: Readonly<GameEvent>): void => {

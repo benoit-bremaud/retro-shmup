@@ -13,6 +13,7 @@ const SAVED: Options = {
     slowMotion: true,
     championName: true,
     graze: true,
+    chainHints: true,
   },
   autofire: false,
   language: 'en',

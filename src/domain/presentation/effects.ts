@@ -25,7 +25,53 @@ export const EffectTuning = {
   grazeSparkMs: 150,
   /** At most this many sparks at once; the oldest is recycled first. */
   maxGrazeSparks: 16,
+  /** The chain labels (GDD v0.32 §7.3): the first ×2 for 1 s, a break for 0.5 s… */
+  chainStepLabelMs: 1000,
+  chainBreakLabelMs: 500,
+  /** …their top edge at field y 40, rising this many px over their life. */
+  chainLabelTop: 40,
+  chainLabelRise: 8,
 } as const;
+
+/** The two chain labels, each a catalogue key. */
+export type ChainLabelKey = 'chainStep' | 'chainBreak';
+
+/**
+ * The one chain-label slot (GDD v0.32 §7.3): a new label replaces the one on screen; the
+ * presenter draws `key` through the catalogue at `top`.
+ */
+export class ChainLabel {
+  private shown: ChainLabelKey | undefined;
+  private ageMs = 0;
+  private lifeMs = 1;
+
+  /** The label on screen, or `undefined`. */
+  get key(): ChainLabelKey | undefined {
+    return this.shown;
+  }
+
+  /** The label's top edge in field pixels: 40 at its birth, 8 px higher at its end. */
+  get top(): number {
+    return EffectTuning.chainLabelTop - (EffectTuning.chainLabelRise * this.ageMs) / this.lifeMs;
+  }
+
+  show(key: ChainLabelKey): void {
+    this.shown = key;
+    this.ageMs = 0;
+    this.lifeMs =
+      key === 'chainStep' ? EffectTuning.chainStepLabelMs : EffectTuning.chainBreakLabelMs;
+  }
+
+  clear(): void {
+    this.shown = undefined;
+  }
+
+  advance(ms: number): void {
+    if (this.shown === undefined) return;
+    this.ageMs += ms;
+    if (this.ageMs >= this.lifeMs) this.shown = undefined;
+  }
+}
 
 const FLASH_SLOTS = 16;
 
