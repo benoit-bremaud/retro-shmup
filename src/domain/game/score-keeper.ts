@@ -29,6 +29,7 @@ export class ScoreKeeper {
     events.subscribe(GameEventKind.EnemyDestroyed, this.onEnemyDestroyed);
     events.subscribe(GameEventKind.PlayerDied, this.onPlayerDied);
     events.subscribe(GameEventKind.PickupCollected, this.onPickupCollected);
+    events.subscribe(GameEventKind.BulletGrazed, this.onBulletGrazed);
     events.subscribe(GameEventKind.BossDestroyed, this.onBossDestroyed);
     events.subscribe(GameEventKind.LevelCleared, this.onLevelCleared);
   }
@@ -71,6 +72,11 @@ export class ScoreKeeper {
 
   // The cap bonus is flat: never multiplied, and the chain does not move (GDD v0.8 §4.6).
   private readonly onPickupCollected = (event: Readonly<GameEvent>): void => {
+    this.add(event.value);
+  };
+
+  // The graze is flat too, and neither extends nor breaks the chain (GDD v0.31 §8).
+  private readonly onBulletGrazed = (event: Readonly<GameEvent>): void => {
     this.add(event.value);
   };
 

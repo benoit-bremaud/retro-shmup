@@ -23,6 +23,8 @@ export class Bullet {
   weapon: WeaponKind = WeaponKind.Spread;
   private readonly alreadyHit = [0, 0, 0];
   private alreadyHitCount = 0;
+  /** An enemy bullet that grazed the ship: it grazes once in its life (GDD v0.31 §4.1). */
+  grazed = false;
   /** Consumed this step: skipped by every pass, released at step 6 (mark, then release). */
   spent = false;
 

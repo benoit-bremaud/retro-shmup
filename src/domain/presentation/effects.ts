@@ -21,6 +21,10 @@ export const EffectTuning = {
   /** Slow motion on the boss's death: this much wall time at this simulation speed. */
   slowMotionMs: 500,
   slowMotionScale: 0.5,
+  /** The graze spark (GDD v0.31 §9.4, initial): 4 fragments fading out over about 150 ms. */
+  grazeSparkMs: 150,
+  /** At most this many sparks at once; the oldest is recycled first. */
+  maxGrazeSparks: 16,
 } as const;
 
 const FLASH_SLOTS = 16;
@@ -142,6 +146,60 @@ export class Explosions {
       const fx = cx + Math.cos(angle) * reach - side / 2;
       const fy = cy + Math.sin(angle) * reach - side / 2;
       render.drawRect(fx, fy, side, side, colour);
+    }
+  }
+}
+
+// The graze spark's fragments: four, on the diagonals, 1 × 1, flying out to this reach.
+const SPARK_FRAGMENTS = 4;
+const SPARK_REACH = 6;
+
+/**
+ * The graze spark (GDD v0.31 §9.4, #146): where a bullet grazed the ship, 4 small pale fragments
+ * fly outward for about 150 ms. No white and no flash of the field, so it stays within §9.7 at any
+ * bullet density. Like the explosions, a spark is a pure function of its age, in a ring of 16 whose
+ * next slot is always the oldest.
+ */
+export class GrazeSparks {
+  private readonly x = new Float32Array(EffectTuning.maxGrazeSparks);
+  private readonly y = new Float32Array(EffectTuning.maxGrazeSparks);
+  private readonly ageMs = new Float32Array(EffectTuning.maxGrazeSparks).fill(
+    EffectTuning.grazeSparkMs,
+  );
+  private next = 0;
+
+  record(x: number, y: number): void {
+    this.x[this.next] = x;
+    this.y[this.next] = y;
+    this.ageMs[this.next] = 0;
+    this.next = (this.next + 1) % EffectTuning.maxGrazeSparks;
+  }
+
+  draw(render: RenderPort): void {
+    for (let i = 0; i < EffectTuning.maxGrazeSparks; i += 1) {
+      const age = this.ageMs[i] ?? EffectTuning.grazeSparkMs;
+      if (age >= EffectTuning.grazeSparkMs) continue;
+      const p = age / EffectTuning.grazeSparkMs;
+      // Ease-out from 2 px, so the fragments leave the bullet at once.
+      const reach = 2 + (SPARK_REACH - 2) * (1 - (1 - p) * (1 - p));
+      const cx = this.x[i] ?? 0;
+      const cy = this.y[i] ?? 0;
+      for (let k = 0; k < SPARK_FRAGMENTS; k += 1) {
+        const angle = Math.PI / 4 + (k / SPARK_FRAGMENTS) * Math.PI * 2;
+        render.drawRect(
+          cx + Math.cos(angle) * reach,
+          cy + Math.sin(angle) * reach,
+          1,
+          1,
+          Palette.grazeSpark,
+        );
+      }
+    }
+  }
+
+  advance(ms: number): void {
+    for (let i = 0; i < EffectTuning.maxGrazeSparks; i += 1) {
+      this.ageMs[i] = (this.ageMs[i] ?? 0) + ms;
     }
   }
 }

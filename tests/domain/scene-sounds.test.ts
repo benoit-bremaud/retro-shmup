@@ -25,6 +25,7 @@ function onTitle(): { machine: SceneMachine; audio: RecordingAudio } {
         bombFlash: true,
         slowMotion: true,
         championName: true,
+        graze: true,
       },
       autofire: false,
       language: 'en',

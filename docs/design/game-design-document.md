@@ -817,8 +817,9 @@ until then they are an interim deviation recorded in the scene machine.
   outside the chain (§4.6) *(v0.8)*.
 - **Graze** *(v0.31, #146, initial)*: **100** points per grazing bullet (§4.1), once per bullet,
   added flat — never multiplied by the chain, and it neither extends nor breaks the chain (like a
-  pickup). The value is re-measured with the balance bot in the code PR against the default High
-  scores scale (150 000 → 30 000, §9.1).
+  pickup). Measured on the code with the balance bot (100 seeds, good / average / beginner): median
+  scores 100 700 / 93 850 / 100 100 → **103 000 / 95 550 / 101 150** (+1 to +2 %), game over and
+  boss kills unchanged, so the default High scores scale (150 000 → 30 000, §9.1) stays.
 - **Chain multiplier ×1 … ×8** *(initial)*: every kill within **2 s** of the previous one extends the
   chain; the multiplier steps up every 5 chained kills (×2 at 5, ×3 at 10 … ×8 at 35) — a kill is
   scored at the current multiplier, then the chain steps up *(v0.4: the 5th kill scores ×1)*. The chain

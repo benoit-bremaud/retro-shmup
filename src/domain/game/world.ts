@@ -91,6 +91,7 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, WorldView {
     // An enemy bullet takes a life, not HP: its damage is never read (GDD §4.4).
     bullet.damage = 0;
     bullet.pierceLeft = 0;
+    bullet.grazed = false;
     bullet.forgetHits();
   }
 

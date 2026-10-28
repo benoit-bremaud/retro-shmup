@@ -31,6 +31,7 @@ const OPTIONS: Options = {
     bombFlash: true,
     slowMotion: true,
     championName: true,
+    graze: true,
   },
   autofire: false,
   language: 'en',

@@ -22,6 +22,7 @@ import {
   BossChain,
   ExplosionTier,
   Explosions,
+  GrazeSparks,
   HitFlashes,
   Shake,
   SlowMotion,
@@ -98,6 +99,7 @@ export class RunPresenter {
   private readonly effects: Readonly<EffectSettings>;
   private readonly flashes = new HitFlashes();
   private readonly explosions = new Explosions();
+  private readonly sparks = new GrazeSparks();
   private readonly bombFlash = new BombFlash();
   private readonly shake = new Shake();
   private readonly bossChain = new BossChain();
@@ -122,6 +124,7 @@ export class RunPresenter {
     events.subscribe(GameEventKind.PlayerDied, this.onPlayerDied);
     events.subscribe(GameEventKind.BossPhaseChanged, this.onBossPhaseChanged);
     events.subscribe(GameEventKind.BossDestroyed, this.onBossDestroyed);
+    events.subscribe(GameEventKind.BulletGrazed, this.onBulletGrazed);
   }
 
   /**
@@ -139,7 +142,7 @@ export class RunPresenter {
 
   /**
    * The boss, enemies, explosions, pickups, player bullets, the ship and its shield ring, then enemy
-   * bullets on top, then the bomb flash over the field, then the boss's HP bar and seconds; then the
+   * bullets on top and the graze sparks over them, then the bomb flash over the field, then the boss's HP bar and seconds; then the
    * HUD contents; then the effects
    * age by `wallDtMs` (0 in a frozen frame).
    */
@@ -162,11 +165,13 @@ export class RunPresenter {
       if (snapshot.shield) this.drawShieldRing(x, y);
     }
     this.drawEnemyBullets(snapshot.enemyBullets, alpha);
+    this.sparks.draw(this.render);
     this.bombFlash.draw(this.render, FIELD_WIDTH, FIELD_HEIGHT);
     drawBossBar(this.render, snapshot.boss);
     drawHud(this.render, snapshot);
     this.flashes.advance(wallDtMs);
     this.explosions.advance(wallDtMs);
+    this.sparks.advance(wallDtMs);
     // After the explosions age, so a chained burst is first drawn at age 0. The frame that ran the
     // killing step counts for neither: a long frame would otherwise eat the slow motion.
     const sinceDeathMs = this.bossDiedThisFrame ? 0 : wallDtMs;
@@ -266,6 +271,11 @@ export class RunPresenter {
       this.bossChain.trigger(event.position.x, event.position.y, this.explosions);
     }
     if (this.effects.slowMotion) this.slowMotion.trigger();
+  };
+
+  // The graze spark at the bullet (GDD v0.31 §9.4); the graze scores whatever the switch.
+  private readonly onBulletGrazed = (event: Readonly<GameEvent>): void => {
+    if (this.effects.graze) this.sparks.record(event.position.x, event.position.y);
   };
 
   private readonly onEnemyDestroyed = (event: Readonly<GameEvent>): void => {

@@ -10,7 +10,7 @@ import { swayMovement } from '../../src/domain/game/movements';
 import { PlayerState } from '../../src/domain/game/player';
 import type { Player } from '../../src/domain/game/player';
 import { Run, RunOutcome } from '../../src/domain/game/run';
-import { KitTuning } from '../../src/domain/game/tuning';
+import { BossTuning, KitTuning, ScoreTuning } from '../../src/domain/game/tuning';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
 import { testScript } from '../support/script';
@@ -302,7 +302,9 @@ describe('Run — the end of the fight (GDD v0.10 §6)', () => {
     }
     expect(log.map((e) => e.kind)).toEqual([GameEventKind.BossFled]);
     expect(run.snapshot().boss.state).toBe(BossState.Fleeing);
-    expect(run.snapshot().score).toBe(0);
+    // No bonus: only the bullets that grazed the idle ship scored (GDD v0.31 §8).
+    expect(run.snapshot().score % ScoreTuning.graze).toBe(0);
+    expect(run.snapshot().score).toBeLessThan(BossTuning.bonus);
     steps(run, 1);
     expect(run.snapshot().enemyBullets.count).toBe(0);
   });

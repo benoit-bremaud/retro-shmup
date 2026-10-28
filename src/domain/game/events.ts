@@ -25,6 +25,8 @@ export const GameEventKind = {
   BossFled: 11,
   /** The level ended; `value` = the bombs left. */
   LevelCleared: 12,
+  /** An enemy bullet grazed the ship; `position` = the bullet, `value` = the points. */
+  BulletGrazed: 13,
 } as const;
 export type GameEventKind = (typeof GameEventKind)[keyof typeof GameEventKind];
 

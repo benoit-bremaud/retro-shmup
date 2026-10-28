@@ -27,6 +27,8 @@ export const Palette = {
   hitFlash: '#fafafa',
   explosionHot: '#fbd38d',
   explosionCool: '#c05621',
+  /** The graze spark (GDD v0.31 §9.4): pale yellow, never white. */
+  grazeSpark: '#fefcbf',
   // HUD digits (hud font) and the overlays of the frozen scenes.
   hudText: '#fdf6e3',
   titleText: '#fc8181',

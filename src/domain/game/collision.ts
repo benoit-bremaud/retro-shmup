@@ -4,7 +4,7 @@ import type { Bullet } from './bullet';
 import type { Enemy } from './enemy';
 import type { Box } from './geometry';
 import type { Pickup } from './pickup';
-import { HitOutcome } from './player';
+import { HitOutcome, PlayerState } from './player';
 import type { Player } from './player';
 import { PlayerTuning } from './tuning';
 import type { World } from './world';
@@ -23,6 +23,8 @@ export interface HitRules {
   shieldBroken(): void;
   /** A shot or the bomb hit the boss, which is fighting: `Run` applies, publishes and phases. */
   damageBoss(amount: number): void;
+  /** An enemy bullet grazed the ship, already marked (GDD v0.31 §4.1): `Run` publishes it. */
+  bulletGrazed(bullet: Bullet): void;
 }
 
 function overlaps(a: Box, b: Box): boolean {
@@ -36,6 +38,20 @@ function overlaps(a: Box, b: Box): boolean {
 // charge is held, when the drawn 36 × 36 ring is the shape, so any touch consumes it (GDD v0.19 §4.4).
 const HITBOX = PlayerTuning.hitboxSize;
 const SHIELD = PlayerTuning.shieldSize;
+
+// The drawn ship (GDD v0.31 §4.1): a bullet in it but off the hitbox grazes, once.
+const GRAZE_WIDTH = PlayerTuning.grazeWidth;
+const GRAZE_HEIGHT = PlayerTuning.grazeHeight;
+
+function grazes(player: Player, bullet: Bullet): boolean {
+  return (
+    !bullet.grazed &&
+    player.state === PlayerState.Vulnerable &&
+    !player.shield &&
+    Math.abs(player.position.x - bullet.position.x) < (GRAZE_WIDTH + bullet.width) / 2 &&
+    Math.abs(player.position.y - bullet.position.y) < (GRAZE_HEIGHT + bullet.height) / 2
+  );
+}
 
 function touchesPlayer(player: Player, box: Box): boolean {
   const size = player.shield ? SHIELD : HITBOX;
@@ -119,11 +135,19 @@ function report(outcome: HitOutcome, rules: HitRules): void {
 }
 
 // Pass 2: enemy bullets against the hitbox, or the ring while a charge is held. A bullet that
-// killed the ship or broke its shield is consumed; an ignored hit passes through.
+// killed the ship or broke its shield is consumed; an ignored hit passes through. A bullet that
+// misses the hitbox but crosses the drawn ship grazes, once, and stays live (GDD v0.31 §4.1).
 function bulletsAgainstPlayer(world: World, rules: HitRules): void {
   for (let i = 0; i < world.enemyBullets.count; i += 1) {
     const bullet = world.enemyBullets.at(i);
-    if (bullet.spent || !touchesPlayer(world.player, bullet)) continue;
+    if (bullet.spent) continue;
+    if (!touchesPlayer(world.player, bullet)) {
+      if (grazes(world.player, bullet)) {
+        bullet.grazed = true;
+        rules.bulletGrazed(bullet);
+      }
+      continue;
+    }
     const outcome = world.player.hit();
     if (outcome === HitOutcome.Ignored) continue;
     bullet.spent = true;
