@@ -1,6 +1,6 @@
 # Class diagram — gameplay — domain model of a run (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.10 §4–§8 (with §5.2.1, §6.1, §7.2.1 and §7.2.2), §9.2, §10; v0.12 for the formation reward flag; v0.18 for the level-1 balance values; v0.31 for the graze
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.10 §4–§8 (with §5.2.1, §6.1, §7.2.1 and §7.2.2), §9.2, §10; v0.12 for the formation reward flag; v0.18 for the level-1 balance values; v0.31 for the graze; v0.32 for the chain labels
 > **Related ADRs**: ADR-0002 (Simulation, Random, pools), ADR-0024 (`FixedPool<T>` is the pool contract), ADR-0003 (composition, patterns),
 > ADR-0009 (IntentFrame), ADR-0010 (event bus per run, `DropTable` as data,
 > presentation outside the outcome), ADR-0019 (run seed, damage in tenths, weapons as data,
@@ -493,6 +493,7 @@ classDiagram
     BOMB_USED
     SCORE_AWARDED
     CHAIN_STEPPED
+    CHAIN_BROKEN
     BOSS_WARNING
     BOSS_PHASE_CHANGED
     BOSS_DESTROYED
@@ -548,6 +549,7 @@ classDiagram
 | Pickup at its cap → 1 000 points (§4.6, v0.8) | `Player.collect(kind): number` returns the bonus, 0 or 1 000 (an other-colour P at level 5 switches **and** returns 1 000); `PICKUP_COLLECTED` carries the kind in `detail` and the bonus in `value`; `ScoreKeeper` adds `value` flat, outside the chain |
 | Pickup collection box 32 × 32, player hitbox 6 × 6 (§4.1, §4.6, v0.8; 4 × 4 before v0.24) | `CollisionResolver` pass 4, after the hazards: live 16 × 16 pickups against the ship's 32 × 32 box while `Player.canCollect()` (`Entering`, `Invulnerable`, `Vulnerable`); each collected one is marked `spent`, in the order of the active pickup list; bullets and bodies test the 4 × 4 hitbox, or the 36 × 36 shield ring while `Player.shield` is held (GDD v0.19) |
 | Graze (§4.1, §8, §9.4, GDD v0.31, #146) | `CollisionResolver` pass 2: a live enemy bullet that does not hit the 6 × 6 hitbox but overlaps the 32 × 24 graze box, with `grazed` false, while the player is `Vulnerable` without a shield charge, sets `grazed` (reset by the pool on acquire) and calls `HitRules.bulletGrazed(bullet)`, through which the run publishes `BULLET_GRAZED` with the bullet's position and `value` 100 (`ScoreTuning.graze`); `ScoreKeeper` adds `value` flat, outside the chain, through `add`; `RunPresenter` draws the spark when its switch is on. No allocation: a flag on the pooled bullet and the reusable event |
+| Chain labels (§7.3, §9.4, GDD v0.32, #147) | `ScoreKeeper.onEnemyDestroyed` publishes `CHAIN_STEPPED` (`value` = the new multiplier) when the kill moves the multiplier up; `ScoreKeeper.tick` publishes `CHAIN_BROKEN` (`value` = the multiplier lost) when the timer runs out on a chain at ×2 or more; `onPlayerDied` resets silently (no event). `RunPresenter` shows *CHAIN ×2 - KILL FAST* on the first `CHAIN_STEPPED` with `value` 2 of the run (a flag cleared at the run start) for 1 s, *CHAIN BREAK* on `CHAIN_BROKEN` for 0.5 s, in one label slot (a new label replaces the old), when the `chainHints` switch is on; wall-clock timers, presentation only (ADR-0010). No allocation: the reusable event, one slot with a message key and a time left |
 | First-time pickup labels (§7.3) | `PICKUP_SPAWNED` carries the kind in `detail`; `RunPresenter` remembers which kinds it has labelled this run (presentation only, ADR-0010) |
 | Contact hits the player (§5.2) | `CollisionResolver`: player hitbox (6 × 6 since GDD v0.24), or the 36 × 36 shield ring while a charge is held (GDD v0.19), against enemy and boss hitboxes |
 | Roles as data lines (§5.2, §5.3) | `EnemyArchetype` = `EnemyStats` + `DropTable` + one movement + one attack |
