@@ -87,8 +87,8 @@ sequenceDiagram
   `PLAYER_HIT`, to which `LevelTally` does not subscribe.
 - **Graze** (GDD v0.31 §4.1, #146): in pass 2, an enemy bullet that misses the hitbox but
   overlaps the drawn 32 × 24 box, while the player is `Vulnerable` with no shield charge, is not
-  a hit: it sets its `grazed` flag (once per bullet), stays live, and the run publishes
-  `BULLET_GRAZED` (100 points flat in `ScoreKeeper`, the spark in `RunPresenter`); `Player.hit()`
+  a hit: it sets its `grazed` flag (once per bullet), stays live, and the resolver calls
+  `HitRules.bulletGrazed(bullet)`, through which the run publishes `BULLET_GRAZED` (100 points flat in `ScoreKeeper`, the spark in `RunPresenter`); `Player.hit()`
   is not called. The rule table of [04-class-domain](04-class-domain.md) holds the detail.
 - **Boss body** (GDD v0.10 §6): pass 3 tests it while the boss is `ENTERING` or `FIGHTING`, never
   in `DESTROYED` or `FLEEING`; it survives the contact like any body.

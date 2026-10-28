@@ -353,7 +353,7 @@ classDiagram
   (ADR-0006 decision 6); `false` means the session goes on without saving.
 - **`EffectSettings`** is the presentation's existing switch set (six switches today: blink,
   hit flash, explosions with the debris, shake, bomb flash, slow motion); the visual-effects
-  screen lists exactly its switches, and an effect added later brings its switch and row — the graze spark brings *GRAZE* / *FROLEMENT* (GDD v0.31, #146).
+  screen lists exactly its switches, and an effect added later brings its switch and row — the graze spark brings *GRAZE* / *FROLEMENT* (GDD v0.31, #146). Its saved key `graze` follows the `championName` precedent: the save stays version 2 and an **absent key reads as `true`** (the default), any other non-boolean rejects the options as before (ADR-0006); the code PR adds a version-2 save fixture without the key.
 - **`highScores`** stays an empty list until the hall of fame (G2) fills it. The options shape
   of G1a is version 1; the remap (G1b) and the volumes (G3) change it, so each bumps `version`
   with a migration function, as ADR-0006 decision 4 requires.
