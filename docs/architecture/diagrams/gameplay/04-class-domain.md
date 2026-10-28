@@ -1,6 +1,6 @@
 # Class diagram — gameplay — domain model of a run (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.10 §4–§8 (with §5.2.1, §6.1, §7.2.1 and §7.2.2), §9.2, §10; v0.12 for the formation reward flag; v0.18 for the level-1 balance values
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.10 §4–§8 (with §5.2.1, §6.1, §7.2.1 and §7.2.2), §9.2, §10; v0.12 for the formation reward flag; v0.18 for the level-1 balance values; v0.31 for the graze
 > **Related ADRs**: ADR-0002 (Simulation, Random, pools), ADR-0024 (`FixedPool<T>` is the pool contract), ADR-0003 (composition, patterns),
 > ADR-0009 (IntentFrame), ADR-0010 (event bus per run, `DropTable` as data,
 > presentation outside the outcome), ADR-0019 (run seed, damage in tenths, weapons as data,
@@ -56,6 +56,7 @@ classDiagram
     <<interface>>
     +enemyHit(enemy: Enemy) void
     +shieldBroken() void
+    +bulletGrazed(bullet: Bullet) void
     +pickupCollected(pickup: Pickup) void
     +destroyEnemy(enemy: Enemy, cause: KillCause) void
     +damageBoss(amount: number) void
@@ -75,6 +76,7 @@ classDiagram
     +pickupCollected(pickup) void
     +playerDied() void
     +shieldBroken() void
+    +bulletGrazed(bullet) void
     +startFormation(total) Formation
     +spawnEnemy(event, formation) boolean
     +startBoss(definition) void
@@ -207,6 +209,7 @@ classDiagram
     -weapon: WeaponKind
     -alreadyHit: number[3]
     -alreadyHitCount: number
+    -grazed: boolean
     -spent: boolean
     +canHit(serial: number) boolean
     +recordHit(serial: number) void
@@ -484,6 +487,7 @@ classDiagram
     FORMATION_CLEARED
     PICKUP_SPAWNED
     PICKUP_COLLECTED
+    BULLET_GRAZED
     PLAYER_HIT
     PLAYER_DIED
     BOMB_USED
@@ -543,6 +547,7 @@ classDiagram
 | Counter stop at 99 999 999 (§8, v0.16, owner 2026-10-15) | Every point goes through `ScoreKeeper.add`, which stops at `ScoreTuning.counterStop`; `parseHighScores` drops a stored score above it |
 | Pickup at its cap → 1 000 points (§4.6, v0.8) | `Player.collect(kind): number` returns the bonus, 0 or 1 000 (an other-colour P at level 5 switches **and** returns 1 000); `PICKUP_COLLECTED` carries the kind in `detail` and the bonus in `value`; `ScoreKeeper` adds `value` flat, outside the chain |
 | Pickup collection box 32 × 32, player hitbox 6 × 6 (§4.1, §4.6, v0.8; 4 × 4 before v0.24) | `CollisionResolver` pass 4, after the hazards: live 16 × 16 pickups against the ship's 32 × 32 box while `Player.canCollect()` (`Entering`, `Invulnerable`, `Vulnerable`); each collected one is marked `spent`, in the order of the active pickup list; bullets and bodies test the 4 × 4 hitbox, or the 36 × 36 shield ring while `Player.shield` is held (GDD v0.19) |
+| Graze (§4.1, §8, §9.4, GDD v0.31, #146) | `CollisionResolver` pass 2: a live enemy bullet that does not hit the 6 × 6 hitbox but overlaps the 32 × 24 graze box, with `grazed` false, while the player is `Vulnerable` without a shield charge, sets `grazed` (reset by the pool on acquire) and calls `HitRules.bulletGrazed(bullet)`, through which the run publishes `BULLET_GRAZED` with the bullet's position and `value` 100 (`ScoreTuning.graze`); `ScoreKeeper` adds `value` flat, outside the chain, through `add`; `RunPresenter` draws the spark when its switch is on. No allocation: a flag on the pooled bullet and the reusable event |
 | First-time pickup labels (§7.3) | `PICKUP_SPAWNED` carries the kind in `detail`; `RunPresenter` remembers which kinds it has labelled this run (presentation only, ADR-0010) |
 | Contact hits the player (§5.2) | `CollisionResolver`: player hitbox (6 × 6 since GDD v0.24), or the 36 × 36 shield ring while a charge is held (GDD v0.19), against enemy and boss hitboxes |
 | Roles as data lines (§5.2, §5.3) | `EnemyArchetype` = `EnemyStats` + `DropTable` + one movement + one attack |
@@ -656,7 +661,7 @@ classDiagram
   spawns due events; (2) the player moves and its `Weapon` fires; (3) a pressed bomb is applied
   (02-sequence-bomb); (4) enemies, boss, bullets and pickups move, their strategies act;
   (5) `CollisionResolver` runs (pass 1 bullets vs enemies and the boss while it fights, passes 2
-  and 3 hazards vs player — the boss body while it enters or fights — pass 4 pickups vs player); (6) `World.sweep()` releases
+  and 3 hazards vs player, pass 2 also marking a graze, GDD v0.31 — the boss body while it enters or fights — pass 4 pickups vs player); (6) `World.sweep()` releases
   spent items and bodies leaving the screen, formations count escapes; (7) `ScoreKeeper.tick` and the boss and player
   timers advance; (8) the outcome is updated — a level end is deferred while the player is `Dead`,
   and a final death (no life left) sets `GAME_OVER`, which wins over a pending level end. Once
@@ -673,7 +678,7 @@ classDiagram
   `HitRules`, and `Run`, the single publisher of each kind, publishes `ENEMY_HIT`, `PLAYER_HIT`,
   `ENEMY_DESTROYED` and `PLAYER_DIED`. The enemies brick implements `enemyHit`, `destroyEnemy`
   and `playerDied`; the player-kit brick adds `pickupCollected` (E-1), the cause to
-  `destroyEnemy` and `shieldBroken` (with the shield, E-4); `damageBoss` joins with the boss (level brick, F-2).
+  `destroyEnemy` and `shieldBroken` (with the shield, E-4); `damageBoss` joins with the boss (level brick, F-2); `bulletGrazed` with the graze (GDD v0.31, #146), `Run` publishing `BULLET_GRAZED`.
 - **Brick subsets**: this diagram is the 1.0 model. A brick implements a subset of a type's
   fields and associations, recorded in the build order of meta/05-state-scenes, never weakened
   here: in the enemies brick `LevelScript` holds only its events and `loopAt` (interim), and
