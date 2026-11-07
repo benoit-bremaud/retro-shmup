@@ -1,6 +1,7 @@
 # ADR-0007: Local-first quality gate, minimal CI
 
-**Status:** Accepted — 2026-10-07
+**Status:** Accepted — 2026-10-07. Partially superseded by ADR-0013 (CI table) and by ADR-0029
+(husky hooks, `make verify`: the local gate is now the `just` tiers and no CI runs on GitHub).
 
 ## Context
 

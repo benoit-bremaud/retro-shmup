@@ -10,14 +10,16 @@ and pull requests.
 
 - **Git** 2.34 or newer (SSH signing) and **[mise](https://mise.jdx.dev/)**: `mise.toml` pins
   Node 22, pnpm 10 and every tool of the local CI (just, lefthook, gitleaks, TruffleHog,
-  shellcheck, Semgrep); `just setup` installs them (ADR-0029).
+  shellcheck, jq, Semgrep); `just setup` installs them (ADR-0029). Semgrep comes through mise's
+  `pipx` backend, so **Python 3** with `pipx` (or `uv`) must be on the machine.
 - **sonar-scanner** on the `PATH` and the local **SonarQube** at `http://localhost:9000` — the
   gate uses them (ADR-0007, ADR-0029).
 
 ```bash
 git clone git@github.com:benoit-bremaud/retro-shmup.git
 cd retro-shmup
-mise trust && just setup   # pinned toolchain, dependencies, git hooks (lefthook)
+mise trust && mise x -- just setup   # pinned toolchain, dependencies, git hooks (lefthook)
+# existing clone from before ADR-0029: git config --unset core.hooksPath (husky's) first
 pnpm dev              # dev server
 just check            # tier L1, as run by the pre-push hook
 pnpm exec playwright install chromium firefox webkit   # once, for the browser smoke test (just smoke)
@@ -45,7 +47,7 @@ Every task gets a dedicated branch from an up-to-date `main`:
 | Feature | `feat/<scope>` | `feat/uml-player-ship` |
 | Bug fix | `fix/<scope>` | `fix/docs-broken-links` |
 | Refactor | `refactor/<scope>` | `refactor/engine-pools` |
-| Chore | `chore/<scope>` | `chore/ci-pin-actions` |
+| Chore | `chore/<scope>` | `chore/ci-bump-tools` |
 | Docs | `docs/<scope>` | `docs/adr-0007` |
 
 ```bash
@@ -66,8 +68,9 @@ git checkout -b docs/adr-0007
 <optional footer, e.g. BREAKING CHANGE: ... or Refs #12>
 ```
 
-**Types:** `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `style`, `perf`, `build`, `ci`,
-`revert`.
+**Types:** `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `perf`, `build`, `ci`. The scope is
+mandatory and taken from the table below (`deps` is Dependabot's). Both are enforced by the
+`commit-msg` hook (`scripts/check-commit-msg.sh`); Merge, Revert and fixup subjects pass.
 
 **Scopes** (this project):
 
@@ -77,8 +80,9 @@ git checkout -b docs/adr-0007
 | `adr` | Architecture Decision Records |
 | `uml` | UML diagrams under `docs/architecture/diagrams/` |
 | `docs` | Any other documentation |
-| `ci` | GitHub Actions workflows and CI configuration |
+| `ci` | Local CI: justfile tiers, lefthook hooks, mise toolchain, systemd units (no GitHub workflow, ADR-0029) |
 | `repo` | Root configuration and tooling |
+| `deps` | Dependency bumps (Dependabot) |
 | `engine` | Game loop, ports, object pools |
 | `game` | Domain rules (player, enemies, bosses, scoring) |
 | `render` | Canvas 2D renderer and render adapters |
@@ -143,7 +147,7 @@ tier when the shell does not activate mise.
 
 | Tier | Recipe | Trigger | Runs | Budget |
 |---|---|---|---|---|
-| L0 | `just fast` | `pre-commit`, `commit-msg` | gitleaks on the staged files; ESLint, Prettier and shellcheck on the staged files; Conventional Commit subject (`scripts/check-commit-msg.sh`) | under 10 s |
+| L0 | `just fast` | `pre-commit` | gitleaks on the staged files; ESLint, Prettier and shellcheck on the staged files. The `commit-msg` hook (not part of `just fast`) checks the Conventional Commit subject (`scripts/check-commit-msg.sh`) | under 10 s |
 | L1 | `just check` | `pre-push` (clean tree required) | typecheck (app, node, smoke and domain projects), lint, `knip` (unused files, exports and dependencies; config and justified exceptions in `knip.jsonc`), format check, shellcheck, Vitest with coverage, doc coverage ≥ 90 %, the wiring tests, Semgrep CE, `pnpm audit --audit-level high`, `gitleaks git` on the full history | under 3 min |
 | L2 | `just gate` | before every merge, on the pushed head | `check`, `sonar-scanner` against the local SonarQube (`localhost:9000`) with quality-gate wait, the browser smoke test (`just smoke`), then the signed `gate` attestation of the head SHA | 5–15 min |
 | L3 | `just nightly` | systemd user timer (`scripts/systemd/`) | `check`, TruffleHog over the history, toolchain drift | — |
@@ -193,7 +197,9 @@ it prints every property, the token included.
    blocking finding is resolved.
 3. Open the PR with the repository template filled in, the labels triptych applied, and a
    Conventional Commit title.
-4. `just gate` must be green and attested on the pushed head (the `gate` status, ADR-0029).
+4. `just gate` must be green and attested on the pushed head (the `gate` status, ADR-0029). The
+   gate runs the branch's own code locally: the owner reads a fork PR's full diff before gating
+   it, and a branch that changes the local CI files is gated with `GATE_CI_CHANGE=1` only.
 5. Address every review comment, including automated ones, with an inline reply.
 6. The owner merges with `just merge <pr>` (squash); the resulting commit message must stay a
    valid Conventional Commit.

@@ -1,6 +1,7 @@
 # ADR-0011: Toolchain — pnpm, Vite, TypeScript 6, Vitest, ESLint, local quality hooks
 
-**Status:** Accepted — 2026-10-08
+**Status:** Accepted — 2026-10-08. Partially superseded by ADR-0029 (hooks: lefthook replaces husky,
+lint-staged and commitlint; the local gate is `just check`).
 
 ## Context
 

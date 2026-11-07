@@ -11,7 +11,7 @@ pre-commit:
       glob: '*.{ts,mts,mjs,js}'
       run: mise x -- pnpm exec eslint --max-warnings 0 {staged_files}
     - name: prettier
-      glob: '*.{ts,mts,mjs,js,json,jsonc,yml,yaml,html,css,md}'
+      glob: '*.{ts,mts,mjs,js,json,jsonc,yml,yaml,html,css}'
       run: mise x -- pnpm exec prettier --check {staged_files}
     - name: shellcheck
       glob: '*.sh'

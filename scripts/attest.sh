@@ -1,10 +1,12 @@
 #!/bin/sh
-# Attestations of the local CI on a commit (ADR-0003, ADR-0004; skill local-ci § Attestation).
+# Attestations of the local CI on a commit (agents-skills ADR-0003/0004, not this repository's ADRs;
+# skill local-ci § Attestation).
 #
 #   attest.sh write gate                 HEAD: signed note on refs/notes/gate, pushed, then commit
 #                                        status `gate` = success (REST Statuses API)
-#   attest.sh write deploy/staging       HEAD: signed note on refs/notes/deploy, pushed (only after
-#                                        the staging QA pass succeeds: `just attest staging`)
+#   attest.sh write deploy/staging       HEAD: signed note on refs/notes/deploy, pushed (after a
+#                                        staging QA pass; no caller in this repository yet, kept in
+#                                        sync with the shared local-ci script)
 #   attest.sh verify gate <commit>       status `gate` success AND a valid signed note
 #   attest.sh verify deploy/staging <c>  a valid signed note
 #   attest.sh release <tag>              classify (stable only), verify-tag, peel, verify both
@@ -52,7 +54,7 @@ write() { # write <kind>
   ssh-keygen -q -Y sign -n local-ci -f "$key" "$tmp/payload" > /dev/null 2>&1 \
     || die "ssh-keygen could not sign with $key (is its private key in ssh-agent?)"
   fetch_notes "$ref"
-  cat "$tmp/payload" "$tmp/payload.sig" | git notes --ref "$ref" add -f -F - "$sha" 2> /dev/null
+  cat "$tmp/payload" "$tmp/payload.sig" | git notes --ref "$ref" add -f -F - "$sha" 2> /dev/null || die "could not add the $1 note on $sha"
   git push --quiet origin "$ref" || die "could not push $ref fast-forward: run the command again"
   if [ "$1" = gate ]; then # last, so a green status always has its note
     gh api --silent -X POST "repos/$r/statuses/$sha" -f state=success -f context=gate \
@@ -63,7 +65,8 @@ write() { # write <kind>
 
 verify() { # verify <kind> <commit>
   ref=$(noteref "$1")
-  sha=$(git rev-parse --verify --quiet "$2^{commit}") || die "unknown commit $2"
+  case "$2" in -*) die "commit '$2' looks like an option" ;; esac
+  sha=$(git rev-parse --verify --quiet --end-of-options "$2^{commit}") || die "unknown commit $2"
   r=$(repo)
   signers
   if [ "$1" = gate ]; then
@@ -84,9 +87,9 @@ verify() { # verify <kind> <commit>
   echo "attest: $1 verified on $sha ($who)"
 }
 
-release() { # release <tag>: the checks 1–4 of ADR-0004 before a production deploy
+release() { # release <tag>: the checks 1–4 of agents-skills ADR-0004 before a production deploy (no caller here yet)
   semver='(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)'
-  echo "$1" | grep -Eq "^(.+-)?v$semver\$" || die "$1 is not a stable release tag: only vX.Y.Z reaches production"
+  echo "$1" | grep -Eq "^([^-].*-)?v$semver\$" || die "$1 is not a stable release tag: only vX.Y.Z reaches production"
   signers
   git -c gpg.format=ssh -c gpg.ssh.allowedSignersFile="$tmp/signers" verify-tag "$1" > /dev/null 2>&1 \
     || die "tag $1 is not signed by a key of the trust store"

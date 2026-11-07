@@ -1,11 +1,14 @@
 #!/bin/sh
-# Tests for scripts/attest.sh (#156; agents-skills #213, ADR-0003/0004 of the local-first CI/CD), against a fake
+# Tests for scripts/attest.sh (#156; agents-skills #213 and its ADR-0003/0004, not this repository's ADRs), against a fake
 # `gh` (commit statuses kept in files), a bare remote and throwaway SSH keys: the attestation is
 # written and pushed, verified from a second clone, and refused when missing, forged, moved to
-# another commit or carried by a non-release or unsigned tag. Needs git, ssh-keygen.
+# another commit or carried by a non-release, unsigned or foreign-signed tag; a status of another
+# context or a non-success gate status is refused. Needs git, ssh-keygen, jq (the fake `gh` applies
+# the real `-q` filter of attest.sh to the stored JSON).
 set -e
 # shellcheck disable=SC2046 # one variable name per word
 unset $(git rev-parse --local-env-vars)
+export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null
 root=$(cd "$(dirname "$0")/.." && pwd)
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
@@ -17,8 +20,11 @@ cat > "$work/bin/gh" <<'EOF'
 #!/bin/sh
 case "$*" in
   "repo view"*) echo o/r ;;
-  "api --silent -X POST repos/o/r/statuses/"*) sha=${5##*/}; echo success > "$FAKE_STATUS/$sha" ;;
-  "api repos/o/r/commits/"*) sha=${2#repos/o/r/commits/}; sha=${sha%/status}; cat "$FAKE_STATUS/$sha" 2>/dev/null || echo missing ;;
+  "api --silent -X POST repos/o/r/statuses/"*) sha=${5##*/}; state=; ctx=
+    for a; do case $a in state=*) state=${a#state=} ;; context=*) ctx=${a#context=} ;; esac; done
+    printf '{"context":"%s","state":"%s"}' "$ctx" "$state" > "$FAKE_STATUS/$sha" ;;
+  "api repos/o/r/commits/"*) sha=${2#repos/o/r/commits/}; sha=${sha%/status}; [ "$3" = -q ] || exit 1
+    printf '{"statuses":[%s]}' "$(cat "$FAKE_STATUS/$sha" 2>/dev/null)" | jq -r "$4" ;;
   *) exit 1 ;;
 esac
 EOF
@@ -50,6 +56,11 @@ run() {
 }
 
 run 1 "no status, no gate" "status gate is missing" sh scripts/attest.sh verify gate HEAD
+printf '{"context":"ci","state":"success"}' > "$work/status/$first"
+run 1 "a green status of another context is not the gate" "status gate is missing" sh scripts/attest.sh verify gate HEAD
+printf '{"context":"gate","state":"failure"}' > "$work/status/$first"
+run 1 "a failed gate status refused" "status gate is failure" sh scripts/attest.sh verify gate HEAD
+run 1 "option-shaped commit refused" "looks like an option" sh scripts/attest.sh verify gate --output=x
 run 0 "gate written" "gate recorded on $first" sh scripts/attest.sh write gate
 git ls-remote --exit-code origin refs/notes/gate > /dev/null || fail "gate note not pushed"; n=$((n + 1))
 run 0 "gate verified" "gate verified on $first (t@example.com)" sh scripts/attest.sh verify gate HEAD
@@ -76,7 +87,7 @@ second=$(git rev-parse HEAD)
 
 # Forgeries: a note signed by a key outside the trust store (even one the checkout trusts), a
 # note copied to another commit.
-echo success > "$work/status/$second"
+printf '{"context":"gate","state":"success"}' > "$work/status/$second"
 printf 'gate o/r %s\n' "$second" > "$work/payload"
 ssh-keygen -q -Y sign -n local-ci -f "$work/other" "$work/payload" > /dev/null 2>&1
 cat "$work/payload" "$work/payload.sig" | git notes --ref refs/notes/gate add -f -F - "$second"
@@ -103,6 +114,10 @@ git tag -s -m rc v1.1.0-rc.1 "$first"
 run 1 "pre-release refused" "not a stable release tag" sh scripts/attest.sh release v1.1.0-rc.1
 git tag -a -m unsigned v1.2.0 "$first"
 run 1 "unsigned tag refused" "is not signed" sh scripts/attest.sh release v1.2.0
+git -c user.signingkey="$work/other.pub" tag -s -m foreign v1.3.0 "$first"
+run 1 "tag signed by a foreign key refused" "not signed by a key of the trust store" sh scripts/attest.sh release v1.3.0
+run 1 "two-component tag refused" "not a stable release tag" sh scripts/attest.sh release v1.0
+run 1 "option-shaped tag refused" "not a stable release tag" sh scripts/attest.sh release -v1.0.0
 git tag -s -m v2.0.0 v2.0.0 "$second"
 run 1 "tag on a commit with a moved note refused" "names another commit" sh scripts/attest.sh release v2.0.0
 echo c > c && git add c && git commit -qm third && git push -q origin main

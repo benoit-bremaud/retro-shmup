@@ -1,6 +1,7 @@
 #!/bin/sh
 # commit-msg check (#192): the subject line must follow Conventional Commits 1.0.0 with the types of
-# agent-rules/core.md § Naming, at most 100 characters. Merge, revert and fixup/squash subjects pass.
+# agent-rules/core.md § Naming and a mandatory scope of CONTRIBUTING.md (the scope-enum of the removed
+# commitlint config, ADR-0029), at most 100 characters. Merge, revert and fixup/squash/amend subjects pass.
 # Usage: check-commit-msg.sh <commit-msg-file>   (lefthook commit-msg passes {1})
 set -e
 
@@ -12,8 +13,9 @@ case "$subject" in
 esac
 
 types='feat|fix|docs|chore|refactor|test|ci|build|perf'
-if ! printf '%s\n' "$subject" | grep -qE "^($types)(\([a-z0-9._/-]+\))?!?: [^ ](.*[^.])?$"; then
-  echo "commit-msg: subject is not '<type>(<scope>): <subject>' (types: $types, no final period):" >&2
+scopes='design|adr|uml|docs|ci|repo|deps|engine|game|render|audio|input|ui|levels|assets|i18n|tests'
+if ! printf '%s\n' "$subject" | grep -qE "^($types)\(($scopes)\)!?: [^ ](.*[^.])?$"; then
+  echo "commit-msg: subject is not '<type>(<scope>): <subject>' (types: $types; scopes: $scopes; no final period):" >&2
   echo "  $subject" >&2
   exit 1
 fi

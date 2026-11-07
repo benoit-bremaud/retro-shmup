@@ -1,13 +1,15 @@
 #!/bin/sh
 # Tests for the local CI wiring (#156, skill local-ci rule 7): the four tiers exist and compose
 # (check = lint + test + security + secrets; nightly ⊇ check), no GitHub workflow is left (ADR-0029),
-# the Node and pnpm pins agree, lefthook.yml is valid and wires the commit-msg and pre-push hooks,
+# the Node major and pnpm pins agree, lefthook.yml is valid and wires the commit-msg and pre-push hooks,
 # the commit-msg check accepts and refuses the right subjects; then, in a throwaway repository with
 # stubbed boundaries (just steps, attest.sh, gh, sonar-scanner): gate refuses a dirty tree, a HEAD
-# behind the base or unpushed, runs check → sonar → smoke → attestation in that order and attests
-# nothing when a step fails or HEAD moved (agents-skills ADR-0003); merge refuses a non-numeric PR
-# and a head without attestation and merges with --squash --match-head-commit; sonar refuses a
-# missing or stale coverage report and a missing token; node-guard refuses the wrong Node major; L0
+# behind the base or unpushed, runs check → sonar → smoke → attestation in that order, stops at the
+# first failing step and attests nothing when a step fails or HEAD moved, and propagates a failed
+# attestation (agents-skills ADR-0003); merge refuses a non-numeric PR and a head without attestation,
+# merges with --squash --match-head-commit and propagates a gh failure; sonar refuses a missing or
+# stale coverage report and a missing token, and a failed quality gate fails it; toolchain-drift
+# fails on a mise.toml row other than pnpm only; node-guard refuses the wrong Node major and passes the right one; L0
 # (`just fast`) passes a clean staged change but refuses a staged secret and a shell warning.
 # Needs mise, just, lefthook, gitleaks, shellcheck (the tool wordings asserted are pinned by
 # mise.lock):
@@ -47,16 +49,17 @@ just --show test | grep -q 'scripts/doc-coverage.sh' || fail "test does not meas
 # own wording trips the URI detector once committed).
 just --show nightly | grep -q -- '--exclude-paths .trufflehog-exclude' || fail "nightly does not pass .trufflehog-exclude to trufflehog"; ok
 grep -v '^#' .trufflehog-exclude | grep -v '^$' | while IFS= read -r re; do
-  printf '' | grep -Eq -- "$re" 2>/dev/null; [ $? -le 1 ] || fail ".trufflehog-exclude: invalid regex: $re"
+  rc=0; printf '' | grep -Eq -- "$re" 2>/dev/null || rc=$?; [ "$rc" -le 1 ] || fail ".trufflehog-exclude: invalid regex: $re"
 done || exit 1; ok
 grep -qxF -- '^\.trufflehog-exclude$' .trufflehog-exclude || fail ".trufflehog-exclude does not exclude itself"; ok
-# The Node and pnpm pins are each written in two places; they must agree.
+# The Node major and the pnpm version are each written in two places; they must agree.
 v=$(cat .nvmrc)
-grep -qF "node = \"$v\"" mise.toml || fail "Node pin of mise.toml diverges from .nvmrc ($v)"; ok
+grep -qE "^node = \"$v(\.|\")" mise.toml || fail "Node pin of mise.toml diverges from .nvmrc ($v)"; ok
 pv=$(sed -n 's/.*"packageManager": "pnpm@\([^"]*\)".*/\1/p' package.json)
 grep -qF "pnpm = \"$pv\"" mise.toml || fail "pnpm pin of mise.toml diverges from package.json ($pv)"; ok
 grep -qE '^ +run: sh scripts/check-commit-msg.sh \{1\}' lefthook.yml || fail "commit-msg hook does not run check-commit-msg.sh on the message file"; ok
 grep -qE '^ +mise x -- just check$' lefthook.yml || fail "pre-push hook does not run just check"; ok
+grep -qF 'git status --porcelain' lefthook.yml || fail "pre-push hook does not refuse a dirty tree"; ok
 lefthook validate > /dev/null || fail "lefthook validate"; ok
 
 # commit-msg subjects.
@@ -65,14 +68,20 @@ msg() { # msg <expected-exit> <subject>
   rc=0; sh scripts/check-commit-msg.sh "$work/msg" > /dev/null 2>&1 || rc=$?
   [ "$rc" -eq "$1" ] || fail "commit-msg '$2': exit $rc, expected $1"; ok
 }
-msg 0 'ci(workflows): move every check to local CI'
+msg 0 'ci(repo): move every check to local CI'
+msg 1 'feat: no scope'
+msg 1 'feat(nonsense): scope outside CONTRIBUTING'
 msg 0 'feat(game)!: the chain breaks on a miss'
 msg 0 'Merge branch main into feat/1'
 msg 0 'fixup! feat: x'
 msg 1 'Wire just'
-msg 1 'ci(local): ends with a period.'
-msg 1 'wip: not a listed type'
-msg 1 "feat: $(printf 'x%.0s' $(seq 100))"
+msg 1 'ci(repo): ends with a period.'
+msg 1 'wip(repo): not a listed type'
+msg 0 "feat(game): $(printf 'x%.0s' $(seq 88))" # exactly 100 characters
+msg 1 "feat(game): $(printf 'x%.0s' $(seq 89))" # 101
+msg 1 ''
+msg 0 'Revert "feat: x"'
+msg 1 'feat(Game): uppercase scope'
 
 # Recipes with their boundaries stubbed, in a throwaway repository with a bare origin. The real
 # `just` runs the recipe; a stub `just` first on PATH records the steps the recipe delegates to
@@ -98,11 +107,20 @@ echo "just $*" >> "$LOG"
 EOF2
 cat > "$box/stub/gh" <<'EOF2'
 #!/bin/sh
-echo "gh $*" >> "$LOG"; case "$*" in "pr view"*) git rev-parse origin/main ;; esac # the PR head: a real, fetchable commit
+echo "gh $*" >> "$LOG"; [ "${GH_FAIL:-}" != "$2" ] || exit 1
+case "$*" in "pr view"*) git rev-parse origin/main ;; esac # the PR head: a real, fetchable commit
 EOF2
 cat > "$box/stub/sonar-scanner" <<'EOF2'
 #!/bin/sh
-echo "sonar-scanner $* token=${SONAR_TOKEN:-none}" >> "$LOG"
+echo "sonar-scanner $* token=${SONAR_TOKEN:-none}" >> "$LOG"; echo "sonar-scanner $*"; [ "${SCANNER_FAIL:-0}" = 0 ]
+EOF2
+cat > "$box/stub/pnpm" <<'EOF2'
+#!/bin/sh
+echo "pnpm $*" >> "$LOG"
+EOF2
+cat > "$box/stub/mise" <<'EOF2'
+#!/bin/sh
+printf '%s\n' "$MISE_OUT"
 EOF2
 cat > "$box/stub/curl" <<'EOF2'
 #!/bin/sh
@@ -131,6 +149,17 @@ box_run 0 "gate: green path" "attest write gate" -- "$real_just" gate main
 [ "$(tr '\n' ' ' < "$LOG")" = "just check just sonar just smoke attest write gate " ] || { cat "$LOG"; fail "gate steps or order: $(cat "$LOG")"; }; ok
 box_run 1 "gate: failing smoke stops it" - -- env FAIL_STEP=smoke "$real_just" gate main
 no_line '^attest' "gate attested after a failed step"
+box_run 1 "gate: failing check stops it" - -- env FAIL_STEP=check "$real_just" gate main
+[ "$(tr '\n' ' ' < "$LOG")" = "just check " ] || { cat "$LOG"; fail "gate went past a failed check"; }; ok
+box_run 1 "gate: failing sonar stops it" - -- env FAIL_STEP=sonar "$real_just" gate main
+no_line '^just smoke' "gate ran smoke after a failed sonar"
+box_run 1 "gate: failed attestation propagates" - -- env ATTEST_FAIL=1 "$real_just" gate main
+box_run 0 "gate: default base" "attest write gate" -- "$real_just" gate
+echo '#!/bin/sh' > scripts/new.sh && git add scripts/new.sh && git commit -qm 'ci(repo): ci change' --no-verify && git push -q origin HEAD:ci 2> /dev/null
+box_run 1 "gate: a branch changing the local CI refused" "changes the local CI itself" -- "$real_just" gate origin/main
+no_line '^just check' "gate ran check on a branch changing the local CI"
+box_run 0 "gate: the same branch gated after reading" "attest write gate" -- env GATE_CI_CHANGE=1 "$real_just" gate origin/main
+git reset -q --hard origin/main
 box_run 1 "gate: HEAD moved during the run" "HEAD moved" -- env MOVE_HEAD=1 "$real_just" gate main
 no_line '^attest' "gate attested a HEAD that moved"
 git reset -q --hard origin/main
@@ -146,25 +175,47 @@ no_line 'gh pr merge' "merge merged an unattested head"
 head=$(git rev-parse origin/main)
 box_run 0 "merge: attested head merged" "gh pr merge 7 --squash --match-head-commit $head" -- "$real_just" merge 7
 grep -q "^attest verify gate $head\$" "$LOG" || fail "merge did not verify the head SHA"; ok
+printf '#!/bin/sh\nexit 1\n' > scripts/attest.sh
+box_run 0 "merge: verifier of origin/main, not the checkout's" "gh pr merge 7" -- "$real_just" merge 7
+git checkout -q scripts/attest.sh
+box_run 1 "merge: gh pr view failure propagates" - -- env GH_FAIL=view "$real_just" merge 7
+no_line 'gh pr merge' "merge merged after gh pr view failed"
+box_run 1 "merge: gh pr merge failure propagates" - -- env GH_FAIL=merge "$real_just" merge 7
 
 # sonar: the five guards, then the call with the token in the environment and the gate wait.
 mkdir "$box/bare" && for b in sh git find cat node; do ln -s "$(command -v "$b")" "$box/bare/$b"; done
 box_run 1 "sonar: no scanner" "not on PATH" -- env PATH="$box/bare" HOME="$box" "$real_just" sonar
 box_run 1 "sonar: no coverage report" "lcov.info missing" -- env HOME="$box" "$real_just" sonar
-touch coverage/lcov.info && sleep 1 && touch src/newer
+touch -d '10 seconds ago' coverage/lcov.info && touch src/newer
 box_run 1 "sonar: stale coverage report" "older than" -- env HOME="$box" "$real_just" sonar
-rm src/newer && touch coverage/lcov.info
+mv src/newer src/older && touch -d '10 seconds ago' src/older && touch coverage/lcov.info
 box_run 1 "sonar: no token" "no token" -- env HOME="$box" "$real_just" sonar
 no_line sonar-scanner "sonar ran the scanner without a token"
 box_run 1 "sonar: server down" "not UP" -- env HOME="$box" SONAR_TOKEN=t0k SONAR_DOWN=1 "$real_just" sonar
 no_line sonar-scanner "sonar ran the scanner against a server that is down"
 box_run 0 "sonar: scan with the gate wait" "sonar-scanner -Dsonar.host.url=http://localhost:9000 -Dsonar.projectVersion=0.0.0 -Dsonar.qualitygate.wait=true token=t0k" -- env HOME="$box" SONAR_TOKEN=t0k "$real_just" sonar
-grep -q 't0k' "$work/out" && fail "sonar printed the token"; ok
+grep -q 't0k' "$work/out" && fail "sonar passed the token on the command line"; ok
+box_run 1 "sonar: failed quality gate fails the recipe" - -- env HOME="$box" SONAR_TOKEN=t0k SCANNER_FAIL=1 "$real_just" sonar
 
-# node-guard: the wrong major is refused before any step runs.
+# toolchain drift: only a mise.toml row that is not node or pnpm counts; a failing mise fails it.
+drift() { box_run "$1" "drift: $2" "$3" -- env MISE_OUT="$4" sh "$root/scripts/toolchain-drift.sh"; }
+drift 0 "empty report" - ''
+drift 0 "global rows ignored" - 'just  1.0.0  1.1.0  ~/.tool-versions'
+drift 0 "pnpm follows package.json" - 'pnpm  10.0.0  10.9.9  mise.toml'
+drift 1 "a mise.toml row fails" "bump mise.toml" "$(printf 'pnpm  10.0.0  10.9.9  mise.toml\nnode  22.0.0  22.9.9  mise.toml')"
+cat > "$box/stub/mise" <<'EOF2'
+#!/bin/sh
+exit 1
+EOF2
+drift 1 "mise outdated failure propagates" "mise outdated failed" ''
+rm "$box/stub/mise"
+
+# node-guard: the wrong major is refused before any step runs, the right one lets the step run.
 echo 99.0.0 > .nvmrc
-box_run 1 "node-guard: wrong Node major refused" "Node 99 required" -- "$real_just" lint
-no_line pnpm "lint ran under the wrong Node"
+box_run 1 "node-guard: wrong Node major refused" "Node 99 required" -- "$real_just" smoke
+no_line pnpm "smoke ran under the wrong Node"
+node -p 'process.versions.node' > .nvmrc
+box_run 0 "node-guard: right Node major passes" "pnpm test:smoke" -- "$real_just" smoke
 unset MISE_TRUSTED_CONFIG_PATHS LOG
 
 # L0 in a throwaway repository holding this repository's hook config and scripts. Only the jobs that

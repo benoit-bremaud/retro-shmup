@@ -1,8 +1,8 @@
 # ADR-0029: Local CI in four tiers, no GitHub workflow
 
 **Status:** Accepted — 2026-11-07. **Partially supersedes ADR-0007** (its local gate table: husky
-hooks, `make verify`) **and ADR-0013** (its CI table: `ci.yml`, CodeQL, Dependency review,
-Gitleaks, Scorecard). Their local-first principle — the heavy checks run before the push, the
+hooks, `make verify`), **ADR-0011** (its hooks: husky, lint-staged, commitlint) **and ADR-0013**
+(its CI table: `ci.yml`, CodeQL, Dependency review, Gitleaks, Scorecard). Their local-first principle — the heavy checks run before the push, the
 necessary minimum elsewhere — stands and is taken to its end: nothing runs on GitHub. Issue #156.
 
 ## Context
@@ -39,8 +39,8 @@ necessary minimum elsewhere — stands and is taken to its end: nothing runs on 
 
    | Tier | Recipe | Trigger | Holds | Budget |
    |---|---|---|---|---|
-   | L0 | `just fast` | lefthook `pre-commit`, `commit-msg` | gitleaks on the staged files, ESLint and Prettier on the staged files, shellcheck on staged scripts; Conventional Commit subject (`scripts/check-commit-msg.sh`) | < 10 s |
-   | L1 | `just check` | lefthook `pre-push` (clean tree required), `review-local --push` | `lint` (tsc on the four projects, ESLint, knip, Prettier, shellcheck, `lefthook validate`), `test` (Vitest with the coverage floor, doc coverage ≥ 90 %, the wiring tests `test-local-ci.sh` and `test-attest.sh`), `security` (Semgrep CE `p/javascript` + `p/typescript` on `src`, `tests`, `scripts`; `pnpm audit --audit-level high`), `secrets` (gitleaks, full history) | < 3 min |
+   | L0 | `just fast` | lefthook `pre-commit` | gitleaks on the staged files, ESLint and Prettier on the staged files, shellcheck on staged scripts; the `commit-msg` hook checks the Conventional Commit subject (`scripts/check-commit-msg.sh`) | < 10 s |
+   | L1 | `just check` | lefthook `pre-push` (clean tree required), `review-local --push` | `lint` (tsc on the four projects, ESLint, knip, Prettier, shellcheck, `lefthook validate`), `test` (Vitest with the coverage floor, doc coverage ≥ 90 %, the wiring tests `test-local-ci.sh` and `test-attest.sh`), `security` (Semgrep CE `p/javascript` + `p/typescript` on `src` and `tests`, shellcheck covers `scripts`; `pnpm audit --audit-level high`), `secrets` (gitleaks, full history) | < 3 min |
    | L2 | `just gate` | `review-local` § 2b on the pushed head, before every merge | refuses a dirty tree, a HEAD behind the base or unpushed; `check`, then `sonar` (local SonarQube with quality-gate wait, coverage report fresher than the sources, server up), then `smoke` (`pnpm test:smoke`: production build and the browser smoke test in Chromium, Firefox and WebKit, ADR-0026); then the attestation | 5–15 min |
    | L3 | `just nightly` | systemd user timer `retro-shmup-nightly` (04:50, persistent) | `check`, TruffleHog over the history (offline), `mise outdated` drift on the pinned tools | none |
 
@@ -51,7 +51,7 @@ necessary minimum elsewhere — stands and is taken to its end: nothing runs on 
    both on the PR's exact head SHA and merges with `gh pr merge --squash --match-head-commit`.
 
 3. **No GitHub workflow.** `ci.yml`, `codeql.yml`, `dependency-review.yml`, `gitleaks.yml` and
-   `scorecard.yml` are deleted; `.github/workflows/` stays empty and the wiring test fails if a
+   `scorecard.yml` are deleted; there is no `.github/workflows/` and the wiring test fails if a
    workflow reappears. Dependabot keeps its `npm` block only. Owner MCDA of 2026-11-07:
    Scorecard removed (440/500) over a `scorecard` CLI in `nightly` (340) and the weekly workflow
    kept (240) — a hygiene score computed without GitHub-side CI or SAST would mislead; no
@@ -90,9 +90,24 @@ necessary minimum elsewhere — stands and is taken to its end: nothing runs on 
   `just merge <pr>` after `just gate` on the pushed head (`review-local`). A squash creates a new
   `main` commit without attestation; Cloudflare Pages deploys it regardless (ADR-0016), so the
   gate protects what enters `main`, not the deploy itself — unchanged from today.
-- First merge (bootstrap): `.github/allowed_signers` is not on `main` yet when this ADR's PR is
-  gated, so `attest.sh verify` cannot find the trust store; the PR merges through `gh pr merge`
-  with the owner's explicit waiver, and every later merge goes through `just merge`.
+- First merge (bootstrap), in this order: (1) push, then `GATE_CI_CHANGE=1 just gate`, which
+  posts the first `gate` status (`write` needs no trust store on `main`); (2) re-apply the branch
+  protection with `gate` as the only required check (`.github/branch-protection.md`: the live
+  protection still names the deleted workflow jobs, which would never report); (3) merge with
+  `gh pr merge --squash --match-head-commit <sha>` under the owner's explicit waiver, since
+  `attest.sh verify` finds no `.github/allowed_signers` on `origin/main` yet. Every later merge
+  goes through `just merge`.
+- The gate executes the branch's code on the owner's workstation, where the signing key, the `gh`
+  token and the SonarQube token live (the Actions sandbox did that before). `just gate` therefore
+  refuses a branch that changes `justfile`, `lefthook.yml`, `mise.toml`, `mise.lock`, `scripts/` or
+  `.github/allowed_signers` until the owner has read those files and sets `GATE_CI_CHANGE=1`, and
+  `just merge` runs the verifier of `origin/main`, never the checkout's. A fork PR is read in full
+  before it is gated (CONTRIBUTING.md).
+- The GitHub merge button checks the `gate` status only, which any write token could post; the
+  signed note is the control, so merges go through `just merge` only (`.github/branch-protection.md`).
+- Accepted supply-chain gap: Semgrep installs through mise's `pipx` backend, so `mise.lock` pins
+  the Semgrep version but not its Python dependencies (resolved at install time, no hashes). The
+  other tools are checksummed. Revisit when a release binary reaches the mise registry.
 - The Security tab loses the CodeQL and Scorecard reports; Dependabot alerts stay.
 - Contributors need mise (`curl https://mise.run | sh`), then `just setup`; `sonar-scanner` and
   the Playwright browsers stay system tools (CONTRIBUTING.md).

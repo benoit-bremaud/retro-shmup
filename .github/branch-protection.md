@@ -24,7 +24,17 @@ on the exact head SHA before `gh pr merge`. `app_id` stays omitted: the status i
 owner's `gh`, not by an app.
 
 A new check is added to `checks` only after it has reported green once on a pull request;
-otherwise every pull request would wait for a check that never reports.
+otherwise every pull request would wait for a check that never reports. For `gate` this means,
+on the bootstrap pull request (the one that introduces ADR-0029): run `just gate` on its pushed
+head first (the first `gate` report), then apply the protection above, replacing the deleted
+workflow jobs that would never report again, then merge with `gh pr merge` under the owner's
+explicit waiver (`.github/allowed_signers` is not on `main` yet, so `just merge` cannot verify the
+note). Every later merge goes through `just merge <pr>`.
+
+The `gate` status alone is a plain API write that anyone with push access could post; the signed
+note, verified against the trust store of `origin/main`, is the real control, and only `just merge`
+checks it. The owner therefore merges through `just merge` only, never the GitHub button; no
+collaborator holds write access and personal tokens keep the minimal scopes.
 
 ### Required reviews: 0 now, 1 once a reviewer bot exists
 

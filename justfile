@@ -50,13 +50,13 @@ test: node-guard
     sh scripts/test-attest.sh
 
 # SAST (Semgrep Community Edition, named registry rulesets: `--config auto` would send the project
-# URL; no p/secrets, which prints the matched value, gitleaks redacts it) on the game, its tests and
-# the scripts, then known vulnerabilities in every dependency, dev ones included, HIGH and above
+# URL; no p/secrets, which prints the matched value, gitleaks redacts it) on the game and its tests
+# (the shell scripts are shellcheck's), then known vulnerabilities in every dependency, dev ones included, HIGH and above
 # (ADR-0013; replaces CodeQL and Dependency review). EIO_BACKEND=posix: semgrep-core otherwise opens
 # io_uring rings charged to RLIMIT_MEMLOCK with every Electron process, and dies intermittently.
-# SAST (Semgrep CE on src, tests, scripts) + pnpm audit HIGH and above
+# SAST (Semgrep CE on src and tests) + pnpm audit HIGH and above
 security:
-    EIO_BACKEND=posix semgrep scan --config p/javascript --config p/typescript --error --metrics=off --quiet -j 4 src tests scripts
+    EIO_BACKEND=posix semgrep scan --config p/javascript --config p/typescript --error --metrics=off --quiet -j 4 src tests
     pnpm audit --audit-level high
 
 # Secrets in the whole git history (replaces the gitleaks workflow)
@@ -78,6 +78,10 @@ gate base="origin/main":
     [ -z "$(git status --porcelain)" ] || { echo "gate: commit or set aside local changes first" >&2; exit 1; }
     case "$base" in origin/*) git fetch --quiet origin "${base#origin/}" ;; esac
     git merge-base --is-ancestor "$base" HEAD || { echo "gate: HEAD is behind $base, merge or rebase it first" >&2; exit 1; }
+    # The gate runs the branch's own recipes and scripts with the owner's keys and tokens: a branch
+    # that changes them is gated only after a human read those files (GATE_CI_CHANGE=1).
+    ci=$(git diff --name-only "$base...HEAD" -- justfile lefthook.yml mise.toml mise.lock scripts .github/allowed_signers)
+    [ -z "$ci" ] || [ "${GATE_CI_CHANGE:-0}" = 1 ] || { echo "gate: this branch changes the local CI itself ($(printf '%s' "$ci" | tr '\n' ' ')): read those files, then run GATE_CI_CHANGE=1 just gate" >&2; exit 1; }
     [ -n "$(git branch -r --contains HEAD)" ] || { echo "gate: push HEAD first (the attestation is written on the pushed head)" >&2; exit 1; }
     # `check` runs from the body, not as a dependency, so the HEAD it checked is the one attested.
     start=$(git rev-parse HEAD)
@@ -111,25 +115,25 @@ smoke: node-guard
     pnpm test:smoke
 
 # Merge a PR only when its exact head SHA carries the gate attestation (agents-skills ADR-0003).
-# Squash, as every merge of this repository.
+# The verifier is read from origin/main. Squash, as every merge of this repository. Same-repository
+# PRs only (the head is fetched from origin).
 merge pr:
     #!/bin/sh
     set -eu
     pr={{quote(pr)}}
     case "$pr" in ''|*[!0-9]*) echo "merge: usage just merge <pr number>" >&2; exit 1 ;; esac
     sha=$(gh pr view "$pr" --json headRefOid -q .headRefOid)
-    git fetch --quiet origin "$sha"
-    sh scripts/attest.sh verify gate "$sha"
+    git fetch --quiet origin main "$sha"
+    # The verifier of origin/main, never the checkout's: a branch cannot ship its own.
+    verifier=$(mktemp); trap 'rm -f "$verifier"' EXIT
+    git show origin/main:scripts/attest.sh > "$verifier"
+    sh "$verifier" verify gate "$sha"
     gh pr merge "$pr" --squash --match-head-commit "$sha"
 
 # L3 — nightly, systemd user timer (no time budget): deep secret history (TruffleHog, offline;
 # .trufflehog-exclude lists itself, its wording trips the URI detector) and toolchain drift:
-# `mise outdated` exits 0 whatever it finds and still lists the global ~/.tool-versions under
-# --no-global, so the recipe keeps the mise.toml rows and fails on a non-empty report (`--bump`:
-# without it exact pins report nothing; Node and pnpm follow .nvmrc and package.json on purpose).
+# scripts/toolchain-drift.sh fails on a mise.toml tool behind its latest release.
 # L3 — nightly (systemd timer): check + TruffleHog + toolchain drift
 nightly: check
     trufflehog git "file://$PWD" --no-verification --fail --no-update --exclude-paths .trufflehog-exclude
-    out=$(mise outdated --bump --no-global --no-header) || { echo "nightly: mise outdated failed" >&2; exit 1; }; \
-    drift=$(printf '%s\n' "$out" | grep -F mise.toml | grep -vE '^(node|pnpm) ' || true); \
-    [ -z "$drift" ] || { echo "nightly: toolchain drift, bump mise.toml:"; echo "$drift"; exit 1; }
+    sh scripts/toolchain-drift.sh

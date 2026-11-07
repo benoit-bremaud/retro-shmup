@@ -25,8 +25,8 @@ repository.
   diff; any security finding is a Must Have. Mechanically enforced: ESLint bans `eval`,
   `new Function`, literal `javascript:` URLs and the HTML sinks (`innerHTML`, `outerHTML`,
   `srcdoc`, `insertAdjacentHTML`, `setHTMLUnsafe`, `createContextualFragment`, `document.write`);
-  `just check` runs Semgrep, gitleaks and `pnpm audit --audit-level high`, `just gate` adds SonarQube. The deployed page
-  adds a CSP as the runtime backstop (ADR-0008).
+  `just check` runs Semgrep, gitleaks and `pnpm audit --audit-level high`, `just gate` adds
+  SonarQube. The deployed page adds a CSP as the runtime backstop (ADR-0008).
   Untrusted inputs of this game — the `localStorage` save document, the URL, files later — are
   validated by allowlist and parsing never throws (ADR-0006).
 
@@ -108,5 +108,6 @@ epic), one `area:*` (`design`, `uml`, `engine`, `game`, `render`, `audio`, `inpu
 - Adding a game framework or rendering library (Phaser, PixiJS…) — see ADR-0001 / ADR-0003.
 - Introducing an ECS or an enemy inheritance tree — see ADR-0003.
 - Any backend, account system or network call in 1.0.
-- Editing `.github/workflows/*` protection semantics, `LICENSE`, or the ADRs' *Status* without
-  a dedicated PR.
+- Editing the gate's semantics — `justfile`, `lefthook.yml`, `scripts/attest.sh`, the trust store
+  `.github/allowed_signers`, `.github/branch-protection.md` — `LICENSE`, or the ADRs' *Status*
+  without a dedicated PR (`just gate` refuses such a branch without `GATE_CI_CHANGE=1`).
