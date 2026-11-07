@@ -160,6 +160,9 @@ box_run 1 "gate: a branch changing the local CI refused" "changes the local CI i
 no_line '^just check' "gate ran check on a branch changing the local CI"
 box_run 0 "gate: the same branch gated after reading" "attest write gate" -- env GATE_CI_CHANGE=1 "$real_just" gate origin/main
 git reset -q --hard origin/main
+printf '{"version":"0.0.1"}\n' > package.json && git commit -qam 'chore(repo): scripts change' --no-verify && git push -q origin HEAD:ci2 2> /dev/null
+box_run 1 "gate: a branch changing package.json refused" "package.json" -- "$real_just" gate origin/main
+git reset -q --hard origin/main
 box_run 1 "gate: HEAD moved during the run" "HEAD moved" -- env MOVE_HEAD=1 "$real_just" gate main
 no_line '^attest' "gate attested a HEAD that moved"
 git reset -q --hard origin/main

@@ -3,7 +3,8 @@
 **Status:** Accepted — 2026-11-07. **Partially supersedes ADR-0007** (its local gate table: husky
 hooks, `make verify`), **ADR-0011** (its hooks: husky, lint-staged, commitlint) **and ADR-0013**
 (its CI table: `ci.yml`, CodeQL, Dependency review, Gitleaks, Scorecard). Their local-first
-principle — the heavy checks run before the push, the necessary minimum elsewhere — stands and is taken to its end: nothing runs on GitHub. Issue #156.
+principle — the heavy checks run before the push, the necessary minimum elsewhere — stands and is
+taken to its end: nothing runs on GitHub. Issue #156.
 
 ## Context
 
@@ -102,7 +103,8 @@ principle — the heavy checks run before the push, the necessary minimum elsewh
   refuses a branch that changes a file defining what the gate runs — `justfile`, `lefthook.yml`,
   `mise.toml`, `mise.lock`, `scripts/`, `.github/allowed_signers`, `package.json`,
   `vitest.config.ts`, `eslint.config.mjs`, `knip.jsonc`, `playwright.config.ts`,
-  `sonar-project.properties`, `.gitleaks.toml`, `.gitleaksignore`, `.trufflehog-exclude` — until
+  `sonar-project.properties`, `.gitleaks.toml`, `.gitleaksignore`, `.trufflehog-exclude`,
+  `tsconfig*.json`, `vite.config.ts`, `.prettierignore`, `.prettierrc.json` — until
   the owner has read those files and sets `GATE_CI_CHANGE=1`, and
   `just merge` runs the verifier of `origin/main`, never the checkout's. A fork PR is read in full
   before it is gated (CONTRIBUTING.md).

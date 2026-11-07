@@ -66,8 +66,8 @@ public/assets/      sprites, fonts and audio — added with the assets brick
 ## Commit scopes (Conventional Commits)
 
 `design` (GDD), `adr`, `uml`, `docs`, `ci`, `repo` (root config, tooling), `deps` (Dependabot),
-and — once code exists — `engine` (loop, ports, pools), `game` (domain rules), `render`, `audio`, `input`, `ui`,
-`levels`, `assets`, `i18n`, `tests`.
+and — once code exists — `engine` (loop, ports, pools), `game` (domain rules), `render`, `audio`,
+`input`, `ui`, `levels`, `assets`, `i18n`, `tests`.
 
 Branch naming: `feat/<scope>`, `fix/<scope>`, `refactor/<scope>`, `chore/<scope>`, `docs/<scope>`.
 
@@ -112,5 +112,6 @@ epic), one `area:*` (`design`, `uml`, `engine`, `game`, `render`, `audio`, `inpu
   without a dedicated PR. The files that define what the gate runs — `justfile`, `lefthook.yml`,
   `mise.toml`, `mise.lock`, `scripts/`, `.github/allowed_signers`, `package.json`,
   `vitest.config.ts`, `eslint.config.mjs`, `knip.jsonc`, `playwright.config.ts`,
-  `sonar-project.properties`, `.gitleaks.toml`, `.gitleaksignore`, `.trufflehog-exclude` — are
+  `sonar-project.properties`, `.gitleaks.toml`, `.gitleaksignore`, `.trufflehog-exclude`,
+  `tsconfig*.json`, `vite.config.ts`, `.prettierignore`, `.prettierrc.json` — are
   gated only with `GATE_CI_CHANGE=1`, after reading them (ADR-0029).
