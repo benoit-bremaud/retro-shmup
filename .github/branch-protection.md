@@ -21,7 +21,8 @@ The required check is a commit status, not a workflow job: no GitHub workflow ru
 `scripts/attest.sh write gate` posts `gate` = success through the REST Statuses API, last, after
 the signed note is pushed, so a green status always has its note; `just merge <pr>` verifies both
 on the exact head SHA before `gh pr merge`. `app_id` stays omitted: the status is posted by the
-owner's `gh`, not by an app.
+owner's `gh`, not by an app. Run `just merge` from an up-to-date `main` checkout, so the `merge`
+recipe itself is the trusted one.
 
 A new check is added to `checks` only after it has reported green once on a pull request;
 otherwise every pull request would wait for a check that never reports. For `gate` this means,

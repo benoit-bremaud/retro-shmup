@@ -51,8 +51,8 @@ test: node-guard
 
 # SAST (Semgrep Community Edition, named registry rulesets: `--config auto` would send the project
 # URL; no p/secrets, which prints the matched value, gitleaks redacts it) on the game and its tests
-# (the shell scripts are shellcheck's), then known vulnerabilities in every dependency, dev ones included, HIGH and above
-# (ADR-0013; replaces CodeQL and Dependency review). EIO_BACKEND=posix: semgrep-core otherwise opens
+# (the shell scripts are shellcheck's), then known vulnerabilities in every dependency, dev ones
+# included, HIGH and above (ADR-0013; replaces CodeQL and Dependency review). EIO_BACKEND=posix: semgrep-core otherwise opens
 # io_uring rings charged to RLIMIT_MEMLOCK with every Electron process, and dies intermittently.
 # SAST (Semgrep CE on src and tests) + pnpm audit HIGH and above
 security:
@@ -80,7 +80,7 @@ gate base="origin/main":
     git merge-base --is-ancestor "$base" HEAD || { echo "gate: HEAD is behind $base, merge or rebase it first" >&2; exit 1; }
     # The gate runs the branch's own recipes and scripts with the owner's keys and tokens: a branch
     # that changes them is gated only after a human read those files (GATE_CI_CHANGE=1).
-    ci=$(git diff --name-only "$base...HEAD" -- justfile lefthook.yml mise.toml mise.lock scripts .github/allowed_signers)
+    ci=$(git diff --name-only "$base...HEAD" -- justfile lefthook.yml mise.toml mise.lock scripts .github/allowed_signers package.json vitest.config.ts eslint.config.mjs knip.jsonc playwright.config.ts sonar-project.properties .gitleaks.toml .gitleaksignore .trufflehog-exclude)
     [ -z "$ci" ] || [ "${GATE_CI_CHANGE:-0}" = 1 ] || { echo "gate: this branch changes the local CI itself ($(printf '%s' "$ci" | tr '\n' ' ')): read those files, then run GATE_CI_CHANGE=1 just gate" >&2; exit 1; }
     [ -n "$(git branch -r --contains HEAD)" ] || { echo "gate: push HEAD first (the attestation is written on the pushed head)" >&2; exit 1; }
     # `check` runs from the body, not as a dependency, so the HEAD it checked is the one attested.

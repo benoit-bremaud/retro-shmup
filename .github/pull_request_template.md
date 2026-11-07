@@ -3,7 +3,7 @@
     <type>(<scope>): <short description>
 
   Types:  feat, fix, refactor, docs, test, chore, perf, build, ci
-  Scopes: design, adr, uml, docs, ci, repo,
+  Scopes: design, adr, uml, docs, ci, repo, deps,
           engine, game, render, audio, input, ui, levels, assets, i18n, tests
 
   Examples:

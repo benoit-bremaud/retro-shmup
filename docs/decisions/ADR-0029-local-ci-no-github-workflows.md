@@ -2,8 +2,8 @@
 
 **Status:** Accepted — 2026-11-07. **Partially supersedes ADR-0007** (its local gate table: husky
 hooks, `make verify`), **ADR-0011** (its hooks: husky, lint-staged, commitlint) **and ADR-0013**
-(its CI table: `ci.yml`, CodeQL, Dependency review, Gitleaks, Scorecard). Their local-first principle — the heavy checks run before the push, the
-necessary minimum elsewhere — stands and is taken to its end: nothing runs on GitHub. Issue #156.
+(its CI table: `ci.yml`, CodeQL, Dependency review, Gitleaks, Scorecard). Their local-first
+principle — the heavy checks run before the push, the necessary minimum elsewhere — stands and is taken to its end: nothing runs on GitHub. Issue #156.
 
 ## Context
 
@@ -99,8 +99,11 @@ necessary minimum elsewhere — stands and is taken to its end: nothing runs on 
   goes through `just merge`.
 - The gate executes the branch's code on the owner's workstation, where the signing key, the `gh`
   token and the SonarQube token live (the Actions sandbox did that before). `just gate` therefore
-  refuses a branch that changes `justfile`, `lefthook.yml`, `mise.toml`, `mise.lock`, `scripts/` or
-  `.github/allowed_signers` until the owner has read those files and sets `GATE_CI_CHANGE=1`, and
+  refuses a branch that changes a file defining what the gate runs — `justfile`, `lefthook.yml`,
+  `mise.toml`, `mise.lock`, `scripts/`, `.github/allowed_signers`, `package.json`,
+  `vitest.config.ts`, `eslint.config.mjs`, `knip.jsonc`, `playwright.config.ts`,
+  `sonar-project.properties`, `.gitleaks.toml`, `.gitleaksignore`, `.trufflehog-exclude` — until
+  the owner has read those files and sets `GATE_CI_CHANGE=1`, and
   `just merge` runs the verifier of `origin/main`, never the checkout's. A fork PR is read in full
   before it is gated (CONTRIBUTING.md).
 - The GitHub merge button checks the `gate` status only, which any write token could post; the

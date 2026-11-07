@@ -1,12 +1,12 @@
-# Local CI toolchain (#156, skill local-ci): every CLI the justfile tiers and the lefthook hooks call,
-# pinned; `mise.lock` pins the checksums. `just setup` installs it. System tools stay outside mise:
-# sonar-scanner (not in the mise registry, skill infra-accounts) and the Playwright browsers
+# Local CI toolchain (#156, skill local-ci): every CLI the justfile tiers and the lefthook hooks
+# call, pinned; `mise.lock` pins the checksums. `just setup` installs it. System tools stay outside
+# mise: sonar-scanner (not in the mise registry, skill infra-accounts) and the Playwright browsers
 # (`pnpm exec playwright install chromium firefox webkit`, ADR-0026).
 #
 # Node follows the .nvmrc major (mise.lock pins the exact build, the nightly drift check flags a
-# newer one) and pnpm matches package.json#packageManager, so the hooks run the project's own
-# toolchain whether or not the shell activates mise. Not here, on purpose (rule 1 of the skill): typos (the FR message catalogue and
-# the country table are not English), osv-scanner and Trivy (`pnpm audit` already audits the
+# newer patch) and pnpm matches package.json#packageManager, so the hooks run the project's own
+# toolchain whether or not the shell activates mise. Not here, on purpose (rule 1 of the skill):
+# typos (the FR message catalogue and the country table are not English), osv-scanner and Trivy (`pnpm audit` already audits the
 # lockfile, ADR-0013; no Dockerfile), actionlint and zizmor (no workflow is left, ADR-0029).
 [tools]
 node = "22"

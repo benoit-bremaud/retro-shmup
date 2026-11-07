@@ -9,7 +9,7 @@
 # attestation (agents-skills ADR-0003); merge refuses a non-numeric PR and a head without attestation,
 # merges with --squash --match-head-commit and propagates a gh failure; sonar refuses a missing or
 # stale coverage report and a missing token, and a failed quality gate fails it; toolchain-drift
-# fails on a mise.toml row other than pnpm only; node-guard refuses the wrong Node major and passes the right one; L0
+# fails on a Node patch or an exact pin behind, not on a Node major; node-guard refuses the wrong Node major and passes the right one; L0
 # (`just fast`) passes a clean staged change but refuses a staged secret and a shell warning.
 # Needs mise, just, lefthook, gitleaks, shellcheck (the tool wordings asserted are pinned by
 # mise.lock):
@@ -120,7 +120,7 @@ echo "pnpm $*" >> "$LOG"
 EOF2
 cat > "$box/stub/mise" <<'EOF2'
 #!/bin/sh
-printf '%s\n' "$MISE_OUT"
+case "$*" in *--bump*) printf '%s\n' "$MISE_OUT" ;; *) printf '%s\n' "${MISE_PATCH:-}" ;; esac
 EOF2
 cat > "$box/stub/curl" <<'EOF2'
 #!/bin/sh
@@ -197,12 +197,15 @@ box_run 0 "sonar: scan with the gate wait" "sonar-scanner -Dsonar.host.url=http:
 grep -q 't0k' "$work/out" && fail "sonar passed the token on the command line"; ok
 box_run 1 "sonar: failed quality gate fails the recipe" - -- env HOME="$box" SONAR_TOKEN=t0k SCANNER_FAIL=1 "$real_just" sonar
 
-# toolchain drift: only a mise.toml row that is not node or pnpm counts; a failing mise fails it.
-drift() { box_run "$1" "drift: $2" "$3" -- env MISE_OUT="$4" sh "$root/scripts/toolchain-drift.sh"; }
+# toolchain drift: a --bump row of mise.toml other than node or pnpm, or a Node patch without --bump,
+# counts; a Node major bump does not; a failing mise fails it.
+drift() { box_run "$1" "drift: $2" "$3" -- env MISE_OUT="$4" MISE_PATCH="${5:-}" sh "$root/scripts/toolchain-drift.sh"; }
 drift 0 "empty report" - ''
 drift 0 "global rows ignored" - 'just  1.0.0  1.1.0  ~/.tool-versions'
 drift 0 "pnpm follows package.json" - 'pnpm  10.0.0  10.9.9  mise.toml'
-drift 1 "a mise.toml row fails" "bump mise.toml" "$(printf 'pnpm  10.0.0  10.9.9  mise.toml\nnode  22.0.0  22.9.9  mise.toml')"
+drift 0 "a Node major bump is not drift" - 'node  22  22.23.4  26  26.13.0  mise.toml'
+drift 1 "a Node patch is drift" "node  22  22.23.3" 'node  22  22.23.3  26  26.13.0  mise.toml' 'node  22  22.23.3  22.23.4  mise.toml'
+drift 1 "a mise.toml row fails" "bump mise.toml" "$(printf 'pnpm  10.0.0  10.9.9  mise.toml\njust  1.0.0  1.1.0  mise.toml')"
 cat > "$box/stub/mise" <<'EOF2'
 #!/bin/sh
 exit 1

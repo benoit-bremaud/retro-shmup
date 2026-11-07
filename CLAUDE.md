@@ -65,8 +65,8 @@ public/assets/      sprites, fonts and audio — added with the assets brick
 
 ## Commit scopes (Conventional Commits)
 
-`design` (GDD), `adr`, `uml`, `docs`, `ci`, `repo` (root config, tooling), and — once code
-exists — `engine` (loop, ports, pools), `game` (domain rules), `render`, `audio`, `input`, `ui`,
+`design` (GDD), `adr`, `uml`, `docs`, `ci`, `repo` (root config, tooling), `deps` (Dependabot),
+and — once code exists — `engine` (loop, ports, pools), `game` (domain rules), `render`, `audio`, `input`, `ui`,
 `levels`, `assets`, `i18n`, `tests`.
 
 Branch naming: `feat/<scope>`, `fix/<scope>`, `refactor/<scope>`, `chore/<scope>`, `docs/<scope>`.
@@ -108,6 +108,9 @@ epic), one `area:*` (`design`, `uml`, `engine`, `game`, `render`, `audio`, `inpu
 - Adding a game framework or rendering library (Phaser, PixiJS…) — see ADR-0001 / ADR-0003.
 - Introducing an ECS or an enemy inheritance tree — see ADR-0003.
 - Any backend, account system or network call in 1.0.
-- Editing the gate's semantics — `justfile`, `lefthook.yml`, `scripts/attest.sh`, the trust store
-  `.github/allowed_signers`, `.github/branch-protection.md` — `LICENSE`, or the ADRs' *Status*
-  without a dedicated PR (`just gate` refuses such a branch without `GATE_CI_CHANGE=1`).
+- Editing the gate's semantics, `.github/branch-protection.md`, `LICENSE`, or the ADRs' *Status*
+  without a dedicated PR. The files that define what the gate runs — `justfile`, `lefthook.yml`,
+  `mise.toml`, `mise.lock`, `scripts/`, `.github/allowed_signers`, `package.json`,
+  `vitest.config.ts`, `eslint.config.mjs`, `knip.jsonc`, `playwright.config.ts`,
+  `sonar-project.properties`, `.gitleaks.toml`, `.gitleaksignore`, `.trufflehog-exclude` — are
+  gated only with `GATE_CI_CHANGE=1`, after reading them (ADR-0029).
