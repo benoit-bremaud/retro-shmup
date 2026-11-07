@@ -8,20 +8,19 @@ and pull requests.
 
 ## Prerequisites
 
-- **Git** 2.30 or newer, **Node.js 22 LTS** (≥ 22.22.1 — lint-staged 17's floor; see `.nvmrc`),
-  **pnpm 10**.
-- **gitleaks** ≥ 8.25 (`.gitleaks.toml` uses `[[allowlists]]`) and **sonar-scanner** on the
-  `PATH`, and the local **SonarQube** at `http://localhost:9000` — the git hooks use them
-  (ADR-0007, ADR-0011).
+- **Git** 2.34 or newer (SSH signing) and **[mise](https://mise.jdx.dev/)**: `mise.toml` pins
+  Node 22, pnpm 10 and every tool of the local CI (just, lefthook, gitleaks, TruffleHog,
+  shellcheck, Semgrep); `just setup` installs them (ADR-0029).
+- **sonar-scanner** on the `PATH` and the local **SonarQube** at `http://localhost:9000` — the
+  gate uses them (ADR-0007, ADR-0029).
 
 ```bash
 git clone git@github.com:benoit-bremaud/retro-shmup.git
 cd retro-shmup
-nvm use               # Node 22 from .nvmrc
-pnpm install          # also installs the git hooks (husky)
+mise trust && just setup   # pinned toolchain, dependencies, git hooks (lefthook)
 pnpm dev              # dev server
-make verify           # the full local gate, as run by the pre-push hook
-pnpm exec playwright install chromium firefox webkit   # once, for the browser smoke test (make smoke)
+just check            # tier L1, as run by the pre-push hook
+pnpm exec playwright install chromium firefox webkit   # once, for the browser smoke test (just smoke)
 # WebKit on Linux may also need system libraries: sudo pnpm exec playwright install-deps webkit
 ```
 
@@ -137,30 +136,29 @@ Extra labels are allowed but never replace the triptych.
 
 ## Quality gate — local first
 
-The blocking checks run on the developer's machine, before the push, as decided in
-[ADR-0007](docs/decisions/ADR-0007-local-first-quality-gate-minimal-ci.md). `pnpm install`
-installs the git hooks (husky):
+Every check runs on the developer's machine, in four `just` tiers wired by lefthook
+([ADR-0029](docs/decisions/ADR-0029-local-ci-no-github-workflows.md), skill `local-ci`); no GitHub
+workflow runs. `just setup` installs the toolchain and the hooks; `mise x -- just <tier>` runs a
+tier when the shell does not activate mise.
 
-| Hook | Runs | Budget |
-|---|---|---|
-| `pre-commit` | `gitleaks git --pre-commit --staged`, then lint-staged: ESLint and `prettier --check` on the staged files | under 3 s |
-| `commit-msg` | commitlint: Conventional Commits with a scope from the project list | instant |
-| `pre-push` (`make verify`) | typecheck (app, node, smoke and domain projects), lint, `knip` (unused files, exports and dependencies; config and justified exceptions in `knip.jsonc`), format check, Vitest with coverage, `gitleaks git` on the full history, `pnpm audit --audit-level high`, `sonar-scanner` against the local SonarQube (`localhost:9000`) with quality-gate wait | under 90 s |
+| Tier | Recipe | Trigger | Runs | Budget |
+|---|---|---|---|---|
+| L0 | `just fast` | `pre-commit`, `commit-msg` | gitleaks on the staged files; ESLint, Prettier and shellcheck on the staged files; Conventional Commit subject (`scripts/check-commit-msg.sh`) | under 10 s |
+| L1 | `just check` | `pre-push` (clean tree required) | typecheck (app, node, smoke and domain projects), lint, `knip` (unused files, exports and dependencies; config and justified exceptions in `knip.jsonc`), format check, shellcheck, Vitest with coverage, doc coverage ≥ 90 %, the wiring tests, Semgrep CE, `pnpm audit --audit-level high`, `gitleaks git` on the full history | under 3 min |
+| L2 | `just gate` | before every merge, on the pushed head | `check`, `sonar-scanner` against the local SonarQube (`localhost:9000`) with quality-gate wait, the browser smoke test (`just smoke`), then the signed `gate` attestation of the head SHA | 5–15 min |
+| L3 | `just nightly` | systemd user timer (`scripts/systemd/`) | `check`, TruffleHog over the history, toolchain drift | — |
 
-`make verify` checks the working tree: push from a clean tree, so what is verified is what is
-pushed.
+`just check` checks the working tree, so the pre-push hook refuses a dirty tree: what is verified
+is what is pushed. Before every push, also run the structured local review gate (`review-local`).
 
-Before every push, also run the structured local review gate (`review-local`) and, when render,
-input, bootstrap or save code changed, the Playwright smoke test (`make smoke`).
+`just merge <pr>` merges a pull request only when its exact head SHA carries the `gate` attestation
+(a signed note on `refs/notes/gate` and the `gate` commit status, which `main` requires); a push
+after the gate makes the merge fail. The trust store is `.github/allowed_signers`.
 
-CI keeps the necessary minimum (ADR-0013): `ci.yml` (lint, typecheck, format check, tests,
-build) and the security workflows (Gitleaks, CodeQL, Dependency Review; OSSF Scorecard weekly,
-non-blocking). Nothing heavier runs in CI.
+When `just check` or `just gate` cannot pass for a reason outside the change (ADR-0013):
 
-When `make verify` cannot pass for a reason outside the change (ADR-0013):
-
-- **SonarQube or the npm registry is unreachable** — push with `git push --no-verify` only after
-  the rest of `make verify` passed, and say so in the PR;
+- **SonarQube or the npm registry is unreachable** — the gate stops; fix the service and rerun it
+  (a `--no-verify` push skips `check` only, never the gate);
 - **a high advisory has no fix yet** in a dependency — suppress it with
   `pnpm audit --ignore <GHSA-id>` and log the advisory, the reason and a review date in
   `PROJECT_LOG.md`; never ignore an advisory reachable from the shipped bundle.
@@ -172,7 +170,7 @@ it prints every property, the token included.
 ## Tests
 
 [Vitest](https://vitest.dev/), with `tests/` mirroring `src/`: `pnpm test` runs the suite once,
-`pnpm test:watch` watches, `pnpm test:coverage` adds the coverage report (as `make verify` does).
+`pnpm test:watch` watches, `pnpm test:coverage` adds the coverage report (as `just check` does).
 
 - **Domain test-first** (Red/Green/Refactor), with headless level simulations on a fixed seed and
   scripted inputs: a level script replays identically.
@@ -185,8 +183,8 @@ it prints every property, the token included.
   sprites and rectangles in drawing order.
 - **Exactly one browser smoke test**, `tests/smoke/first-playable.spec.ts` (Playwright), in
   Chromium, Firefox and WebKit (ADR-0026): the phone path, then the hall-of-fame names surviving a
-  reload and a rewrite of the save. Run by hand with `make smoke` (`pnpm test:smoke`, which builds
-  first); it is part of neither `make verify` nor CI.
+  reload and a rewrite of the save. `just smoke` (`pnpm test:smoke`, which builds first) runs it;
+  it is a step of `just gate`, not of `just check`.
 
 ## Pull request process
 
@@ -195,10 +193,9 @@ it prints every property, the token included.
    blocking finding is resolved.
 3. Open the PR with the repository template filled in, the labels triptych applied, and a
    Conventional Commit title.
-4. All checks must be green: `ci.yml`, Gitleaks, CodeQL and Dependency Review (OSSF Scorecard
-   runs weekly and is non-blocking, ADR-0013).
+4. `just gate` must be green and attested on the pushed head (the `gate` status, ADR-0029).
 5. Address every review comment, including automated ones, with an inline reply.
-6. The owner merges. Squash or merge is the owner's call; the resulting commit message must stay a
+6. The owner merges with `just merge <pr>` (squash); the resulting commit message must stay a
    valid Conventional Commit.
 
 After every merge, add an entry to [PROJECT_LOG.md](PROJECT_LOG.md): date, what was done, why, and

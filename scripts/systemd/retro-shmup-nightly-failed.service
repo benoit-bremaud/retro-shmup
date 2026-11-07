@@ -1,0 +1,6 @@
+[Unit]
+Description=Desktop notification when the retro-shmup nightly local CI fails
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/notify-send --urgency=critical "retro-shmup local CI nightly failed" "journalctl --user -u retro-shmup-nightly.service"

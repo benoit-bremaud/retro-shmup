@@ -1,18 +1,7 @@
-# Dependabot — keeps the SHA-pinned GitHub Actions in .github/workflows current.
-# Each bump PR carries the new SHA and refreshes the trailing "# vX.Y.Z" comment.
-# The `npm` block keeps the toolchain current; minor and patch bumps are grouped.
+# Dependabot — keeps the npm toolchain current; minor and patch bumps are grouped. No
+# `github-actions` block: no workflow is left (ADR-0029, local CI).
 version: 2
 updates:
-  - package-ecosystem: 'github-actions'
-    directory: '/'
-    schedule:
-      interval: 'weekly'
-      day: 'monday'
-    open-pull-requests-limit: 5
-    cooldown:
-      default-days: 7
-    commit-message:
-      prefix: 'chore(deps)'
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
