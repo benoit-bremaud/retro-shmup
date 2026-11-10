@@ -17,6 +17,9 @@
 set -e
 # A hook (pre-push runs `just check`) exports these; they would aim git at the outer repository.
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_OBJECT_DIRECTORY GIT_COMMON_DIR
+# The gate of a branch that changes the local CI runs with GATE_CI_CHANGE=1; the guard cases
+# below must not inherit it.
+unset GATE_CI_CHANGE
 # The throwaway repositories must not inherit the machine's signing, hooks or URL rewrites.
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null
 
