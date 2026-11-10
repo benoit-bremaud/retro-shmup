@@ -1,0 +1,12 @@
+[Unit]
+Description=Nightly local CI of retro-shmup: just nightly, tier L3 (#156, skill local-ci)
+OnFailure=retro-shmup-nightly-failed.service
+
+[Service]
+Type=oneshot
+# The user manager's PATH has no ~/.local/bin, where mise lives; mise brings the pinned tools.
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+WorkingDirectory=%h/Documents/02_personal/video_games/retro-shmup
+ExecStart=%h/.local/bin/mise x -- just nightly
+# A oneshot has no timeout: a hung fetch would block the timer for good.
+TimeoutStartSec=2h

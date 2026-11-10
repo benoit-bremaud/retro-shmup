@@ -1,6 +1,7 @@
 # ADR-0013: Quality gate and CI after going public — Scorecard, CodeQL, audit
 
-**Status:** Accepted — 2026-10-08. **Partially supersedes ADR-0007**: its CI table and its
+**Status:** Accepted — 2026-10-08. Partially superseded by ADR-0029 (its CI table: no workflow is
+left; the audit exceptions stand). **Partially supersedes ADR-0007**: its CI table and its
 rejection of OSSF Scorecard; its local-gate principle (heavy checks before the push, minimum in
 CI) stands.
 

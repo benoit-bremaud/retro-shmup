@@ -126,6 +126,8 @@ Roadmap (GDD section 11):
     `BossTuning`, F-2 in three PRs
   - [ADR-0025](docs/decisions/ADR-0025-versioning-policy.md) — Versioning policy: SemVer, the
     save document as public surface, manual signed releases
+  - [ADR-0029](docs/decisions/ADR-0029-local-ci-no-github-workflows.md) — Local CI in four
+    tiers (`just fast` / `check` / `gate` / `nightly`), attested gate, no GitHub workflow
 - [Architecture and UML study](docs/architecture/README.md) — C4 context and containers, then
   the UML diagrams (Mermaid, PlantUML for use cases and components) and the traceability matrix.
 - [PROJECT_LOG.md](PROJECT_LOG.md) — operational logbook (what was done, why, by which PR).
@@ -172,10 +174,11 @@ Every numeric value is an initial setting to be tuned in playtests; the rules th
   place. Design changes go through a GDD revision in its own PR.
 - **Design before code**: a feature is coded only after its GDD rules exist and its UML diagrams
   are validated.
-- **Quality gate, local first** (ADR-0007, ADR-0013): git hooks run gitleaks, lint, typecheck,
-  the tests with coverage, `pnpm audit` and the local SonarQube quality gate before every push;
-  CI keeps a light `ci.yml` (lint, typecheck, format, tests, build) and the security workflows
-  (Gitleaks, CodeQL, Dependency Review, OSSF Scorecard).
+- **Quality gate, local only** (ADR-0029): four `just` tiers — `fast` on commit, `check` on push
+  (lint, typecheck, knip, tests with coverage, Semgrep, `pnpm audit`, gitleaks), `gate` before
+  every merge (`check`, the local SonarQube quality gate, the browser smoke test, then a signed
+  attestation of the head SHA that `just merge` requires), `nightly` on a systemd timer. No
+  GitHub workflow: Cloudflare Pages builds `main` itself (ADR-0016).
 
 ## Privacy
 

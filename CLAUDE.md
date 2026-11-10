@@ -25,8 +25,8 @@ repository.
   diff; any security finding is a Must Have. Mechanically enforced: ESLint bans `eval`,
   `new Function`, literal `javascript:` URLs and the HTML sinks (`innerHTML`, `outerHTML`,
   `srcdoc`, `insertAdjacentHTML`, `setHTMLUnsafe`, `createContextualFragment`, `document.write`);
-  `make verify` runs gitleaks, `pnpm audit --audit-level high` and SonarQube. The deployed page
-  adds a CSP as the runtime backstop (ADR-0008).
+  `just check` runs Semgrep, gitleaks and `pnpm audit --audit-level high`, `just gate` adds
+  SonarQube. The deployed page adds a CSP as the runtime backstop (ADR-0008).
   Untrusted inputs of this game — the `localStorage` save document, the URL, files later — are
   validated by allowlist and parsing never throws (ADR-0006).
 
@@ -65,9 +65,9 @@ public/assets/      sprites, fonts and audio — added with the assets brick
 
 ## Commit scopes (Conventional Commits)
 
-`design` (GDD), `adr`, `uml`, `docs`, `ci`, `repo` (root config, tooling), and — once code
-exists — `engine` (loop, ports, pools), `game` (domain rules), `render`, `audio`, `input`, `ui`,
-`levels`, `assets`, `i18n`, `tests`.
+`design` (GDD), `adr`, `uml`, `docs`, `ci`, `repo` (root config, tooling), `deps` (Dependabot),
+and — once code exists — `engine` (loop, ports, pools), `game` (domain rules), `render`, `audio`,
+`input`, `ui`, `levels`, `assets`, `i18n`, `tests`.
 
 Branch naming: `feat/<scope>`, `fix/<scope>`, `refactor/<scope>`, `chore/<scope>`, `docs/<scope>`.
 
@@ -77,24 +77,27 @@ Triptych on every issue and PR: one `type:*` (feature, bug, refactor, chore, doc
 epic), one `area:*` (`design`, `uml`, `engine`, `game`, `render`, `audio`, `input`, `ui`, `levels`,
 `assets`, `ci`, `docs`), one `priority:*` (high, medium, low).
 
-## Quality gate — local first (ADR-0007)
+## Quality gate — local only (ADR-0029, skill `local-ci`)
 
-- The blocking gate runs **locally**: `pre-commit` (gitleaks on staged files, lint) and
-  `pre-push` = `make verify` (typecheck, Vitest with coverage, gitleaks on the pushed range,
-  `sonar-scanner` against the local SonarQube at `localhost:9000` with quality-gate wait).
-- CI keeps the necessary minimum: a light `ci.yml` (lint, typecheck, format, tests, build) and
-  the security workflows — Gitleaks, CodeQL (`actions` and `javascript-typescript`), Dependency
-  Review, OSSF Scorecard (weekly, non-blocking). No SonarCloud, no coverage service, no E2E in
-  CI.
+- Four `just` tiers, no GitHub workflow: `just fast` (lefthook `pre-commit`: gitleaks, ESLint,
+  Prettier, shellcheck on the staged files; `commit-msg` subject), `just check` (`pre-push`, clean
+  tree: typecheck, lint, knip, format, Vitest with coverage, doc coverage, wiring tests, Semgrep
+  CE, `pnpm audit --audit-level high`, gitleaks full history), `just gate` (before every merge, on
+  the pushed head: `check`, local SonarQube with quality-gate wait, browser smoke in three
+  engines, then the signed `gate` attestation), `just nightly` (systemd timer: TruffleHog, drift).
+- `just merge <pr>` is the only merge path: it verifies the attestation on the exact head SHA.
+  `main` requires the `gate` status. Run tiers as `mise x -- just <tier>` outside an activated
+  shell.
 - The SonarQube analysis token lives in `~/.config/sonar-tokens/retro-shmup` — never in the repo.
-- `git push --no-verify` is a conscious exception, allowed only when SonarQube or the npm registry
-  is unreachable and the rest of `make verify` passed; an unfixable high advisory is suppressed
-  with `pnpm audit --ignore` and logged instead (ADR-0013).
+- `git push --no-verify` skips `check` only and is a conscious exception (npm registry down,
+  ADR-0013); the gate always runs in full. An unfixable high advisory is suppressed with
+  `pnpm audit --ignore` and logged instead (ADR-0013).
 
 ## Workflow reminders
 
 - Open a branch for every change; `main` is protected (PR + green checks).
-- Run the local pre-push review gate (`review-local`) before every push.
+- Run the local pre-push review gate (`review-local --push`) before every push and `just gate`
+  on the pushed head before every merge.
 - After every merged PR: update `PROJECT_LOG.md` (entry per the project-log discipline),
   post-merge cleanup, memory compression.
 - The repository is **public** since 2026-10-08 (public-release checklist satisfied, owner
@@ -105,5 +108,10 @@ epic), one `area:*` (`design`, `uml`, `engine`, `game`, `render`, `audio`, `inpu
 - Adding a game framework or rendering library (Phaser, PixiJS…) — see ADR-0001 / ADR-0003.
 - Introducing an ECS or an enemy inheritance tree — see ADR-0003.
 - Any backend, account system or network call in 1.0.
-- Editing `.github/workflows/*` protection semantics, `LICENSE`, or the ADRs' *Status* without
-  a dedicated PR.
+- Editing the gate's semantics, `.github/branch-protection.md`, `LICENSE`, or the ADRs' *Status*
+  without a dedicated PR. The files that define what the gate runs — `justfile`, `lefthook.yml`,
+  `mise.toml`, `mise.lock`, `scripts/`, `.github/allowed_signers`, `package.json`,
+  `vitest.config.ts`, `eslint.config.mjs`, `knip.jsonc`, `playwright.config.ts`,
+  `sonar-project.properties`, `.gitleaks.toml`, `.gitleaksignore`, `.trufflehog-exclude`,
+  `tsconfig*.json`, `vite.config.ts`, `.prettierignore`, `.prettierrc.json` — are
+  gated only with `GATE_CI_CHANGE=1`, after reading them (ADR-0029).
