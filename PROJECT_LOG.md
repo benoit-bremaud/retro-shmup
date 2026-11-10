@@ -6,6 +6,30 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ---
 
+## 2026-11-10
+
+### Local CI, no GitHub workflow (#156, #158 `7a922f9`, ADR-0029)
+
+- Every check now runs on the laptop and in git hooks (skill `local-ci`): `just fast` (lefthook
+  pre-commit + commit-msg), `just check` (pre-push: typecheck, lint, knip, format, Vitest with
+  coverage, doc coverage, wiring tests, Semgrep CE, `pnpm audit`, gitleaks), `just gate` (pushed
+  head before every merge: check, local SonarQube, smoke in three engines, signed `gate`
+  attestation), `just nightly` (systemd user timer: TruffleHog, toolchain drift). Toolchain pinned in
+  `mise.toml` + `mise.lock`. `.github/workflows/` removed; Dependabot kept.
+- Owner MCDA (2026-11-07): Scorecard removed (B 440/500); zero workflow, Cloudflare Pages builds
+  `main` itself (A 485/500). `main` protection now requires the `gate` status only.
+- Local review: 4 adversarial rounds (round 4 on Sonnet, Opus weekly quota exhausted), 14 Must
+  fixed; first `just gate` on the pushed head was red (wiring test inherited `GATE_CI_CHANGE=1`,
+  fixed `0105cd5`); gate green and attested on `046b74b` (Sonar passed, smoke 6/6, 1 702 tests,
+  coverage 99.26 / 95.73 %, doc 99.5 %).
+- **Merge waiver (bootstrap, owner yes 2026-11-10):** `attest.sh verify` could not run before this
+  merge (`.github/allowed_signers` not yet on `main`), so #158 was merged with
+  `MERGE_GATE_WAIVER=1 gh pr merge --squash --match-head-commit 046b74b`. Every later merge goes
+  through `just merge <pr>`.
+- Follow-ups: close the open Dependabot `github_actions` PRs (no workflow left); bump Cloudflare
+  Pages `NODE_VERSION` 22.23.3 → 22.23.4; main checkout: `git pull && mise trust && mise x -- just
+  setup`; Codex bot review ran out of quota (not a gate step).
+
 ## 2026-10-29
 
 ### Chain labels (#147, code #151 `5a6d764`)
