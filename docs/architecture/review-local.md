@@ -4,11 +4,11 @@ Pre-push gate (`review-local --push`) on the branch that moves every check to lo
 the GitHub workflows (ADR-0029).
 
 - Date: 2026-11-07
-- Commit: `aedd288` reviewed; fixes `9157cff`, `249a104`, `5e40a6f` (all signed)
+- Commit: `aedd288` reviewed; fixes `9157cff`, `249a104`, `5e40a6f`, `0105cd5` (all signed)
 - Scope: branch diff `origin/main...HEAD` (`ci/156-local-ci-no-workflows`)
 - Checks run: adversarial (Opus rounds 1–3, Sonnet round 4) · docs · tests · security · correctness · `just check`
-  (design: no application code changed, not run)
-- Verdict: fix Must Have first → all fixed by `5e40a6f` · Must 13 (all fixed) · Should 22 (19
+  (design: no application code changed, not run) · `just gate` on the pushed head
+- Verdict: fix Must Have first → all fixed by `0105cd5` · Must 14 (all fixed) · Should 22 (19
   fixed, 3 recorded) · Nice 14 (8 fixed)
 
 ## Adversarial review (#236)
@@ -23,18 +23,21 @@ the GitHub workflows (ADR-0029).
   Must 0 · Nice 1 (test commit message copied from the previous case, left) · Push gate: open
 - Hosted reviewers: none (owner rule: no Copilot / Codex on this repository)
 
-## Pre-merge gate (head SHA `5e40a6f`)
+## Pre-merge gate (head SHA `0105cd5`)
 
 | Step | Result |
 |---|---|
 | 0 CI mirror | n/a — no PR workflow is left (ADR-0029) |
 | 1 Tests | ✅ Vitest suites green · ✅ `test-local-ci.sh` 91 cases · ✅ `test-attest.sh` 28 cases |
 | 2 Coverage | tests 99.26 % stmts / 95.73 % branches / 100 % funcs / 99.91 % lines (floor 80) · docs 375/377 = 99.5 % (floor 90) |
-| 3 SonarQube | ⏸ deferred to the pre-merge run (`just gate`) |
+| 3 SonarQube | ✅ `QUALITY GATE STATUS: PASSED` (local, `just gate` on `0105cd5`) |
 | 4 Secrets | ✅ gitleaks clean on `origin/main..HEAD` and full history · no tracked `.env` · diff read: nothing sensitive (the `AKIA…` string is the L0 test fixture) |
-| 5 E2E/smoke | ⏸ deferred to the pre-merge run (`just smoke` inside `just gate`) |
-- Gate: `--push`: **pre-push green** — `just check` passed in 60 s from a clean environment (`env -i … mise x -- just check`; L0 `just fast` 0.4–1.6 s), SonarQube and smoke
-  deferred (never GREEN here)
+| 5 E2E/smoke | ✅ 6 smoke journeys (chromium, firefox, webkit) on the prod build · QA pass: n/a, tooling only |
+- Gate: **GREEN on `0105cd5`** — `GATE_CI_CHANGE=1 just gate` (first run red: wiring test inherited the
+  flag, fixed in `0105cd5`); attestation `gate` recorded (signed note + status). `attest.sh verify`
+  cannot pass before this merge: `.github/allowed_signers` is not on `origin/main` yet (bootstrap,
+  ADR-0029) → merge under the owner's recorded waiver. Pre-push: `just check` 50–66 s, L0 0.4–1.6 s.
+- Hosted reviewers: none (owner rule); Codex bot ran out of quota, ignored.
 
 ## 🔴 Must Have (all fixed in `9157cff`, `249a104`)
 
@@ -67,6 +70,9 @@ the GitHub workflows (ADR-0029).
   reports the next major every night · two passes: Node patches without `--bump`, exact pins with it
 - `CLAUDE.md:111` `[adversarial]` (round 2) · listed other files than the gate guard checks · one
   list in `justfile`, CLAUDE.md and ADR-0029 (19 paths after rounds 3 and 4)
+- `scripts/test-local-ci.sh:19` `[correctness]` (first `just gate` run on the pushed head) · the guard
+  cases inherited `GATE_CI_CHANGE=1` from the gate of this very branch and expected a refusal · the
+  suite unsets it (`0105cd5`)
 - `scripts/test-attest.sh:16` `[tests]` · the fake `gh` pre-digested the status, hiding the `-q`
   filter · the fake stores JSON and applies the real filter with `jq` (pinned in mise); statuses of
   another context or `failure` refused (2 cases)
