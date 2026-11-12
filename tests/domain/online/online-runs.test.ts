@@ -135,7 +135,12 @@ describe('OnlineRuns — sending', () => {
     expect(port.submitted).toEqual([RUN]);
     port.submits[0]?.done({ id: ID, token: TOKEN });
     online.step();
-    expect(online.state()).toEqual({ phase: 'sent', id: ID, status: 'pending' });
+    expect(online.state()).toEqual({
+      phase: 'sent',
+      id: ID,
+      status: 'pending',
+      tokenMaybeLost: false,
+    });
     expect(kept(store)).toEqual([
       { id: ID, token: TOKEN, score: 1200, sentAt: NOW, status: 'pending' },
     ]);
@@ -149,6 +154,8 @@ describe('OnlineRuns — sending', () => {
 
   it.each([
     ['duplicate-run', true],
+    ['accepted-unreadable', true],
+    ['unsupported', false],
     ['offline', true],
     ['timeout', true],
     ['too-long', false],
@@ -185,7 +192,12 @@ describe('OnlineRuns — following the verification', () => {
     expect(port.asked).toEqual([ID]);
     port.statuses[0]?.done('verified');
     online.step();
-    expect(online.state()).toEqual({ phase: 'sent', id: ID, status: 'verified' });
+    expect(online.state()).toEqual({
+      phase: 'sent',
+      id: ID,
+      status: 'verified',
+      tokenMaybeLost: false,
+    });
     expect(kept(store)[0]?.status).toBe('verified');
     for (let i = 0; i < STATUS_POLL_STEPS * 2; i += 1) online.step();
     expect(port.asked).toEqual([ID]);
@@ -202,7 +214,12 @@ describe('OnlineRuns — following the verification', () => {
       }
     }
     expect(port.asked).toHaveLength(STATUS_WATCH_STEPS / STATUS_POLL_STEPS);
-    expect(online.state()).toEqual({ phase: 'sent', id: ID, status: 'pending' });
+    expect(online.state()).toEqual({
+      phase: 'sent',
+      id: ID,
+      status: 'pending',
+      tokenMaybeLost: false,
+    });
   });
 
   it('drops the run on 404', () => {
@@ -265,6 +282,91 @@ describe('OnlineRuns — Online scores', () => {
     port.erases[0]?.fail('offline');
     online.step();
     expect(online.kept()).toHaveLength(2);
-    expect(online.state()).toEqual({ phase: 'failed', error: 'offline', tokenMaybeLost: false });
+    expect(online.eraseError()).toBe('offline');
+    expect(online.state()).toEqual({ phase: 'idle' });
+  });
+});
+
+describe('OnlineRuns — robustness', () => {
+  function sentWith(store: MemoryStore, port: FakePort): OnlineRuns {
+    const online = new OnlineRuns(port, store, () => NOW);
+    online.send(RUN);
+    port.submits.at(-1)?.done({ id: ID, token: TOKEN });
+    online.step();
+    return online;
+  }
+
+  it('never overwrites the runs another tab kept', () => {
+    const store = new MemoryStore();
+    const port = new FakePort();
+    const older = new OnlineRuns(port, store, () => NOW);
+    sentWith(store, port);
+    older.send({ ...RUN, score: 7 });
+    port.submits.at(-1)?.done({ id: '01JC0000000000000000000002', token: TOKEN });
+    older.step();
+    expect(kept(store).map((run) => run.id)).toEqual(['01JC0000000000000000000002', ID]);
+  });
+
+  it('flags the token as maybe lost when it cannot be stored', () => {
+    const store = new MemoryStore();
+    store.write = () => false;
+    const online = sentWith(store, new FakePort());
+    expect(online.state()).toEqual({
+      phase: 'sent',
+      id: ID,
+      status: 'pending',
+      tokenMaybeLost: true,
+    });
+  });
+
+  it('serves a player action before the rest of the refresh queue', () => {
+    const { online, port } = setup(
+      JSON.stringify({
+        v: 1,
+        runs: [
+          { id: ID, token: TOKEN, score: 5, sentAt: NOW, status: 'pending' },
+          {
+            id: '01JC0000000000000000000002',
+            token: TOKEN,
+            score: 6,
+            sentAt: NOW,
+            status: 'pending',
+          },
+        ],
+      }),
+    );
+    online.refreshAll();
+    online.step();
+    expect(online.erase(ID)).toBe(true);
+    expect(online.erase(ID)).toBe(false);
+    expect(online.send(RUN)).toBe('busy');
+    port.statuses[0]?.done('pending');
+    online.step();
+    expect(port.erased).toEqual([[ID, TOKEN]]);
+    expect(port.asked).toEqual([ID]);
+  });
+
+  it('stops asking once the player leaves, and a new offer starts idle', () => {
+    const port = new FakePort();
+    const online = sentWith(new MemoryStore(), port);
+    online.leave();
+    for (let i = 0; i < STATUS_WATCH_STEPS; i += 1) online.step();
+    expect(port.asked).toEqual([]);
+    online.send(RUN);
+    port.submits.at(-1)?.fail('offline');
+    online.step();
+    expect(online.offer({ outcome: 'game-over', sendable: true, score: 1 })).toBe(true);
+    expect(online.state()).toEqual({ phase: 'idle' });
+  });
+
+  it('stops watching a run once it is erased', () => {
+    const port = new FakePort();
+    const online = sentWith(new MemoryStore(), port);
+    online.erase(ID);
+    port.erases[0]?.done('erased');
+    online.step();
+    for (let i = 0; i < STATUS_POLL_STEPS; i += 1) online.step();
+    expect(port.asked).toEqual([]);
+    expect(online.kept()).toEqual([]);
   });
 });

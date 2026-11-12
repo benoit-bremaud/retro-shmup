@@ -6,9 +6,15 @@
 /** What the verifier has said about a sent run. */
 export type RunStatus = 'pending' | 'verified' | 'rejected' | 'unverifiable' | 'expired';
 
-/** Why a request failed, by the server's stable code or the transport (decision 15). */
+/**
+ * Why a request failed, by the server's stable code or the transport (decision 15).
+ * `accepted-unreadable`: the server answered `202` (the run is stored) but its body could not be
+ * read, so the token is lost; `unsupported`: this browser cannot encode the run.
+ */
 export type FailureCode =
   | 'offline'
+  | 'accepted-unreadable'
+  | 'unsupported'
   | 'timeout'
   | 'too-long'
   | 'duplicate-run'

@@ -1,6 +1,7 @@
 # Response headers of the game on Cloudflare Pages (ADR-0008 decision 4). Vite copies this file
 # to the build output. The CSP allows only the game's own files; frame-ancestors lets the
-# portfolio catalogue embed the game and nothing else.
+# portfolio catalogue embed the game and nothing else. A release build adds the online
+# leaderboard's origin to connect-src in the built copy only (vite.config.ts, ADR-0031 dec. 12).
 /*
   Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; media-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'self' https://benoitbremaud.fr
   X-Content-Type-Options: nosniff

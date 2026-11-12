@@ -156,6 +156,9 @@ server follow-up benoit-bremaud/retro-leaderboard#14.
     the domain. `submit` takes the records and their count; the `FetchLeaderboard` adapter
     encodes them (decisions 5–6), sends, and parses the answer.
 21. **CSP.** `public/_headers` gets `connect-src 'self' <leaderboard origin>`, that origin only.
+    *Implementation note (2026-11-12, #167):* the source file keeps `connect-src 'self'`; the
+    release build writes that origin into the built copy of `_headers`, only when decision 12
+    turns the feature on (`src/app/leaderboard-build.ts`).
 
 ### Headless simulation for the verifier
 

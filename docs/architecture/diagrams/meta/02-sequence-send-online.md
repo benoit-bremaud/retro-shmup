@@ -21,8 +21,8 @@ sequenceDiagram
   title sd — Send a run online, then erase it
   actor Player
   participant Scenes as SceneMachine
-  participant Online as OnlineRuns
   participant Rec as RunRecorder
+  participant Online as OnlineRuns
   participant Port as LeaderboardPort (fetch adapter)
   participant Store as StoragePort
   participant LB as Online leaderboard
@@ -33,9 +33,10 @@ sequenceDiagram
   alt 20 runs kept
     Online-->>Scenes: refused (erase an online score first)
   else a name and room left
-    Online->>Rec: records(), frames()
-    Rec-->>Online: a view of the records, their count
-    Online->>Port: submit(records, frames, seed, score, name, country)
+    Scenes->>Rec: seed(), records(), frames()
+    Rec-->>Scenes: the seed, a view of the records, their count
+    Scenes->>Online: send(Submission: seed, records, frames, score, name, country)
+    Online->>Port: submit(Submission)
     Note over Port: RecordColumns, then deflate-raw, base64url, size guard (codec 1)
     Port->>LB: POST /v1/runs {game shmup, mode arcade, version, seed, codec 1, frames, inputs, score, name, country}
     alt 202
@@ -49,6 +50,9 @@ sequenceDiagram
         Port-->>Online: status, or unknown (the item is dropped)
       end
       Online->>Store: write the last status
+    else 202 with an unreadable body
+      Port-->>Online: handle failed: accepted-unreadable
+      Online-->>Scenes: error line and TO ERASE SEE PRIVACY
     else too long, 409, 400, 429, 5xx, offline or timeout
       Port-->>Online: handle failed: stable code
       Online-->>Scenes: error line, offer stays, nothing kept
@@ -78,5 +82,5 @@ sequenceDiagram
   (a second identical run that did reach the server answers `409 duplicate-run`).
 - **The token never leaves the browser except in the `DELETE` header**; it is never logged,
   never put in a URL and never dropped to make room (GDD v0.35 §9.8).
-- **Polling stops** when the player leaves the screen or after 2 minutes; *Online scores* asks
+- **Polling stops** when the player leaves the screen (`leave()`) or after 2 minutes; *Online scores* asks
   again, one run at a time, for every kept run, so a `404` frees its slot.

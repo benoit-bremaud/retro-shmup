@@ -78,6 +78,8 @@ describe('FetchLeaderboard — submit', () => {
     expect(calls[0]?.url).toBe(`${ORIGIN}/v1/runs`);
     expect(calls[0]?.init.method).toBe('POST');
     expect(calls[0]?.init.credentials).toBe('omit');
+    expect(calls[0]?.init.cache).toBe('no-store');
+    expect(calls[0]?.init.redirect).toBe('error');
     expect(calls[0]?.init.signal).toBeInstanceOf(AbortSignal);
     expect(JSON.parse(bodyOf(calls[0]))).toEqual({
       game: 'shmup',
@@ -108,16 +110,25 @@ describe('FetchLeaderboard — submit', () => {
     expect(calls).toEqual([]);
   });
 
-  it('fails as too-long when the encoder throws', async () => {
+  it('fails as unsupported when the encoder throws', async () => {
     const { fetch } = fakeFetch(() => reply(202, {}));
     const board = new FetchLeaderboard(ORIGIN, '1.2.3', fetch, () => Promise.reject(new Error()));
-    expect(await settled(board.submit(RUN))).toEqual({ state: 'failed', error: 'too-long' });
+    expect(await settled(board.submit(RUN))).toEqual({ state: 'failed', error: 'unsupported' });
   });
 
   it.each([
-    ['a 202 without a token', 202, { id: ID }],
-    ['a 202 with a malformed id', 202, { id: 'x', deletionToken: TOKEN }],
-    ['a 202 with an uppercase token', 202, { id: ID, deletionToken: TOKEN.toUpperCase() }],
+    ['a 202 without a token', { id: ID }],
+    ['a 202 with a malformed id', { id: 'x', deletionToken: TOKEN }],
+    ['a 202 with an uppercase token', { id: ID, deletionToken: TOKEN.toUpperCase() }],
+  ])('reports %s as accepted but unreadable', async (_label, body) => {
+    const { board } = leaderboard(() => reply(202, body));
+    expect(await settled(board.submit(RUN))).toEqual({
+      state: 'failed',
+      error: 'accepted-unreadable',
+    });
+  });
+
+  it.each([
     ['a 200 instead of 202', 200, { id: ID, deletionToken: TOKEN }],
     ['a 500', 500, { error: 'internal' }],
     ['a 418', 418, {}],

@@ -59,6 +59,8 @@ classDiagram
   class FailureCode {
     <<enumeration>>
     offline
+    accepted-unreadable «202, body unreadable»
+    unsupported «no encoder»
     timeout
     too-long
     duplicate-run
@@ -69,20 +71,36 @@ classDiagram
     server-error
   }
   class OnlineRuns {
-    -kept : KeptRuns
-    -handle : RequestHandle «at most one open»
-    +offer(result) boolean
-    +send(name, country) void
-    +step() void «polls the handle, the 15 s status timer»
+    -runs : KeptRuns «re-read before every change»
+    -open : RequestHandle «at most one open»
+    -action : send or erase «waits for the GET in flight»
+    +offer(result: RunResult) boolean «resets the state»
+    +send(run: Submission) sending | full | busy
+    +step() void «settles, then player action, then queued GET, then the 15 s poll»
     +refreshAll() void «one GET at a time»
-    +erase(id) void
-    +line() MessageKey «status or error line»
+    +leave() void «stops polling»
+    +erase(id) boolean
+    +kept() KeptRun[]
+    +state() OnlineState
+    +eraseError() FailureCode «or none»
+  }
+  class RunResult {
+    outcome : game-over | run-cleared | quit
+    sendable : boolean
+    score : number
+  }
+  class OnlineState {
+    <<union>>
+    idle
+    sending
+    sent(id, status, tokenMaybeLost)
+    failed(error, tokenMaybeLost)
   }
   class KeptRuns {
     +MAX = 20
     +items : KeptRun[]
     +full() boolean
-    +add(run) void
+    +add(run) boolean «false when full»
     +setStatus(id, status) void
     +drop(id) void
   }
@@ -109,6 +127,9 @@ classDiagram
   class SceneMachine
 
   SceneMachine --> OnlineRuns : Send online, Online scores
+  SceneMachine ..> Submission : builds from RunRecorder
+  OnlineRuns ..> RunResult
+  OnlineRuns ..> OnlineState
   OnlineRuns --> KeptRuns
   KeptRuns *-- KeptRun
   OnlineRuns ..> LeaderboardPort : <<use>>
@@ -128,4 +149,11 @@ classDiagram
 - **Every answer is untrusted**: the adapter parses each body by allowlist; a 2xx whose body fails
   the parse settles as `server-error`. Ids must be ULIDs, tokens 64 lowercase hex characters.
 - **The token** goes only into the `DELETE` header; it is never logged and never placed in a URL.
-- **`unknown`** (a `404` on `status`) drops the kept run; a failed `erase` keeps it.
+- **`unknown`** (a `404` on `status`) drops the kept run; a failed `erase` keeps it and sets
+  `eraseError`, never the send screen's state.
+- **Token maybe lost** (decision 19): a failed `POST` that may have stored the run (`offline`,
+  `timeout`, `duplicate-run`, `accepted-unreadable`), or a `202` whose token the storage refused,
+  sets `tokenMaybeLost` and the screen shows *TO ERASE SEE PRIVACY*.
+- **Two tabs**: the kept runs are re-read from storage before every change, so a tab never
+  overwrites a token another tab kept.
+- **Lines**: the scene maps `OnlineState` and `eraseError` to message keys (PR 3b of #167).

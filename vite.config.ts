@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { defineConfig, loadEnv } from 'vite';
 import type { Plugin } from 'vite';
 import { leaderboardOrigin, withConnectSource } from './src/app/leaderboard-build.ts';
@@ -44,9 +44,10 @@ function leaderboardCsp(origin: string): Plugin {
     name: 'leaderboard-csp',
     apply: 'build',
     configResolved(config) {
-      outDir = config.build.outDir;
+      outDir = resolve(config.root, config.build.outDir);
     },
-    closeBundle() {
+    // After the files are written (public/ is copied at renderStart), and only on success.
+    writeBundle() {
       if (origin === '') return;
       const file = join(outDir, '_headers');
       writeFileSync(file, withConnectSource(readFileSync(file, 'utf8'), origin));

@@ -70,7 +70,7 @@ export class FetchLeaderboard implements LeaderboardPort {
       try {
         inputs = await this.encode(run.records, run.frames);
       } catch {
-        throw new Failure('too-long');
+        throw new Failure('unsupported'); // no CompressionStream, for instance
       }
       if (inputs.length > MAX_INPUTS_LENGTH) throw new Failure('too-long');
       const body = {
@@ -91,11 +91,14 @@ export class FetchLeaderboard implements LeaderboardPort {
         body: JSON.stringify(body),
       });
       if (response.status !== 202) throw await failureOf(response);
+      // From here the run is stored: an unreadable body loses its token (decision 19).
       const answer = await readJson(response);
       const id = field(answer, 'id');
       const token = field(answer, 'deletionToken');
-      if (typeof id !== 'string' || !ULID.test(id)) throw new Failure('server-error');
-      if (typeof token !== 'string' || !TOKEN.test(token)) throw new Failure('server-error');
+      if (typeof id !== 'string' || !ULID.test(id)) throw new Failure('accepted-unreadable');
+      if (typeof token !== 'string' || !TOKEN.test(token)) {
+        throw new Failure('accepted-unreadable');
+      }
       return { id, token };
     });
   }
@@ -142,6 +145,8 @@ export class FetchLeaderboard implements LeaderboardPort {
       return await this.fetch(`${this.origin}${path}`, {
         ...init,
         credentials: 'omit',
+        cache: 'no-store',
+        redirect: 'error',
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
     } catch (error: unknown) {

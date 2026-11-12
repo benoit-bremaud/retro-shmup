@@ -73,8 +73,8 @@ export function parseKeptRuns(text: string | null): KeptRuns {
     return new KeptRuns([]);
   }
   if (typeof document !== 'object' || document === null) return new KeptRuns([]);
-  const runs: unknown = Reflect.get(document, 'runs');
-  if (Reflect.get(document, 'v') !== VERSION || !Array.isArray(runs)) return new KeptRuns([]);
+  const runs: unknown = own(document, 'runs');
+  if (own(document, 'v') !== VERSION || !Array.isArray(runs)) return new KeptRuns([]);
   const items: KeptRun[] = [];
   for (let i = 0; i < runs.length && items.length < MAX_KEPT_RUNS; i += 1) {
     const run = parseKeptRun(runs[i]);
@@ -85,11 +85,11 @@ export function parseKeptRuns(text: string | null): KeptRuns {
 
 function parseKeptRun(value: unknown): KeptRun | undefined {
   if (typeof value !== 'object' || value === null) return undefined;
-  const id: unknown = Reflect.get(value, 'id');
-  const token: unknown = Reflect.get(value, 'token');
-  const score: unknown = Reflect.get(value, 'score');
-  const sentAt: unknown = Reflect.get(value, 'sentAt');
-  const status: unknown = Reflect.get(value, 'status');
+  const id: unknown = own(value, 'id');
+  const token: unknown = own(value, 'token');
+  const score: unknown = own(value, 'score');
+  const sentAt: unknown = own(value, 'sentAt');
+  const status: unknown = own(value, 'status');
   if (typeof id !== 'string' || !ULID.test(id)) return undefined;
   if (typeof token !== 'string' || !TOKEN.test(token)) return undefined;
   if (typeof score !== 'number' || !Number.isSafeInteger(score) || score < 0) return undefined;
@@ -97,6 +97,11 @@ function parseKeptRun(value: unknown): KeptRun | undefined {
   const known = STATUSES.find((candidate) => candidate === status);
   if (known === undefined) return undefined;
   return { id, token, score, sentAt, status: known };
+}
+
+/** An own property only: inherited ones are never read from untrusted data. */
+function own(value: object, name: string): unknown {
+  return Object.hasOwn(value, name) ? Reflect.get(value, name) : undefined;
 }
 
 export function serializeKeptRuns(kept: KeptRuns): string {
