@@ -8,6 +8,19 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-11-12
 
+### Toolchain minor/patch bump (Dependabot #159 `59d275b`)
+
+- Nine dev dependencies: Playwright 1.64.1, Vitest and coverage-v8 5.1.0, ESLint 10.14.0,
+  typescript-eslint 8.72.1, knip 6.44.1, Vite 8.3.5, Prettier 3.9.10, globals 17.14.0. No code
+  change needed.
+- `just gate` refuses a head behind `main`; `@dependabot rebase` got no answer in 10 minutes, so the
+  branch was rebased and force-pushed with a lease (owner approval). The patch stayed identical.
+- Adversarial review: gate open, 0 Must; lockfile integrities match the registry, no new package.
+  Gate green and attested on `6c85960` (`GATE_CI_CHANGE=1`, `package.json` diff read).
+- The PR title was shortened before the merge, but a single-commit squash takes the commit subject
+  (repo setting `COMMIT_OR_PR_TITLE`; `just merge` passes no `--subject`).
+- Follow-up: #164, the moderate `minimatch` advisory via ESLint (below the `high` audit floor).
+
 ### Country by flag (#145, design #161 `0547579`, code #162 `0d61586`, ADR-0030)
 
 - Backlog audit: closed #46, #45, #16 and the Dependabot `github_actions` PRs #153, #154, #155,
