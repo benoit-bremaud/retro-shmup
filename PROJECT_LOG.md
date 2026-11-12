@@ -8,6 +8,16 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-11-12
 
+### Deterministic trigonometry (#170 `9c22968`, part of #167)
+
+- `detSin`, `detCos` and `detHypot` replace `Math.sin`, `Math.cos` and `Math.hypot` in the
+  simulation: a quarter-wave table with linear interpolation, error 1.84e-8. ESLint allows only
+  the exactly specified `Math` members in `src/domain/game` and `src/domain/random`.
+- The boss-kill tests now use a scripted kit (Carriers, Shield, bombs) instead of searching for
+  a lucky seed. Tolerances are relaxed to 5 digits.
+- Adversarial review: 4 rounds, gate open. SonarQube flagged S7769 (prefer `Math.hypot`), a false
+  positive, avoided by splitting the expression. Follow-up #171: an ADR-0002 pointer.
+
 ### Online leaderboard design: GDD v0.35, ADR-0031, UML (#168 `0e2df01`, part of #167)
 
 - Runs are recorded as quantised 5-byte steps and sent with codec 1: the records split into
