@@ -8,6 +8,21 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-11-12
 
+### Online leaderboard design: GDD v0.35, ADR-0031, UML (#168 `0e2df01`, part of #167)
+
+- Runs are recorded as quantised 5-byte steps and sent with codec 1: the records split into
+  columns, coordinates delta-coded, deflate-raw, base64url, at most 60 000 characters.
+  Trigonometry becomes deterministic, and the domain reaches the network only through
+  `LeaderboardPort`, whose handles it polls.
+- Kept runs live under `retro-shmup.online.v1`, 20 at most. Sending works only on the final
+  origin, and only from the build of the release commit itself (`RELEASE_COMMIT` equals
+  `CF_PAGES_COMMIT_SHA`). A Node CLI replays runs for the homelab verifier.
+- Adversarial review: 3 rounds, 9 Must fixed, gate open. Codex raised 2 P2 findings, both fixed
+  in `91d4c7c`. The first `just gate` run failed one WebKit smoke test on a timeout (the hall of
+  fame reload test); the re-run was green and attested on `91d4c7c`.
+- Follow-ups: retro-leaderboard#14 covers the server-side build steps; N13, whether `pnpm fetch`
+  takes `--frozen-lockfile`, is checked in the implementation PR.
+
 ### Toolchain minor/patch bump (Dependabot #159 `59d275b`)
 
 - Nine dev dependencies: Playwright 1.64.1, Vitest and coverage-v8 5.1.0, ESLint 10.14.0,
