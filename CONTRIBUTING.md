@@ -245,7 +245,7 @@ GitHub as a *Signing Key* for the tag to show `Verified`.
    git tag -v vX.Y.Z            # check the signature locally
    git push origin vX.Y.Z
    ```
-   2b. **Online leaderboard** (once enabled, ADR-0031 decision 12): in the Pages project's
+   2b. **Online leaderboard** (once enabled, ADR-0031 decision 12; only after #175 is merged): in the Pages project's
    production environment, set `RELEASE_COMMIT` to the full SHA of the tagged commit
    (`git rev-parse vX.Y.Z^{commit}`), then retry the production deployment of that commit. Any
    later merge to `main` switches the feature off until the next release.
