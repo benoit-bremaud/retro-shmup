@@ -118,7 +118,7 @@ export class FetchLeaderboard implements LeaderboardPort {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (response.status === 204 || response.status === 404) return 'erased';
+      if (response.status === 204 || response.status === 404) return 'erased' as const;
       throw await failureOf(response);
     });
   }

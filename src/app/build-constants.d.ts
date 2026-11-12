@@ -4,3 +4,5 @@ declare const __APP_VERSION__: string;
 declare const __APP_COMMIT__: string;
 /** The feedback form's address (ADR-0027 decision 1), checked by `vite.config.ts`, or `''`. */
 declare const __FEEDBACK_FORM__: string;
+/** The leaderboard's origin (ADR-0031 decision 12), `''` unless this build is the release. */
+declare const __LEADERBOARD_URL__: string;
