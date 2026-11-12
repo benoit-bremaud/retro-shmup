@@ -1119,7 +1119,7 @@ the online leaderboard, which replays it before showing it (no score is trusted 
   *TROP D ESSAIS ATTENDS* (`429`), *SERVER ERROR* / *ERREUR SERVEUR* (any other answer, a
   timeout; *(v0.36)* an accepted send whose answer cannot be read, a browser that cannot pack the
   run).
-  After *ALREADY SENT*, *OFFLINE*, a timeout or an unreadable accepted answer a second line *TO
+  After *ALREADY SENT*, *OFFLINE*, a timeout or *(v0.36)* an unreadable accepted answer a second line *TO
   ERASE SEE PRIVACY* / *POUR EFFACER VOIR CONFIDENTIALITE* follows: the run may be stored without
   a token in this browser. *(v0.36)* An accepted run whose token the browser storage refuses (full
   or blocked, or 20 runs kept by another tab) keeps its status line, adds the same second line

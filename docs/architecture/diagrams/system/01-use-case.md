@@ -176,7 +176,8 @@ step depends on them.
 - **Preconditions**: a release build served from the final origin (ADR-0031 decision 12); the
   run ended by Game over or was cleared, scored above 0 and its recording did not overflow.
 - **Success guarantee**: the leaderboard stores the run as pending; the browser keeps its id and
-  deletion token when its storage accepts them; the player sees the verdict if it comes within 2 minutes, else later in UC10.
+  deletion token when its storage accepts them;
+  the player sees the verdict if it comes within 2 minutes, else later in UC10.
 - **Main success scenario**:
   1. The game shows the *Send online* offer: the score, name and flag to send, that the inputs
      are sent for checking, that the retention is on the privacy page.
