@@ -13,6 +13,13 @@ describe('detSin and detCos', () => {
     }
   });
 
+  it('stay within 1e-6 up to the largest arguments the game reaches, 1e5 rad', () => {
+    for (let angle = -1e5; angle <= 1e5; angle += 7.3) {
+      expect(Math.abs(detSin(angle) - Math.sin(angle))).toBeLessThan(ERROR);
+      expect(Math.abs(detCos(angle) - Math.cos(angle))).toBeLessThan(ERROR);
+    }
+  });
+
   it('give the quarter-turn values', () => {
     expect(detSin(0)).toBe(0);
     expect(detCos(0)).toBe(1);

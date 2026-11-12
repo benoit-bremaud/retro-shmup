@@ -94,8 +94,8 @@ server follow-up benoit-bremaud/retro-leaderboard#14.
 ### Determinism across engines
 
 10. **No implementation-approximated math in the simulation.** `src/domain/game` and
-    `src/domain/random` use `detSin`, `detCos` (a 4 096-entry quarter-wave table built once from
-    integer arithmetic and a fixed polynomial, linear interpolation, error below 1e-6) and
+    `src/domain/random` use `detSin`, `detCos` (a quarter-wave table of 4 096 steps, 4 097 entries,
+    built once from exact floating-point operations and a fixed polynomial, linear interpolation, error below 1e-6) and
     `detHypot(x, y)` = `Math.sqrt(x * x + y * y)`. ESLint allows there only the `Math` members that
     ECMAScript defines exactly — `abs`, `ceil`, `floor`, `round`, `trunc`, `sign`, `min`, `max`,
     `sqrt`, `fround`, `imul`, `clz32`, `PI` — and bans `**` on non-literal operands. Presentation

@@ -161,7 +161,7 @@ const BOSS_KINDS = [
   GameEventKind.LevelCleared,
 ] as const;
 
-/** Plays a run from `seed` and returns its event log and final state as JSON (ADR-0019). */
+/** Plays a run from `config` with `input` and returns its event log and final state as JSON (ADR-0019). */
 function replay(
   steps: number,
   config: RunConfig = { seed: 1 },

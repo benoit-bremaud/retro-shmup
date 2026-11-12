@@ -76,9 +76,14 @@ const EXACT_MATH_SYNTAX = [
     message: 'Approximated Math member: use det-math or an exact operation (ADR-0031).',
   },
   {
+    // An alias or a computed key would get round the member allowlist above.
+    selector: "Identifier[name='Math']:not(MemberExpression[computed=false] > Identifier.object)",
+    message: 'Use Math only as `Math.member`, so the allowlist sees every use (ADR-0031).',
+  },
+  {
     selector:
-      "BinaryExpression[operator='**']:not([left.type='Literal'][right.type='Literal']), AssignmentExpression[operator='**=']",
-    message: '`**` is approximated on variables: multiply instead (ADR-0031).',
+      "BinaryExpression[operator='**']:not([left.type='Literal'][right.type='Literal'][right.raw=/^[0-9]+$/]), AssignmentExpression[operator='**=']",
+    message: '`**` is approximated unless both are literals with an integer exponent (ADR-0031).',
   },
 ];
 

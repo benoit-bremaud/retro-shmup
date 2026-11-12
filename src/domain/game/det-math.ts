@@ -2,7 +2,8 @@
  * Trigonometry that every JavaScript engine computes to the same bits (ADR-0031 decision 10).
  * `Math.sin`, `Math.cos` and `Math.hypot` are implementation-approximated, so a run replayed in
  * another engine could drift; these use only the operations ECMAScript defines exactly
- * (`+ - * /`, `Math.floor`, `Math.sqrt`).
+ * (`+ - * / %`, `Math.floor`, `Math.sqrt`). The error bound holds for |x| < 1e9 rad; the game's
+ * arguments stay below 1e5.
  */
 
 /** Table steps per quarter turn. */
@@ -52,7 +53,10 @@ function sineOfSteps(steps: number): number {
   return low + fraction * (sample((j + 1) % TURN) - low);
 }
 
-/** Deterministic sine, error below 1e-6. Odd by construction: `detSin(-x) === -detSin(x)`. */
+/**
+ * Deterministic sine, error below 1e-6. Odd by construction: `detSin(-x) === -detSin(x)` (under
+ * `===`: `detSin(-0)` is `+0`, the same in every engine).
+ */
 export function detSin(radians: number): number {
   if (radians < 0) return -sineOfSteps(-radians * STEPS_PER_RADIAN);
   return sineOfSteps(radians * STEPS_PER_RADIAN);
