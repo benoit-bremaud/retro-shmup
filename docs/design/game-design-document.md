@@ -1124,7 +1124,7 @@ the online leaderboard, which replays it before showing it (no score is trusted 
   a token in this browser. *(v0.36)* An accepted run whose token the browser storage refuses (full
   or blocked, or 20 runs kept by another tab) keeps its status line, adds the same second line
   and offers no *ERASE* (no token). A send the player leaves
-  before its answer is never reported on screen: an accepted run still joins the kept runs, and
+  before its answer is never reported on screen: an accepted run still joins the kept runs when the storage keeps it, and
   the privacy page is the way back for the others. Never an automatic retry of a send.
 - **Kept runs**: each sent run keeps its id, its deletion token, its score, its date and its last
   status in the browser (§9.8), at most 20; with 20 kept, *SEND* shows *ERASE AN ONLINE SCORE

@@ -204,7 +204,7 @@ step depends on them.
   - 4b. *(v0.36)* The run is accepted but the browser storage refuses its token: the status line
     shows, then *To erase see privacy*; *Erase* is not offered for it.
   - 4c. *(v0.36)* Player leaves the screen before the answer: nothing is shown; an accepted run
-    joins the kept runs (UC10); the privacy page covers the others.
+    joins the kept runs (UC10) when the storage keeps it; the privacy page covers the others.
   - 6a. The verdict is *Rejected*, *Unverifiable* or *Expired*: the game shows it.
   - 6b. No verdict within 2 minutes: *Pending verification* stays; UC10 follows it later.
   - 7a. Player chooses *Erase*: UC10 steps 3–4 for this run.
