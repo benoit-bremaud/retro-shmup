@@ -8,6 +8,27 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-11-12
 
+### Online send pipeline, switched off (#174 `5f20e89`, part of #167)
+
+- Slice 3a: `OnlineRuns` sends a run, follows its verdict (every 15 s, 2 min at most) and erases
+  it, one request at a time; `KeptRuns` keeps at most 20 runs under `retro-shmup.online.v1`; the
+  `fetch` adapter omits credentials, refuses redirects and times out after 10 s; the browser
+  codec 1 encoder uses `CompressionStream`. No screen yet (slice 3b).
+- The feature stays off unless the build is a released X.Y.Z on its `RELEASE_COMMIT`; the build
+  adds the leaderboard origin to the CSP `connect-src` of the built `_headers` only then.
+- The smoke test replays a recorded run in Chromium, Firefox and WebKit and matches the Node score
+  (ADR-0031 decision 11).
+- Codex flagged a two-tab race on the kept runs: the owner chose to document it now and move to
+  one key per run before release (#175). New cases of a lost token go to the GDD first (#173).
+  Server error codes proposed on retro-leaderboard#14.
+
+### Run recording and replay CLI (#172 `11338e9`, part of #167)
+
+- Each Playing step is quantised into a 5-byte record; codec 1 (columns, delta-coded x and y,
+  raw DEFLATE, base64url) and a Node replay CLI (`pnpm build:replay`) replay a run to its score.
+  Golden vector cross-checked with Python's zlib, shared by the Node and browser encoders;
+  retro-leaderboard takes it with its codec brick.
+
 ### Deterministic trigonometry (#170 `9c22968`, part of #167)
 
 - `detSin`, `detCos` and `detHypot` replace `Math.sin`, `Math.cos` and `Math.hypot` in the

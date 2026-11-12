@@ -1,7 +1,7 @@
 # Sequence diagram — meta — send a run online and erase it (v0.35)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.35 §9.1
-> (*Send online*), §9.3 (*Online scores*), §9.8
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.35, v0.36 §9.1
+> (*Send online*, send errors #173), §9.3 (*Online scores*), §9.8
 > **Related ADRs**: ADR-0006 (untrusted stored data), ADR-0027 (new-tab gesture rule), ADR-0031
 > (recording, codec, sending, kept runs); retro-leaderboard ADR-0001, ADR-0003, ADR-0004
 > **Realizes**: UC9 and UC10 of [01-use-case](../system/01-use-case.md); the online states of
@@ -43,6 +43,9 @@ sequenceDiagram
       LB-->>Port: {id, deletionToken}
       Port-->>Online: handle done: id, token (parsed by allowlist)
       Online->>Store: write retro-shmup.online.v1 (id, token, score, sentAt, pending)
+      opt the storage refuses the write
+        Online-->>Scenes: status line and TO ERASE SEE PRIVACY, no ERASE row
+      end
       loop every 15 s, 2 minutes at most, while the screen is open
         Online->>Port: status(id)
         Port->>LB: GET /v1/runs/{id}
@@ -53,9 +56,9 @@ sequenceDiagram
     else 202 with an unreadable body
       Port-->>Online: handle failed: accepted-unreadable
       Online-->>Scenes: error line and TO ERASE SEE PRIVACY
-    else too long, 409, 400, 429, 5xx, offline or timeout
+    else too long, unsupported, 409, 400, 429, 5xx, offline or timeout
       Port-->>Online: handle failed: stable code
-      Online-->>Scenes: error line, offer stays, nothing kept
+      Online-->>Scenes: error line (+ TO ERASE SEE PRIVACY after 409, offline, timeout), offer stays, nothing kept
     end
   end
 

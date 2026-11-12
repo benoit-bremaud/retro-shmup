@@ -1,7 +1,7 @@
 # State machine diagram — meta — a run sent online, as the game sees it (v0.35)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.35 §9.1
-> (*Send online*), §9.3 (*Online scores*), §9.8
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.35, v0.36 §9.1
+> (*Send online*, send errors #173), §9.3 (*Online scores*), §9.8
 > **Related ADRs**: ADR-0031; retro-leaderboard ADR-0001 (verdicts), ADR-0004 (erasure)
 > **Realizes**: UC9 and UC10 of [01-use-case](../system/01-use-case.md)
 
@@ -30,9 +30,10 @@ stateDiagram-v2
   [*] --> NotSent
   NotSent --> Sending : SEND [fewer than 20 kept] / POST /v1/runs
   Sending --> Pending : 202 / keep id and token
-  Sending --> NotSent : too long, unsupported, 409, 400, 429, 5xx, offline or timeout / error line
+  Sending --> NotSent : too long, unsupported, 400, 429 or 5xx / error line
+  Sending --> NotSent : 409, offline or timeout / error line, TO ERASE SEE PRIVACY
   Sending --> NotSent : 202 unreadable / error line, TO ERASE SEE PRIVACY
-  Sending --> Pending : 202, token not stored / keep watching, TO ERASE SEE PRIVACY
+  Sending --> Pending : 202, token not stored / keep watching, TO ERASE SEE PRIVACY, no ERASE
   Pending --> Verified : status verified
   Pending --> Rejected : status rejected
   Pending --> Unverifiable : status unverifiable
