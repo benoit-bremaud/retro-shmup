@@ -79,4 +79,4 @@ sequenceDiagram
 - **The token never leaves the browser except in the `DELETE` header**; it is never logged,
   never put in a URL and never dropped to make room (GDD v0.35 §9.8).
 - **Polling stops** when the player leaves the screen or after 2 minutes; *Online scores* asks
-  again, one run at a time, only for runs still `pending`.
+  again, one run at a time, for every kept run, so a `404` frees its slot.
