@@ -110,7 +110,8 @@ server follow-up benoit-bremaud/retro-leaderboard#14.
     project's production environment, and only when the build is the release commit itself:
     `package.json` holds a strict `X.Y.Z` above `0.0.0` (the release PR sets it, the signed tag
     `vX.Y.Z` marks that commit) **and** the Pages variable `RELEASE_COMMIT`, set to the tagged
-    commit's full SHA by the release procedure, equals `CF_PAGES_COMMIT_SHA`. A later merge to
+    commit's full SHA by the release procedure, equals `CF_PAGES_COMMIT_SHA`; that SHA exists only after the release merge, so the procedure
+    then retries the production deployment of that commit. A later merge to
     `main` rebuilds production with a different SHA, so the feature switches off until the next
     release (its runs would replay with another simulation than the tag's and be rejected). Missing
     or different values fail closed. Empty
@@ -172,7 +173,8 @@ server follow-up benoit-bremaud/retro-leaderboard#14.
     `.github/allowed_signers` is never trusted for this), then runs `pnpm fetch --frozen-lockfile`
     in a step with network but no secret and no script, and
     `pnpm install --offline --frozen-lockfile --ignore-scripts && pnpm build:replay` inside the
-    replay's no-network sandbox, without any secret in its environment.
+    no-network sandbox like the replay's, with its own build ceilings and no secret in its
+    environment.
 
 ## MCDA (owner-validated, 2026-11-12)
 
