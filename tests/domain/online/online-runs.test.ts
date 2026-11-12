@@ -369,4 +369,15 @@ describe('OnlineRuns — robustness', () => {
     expect(port.asked).toEqual([]);
     expect(online.kept()).toEqual([]);
   });
+
+  it('keeps a run accepted after the player left, without following it', () => {
+    const { online, port, store } = setup();
+    online.send(RUN);
+    online.leave();
+    port.submits[0]?.done({ id: ID, token: TOKEN });
+    for (let i = 0; i <= STATUS_POLL_STEPS; i += 1) online.step();
+    expect(port.asked).toEqual([]);
+    expect(kept(store).map((run) => run.id)).toEqual([ID]);
+    expect(online.state()).toEqual({ phase: 'idle' });
+  });
 });

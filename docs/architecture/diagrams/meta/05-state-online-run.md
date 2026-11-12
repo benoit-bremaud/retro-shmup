@@ -30,7 +30,9 @@ stateDiagram-v2
   [*] --> NotSent
   NotSent --> Sending : SEND [fewer than 20 kept] / POST /v1/runs
   Sending --> Pending : 202 / keep id and token
-  Sending --> NotSent : too long, 409, 400, 429, 5xx, offline or timeout / error line
+  Sending --> NotSent : too long, unsupported, 409, 400, 429, 5xx, offline or timeout / error line
+  Sending --> NotSent : 202 unreadable / error line, TO ERASE SEE PRIVACY
+  Sending --> Pending : 202, token not stored / keep watching, TO ERASE SEE PRIVACY
   Pending --> Verified : status verified
   Pending --> Rejected : status rejected
   Pending --> Unverifiable : status unverifiable

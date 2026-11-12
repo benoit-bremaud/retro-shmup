@@ -47,9 +47,10 @@ class Failure extends Error {
 
 /**
  * `LeaderboardPort` over `fetch` (ADR-0031 decisions 15 and 20, meta/04-class-online-runs): JSON
- * only, `credentials: 'omit'`, a 10 s timeout, every answer parsed by allowlist; a 2xx that fails
- * the parse is a `server-error`. Each call returns a handle at once and settles it later; nothing
- * throws and no `POST` is retried.
+ * only, `credentials: 'omit'`, a 10 s timeout, every answer parsed by allowlist; a `202` whose body
+ * fails the parse is `accepted-unreadable` (the run is stored), any other 2xx a `server-error`.
+ * Each call returns a handle at once and settles it later; nothing throws and no `POST` is
+ * retried.
  */
 export class FetchLeaderboard implements LeaderboardPort {
   private readonly origin: string;

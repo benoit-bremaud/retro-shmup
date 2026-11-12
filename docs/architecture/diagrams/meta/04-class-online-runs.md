@@ -146,14 +146,16 @@ classDiagram
 
 - **No promise in the domain**: the adapter settles the handle when `fetch` ends; `OnlineRuns.step`
   reads `state` once per simulation step, like any other port read. One request is open at a time.
-- **Every answer is untrusted**: the adapter parses each body by allowlist; a 2xx whose body fails
-  the parse settles as `server-error`. Ids must be ULIDs, tokens 64 lowercase hex characters.
+- **Every answer is untrusted**: the adapter parses each body by allowlist; a `202` whose body fails
+  the parse settles as `accepted-unreadable` (the run is stored), any other 2xx as `server-error`. Ids must be ULIDs, tokens 64 lowercase hex characters.
 - **The token** goes only into the `DELETE` header; it is never logged and never placed in a URL.
 - **`unknown`** (a `404` on `status`) drops the kept run; a failed `erase` keeps it and sets
   `eraseError`, never the send screen's state.
 - **Token maybe lost** (decision 19): a failed `POST` that may have stored the run (`offline`,
   `timeout`, `duplicate-run`, `accepted-unreadable`), or a `202` whose token the storage refused,
   sets `tokenMaybeLost` and the screen shows *TO ERASE SEE PRIVACY*.
+- **Leaving while sending**: a `202` that arrives after `leave()` is kept for *Online scores*
+  but not followed, and the state stays idle.
 - **Two tabs**: the kept runs are re-read from storage before every change, so a tab never
   overwrites a token another tab kept.
 - **Lines**: the scene maps `OnlineState` and `eraseError` to message keys (PR 3b of #167).

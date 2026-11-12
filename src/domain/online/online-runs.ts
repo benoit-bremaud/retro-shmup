@@ -75,6 +75,8 @@ export class OnlineRuns {
   private action: PlayerAction | undefined;
   private current: OnlineState = IDLE;
   private eraseFailure: FailureCode | undefined;
+  /** The send screen is still open: a late `202` is followed there, else only kept. */
+  private following = false;
   /** The run accepted on this screen and the steps since: its status is asked every 15 s. */
   private watched: { readonly id: string; steps: number } | undefined;
   private readonly refreshQueue: string[] = [];
@@ -103,6 +105,7 @@ export class OnlineRuns {
     if (this.runs.full()) return 'full';
     if (!this.start({ kind: 'submit', run })) return 'busy';
     this.current = SENDING;
+    this.following = true;
     return 'sending';
   }
 
@@ -116,6 +119,7 @@ export class OnlineRuns {
 
   /** The player left the send or *Online scores* screen: no more status requests. */
   leave(): void {
+    this.following = false;
     this.watched = undefined;
     this.refreshQueue.length = 0;
     this.current = IDLE;
@@ -211,7 +215,10 @@ export class OnlineRuns {
   }
 
   private settleSubmit(handle: RequestHandle<Accepted>, score: number): void {
+    const following = this.following;
+    this.following = false;
     if (handle.state === 'failed') {
+      if (!following) return;
       const tokenMaybeLost = MAYBE_STORED.includes(handle.error);
       this.current = { phase: 'failed', error: handle.error, tokenMaybeLost };
       return;
@@ -221,6 +228,7 @@ export class OnlineRuns {
     const run: KeptRun = { id, token, score, sentAt: this.now(), status: 'pending' };
     // A token that could not be kept (storage full or blocked) cannot erase the run later.
     const kept = this.change((runs) => runs.add(run));
+    if (!following) return; // kept for Online scores; the player left the screen
     this.current = { phase: 'sent', id, status: 'pending', tokenMaybeLost: !kept };
     this.watched = { id, steps: 0 };
   }

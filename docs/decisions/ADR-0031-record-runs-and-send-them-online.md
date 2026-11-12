@@ -151,6 +151,11 @@ server follow-up benoit-bremaud/retro-leaderboard#14.
     a confirmation (default *No*): `DELETE`, then the item leaves the list on `204` or `404`.
 19. **Lost token.** A `POST` that timed out or failed offline may have stored the run; a re-send
     then answers `409`. In these cases the line adds *TO ERASE SEE PRIVACY*.
+    *Implementation note (2026-11-12, #167):* two more cases leave a stored run without a token
+    in this browser and add the same line: a `202` whose body cannot be read
+    (`accepted-unreadable`, shown as *SERVER ERROR*) and a `202` whose token the storage refused
+    (the status line stays). A browser that cannot encode the run fails as `unsupported`, shown as
+    *SERVER ERROR*. GDD §9.1 takes these lines in its own revision before the screens (PR 3b).
 20. **Port.** `LeaderboardPort` (`submit`, `status`, `erase`) returns a request handle the domain
     polls each step (`pending`, `done` with a parsed result, `failed` with a code); no promise in
     the domain. `submit` takes the records and their count; the `FetchLeaderboard` adapter
