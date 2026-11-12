@@ -68,7 +68,11 @@ export function detCos(radians: number): number {
   return sineOfSteps(steps + QUARTER);
 }
 
-/** Deterministic length of (x, y): `Math.sqrt` is correctly rounded everywhere. */
+/**
+ * Deterministic length of (x, y): `Math.sqrt` is correctly rounded everywhere, while
+ * `Math.hypot` is implementation-approximated, which is why this function exists.
+ */
 export function detHypot(x: number, y: number): number {
-  return Math.sqrt(x * x + y * y);
+  const squared = x * x + y * y;
+  return Math.sqrt(squared);
 }
