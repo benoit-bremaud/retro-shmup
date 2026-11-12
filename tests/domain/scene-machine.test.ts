@@ -24,6 +24,8 @@ import { NO_HOST } from '../../src/domain/scenes/scene-host';
 import type { SceneHost } from '../../src/domain/scenes/scene-host';
 import type { ArmedLink, LinkOutcome, LinkPort } from '../../src/domain/ports/link-port';
 import { PORTRAIT } from '../../src/domain/presentation/screen';
+import { MAX_RECORDED_STEPS } from '../../src/domain/replay/record';
+import { replay } from '../../src/domain/replay/replayer';
 import { RecordingRender } from '../support/recording-render';
 import type { RecordedRect } from '../support/recording-render';
 import { STUB_BOSS, testScript } from '../support/script';
@@ -886,6 +888,7 @@ describe('SceneMachine — the boss HUD (meta/05-state-scenes, F-2b)', () => {
     for (let i = 0; i < IN_FIRST_BLINK; i += 1) real.step(DT, createIntentFrame());
     expect(real.snapshot().boss.state).toBe(BossState.Warning);
     const ending = {
+      seed: 0,
       step: (): void => undefined,
       outcome: (): RunOutcome => RunOutcome.GameOver,
       snapshot: () => real.snapshot(),
@@ -1462,6 +1465,7 @@ describe('SceneMachine — the name entry (GDD v0.16 §9.1, SD-score, G2-3)', ()
   function losing(score: number): InRunStub {
     const real = new Run();
     return {
+      seed: 0,
       step: (): void => undefined,
       outcome: (): RunOutcome => RunOutcome.GameOver,
       snapshot: () => ({ ...real.snapshot(), score }),
@@ -1593,6 +1597,7 @@ describe('SceneMachine — the name entry (GDD v0.16 §9.1, SD-score, G2-3)', ()
       new Starfield(() => 0.5),
       withEffects(ALL_ON),
       () => ({
+        seed: 0,
         step: (): void => undefined,
         outcome: (): RunOutcome => RunOutcome.RunCleared,
         snapshot: () => ({ ...real.snapshot(), score: 3000 }),
@@ -1932,6 +1937,7 @@ describe('SceneMachine — the feedback form (GDD v0.26 §9.1, ADR-0027)', () =>
   function losing(score: number): ReturnType<ConstructorParameters<typeof SceneMachine>[3]> {
     const real = new Run();
     return {
+      seed: 0,
       step: (): void => undefined,
       outcome: (): RunOutcome => RunOutcome.GameOver,
       snapshot: () => ({ ...real.snapshot(), score }),
@@ -2320,6 +2326,43 @@ describe('SceneMachine — the feedback form (GDD v0.26 §9.1, ADR-0027)', () =>
       idle(fixture.machine, 1);
       expect(fixture.machine.scene).toBe(Scene.Title);
       expect(fixture.host.saved.map((options) => options.feedbackCount)).toEqual([1]);
+    });
+  });
+});
+
+describe('SceneMachine — run recording (ADR-0031 decision 1)', () => {
+  it('records every step the run read, so the replay reaches the same score', () => {
+    let run = new Run({ seed: 3 });
+    const machine = new SceneMachine(
+      new RecordingRender(),
+      new Starfield(() => 0.5),
+      withEffects(ALL_ON),
+      () => {
+        run = new Run({ seed: 3 });
+        return run;
+      },
+    );
+    machine.step(DT, createIntentFrame());
+    machine.step(DT, pressed(Button.Confirm));
+    const frame = createIntentFrame();
+    for (let i = 0; i < MAX_RECORDED_STEPS && machine.scene === Scene.Playing; i += 1) {
+      frame.held = Button.Fire;
+      frame.moveKind = 'direction';
+      frame.moveX = Math.sin(i / 41) * 0.83;
+      frame.moveY = 0.1234;
+      machine.step(DT, frame);
+    }
+    expect(machine.scene).toBe(Scene.GameOver);
+    const recording = machine.recording();
+    expect(recording.sendable()).toBe(true);
+    expect(recording.seed()).toBe(3);
+    machine.step(DT, frame);
+    expect(machine.recording().frames()).toBe(recording.frames());
+    expect(replay(recording.seed(), recording.records(), recording.frames())).toEqual({
+      ok: true,
+      score: run.snapshot().score,
+      outcome: 'game-over',
+      framesRead: recording.frames(),
     });
   });
 });

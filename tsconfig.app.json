@@ -22,5 +22,5 @@
     "noEmit": true
   },
   "include": ["src", "tests"],
-  "exclude": ["tests/smoke"]
+  "exclude": ["tests/smoke", "src/replay", "tests/replay"]
 }

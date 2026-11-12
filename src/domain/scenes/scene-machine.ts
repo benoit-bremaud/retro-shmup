@@ -6,10 +6,12 @@ import type { AudioPort } from '../ports/audio-port';
 import { RunOutcome } from '../game/run';
 import type { RunView, Simulation } from '../game/run';
 import { ResultsTuning, SceneTuning, STEP_SECONDS, toSteps } from '../game/tuning';
-import { Button } from '../ports/input-port';
+import { Button, createIntentFrame } from '../ports/input-port';
 import type { IntentFrame } from '../ports/input-port';
 import type { LinkOutcome } from '../ports/link-port';
 import type { RenderPort } from '../ports/render-port';
+import { quantizeIntent } from '../replay/record';
+import { RunRecorder } from '../replay/run-recorder';
 import { message } from '../i18n/messages';
 import type { MessageKey } from '../i18n/messages';
 import { drawHudFrame, drawPauseButton } from '../presentation/hud';
@@ -308,6 +310,10 @@ type InRun = Simulation & RunView;
 export class SceneMachine {
   private current: Scene = Scene.Boot;
   private run: InRun | undefined;
+  /** Every step of the run, as the simulation read it (ADR-0031 decision 1). */
+  private readonly recorder = new RunRecorder();
+  /** The quantised frame handed to `Run.step`, reused every step. */
+  private readonly quantised = createIntentFrame();
   private backgroundSteps = 0;
   /** `backgroundSteps` when the run started: the champion's name runs on the run's time. */
   private runStartSteps = 0;
@@ -735,10 +741,16 @@ export class SceneMachine {
     if (outcome === 'refused' || this.backed(frame)) this.toTitle(frame);
   }
 
+  /** The current or last run's recording, for sending it (ADR-0031). */
+  recording(): Pick<RunRecorder, 'seed' | 'frames' | 'sendable' | 'records'> {
+    return this.recorder;
+  }
+
   /** InRun entry creates the run and its presenter. */
   private startRun(): void {
     const run = this.createRun();
     this.run = run;
+    this.recorder.reset(run.seed);
     this.presenter = new RunPresenter(this.renderer, this.options, run.events(), this.audio);
     this.runStartSteps = this.backgroundSteps;
     this.champion.setName(this.table.entries[0]?.name ?? '');
@@ -889,7 +901,11 @@ export class SceneMachine {
     }
     this.backgroundSteps += 1;
     if (this.run === undefined) return;
-    this.run.step(dt, frame);
+    // The run reads only the quantised frame, so the record replays it exactly; recording stops
+    // with Playing, on the outcome step included (ADR-0031 decision 1).
+    quantizeIntent(frame, this.quantised);
+    this.recorder.record(this.quantised);
+    this.run.step(dt, this.quantised);
     if (this.run.outcome() === RunOutcome.GameOver) {
       this.enter(Scene.GameOver);
       this.lockLeft = LOCK_STEPS;

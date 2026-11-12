@@ -12,6 +12,7 @@
   "scripts": {
     "dev": "vite",
     "build": "pnpm typecheck && vite build",
+    "build:replay": "vite build --config vite.replay.config.ts",
     "preview": "vite preview",
     "typecheck": "tsc -b && tsc -p tsconfig.domain.json --noEmit",
     "lint": "eslint .",

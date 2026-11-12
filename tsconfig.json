@@ -8,6 +8,9 @@
       "path": "./tsconfig.node.json"
     },
     {
+      "path": "./tsconfig.replay.json"
+    },
+    {
       "path": "./tsconfig.smoke.json"
     }
   ]

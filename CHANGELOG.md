@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Every run is recorded as it is played: one 5-byte quantised input per step, the simulation
+  reading exactly what is recorded. A Node replay CLI (`pnpm build:replay`, `dist-replay/replay.mjs`)
+  decodes codec 1 and replays a run to its score for the leaderboard's verifier; nothing is sent
+  yet (ADR-0031 decisions 1–7 and 22, #167).
 - The chain multiplier explains itself in play: the first ×2 of a run floats *CHAIN ×2 - KILL
   FAST* for 1 s, and every break from ×2 or more floats *CHAIN BREAK* for 0.5 s, near the top of
   the field, on their own *CHAIN HINTS* / *AIDE CHAINE* effect switch (GDD v0.32 §7.3, #147).

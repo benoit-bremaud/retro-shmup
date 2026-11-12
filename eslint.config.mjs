@@ -91,6 +91,7 @@ export default defineConfig(
   {
     ignores: [
       'dist/',
+      'dist-replay/',
       'coverage/',
       'node_modules/',
       'test-results/',
@@ -129,7 +130,7 @@ export default defineConfig(
     },
   },
   {
-    files: ['src/domain/game/**/*.ts', 'src/domain/random/**/*.ts'],
+    files: ['src/domain/game/**/*.ts', 'src/domain/random/**/*.ts', 'src/domain/replay/**/*.ts'],
     rules: { 'no-restricted-syntax': ['error', ...EXACT_MATH_SYNTAX] },
   },
   {
@@ -219,6 +220,11 @@ export default defineConfig(
         },
       ],
     },
+  },
+  {
+    // The verifier's replay CLI runs under Node, never in the browser (ADR-0031 decision 22).
+    files: ['src/replay/**/*.ts', 'tests/replay/**/*.ts'],
+    languageOptions: { globals: globals.node },
   },
   {
     files: ['src/app/**/*.ts'],

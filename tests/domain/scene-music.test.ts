@@ -75,6 +75,7 @@ function losing(score: number): InRun {
   return () => {
     const real = new Run();
     return {
+      seed: 0,
       step: (): void => undefined,
       outcome: (): RunOutcome => RunOutcome.GameOver,
       snapshot: () => ({ ...real.snapshot(), score }),

@@ -35,8 +35,9 @@ classDiagram
     -buffer : Uint8Array «MAX_RECORDED_STEPS × 5, preallocated»
     -count : number
     -overflowed : boolean
-    +reset() void
     +record(quantised) void
+    +reset(seed) void
+    +seed() number
     +frames() number
     +sendable() boolean
     +records() Uint8Array «a view, no copy»
@@ -52,13 +53,13 @@ classDiagram
   class Codec1 {
     <<adapters: browser and src/replay>>
     +CODEC = 1
-    +encode(columns) Promise~string~ «deflate-raw, base64url»
-    +decode(inputs, frames, maxFrames) DecodeResult «capped inflate»
+    +encode(records, frames) string «deflate-raw, base64url; Promise in the browser»
+    +decode(inputs, frames) DecodeResult «capped inflate, frames ≤ MAX_RECORDED_STEPS»
   }
   class DecodeResult {
     <<union>>
-    ok + columns
-    error: base64 | inflate | length
+    ok + records
+    error: base64 | inflate | length | record
   }
   class DetMath {
     <<module>>
@@ -77,11 +78,11 @@ classDiagram
   class ReplayReport {
     <<union>>
     ok, score, outcome, framesRead
-    error: trailing-frames | unfinished | overflow
+    error: decode | trailing-frames | unfinished | overflow
   }
   class ReplayCli {
     <<Node entry, src/replay>>
-    +main(stdin, stdout) void
+    +main() void «stdin, 1 MiB at most; one JSON line on stdout»
   }
   class SceneMachine
 
@@ -90,9 +91,9 @@ classDiagram
   SceneMachine ..> Run : step(dt, quantised)
   IntentQuantizer ..> IntentFrame : reads, fills out
   RunRecorder ..> RecordColumns : records()
-  Codec1 ..> RecordColumns : columns in and out
+  Codec1 ..> RecordColumns : toColumns, fromColumns, validRecord
   Run ..> DetMath : sin, cos, hypot
-  Replayer ..> RecordColumns : fromColumns, readRecord
+  Replayer ..> RecordColumns : validRecord, readRecord
   Replayer ..> IntentQuantizer : identity on decoded records
   Replayer ..> Run : creates with seed, steps
   ReplayCli ..> Codec1 : decode with node zlib
@@ -120,7 +121,7 @@ classDiagram
 - **Decode caps**: inflate stops at `min(frames, maxFrames) × 5 + 1` bytes and requires exactly
   `frames × 5` and the end of the stream, so a crafted `inputs` can neither exhaust memory nor
   carry extra data (ADR-0031 decision 7).
-- **DetMath**: a quarter-wave table of 4 096 entries built once from integer arithmetic and a
-  fixed polynomial, linear interpolation; `detHypot` is `Math.sqrt(x * x + y * y)`, correctly
+- **DetMath**: a quarter-wave table of 4 096 steps (4 097 entries) built once from exact
+  floating-point operations and a fixed polynomial, linear interpolation; `detHypot` is `Math.sqrt(x * x + y * y)`, correctly
   rounded everywhere. ESLint allows only the exactly specified `Math` members in
-  `src/domain/game` and `src/domain/random` (ADR-0031 decision 10).
+  `src/domain/game`, `src/domain/random` and `src/domain/replay` (ADR-0031 decision 10).

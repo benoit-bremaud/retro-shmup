@@ -7,8 +7,9 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],
-      // The composition root is covered by the browser smoke test, not by unit tests (ADR-0003 §7).
-      exclude: ['src/**/*.d.ts', 'src/app/main.ts'],
+      // The composition root is covered by the browser smoke test, not by unit tests (ADR-0003 §7);
+      // the replay CLI's stdin entry runs in a child process, through its built bundle's tests.
+      exclude: ['src/**/*.d.ts', 'src/app/main.ts', 'src/replay/cli.ts'],
       reporter: ['text', 'lcov'],
       // Every function is tested. The floors are a ratchet at the measured values: what is left
       // are noUncheckedIndexedAccess guards on in-range indices, kept free of ignore comments by
