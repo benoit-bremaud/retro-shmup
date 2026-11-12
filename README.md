@@ -67,8 +67,10 @@ Roadmap (GDD section 11):
 - **1.x** — boss practice, level select, Easy / Hard profiles, CRT overlay, run statistics,
   limited continues, mid-bosses, ground targets, the ejected-pilots rescue mechanic (GDD section
   12), custom art and music.
-- **v2** — online leaderboard, replays (enabled by determinism), PWA / offline, endless mode,
-  Steam build.
+- **In progress (#167)** — opt-in online leaderboard: a finished run can be sent to
+  retro-leaderboard, which replays it to verify the score (ADR-0031). The send pipeline is in
+  place but switched off; the screens come next.
+- **v2** — replays to watch, PWA / offline, endless mode, Steam build.
 
 ## Documentation
 
@@ -183,7 +185,15 @@ Every numeric value is an initial setting to be tuned in playtests; the rules th
 ## Privacy
 
 The game keeps everything on your device (`localStorage`): your options, your country choice and
-the local top 10. It makes no network request and has no account.
+the local top 10. It has no account, and makes no network request unless you choose to send a
+run online.
+
+**Online scores (opt-in, once released).** Only the release build on the game's own address can
+send a run, and only after you choose *SEND*. The run sent holds its seed, your recorded inputs,
+its score, the name you entered and, if you chose one, your country code — no cookie, no
+identifier. The game keeps the run's id and a private erase token on your device (at most 20), so
+you can erase it later from *Options → Online scores*; the leaderboard's privacy page gives the
+other way.
 
 The optional **feedback** row opens an external form (Tally, hosted in the EU) in a new tab. It
 receives only what you type there and a few context values in its address: the question set, the
