@@ -67,10 +67,10 @@ sequenceDiagram
   opt later: Options, Online scores, erase confirmed
     Player->>Scenes: erase the highlighted run
     Scenes->>Online: erase(id)
-    alt another send or erasure under way (v0.37)
-      Online-->>Scenes: busy (WAIT), nothing erased
-    else the run left the list meanwhile
+    alt the run left the list meanwhile (gone wins over busy)
       Online-->>Scenes: gone, nothing sent
+    else another send or erasure under way (v0.37)
+      Online-->>Scenes: busy (WAIT), nothing erased
     else the run is kept and nothing else is under way
       Online->>Port: erase(id, token)
       Port->>LB: DELETE /v1/runs/{id} (Authorization: Bearer token)

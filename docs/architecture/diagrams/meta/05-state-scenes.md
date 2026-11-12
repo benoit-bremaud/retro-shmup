@@ -120,7 +120,7 @@ stateDiagram-v2
   OnlineStatus --> SendOnline : refused, too long, offline or timeout / show the error line
   OnlineStatus --> OnlineStatus : after(15 s) [pending, under 2 min] / ask the status
   OnlineStatus --> AfterOnline : OK
-  OnlineStatus --> OnlineStatus : erase, confirmed [another under way] / show WAIT
+  OnlineStatus --> OnlineStatus : erase, confirmed [run kept, another under way] / show WAIT
   OnlineStatus --> AfterOnline : erase, confirmed [run gone] / nothing sent
   OnlineStatus --> AfterOnline : erase, confirmed, then 204 or 404 / drop the run
   OnlineStatus --> OnlineStatus : erase, confirmed, then failed / show the error line
@@ -128,7 +128,7 @@ stateDiagram-v2
   AfterOnline --> Title : [no form address]
   Options --> OnlineScores : online scores [feature present] / ask each kept run's status
   OnlineScores --> OnlineScores : 404 on a status / drop the run
-  OnlineScores --> OnlineScores : erase, confirmed [another under way] / show WAIT, erase nothing
+  OnlineScores --> OnlineScores : erase, confirmed [run kept, another under way] / show WAIT, erase nothing
   OnlineScores --> OnlineScores : erase, confirmed [none under way] / erase the run, drop it on 204 or 404
   OnlineScores --> Options : back
   FeedbackOffer --> Title : give feedback / open the form, count + 1
