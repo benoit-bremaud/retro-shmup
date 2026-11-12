@@ -6,7 +6,7 @@
 > **Purpose**: prove coverage — every use case is realized, every class and component is used,
 > nothing is orphaned. Update this file in the same change as any diagram.
 
-Diagram abbreviations: **UC** [01-use-case](diagrams/system/01-use-case.md) · **CMP**
+Diagram abbreviations (v0.35 adds **SD-online** [02-sequence-send-online](diagrams/meta/02-sequence-send-online.md), **STM-online-run** [05-state-online-run](diagrams/meta/05-state-online-run.md), **CD-recording** [04-class-run-recording](diagrams/gameplay/04-class-run-recording.md); the verifier's replay, `ReplayCli` and `Replayer`, realizes retro-leaderboard UC4): **UC** [01-use-case](diagrams/system/01-use-case.md) · **CMP**
 [03-component](diagrams/system/03-component.md) · **CD**
 [04-class-domain](diagrams/gameplay/04-class-domain.md) · **SD-tick** [02-sequence-fixed-step-tick](diagrams/gameplay/02-sequence-fixed-step-tick.md) ·
 **SD-kill** [02-sequence-enemy-destroyed](diagrams/gameplay/02-sequence-enemy-destroyed.md) ·
@@ -32,6 +32,8 @@ Diagram abbreviations: **UC** [01-use-case](diagrams/system/01-use-case.md) · *
 | UC5 Configure the game | SceneMachine, SaveDocument, LocalStorageStore, WebAudioPlayer, DeviceInput | STM-scenes (`Options`, `Visual effects` and `Audio` from title and pause), CD-audio (volumes) | CD-menus (`Menu`, `MenuScreen`, `SceneHost`, `Options`, `SaveStore`) | each option (GDD §9.3); fullscreen in the gesture handler (ADR-0009) |
 | UC6 Remap the controls | SceneMachine, DeviceInput, SaveDocument | SD-remap, STM-scenes (G1b `Controls`, `Confirm restore`) | CD-menus (`ControlsScreen`, `ControlsGrid`, `BindingsEditor`, `ButtonNames`, `KeyLabels`, the `SceneHost` capture) | slots, swap, capture (UC6 text, GDD §4.2, ADR-0009) |
 | UC7 Read the credits | SceneMachine, MessageCatalogue | STM-scenes (`Credits`) | — | mirrors `CREDITS.md` (ADR-0005) |
+| UC9 Publish a run on the online board *(v0.35)* | SceneMachine, RunRecorder + RunCodec, OnlineRuns, FetchLeaderboard | SD-online; STM-scenes (`Send online`, `Name entry (online)`, `Online status`); STM-online-run | CD-recording (`IntentQuantizer`, `RunRecorder`, `RunCodec`, `DetMath`) | consent, errors and kept-run limit (UC9 text, ADR-0031) |
+| UC10 Follow and erase my online runs *(v0.35)* | SceneMachine, OnlineRuns, FetchLeaderboard, LocalStorageStore | SD-online (erase); STM-scenes (`Online scores`); STM-online-run | — | erasure by deletion token (UC10 text, retro-leaderboard ADR-0004) |
 
 UC2 to UC7 are realized at the screen level only: they are plain navigation, reads and writes,
 whose conditional steps live in the use-case text (proportionality rule of the study).

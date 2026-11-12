@@ -5,6 +5,7 @@ skinparam shadowing false
 
 actor "Player" as Player
 actor "Feedback form\n(external, Tally)" as FeedbackForm
+actor "Online leaderboard\n(retro-leaderboard)" as Leaderboard
 
 rectangle "retro-shmup (web game, 1.0)" {
   package "Play" {
@@ -18,6 +19,8 @@ rectangle "retro-shmup (web game, 1.0)" {
   package "Progress" {
     usecase "UC3 Record a high score" as UC3
     usecase "UC4 Consult the high scores" as UC4
+    usecase "UC9 Publish a run on the online board" as UC9
+    usecase "UC10 Follow and erase my online runs" as UC10
   }
   package "Settings" {
     usecase "UC5 Configure the game" as UC5
@@ -36,7 +39,10 @@ Player --> UC5
 Player --> UC6
 Player --> UC7
 Player --> UC8
+Player --> UC10
 UC8 --> FeedbackForm
+UC9 --> Leaderboard
+UC10 --> Leaderboard
 
 ' layout only: keep Progress next to Play
 UC2 -[hidden]- UC3
@@ -49,6 +55,13 @@ end note
 UC3 .> UC1 : <<extend>>
 note on link
   condition: {final score enters the top 10}
+  extension point: run end
+end note
+UC9 .> UC1 : <<extend>>
+note on link
+  condition: {release build with a leaderboard address,
+  run ended by game over or cleared, score > 0,
+  player chooses SEND}
   extension point: run end
 end note
 @enduml

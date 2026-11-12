@@ -1,6 +1,6 @@
 # ADR-0008: Public hosting — one subdomain per game on benoitbremaud.fr, catalogue on the portfolio
 
-**Status:** Accepted — 2026-10-08
+**Status:** Accepted — 2026-10-08. CSP `connect-src` amended by ADR-0031 (the online leaderboard origin).
 
 ## Context
 

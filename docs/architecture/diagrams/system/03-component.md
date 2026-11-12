@@ -7,7 +7,7 @@
 > ADR-0010 (presentation outside the outcome), ADR-0014 (logical screen, regions, step units),
 > ADR-0015 (portrait screen, devices together, injected browser objects), ADR-0018 (pause
 > button, taps, mouse takeover, page-level pointer listeners), ADR-0019 (run seed from the
-> composition root)
+> composition root), ADR-0031 (online runs, the replay CLI, v0.35)
 > **Realizes**: the structure behind every use case of [01-use-case](01-use-case.md)
 
 ## Context
@@ -44,6 +44,10 @@ Source: [`03-component.puml`](03-component.puml) — regenerate the SVG with
 | WebAudioPlayer | `src/adapters` | Implements `AudioPort`: SFX rendered once at unlock by the domain synthesiser, music files, volumes, pause mix; suspends while the tab is hidden (ADR-0009, v0.23) | Web Audio |
 | DeviceInput | `src/adapters` | Implements `InputPort` as a façade over `keyboard`, `pointer` (touch and mouse) and `gamepad` modules → one reusable `IntentFrame`; a browser-free arbitration function combines the devices; latches presses; synthesizes `Pause` on focus, tab or gamepad loss and on a layout change; inside its gesture handlers unlocks audio and requests fullscreen (ADR-0009, ADR-0015). Receives its browser objects from Bootstrap as one environment record of narrow interfaces — in the devices brick: the key and focus target, the page pointer target, the canvas rectangle (passed with the layout on each resize, ADR-0018) and the gamepad source | DOM events, Pointer Events, Gamepad API, Page Visibility, Fullscreen API |
 | LocalStorageStore | `src/adapters` | Implements `StoragePort` on `localStorage`, reports unavailability (ADR-0006) | Web Storage |
+| RunRecorder + RunCodec | `src/domain` | *(v0.35)* `quantizeIntent` rounds each step's intents before `Run.step`; the recorder writes one 5-byte record per step into a preallocated buffer up to the outcome; the codec (codec 1) deflates and base64url-encodes, and decodes with a capped inflate (ADR-0031) | — |
+| OnlineRuns | `src/domain` | *(v0.35)* The *Send online* offer and *Online scores*: builds the submission, keeps up to 20 run ids and deletion tokens under their own storage key (parsed by allowlist), follows statuses, erases (UC9, UC10) | RunRecorder + RunCodec, LeaderboardPort, StoragePort |
+| FetchLeaderboard | `src/adapters` | *(v0.35)* Implements `LeaderboardPort` with `fetch` on the build's leaderboard origin: JSON, no credentials, 10 s timeout, the answer parsed by allowlist; the CSP `connect-src` allows that origin only | Fetch API |
+| ReplayCli | `src/replay` | *(v0.35)* Built into `dist-replay/replay.mjs` for the homelab verifier: reads a run on stdin, decodes it, replays it with `Run` and writes the score or an error code on stdout (ADR-0031 decision 19) | RunRecorder + RunCodec, Run, Node stdin and stdout |
 | PerformanceClock | `src/adapters` | Implements `Clock` with `performance.now()` | High Resolution Time |
 
 ## Notes

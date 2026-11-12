@@ -1,12 +1,12 @@
 # State machine diagram — meta — screens and their transitions (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.10 §3.2, §3.4, v0.26 §9.1 (country choice, feedback offer),
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.10 §3.2, §3.4, v0.26 §9.1 (country choice, feedback offer), v0.35 §9.1 *Send online* and §9.3 *Online scores*,
 > §4.2, §4.3–§4.6, §5.2.1, §6, §7.2.1, §7.2.2, §7.3, §8, §9.1, §9.2, §9.3, §9.4, §9.7; v0.13 §9.1 menus, §9.3 options layout
 > **Related ADRs**: ADR-0006 (save document), ADR-0009 (gestures, automatic pause), ADR-0010
 > (one run, one bus), ADR-0015 (pause in the first playable), ADR-0018 (taps, locks, pause button),
 > ADR-0019 (run seed, player-kit build order), ADR-0020 (pointer fire, autofire option), ADR-0021 (hall of fame entry), ADR-0022 (level
-> brick, `Results`, the one-level slice)
-> **Realizes**: UC1–UC7 of [01-use-case](../system/01-use-case.md) at the screen level; the
+> brick, `Results`, the one-level slice), ADR-0031 (online runs, v0.35)
+> **Realizes**: UC1–UC10 of [01-use-case](../system/01-use-case.md) at the screen level; the
 > `SceneMachine` component of [03-component](../system/03-component.md)
 
 ## Context
@@ -32,6 +32,12 @@ stateDiagram-v2
   state "Country choice" as CountryChoice
   state "Country choice" as OptionsCountry
   state "Feedback offer" as FeedbackOffer
+  state "Send online" as SendOnline
+  state "Name entry (online)" as OnlineName
+  state "Online status" as OnlineStatus
+  state "Online scores" as OnlineScores
+  state OnlineOffer <<choice>>
+  state AfterOnline <<choice>>
 
   [*] --> Boot
   Boot --> Title : loaded
@@ -95,15 +101,29 @@ stateDiagram-v2
   InRun --> GameOver : run outcome is GAME_OVER
 
   Ending --> NameEntry : confirm or after(ending time) [score enters the top 10]
-  Ending --> FeedbackOffer : confirm or after(ending time) [otherwise, form address set]
-  Ending --> Title : confirm or after(ending time) [otherwise, no form address]
-  GameOver --> NameEntry : confirm or after(game over time) [score enters the top 10]
-  GameOver --> FeedbackOffer : confirm after the lock, or after(game over time) [otherwise, form address set]
-  GameOver --> Title : confirm after the lock, or after(game over time) [otherwise, no form address]
+  Ending --> OnlineOffer : confirm or after(ending time) [otherwise]
+  GameOver --> OnlineOffer : confirm after the lock, or after(game over time) [otherwise]
   NameEntry --> HighScores : OK / save the table with the saved country
-  NameEntry --> FeedbackOffer : SKIP or OK on an empty name [form address set]
-  NameEntry --> Title : SKIP or OK on an empty name [no form address]
-  HighScores --> FeedbackOffer : back, confirm or a tap [after a run, form address set]
+  NameEntry --> OnlineOffer : SKIP or OK on an empty name
+  HighScores --> OnlineOffer : back, confirm or a tap [after a run]
+  OnlineOffer --> SendOnline : [sendable run, release build, leaderboard address]
+  OnlineOffer --> AfterOnline : [otherwise]
+  SendOnline --> AfterOnline : not now, back or after(20 s)
+  SendOnline --> SendOnline : privacy / open the privacy page in a new tab
+  SendOnline --> SendOnline : send [20 runs kept] / show the erase-first line
+  SendOnline --> OnlineName : send [no name entered this run]
+  OnlineName --> SendOnline : back
+  OnlineName --> OnlineStatus : OK / submit the run
+  SendOnline --> OnlineStatus : send [a name, fewer than 20 kept] / submit the run
+  OnlineStatus --> SendOnline : refused, offline or timeout / show the error line
+  OnlineStatus --> OnlineStatus : after(15 s) [pending, under 2 min] / ask the status
+  OnlineStatus --> AfterOnline : OK
+  OnlineStatus --> AfterOnline : erase, confirmed / erase the run
+  AfterOnline --> FeedbackOffer : [form address set]
+  AfterOnline --> Title : [no form address]
+  Options --> OnlineScores : online scores [leaderboard address] / ask each pending status
+  OnlineScores --> OnlineScores : erase, confirmed / erase the run, drop it
+  OnlineScores --> Options : back
   FeedbackOffer --> Title : give feedback / open the form, count + 1
   FeedbackOffer --> Title : later, back or after(20 s)
 ```
@@ -143,6 +163,14 @@ stateDiagram-v2
   the pause; it and the title's *Feedback* row are absent when the build holds no form address.
   Opening the form from a gamepad passes by the gesture prompt, which then opens the form and
   returns where it came from (drawn below). `HighScores --> Title` stays for the title's own visit.
+- **v0.35 (GDD §9.1, §9.3, ADR-0031)**: every run end that is not a quit from the pause meets
+  the `OnlineOffer` choice after the hall of fame; without a release build, a leaderboard address
+  or a sendable run (ended by Game over or cleared, score above 0, recording not overflowed) it
+  passes straight to the former targets, so builds without the feature behave as in v0.34.
+  `Name entry (online)` is the name entry's screen whose result is not added to the local table.
+  `Online status` shows *Sending*, then *Pending verification* and the verdict; the poll stops
+  after 2 minutes. The client view of a kept run's status is in
+  [05-state-online-run](05-state-online-run.md).
 - **v0.34 (GDD §9.1, ADR-0030)**: both `Country choice` states have two sub-states, drawn below.
   The cursor and the opening guard restart at each page switch, which plays *MenuConfirm*.
 

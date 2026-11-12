@@ -68,13 +68,16 @@ Status: complete for 1.0 (2026-10-08); the bomb sequence added with the player-k
 | `gameplay` | [02 sequence — bomb](diagrams/gameplay/02-sequence-bomb.md) | What does a bomb do inside one step, and in what order? |
 | `gameplay` | [02 sequence — boss fight](diagrams/gameplay/02-sequence-boss-fight.md) | From the warning to the results: `startBoss`, `damageBoss`, the boss events, the tally |
 | `gameplay` | [04 class — domain](diagrams/gameplay/04-class-domain.md) | Entity composition, pools, event bus, difficulty profile |
+| `gameplay` | [04 class — run recording](diagrams/gameplay/04-class-run-recording.md) | Quantised intents, the 5-byte record, codec 1, deterministic trigonometry, the replay CLI (v0.35) |
 | `gameplay` | [05 state — player](diagrams/gameplay/05-state-player.md) | Player lifecycle |
 | `gameplay` | [05 state — boss](diagrams/gameplay/05-state-boss.md) | Boss phases and timer |
 | `meta` | [02 sequence — record a high score](diagrams/meta/02-sequence-record-high-score.md) | A finished run's score into the table and the save (G2) |
 | `meta` | [02 sequence — remap capture](diagrams/meta/02-sequence-remap-capture.md) | Rebinding one slot: capture, swap, save (G1b) |
 | `meta` | [02 sequence — country and feedback](diagrams/meta/02-sequence-country-feedback.md) | The country asked at the first Play, the feedback form opened in a new tab (v0.26) |
 | `meta` | [04 class — menus](diagrams/meta/04-class-menus.md) | One menu model, the options and their save (G1a) |
+| `meta` | [02 sequence — send online](diagrams/meta/02-sequence-send-online.md) | A run sent to the online leaderboard, its status followed, its erasure (v0.35) |
 | `meta` | [05 state — scenes](diagrams/meta/05-state-scenes.md) | The screens of GDD §9.1 and their transitions |
+| `meta` | [05 state — online run](diagrams/meta/05-state-online-run.md) | A kept online run's status as the game sees it (v0.35) |
 | `meta` | [06 class — version label](diagrams/meta/06-class-version-label.md) | The build-time version shown as page text (v0.20) |
 | `render` | [02 sequence — sprite loading](diagrams/render/02-sequence-sprite-loading.md) | The sheets load beside the first frames; the shapes stay the fallback (G4-1) |
 | `render` | [04 class — sprites](diagrams/render/04-class-sprites.md) | `SpriteId`, `drawSprite` returning whether it drew, the baked `SpriteBank` (G4-1) |

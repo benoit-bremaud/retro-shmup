@@ -17,6 +17,8 @@ package "src/domain — pure TypeScript, no DOM" as Domain {
   [SaveDocument] as Save
   [MessageCatalogue] as I18n
   [SeededRandom] as Rng
+  [RunRecorder + RunCodec] as Recorder
+  [OnlineRuns] as Online
 
   package "ports (owned by the domain)" as Ports {
     interface "RenderPort\n(ADR-0001, ADR-0010)" as RenderPort
@@ -25,6 +27,7 @@ package "src/domain — pure TypeScript, no DOM" as Domain {
     interface "StoragePort\n(ADR-0006)" as StoragePort
     interface "Clock\n(ADR-0002)" as ClockPort
     interface "Random\n(ADR-0002)" as RandomPort
+    interface "LeaderboardPort\n(ADR-0031)" as LeaderboardPort
   }
 }
 
@@ -34,6 +37,11 @@ package "src/adapters — browser APIs" as Adapters {
   [DeviceInput] as Input
   [LocalStorageStore] as LocalStore
   [PerformanceClock] as PerfClock
+  [FetchLeaderboard] as FetchLb
+}
+
+package "src/replay — headless, Node (ADR-0031)" as Replay {
+  [ReplayCli] as Cli
 }
 
 ' composition root
@@ -58,6 +66,13 @@ Scenes ..> InputPort : <<use>> bindings, key capture,\nlabels, fullscreen wanted
 Presenter ..> RenderPort : <<use>> field + HUD
 Presenter ..> AudioPort : <<use>> SFX
 Run ..> RandomPort : <<use>> gameplay only
+Scenes ..> Recorder : quantises and records\neach step's intents
+Scenes ..> Online : send offer,\nonline scores
+Online ..> Recorder : encodes the run
+Online ..> LeaderboardPort : <<use>> submit,\nstatus, erase
+Online ..> StoragePort : <<use>> kept runs
+Cli ..> Recorder : decodes
+Cli ..> Run : <<create>>, replays
 Rng -up- RandomPort
 
 ' adapters realize domain ports: dependencies point inward
@@ -66,6 +81,7 @@ WebAudio -up- AudioPort
 Input -up- InputPort
 LocalStore -up- StoragePort
 PerfClock -up- ClockPort
+FetchLb -up- LeaderboardPort
 
 note right of Boot
   Creates every adapter, injects it through
