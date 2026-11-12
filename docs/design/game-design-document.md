@@ -1117,11 +1117,13 @@ the online leaderboard, which replays it before showing it (no score is trusted 
   SENT* / *DEJA ENVOYE* (`409`), *VERSION NOT ACCEPTED* / *VERSION NON ACCEPTEE*, *NAME NOT
   ACCEPTED* / *NOM REFUSE*, *RUN TOO LONG TO SEND* / *PARTIE TROP LONGUE*, *TOO MANY TRIES WAIT* /
   *TROP D ESSAIS ATTENDS* (`429`), *SERVER ERROR* / *ERREUR SERVEUR* (any other answer, a
-  timeout, an accepted send whose answer cannot be read, a browser that cannot pack the run).
+  timeout; *(v0.36)* an accepted send whose answer cannot be read, a browser that cannot pack the
+  run).
   After *ALREADY SENT*, *OFFLINE*, a timeout or an unreadable accepted answer a second line *TO
   ERASE SEE PRIVACY* / *POUR EFFACER VOIR CONFIDENTIALITE* follows: the run may be stored without
   a token in this browser. *(v0.36)* An accepted run whose token the browser storage refuses (full
-  or blocked) keeps its status line and adds the same second line. A send the player leaves
+  or blocked, or 20 runs kept by another tab) keeps its status line, adds the same second line
+  and offers no *ERASE* (no token). A send the player leaves
   before its answer is never reported on screen: an accepted run still joins the kept runs, and
   the privacy page is the way back for the others. Never an automatic retry of a send.
 - **Kept runs**: each sent run keeps its id, its deletion token, its score, its date and its last

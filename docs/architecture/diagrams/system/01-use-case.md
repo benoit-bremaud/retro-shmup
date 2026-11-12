@@ -176,7 +176,7 @@ step depends on them.
 - **Preconditions**: a release build served from the final origin (ADR-0031 decision 12); the
   run ended by Game over or was cleared, scored above 0 and its recording did not overflow.
 - **Success guarantee**: the leaderboard stores the run as pending; the browser keeps its id and
-  deletion token; the player sees the verdict if it comes within 2 minutes, else later in UC10.
+  deletion token when its storage accepts them; the player sees the verdict if it comes within 2 minutes, else later in UC10.
 - **Main success scenario**:
   1. The game shows the *Send online* offer: the score, name and flag to send, that the inputs
      are sent for checking, that the retention is on the privacy page.
@@ -195,10 +195,15 @@ step depends on them.
     the offer.
   - 2b. 20 runs are kept: *Erase an online score first* shows; nothing is sent.
   - 2c. The encoded inputs exceed the request's size limit: *Run too long to send*; nothing is sent.
-  - 4a. Offline, `409`, a `400` (unknown version, name refused, too large), `429`, a server error
-    or a timeout: one line names it; the offer stays; nothing is kept; no automatic retry. After
-    `409`, offline or a timeout, *To erase see privacy* follows (the run may be stored without a
-    token here).
+  - 2d. *(v0.36)* The browser cannot pack the run: *Server error*; nothing is sent.
+  - 4a. Offline, `409`, a `400` (unknown version, name refused, too large), `429`, a server error,
+    a timeout or *(v0.36)* a `202` whose answer cannot be read: one line names it; the offer
+    stays; nothing is kept; no automatic retry. After `409`, offline, a timeout or an unreadable
+    `202`, *To erase see privacy* follows (the run may be stored without a token here).
+  - 4b. *(v0.36)* The run is accepted but the browser storage refuses its token: the status line
+    shows, then *To erase see privacy*; *Erase* is not offered for it.
+  - 4c. *(v0.36)* Player leaves the screen before the answer: nothing is shown; an accepted run
+    joins the kept runs (UC10); the privacy page covers the others.
   - 6a. The verdict is *Rejected*, *Unverifiable* or *Expired*: the game shows it.
   - 6b. No verdict within 2 minutes: *Pending verification* stays; UC10 follows it later.
   - 7a. Player chooses *Erase*: UC10 steps 3–4 for this run.

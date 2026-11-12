@@ -26,7 +26,8 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 - Each Playing step is quantised into a 5-byte record; codec 1 (columns, delta-coded x and y,
   raw DEFLATE, base64url) and a Node replay CLI (`pnpm build:replay`) replay a run to its score.
-  Golden vector shared with retro-leaderboard.
+  Golden vector cross-checked with Python's zlib, shared by the Node and browser encoders;
+  retro-leaderboard takes it with its codec brick.
 
 ### Deterministic trigonometry (#170 `9c22968`, part of #167)
 

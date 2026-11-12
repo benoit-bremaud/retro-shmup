@@ -1,7 +1,7 @@
 # Class diagram — meta — online runs, the leaderboard port and the kept runs (v0.35)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.35 §9.1
-> (*Send online*), §9.3 (*Online scores*), §9.8
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.35, v0.36 §9.1
+> (*Send online*, send errors #173), §9.3 (*Online scores*), §9.8
 > **Related ADRs**: ADR-0006 (untrusted stored data), ADR-0031 (decisions 12–21)
 > **Realizes**: UC9 and UC10 of [01-use-case](../system/01-use-case.md); the `OnlineRuns` and
 > `FetchLeaderboard` components of [03-component](../system/03-component.md)
