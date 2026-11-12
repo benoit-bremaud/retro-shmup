@@ -155,7 +155,8 @@ classDiagram
   `timeout`, `duplicate-run`, `accepted-unreadable`), or a `202` whose token the storage refused,
   sets `tokenMaybeLost` and the screen shows *TO ERASE SEE PRIVACY*.
 - **Leaving while sending**: a `202` that arrives after `leave()` is kept for *Online scores*
-  but not followed, and the state stays idle.
+  but not followed, and the state stays idle. A send left before its answer is never reported,
+  even when its token may be lost: the privacy page is the way back.
 - **Two tabs**: the kept runs are re-read from storage before every change, so a tab never
   overwrites a token another tab kept.
 - **Lines**: the scene maps `OnlineState` and `eraseError` to message keys (PR 3b of #167).
