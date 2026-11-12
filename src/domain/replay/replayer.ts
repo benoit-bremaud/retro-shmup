@@ -1,4 +1,5 @@
 import { Run, RunOutcome } from '../game/run';
+import type { RunConfig } from '../game/run';
 import { createIntentFrame } from '../ports/input-port';
 import { MAX_RECORDED_STEPS, readRecord, validRecord } from './record';
 
@@ -21,11 +22,17 @@ export type ReplayReport =
  * Plays `frames` records from `seed` through the real `Run`, as the game did: one record per step,
  * the run ending on the step whose outcome becomes `GAME_OVER` or `RUN_CLEARED` (decision 1).
  * Records left after that step are `trailing-frames`; a run still playing after the last record is
- * `unfinished`; an invalid record is `decode`.
+ * `unfinished`; an invalid record is `decode`. `config` is for tests only: the game and the CLI
+ * replay the real level list.
  */
-export function replay(seed: number, records: Uint8Array, frames: number): ReplayReport {
+export function replay(
+  seed: number,
+  records: Uint8Array,
+  frames: number,
+  config: Omit<RunConfig, 'seed'> = {},
+): ReplayReport {
   if (frames > MAX_RECORDED_STEPS) return { ok: false, error: 'overflow' };
-  const run = new Run({ seed });
+  const run = new Run({ ...config, seed });
   const frame = createIntentFrame();
   for (let i = 0; i < frames; i += 1) {
     if (!validRecord(records, i)) return { ok: false, error: 'decode' };

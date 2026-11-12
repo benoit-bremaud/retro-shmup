@@ -8,6 +8,7 @@ import {
 } from '../../../src/domain/replay/record';
 import { replay } from '../../../src/domain/replay/replayer';
 import { RunRecorder } from '../../../src/domain/replay/run-recorder';
+import { STUB_BOSS, testScript } from '../../support/script';
 
 const DT = 1 / 60;
 
@@ -89,6 +90,22 @@ describe('replay', () => {
     expect(replay(7, new Uint8Array(0), MAX_RECORDED_STEPS + 1)).toEqual({
       ok: false,
       error: 'overflow',
+    });
+  });
+
+  it('reports a cleared run', () => {
+    const levels = [testScript([], { warningAt: 5, boss: { ...STUB_BOSS, timeLimit: 1 } })];
+    const run = new Run({ seed: 1, levels });
+    const recorder = new RunRecorder();
+    const idle = createIntentFrame();
+    while (run.outcome() === RunOutcome.Playing && recorder.frames() < 12000) {
+      recorder.record(idle);
+      run.step(DT, idle);
+    }
+    expect(run.outcome()).toBe(RunOutcome.RunCleared);
+    expect(replay(1, recorder.records(), recorder.frames(), { levels })).toMatchObject({
+      ok: true,
+      outcome: 'run-cleared',
     });
   });
 });

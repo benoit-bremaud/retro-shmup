@@ -49,11 +49,11 @@ function inflateExactly(compressed: Buffer, cap: number): Uint8Array | undefined
   } catch {
     return undefined;
   }
-  if (typeof result !== 'object' || result === null) return undefined;
-  const buffer: unknown = Reflect.get(result, 'buffer');
-  const engine: unknown = Reflect.get(result, 'engine');
-  if (!(buffer instanceof Uint8Array) || typeof engine !== 'object' || engine === null) {
-    return undefined;
-  }
-  return Reflect.get(engine, 'bytesWritten') === compressed.length ? buffer : undefined;
+  // Node returns `{ buffer, engine }` with `info`; anything else is refused as broken.
+  const buffer: unknown = Reflect.get(Object(result), 'buffer');
+  const consumed: unknown = Reflect.get(
+    Object(Reflect.get(Object(result), 'engine')),
+    'bytesWritten',
+  );
+  return buffer instanceof Uint8Array && consumed === compressed.length ? buffer : undefined;
 }
