@@ -6,6 +6,28 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ---
 
+## 2026-11-12
+
+### Country by flag (#145, design #161 `0547579`, code #162 `0d61586`, ADR-0030)
+
+- Backlog audit: closed #46, #45, #16 and the Dependabot `github_actions` PRs #153, #154, #155,
+  #117; created the Projects v2 kanban #80. Dependabot #159 (toolchain) left to triage.
+- Owner MCDA: a 2 × 4 grid of 60 × 32 px cells (B 445/500); *NONE* inside the grid (B 455/500).
+  The choice opens on six suggested flags (time-zone country, language region, saved country, then
+  FR BE CH CA US GB), *NONE* and *OTHER*; *OTHER* opens the letter grid empty, `back` there on an
+  empty code returns to the flags. `preselection.ts` became `country-suggestions.ts`
+  (`countryHints`, `suggestedCountries`); `SceneHost.countryHints()` replaces
+  `preselectedCountry()`. GDD v0.34; ADR-0021 and ADR-0028 annotated.
+- Adversarial review round 1: 3 Must (design and code in one PR, ADR status lines, GDD decision
+  rows), fixed by splitting into a design PR and a stacked code PR; round 2 gate open. Codex bot
+  ran on its own (connector still on) and raised one valid docs point, fixed `e4bb228`.
+- `just check` once hit 3 level-simulation timeouts under a load of 62 from another project's suite;
+  green on rerun. Gates green and attested: #161 on `e4bb228`, #162 on `bfc1a88` (1 715 tests).
+- QA in Chrome (owner request): real hints FR then US, *OTHER* → letters, back → flags, FR starts
+  the run, no console error.
+- Follow-ups: `scripts/build-time-zone-table.py` docstring still says "preselection" (gate file);
+  README ADR list incomplete; turn off the Codex GitHub connector (owner).
+
 ## 2026-11-10
 
 ### Local CI, no GitHub workflow (#156, #158 `7a922f9`, ADR-0029)
