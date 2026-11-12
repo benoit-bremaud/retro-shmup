@@ -53,12 +53,12 @@ type PlayerAction =
   | { readonly kind: 'erase'; readonly id: string; readonly token: string };
 
 /** A failed `POST` that may still have stored the run: its token is lost (decision 19). */
-const MAYBE_STORED: readonly FailureCode[] = [
+const MAYBE_STORED: ReadonlySet<FailureCode> = new Set<FailureCode>([
   'offline',
   'timeout',
   'duplicate-run',
   'accepted-unreadable',
-];
+]);
 
 const IDLE: OnlineState = { phase: 'idle' };
 const SENDING: OnlineState = { phase: 'sending' };
@@ -219,7 +219,7 @@ export class OnlineRuns {
     this.following = false;
     if (handle.state === 'failed') {
       if (!following) return;
-      const tokenMaybeLost = MAYBE_STORED.includes(handle.error);
+      const tokenMaybeLost = MAYBE_STORED.has(handle.error);
       this.current = { phase: 'failed', error: handle.error, tokenMaybeLost };
       return;
     }
