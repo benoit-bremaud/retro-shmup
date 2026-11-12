@@ -47,7 +47,8 @@ describe('RunRecorder', () => {
     for (let i = 0; i <= MAX_RECORDED_STEPS; i += 1) recorder.record(empty);
     expect(recorder.frames()).toBe(MAX_RECORDED_STEPS);
     expect(recorder.sendable()).toBe(false);
-    recorder.reset();
+    recorder.reset(9);
+    expect(recorder.seed()).toBe(9);
     expect(recorder.frames()).toBe(0);
     recorder.record(empty);
     expect(recorder.sendable()).toBe(true);

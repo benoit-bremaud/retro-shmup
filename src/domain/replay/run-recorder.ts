@@ -10,9 +10,11 @@ export class RunRecorder {
   private readonly buffer = new Uint8Array(MAX_RECORDED_STEPS * RECORD_BYTES);
   private count = 0;
   private overflowed = false;
+  private runSeed = 0;
 
-  /** Starts a new run's recording. */
-  reset(): void {
+  /** Starts the recording of a new run built from `seed`. */
+  reset(seed: number): void {
+    this.runSeed = seed;
     this.count = 0;
     this.overflowed = false;
   }
@@ -25,6 +27,11 @@ export class RunRecorder {
     }
     writeRecord(this.buffer, this.count, quantised);
     this.count += 1;
+  }
+
+  /** The seed of the recorded run, sent with its records. */
+  seed(): number {
+    return this.runSeed;
   }
 
   /** Records written in this run. */

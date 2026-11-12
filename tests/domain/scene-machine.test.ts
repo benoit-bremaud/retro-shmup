@@ -888,6 +888,7 @@ describe('SceneMachine — the boss HUD (meta/05-state-scenes, F-2b)', () => {
     for (let i = 0; i < IN_FIRST_BLINK; i += 1) real.step(DT, createIntentFrame());
     expect(real.snapshot().boss.state).toBe(BossState.Warning);
     const ending = {
+      seed: 0,
       step: (): void => undefined,
       outcome: (): RunOutcome => RunOutcome.GameOver,
       snapshot: () => real.snapshot(),
@@ -1464,6 +1465,7 @@ describe('SceneMachine — the name entry (GDD v0.16 §9.1, SD-score, G2-3)', ()
   function losing(score: number): InRunStub {
     const real = new Run();
     return {
+      seed: 0,
       step: (): void => undefined,
       outcome: (): RunOutcome => RunOutcome.GameOver,
       snapshot: () => ({ ...real.snapshot(), score }),
@@ -1595,6 +1597,7 @@ describe('SceneMachine — the name entry (GDD v0.16 §9.1, SD-score, G2-3)', ()
       new Starfield(() => 0.5),
       withEffects(ALL_ON),
       () => ({
+        seed: 0,
         step: (): void => undefined,
         outcome: (): RunOutcome => RunOutcome.RunCleared,
         snapshot: () => ({ ...real.snapshot(), score: 3000 }),
@@ -1934,6 +1937,7 @@ describe('SceneMachine — the feedback form (GDD v0.26 §9.1, ADR-0027)', () =>
   function losing(score: number): ReturnType<ConstructorParameters<typeof SceneMachine>[3]> {
     const real = new Run();
     return {
+      seed: 0,
       step: (): void => undefined,
       outcome: (): RunOutcome => RunOutcome.GameOver,
       snapshot: () => ({ ...real.snapshot(), score }),
@@ -2351,9 +2355,10 @@ describe('SceneMachine — run recording (ADR-0031 decision 1)', () => {
     expect(machine.scene).toBe(Scene.GameOver);
     const recording = machine.recording();
     expect(recording.sendable()).toBe(true);
+    expect(recording.seed()).toBe(3);
     machine.step(DT, frame);
     expect(machine.recording().frames()).toBe(recording.frames());
-    expect(replay(3, recording.records(), recording.frames())).toEqual({
+    expect(replay(recording.seed(), recording.records(), recording.frames())).toEqual({
       ok: true,
       score: run.snapshot().score,
       outcome: 'game-over',

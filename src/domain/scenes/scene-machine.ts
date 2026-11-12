@@ -742,7 +742,7 @@ export class SceneMachine {
   }
 
   /** The current or last run's recording, for sending it (ADR-0031). */
-  recording(): Pick<RunRecorder, 'frames' | 'sendable' | 'records'> {
+  recording(): Pick<RunRecorder, 'seed' | 'frames' | 'sendable' | 'records'> {
     return this.recorder;
   }
 
@@ -750,7 +750,7 @@ export class SceneMachine {
   private startRun(): void {
     const run = this.createRun();
     this.run = run;
-    this.recorder.reset();
+    this.recorder.reset(run.seed);
     this.presenter = new RunPresenter(this.renderer, this.options, run.events(), this.audio);
     this.runStartSteps = this.backgroundSteps;
     this.champion.setName(this.table.entries[0]?.name ?? '');

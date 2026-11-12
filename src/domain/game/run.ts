@@ -115,6 +115,7 @@ export interface Simulation {
 
 /** What the presenter and the scene machine read of a run, never write (class diagram, view A). */
 export interface RunView {
+  readonly seed: number;
   outcome(): RunOutcome;
   snapshot(): WorldSnapshot;
   /** The current level's tally, read-only, without allocating: what the Results scene draws. */
@@ -144,14 +145,17 @@ export class Run implements Simulation, RunView {
    * level director call (`HitRules`, `EnemySpawner`) and tests drive directly (ADR-0023 decision 7).
    */
   readonly rules: RunRules;
+  /** The seed the run was built from: a recording replays only with it (ADR-0031 decision 1). */
+  readonly seed: number;
 
   constructor(config: RunConfig = {}) {
+    this.seed = config.seed ?? 0;
     this.levels = config.levels ?? [LEVEL_1];
     const first = this.levels[0];
     if (first === undefined) throw new RangeError('Run: needs at least one level');
     this.director = new LevelDirector(first);
     // Drops only (ADR-0010 decision 1); level 1 is seeded with mixSeed(seed, 0) (ADR-0019).
-    const random = (config.createRandom ?? seededRandom)(mixSeed(config.seed ?? 0, 0));
+    const random = (config.createRandom ?? seededRandom)(mixSeed(this.seed, 0));
     this.rules = new RunRules(this.world, this.bus, random, first);
   }
 

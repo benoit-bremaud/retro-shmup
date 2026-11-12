@@ -35,8 +35,9 @@ classDiagram
     -buffer : Uint8Array «MAX_RECORDED_STEPS × 5, preallocated»
     -count : number
     -overflowed : boolean
-    +reset() void
     +record(quantised) void
+    +reset(seed) void
+    +seed() number
     +frames() number
     +sendable() boolean
     +records() Uint8Array «a view, no copy»
