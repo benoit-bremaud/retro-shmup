@@ -32,7 +32,10 @@ export class RunRecorder {
     return this.count;
   }
 
-  /** Whether this run may be sent: at least one record and no overflow. */
+  /**
+   * Whether the recording itself can be sent: at least one record and no overflow. The caller
+   * still checks the outcome: a run quit from the pause is never sent (ADR-0031 decisions 1, 13).
+   */
   sendable(): boolean {
     return this.count > 0 && !this.overflowed;
   }

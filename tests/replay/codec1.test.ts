@@ -34,6 +34,7 @@ describe('codec 1', () => {
     expect(decodeCodec1(GOLDEN, 4)).toBeUndefined();
     expect(decodeCodec1(GOLDEN, 0)).toBeUndefined();
     expect(decodeCodec1(GOLDEN, 1.5)).toBeUndefined();
+    expect(decodeCodec1(GOLDEN, 72_001)).toBeUndefined();
   });
 
   it('refuses a truncated stream and bytes after its end', () => {

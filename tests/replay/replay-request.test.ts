@@ -1,4 +1,7 @@
 import { execFileSync } from 'node:child_process';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { build } from 'vite';
 import { Run, RunOutcome } from '../../src/domain/game/run';
@@ -99,12 +102,15 @@ function recordedPrefix(frames: number): string {
 }
 
 describe('the replay CLI bundle', () => {
+  // Built into a private folder, so concurrent runs never share `dist-replay/`.
+  const outDir = mkdtempSync(join(tmpdir(), 'replay-cli-'));
+
   beforeAll(async () => {
-    await build({ configFile: 'vite.replay.config.ts', logLevel: 'silent' });
+    await build({ configFile: 'vite.replay.config.ts', logLevel: 'silent', build: { outDir } });
   }, 60_000);
 
   function cli(stdin: string): string {
-    return execFileSync(process.execPath, ['dist-replay/replay.mjs'], {
+    return execFileSync(process.execPath, [join(outDir, 'replay.mjs')], {
       input: stdin,
       encoding: 'utf8',
     });

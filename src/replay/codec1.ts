@@ -1,5 +1,5 @@
 import { deflateRawSync, inflateRawSync } from 'node:zlib';
-import { RECORD_BYTES, validRecord } from '../domain/replay/record';
+import { MAX_RECORDED_STEPS, RECORD_BYTES, validRecord } from '../domain/replay/record';
 import { fromColumns, toColumns } from '../domain/replay/record-columns';
 
 /**
@@ -20,10 +20,11 @@ export function encodeCodec1(records: Uint8Array, frames: number): string {
 /**
  * Decodes codec 1 text into exactly `frames` valid records, or `undefined`: text that is not
  * canonical base64url, a DEFLATE stream that is broken, unfinished, followed by excess bytes or
- * inflating past `frames × 5` bytes (the cap stops a bomb), or an invalid record. Never throws.
+ * inflating past `frames × 5` bytes, a frame count above `MAX_RECORDED_STEPS` (the cap stops a bomb), or an invalid record. Never throws.
  */
 export function decodeCodec1(text: string, frames: number): Uint8Array | undefined {
-  if (!Number.isSafeInteger(frames) || frames < 1 || !BASE64URL.test(text)) return undefined;
+  if (!Number.isSafeInteger(frames) || frames < 1 || frames > MAX_RECORDED_STEPS) return undefined;
+  if (!BASE64URL.test(text)) return undefined;
   const compressed = Buffer.from(text, 'base64url');
   if (compressed.toString('base64url') !== text) return undefined;
   const size = frames * RECORD_BYTES;

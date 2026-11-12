@@ -19,6 +19,9 @@ function readStdin(): Promise<string | undefined> {
       }
       chunks.push(chunk);
     });
+    process.stdin.on('error', () => {
+      resolve(undefined);
+    });
     process.stdin.on('end', () => {
       resolve(Buffer.concat(chunks).toString('utf8'));
     });

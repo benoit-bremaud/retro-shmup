@@ -59,6 +59,7 @@ docs/architecture/  UML diagrams (Mermaid), later: architecture notes
 src/domain/         pure gameplay and presentation rules, ports (no browser API)
 src/adapters/       browser implementations of the ports (Canvas 2D, clock, viewport, input)
 src/app/            composition root and frame loop (only main.ts touches window/document)
+src/replay/         Node replay CLI for the leaderboard verifier (ADR-0031 decision 22, Node only)
 tests/              Vitest, mirroring src/
 public/assets/      sprites, fonts and audio — added with the assets brick
 ```

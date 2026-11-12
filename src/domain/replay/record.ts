@@ -26,10 +26,13 @@ const RESERVED_BITS = 0xf0;
 
 const KINDS: readonly MoveKind[] = ['none', 'direction', 'target'];
 
-/** Rounds `value × scale` to an integer in [min, max]; a non-finite value counts as 0. */
+/**
+ * Rounds `value × scale` to an integer in [min, max]; a non-finite value counts as 0, and `+ 0`
+ * turns -0 into 0 so the simulation reads the very value the record gives back.
+ */
 function toStored(value: number, scale: number, min: number, max: number): number {
   if (!Number.isFinite(value)) return 0;
-  return Math.min(max, Math.max(min, Math.round(value * scale)));
+  return Math.min(max, Math.max(min, Math.round(value * scale))) + 0;
 }
 
 /** The stored x or y of a quantised frame's coordinate. */

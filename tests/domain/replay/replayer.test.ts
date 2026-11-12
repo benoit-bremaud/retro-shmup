@@ -79,7 +79,18 @@ describe('replay', () => {
 
   it('refuses a run still playing after the last record', () => {
     const { recorder } = played;
-    expect(replay(7, recorder.records(), 10)).toEqual({ ok: false, error: 'unfinished' });
+    expect(replay(7, recorder.records().subarray(0, 10 * RECORD_BYTES), 10)).toEqual({
+      ok: false,
+      error: 'unfinished',
+    });
+  });
+
+  it('refuses records that do not hold exactly the frame count', () => {
+    expect(replay(7, new Uint8Array(0), 50)).toEqual({ ok: false, error: 'decode' });
+    expect(replay(7, played.recorder.records(), played.recorder.frames() - 1)).toEqual({
+      ok: false,
+      error: 'decode',
+    });
   });
 
   it('refuses an invalid record and an oversized run', () => {

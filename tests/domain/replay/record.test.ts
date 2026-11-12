@@ -61,10 +61,13 @@ describe('quantizeIntent', () => {
       frame({ held: Button.Fire, moveKind: 'direction', moveX: 0.707, moveY: -0.707 }),
       frame({ pressed: Button.Bomb, moveKind: 'target', moveX: 37.13, moveY: 300.9 }),
       frame({ held: Button.Back }),
+      frame({ moveKind: 'direction', moveX: 0.5, moveY: -0.003 }),
+      frame({ moveKind: 'target', moveX: -0.1, moveY: 3 }),
     ];
     for (const input of inputs) {
       const quantised = createIntentFrame();
       quantizeIntent(input, quantised);
+      expect(Object.is(quantised.moveY, -0) || Object.is(quantised.moveX, -0)).toBe(false);
       expect(roundTrip(input)).toEqual(quantised);
     }
   });
@@ -96,10 +99,6 @@ describe('validRecord', () => {
     expect(validRecord(record([1 << 2, 128, 0, 0, 0]), 0)).toBe(false);
     expect(validRecord(record([2 << 2, 0xff, 0x07, 0x00, 0xf8]), 0)).toBe(true);
     expect(validRecord(record([2 << 2, 0x00, 0x08, 0, 0]), 0)).toBe(false);
-  });
-
-  it('reads past the end as zero bytes, a valid empty record', () => {
-    expect(validRecord(new Uint8Array(0), 0)).toBe(true);
   });
 });
 

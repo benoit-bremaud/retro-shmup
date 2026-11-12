@@ -9,6 +9,7 @@ import { decodeCodec1 } from './codec1';
 export const MAX_INPUT_BYTES = 1024 * 1024;
 const MAX_SEED = 2 ** 32 - 1;
 
+/** The answer to any request that is not a well-formed codec 1 run. */
 export const DECODE: ReplayReport = { ok: false, error: 'decode' };
 
 /** Replays one request document; any malformed field is `decode`, never a throw. */
