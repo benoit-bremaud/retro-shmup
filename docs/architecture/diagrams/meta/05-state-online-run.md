@@ -1,7 +1,7 @@
 # State machine diagram — meta — a run sent online, as the game sees it (v0.35)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.35, v0.36 §9.1
-> (*Send online*, send errors #173), §9.3 (*Online scores*), §9.8
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.35, v0.36, v0.37 §9.1
+> (*Send online*, send errors #173, *WAIT* #177), §9.3 (*Online scores*), §9.8
 > **Related ADRs**: ADR-0031; retro-leaderboard ADR-0001 (verdicts), ADR-0004 (erasure)
 > **Realizes**: UC9 and UC10 of [01-use-case](../system/01-use-case.md)
 
@@ -28,7 +28,8 @@ stateDiagram-v2
   state "Erasing" as Erasing
 
   [*] --> NotSent
-  NotSent --> Sending : SEND [fewer than 20 kept] / POST /v1/runs
+  NotSent --> Sending : SEND [fewer than 20 kept, no other send or erasure under way] / POST /v1/runs
+  NotSent --> NotSent : SEND [another send or erasure under way] / WAIT
   Sending --> Pending : 202 / keep id and token
   Sending --> NotSent : too long, unsupported, 400, 429 or 5xx / error line
   Sending --> NotSent : 409, offline or timeout / error line, TO ERASE SEE PRIVACY
@@ -44,15 +45,16 @@ stateDiagram-v2
   Rejected --> [*] : 404 / drop the item
   Unverifiable --> [*] : 404 / drop the item
   Expired --> [*] : 404 / drop the item
-  Pending --> Erasing : erase, confirmed / DELETE
-  Verified --> Erasing : erase, confirmed / DELETE
-  Rejected --> Erasing : erase, confirmed / DELETE
-  Unverifiable --> Erasing : erase, confirmed / DELETE
-  Expired --> Erasing : erase, confirmed / DELETE
+  Pending --> Erasing : erase, confirmed [no other send or erasure under way] / DELETE
+  Verified --> Erasing : erase, confirmed [no other send or erasure under way] / DELETE
+  Rejected --> Erasing : erase, confirmed [no other send or erasure under way] / DELETE
+  Unverifiable --> Erasing : erase, confirmed [no other send or erasure under way] / DELETE
+  Expired --> Erasing : erase, confirmed [no other send or erasure under way] / DELETE
   Erasing --> [*] : 204 or 404 / drop the item
   Erasing --> Pending : failed [was pending]
   Erasing --> Verified : failed [was verified]
   NotSent --> [*] : not now, back or after(20 s)
+  note right of Erasing : v0.37, an erase confirmed while another send or erasure is under way shows WAIT and keeps the status
 ```
 
 ## Notes
