@@ -27,28 +27,29 @@ sequenceDiagram
   participant Store as StoragePort
   participant LB as Online leaderboard
 
-  Note over Scenes: run end, after the hall of fame; OnlineOffer guard holds
+  Note over Scenes: run end, after the hall of fame, OnlineOffer guard holds
   Scenes->>Online: offer(run result)
   Player->>Scenes: SEND
   alt 20 runs kept
     Online-->>Scenes: refused (erase an online score first)
   else a name and room left
-    Online->>Rec: encode()
-    Rec-->>Online: codec 1, frames, inputs (raw DEFLATE, base64url)
-    Online->>Port: submit({game shmup, mode arcade, version, seed, codec, frames, inputs, score, name, country})
-    Port->>LB: POST /v1/runs (JSON, no credentials, 10 s timeout)
-    alt 201
+    Online->>Rec: records(), frames()
+    Rec-->>Online: a view of the records, their count
+    Online->>Port: submit(records, frames, seed, score, name, country)
+    Note over Port: RecordColumns, then deflate-raw, base64url, size guard (codec 1)
+    Port->>LB: POST /v1/runs {game shmup, mode arcade, version, seed, codec 1, frames, inputs, score, name, country}
+    alt 202
       LB-->>Port: {id, deletionToken}
       Port-->>Online: handle done: id, token (parsed by allowlist)
       Online->>Store: write retro-shmup.online.v1 (id, token, score, sentAt, pending)
       loop every 15 s, 2 minutes at most, while the screen is open
         Online->>Port: status(id)
         Port->>LB: GET /v1/runs/{id}
-        LB-->>Port: {status}
-        Port-->>Online: status
+        LB-->>Port: {status}, or 404
+        Port-->>Online: status, or unknown (the item is dropped)
       end
       Online->>Store: write the last status
-    else 409, 400, 429, offline or timeout
+    else too long, 409, 400, 429, 5xx, offline or timeout
       Port-->>Online: handle failed: stable code
       Online-->>Scenes: error line, offer stays, nothing kept
     end

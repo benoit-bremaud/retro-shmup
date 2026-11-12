@@ -173,26 +173,32 @@ step depends on them.
 ### UC9 — Publish a run on the online board *(v0.35)*
 
 - **Primary actor**: Player. **Secondary actor**: the online leaderboard. **Level**: user goal.
-- **Preconditions**: a release build holding a leaderboard address; the run ended by Game over or
-  was cleared, scored above 0 and its recording did not overflow; fewer than 20 runs kept.
+- **Preconditions**: a release build served from the final origin (ADR-0031 decision 12); the
+  run ended by Game over or was cleared, scored above 0 and its recording did not overflow.
 - **Success guarantee**: the leaderboard stores the run as pending; the browser keeps its id and
   deletion token; the player sees the verdict if it comes within 2 minutes, else later in UC10.
 - **Main success scenario**:
-  1. The game shows the *Send online* offer: what is sent, the retention, *Privacy*.
+  1. The game shows the *Send online* offer: the score, name and flag to send, that the inputs
+     are sent for checking, that the retention is on the privacy page.
   2. Player chooses *Send*.
   3. The game sends the version, seed, input records, score, name and country.
-  4. The leaderboard answers with the run id and a deletion token; the game keeps both.
+  4. The leaderboard accepts the run (`202`) with its id and a deletion token; the game keeps
+     both.
   5. The game shows *Pending verification* and asks for the status every 15 s.
   6. The leaderboard has replayed the run: the game shows *Verified*.
   7. Player chooses *OK*; the game goes on to the feedback offer.
 - **Extensions**:
   - 1a. Player chooses *Not now*, `back`, or waits 20 s: nothing is sent; on to step 7's exit.
   - 1b. Player chooses *Privacy*: the privacy page opens in a new tab; the offer stays.
-  - 2a. The run did not enter the top 10: the name entry opens first; its name is not added to
-    the local table; `back` returns to the offer.
+  - 2a. The run did not enter the top 10, or its entry was skipped (`???`): the name entry opens
+    first; its name is not added to the local table; *OK* on an empty name or `back` returns to
+    the offer.
+  - 2c. The encoded inputs pass the request's size limit: *Run too long to send*; nothing is sent.
   - 2b. 20 runs are kept: *Erase an online score first* shows; nothing is sent.
-  - 4a. Offline, `409`, `400 unknown-version`, `429`, a server error or a timeout: one line names
-    it; the offer stays; nothing is kept; no automatic retry.
+  - 4a. Offline, `409`, a `400` (unknown version, name refused, too large), `429`, a server error
+    or a timeout: one line names it; the offer stays; nothing is kept; no automatic retry. After
+    `409`, offline or a timeout, *To erase see privacy* follows (the run may be stored without a
+    token here).
   - 6a. The verdict is *Rejected*, *Unverifiable* or *Expired*: the game shows it.
   - 6b. No verdict within 2 minutes: *Pending verification* stays; UC10 follows it later.
   - 7a. Player chooses *Erase*: UC10 steps 3–4 for this run.
@@ -200,18 +206,21 @@ step depends on them.
 ### UC10 — Follow and erase my online runs *(v0.35)*
 
 - **Primary actor**: Player. **Secondary actor**: the online leaderboard. **Level**: user goal.
-- **Preconditions**: a build holding a leaderboard address.
+- **Preconditions**: a release build served from the final origin.
 - **Success guarantee**: the list shows each kept run with its latest known status; an erased run
   is gone online and from the list.
 - **Main success scenario**:
   1. Player opens *Options → Online scores*.
-  2. The game lists the kept runs, newest first, and asks the leaderboard for each pending status.
+  2. The game lists the kept runs, newest first, and asks the leaderboard for the status of each,
+     one at a time.
   3. Player highlights a run, chooses it and confirms *Erase*.
   4. The game sends the erasure with the run's deletion token; the leaderboard erases the run;
      the game drops it from the list.
 - **Extensions**:
   - 2a. No kept run: *No online score*.
   - 2b. Offline or a server error: the stored statuses stay.
+  - 2c. The leaderboard no longer knows a run (`404`, erased by its retention): it leaves the
+    list.
   - 3a. Player declines the confirmation: nothing changes.
   - 4a. The leaderboard does not know the run (`404`, already erased or purged): dropped too.
   - 4b. Offline or a server error: the run stays, the error line shows.

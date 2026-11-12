@@ -17,7 +17,7 @@ package "src/domain — pure TypeScript, no DOM" as Domain {
   [SaveDocument] as Save
   [MessageCatalogue] as I18n
   [SeededRandom] as Rng
-  [RunRecorder + RunCodec] as Recorder
+  [RunRecorder + RecordColumns] as Recorder
   [OnlineRuns] as Online
 
   package "ports (owned by the domain)" as Ports {
@@ -68,10 +68,11 @@ Presenter ..> AudioPort : <<use>> SFX
 Run ..> RandomPort : <<use>> gameplay only
 Scenes ..> Recorder : quantises and records\neach step's intents
 Scenes ..> Online : send offer,\nonline scores
-Online ..> Recorder : encodes the run
+Online ..> Recorder : the run's records
 Online ..> LeaderboardPort : <<use>> submit,\nstatus, erase
 Online ..> StoragePort : <<use>> kept runs
-Cli ..> Recorder : decodes
+Cli ..> Recorder : undoes the columns,\nchecks the records
+FetchLb ..> Recorder : columns before DEFLATE
 Cli ..> Run : <<create>>, replays
 Rng -up- RandomPort
 

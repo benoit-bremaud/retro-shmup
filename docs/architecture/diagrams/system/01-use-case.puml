@@ -59,9 +59,9 @@ note on link
 end note
 UC9 .> UC1 : <<extend>>
 note on link
-  condition: {release build with a leaderboard address,
+  condition: {release build on the final origin,
   run ended by game over or cleared, score > 0,
-  player chooses SEND}
+  recording not overflowed}
   extension point: run end
 end note
 @enduml

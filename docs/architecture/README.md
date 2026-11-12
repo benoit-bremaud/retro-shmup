@@ -76,6 +76,7 @@ Status: complete for 1.0 (2026-10-08); the bomb sequence added with the player-k
 | `meta` | [02 sequence — country and feedback](diagrams/meta/02-sequence-country-feedback.md) | The country asked at the first Play, the feedback form opened in a new tab (v0.26) |
 | `meta` | [04 class — menus](diagrams/meta/04-class-menus.md) | One menu model, the options and their save (G1a) |
 | `meta` | [02 sequence — send online](diagrams/meta/02-sequence-send-online.md) | A run sent to the online leaderboard, its status followed, its erasure (v0.35) |
+| `meta` | [04 class — online runs](diagrams/meta/04-class-online-runs.md) | The leaderboard port, its polled request handles and the kept runs (v0.35) |
 | `meta` | [05 state — scenes](diagrams/meta/05-state-scenes.md) | The screens of GDD §9.1 and their transitions |
 | `meta` | [05 state — online run](diagrams/meta/05-state-online-run.md) | A kept online run's status as the game sees it (v0.35) |
 | `meta` | [06 class — version label](diagrams/meta/06-class-version-label.md) | The build-time version shown as page text (v0.20) |

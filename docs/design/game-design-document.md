@@ -864,7 +864,8 @@ their own effect switch (§9.3, §9.4); off, the chain works the same, silently.
   **8 s**.
 - **Local top 10** *(v0.9)* with a name of up to 8 characters and an optional country (arcade name
   entry, §9.1), stored in `localStorage` (ADR-0006, ADR-0021, §9.8). No online leaderboard in 1.0 (v2); the
-  country is stored so the v2 board can use it.
+  country is stored so the v2 board can use it. *(superseded by v0.35, ADR-0031: the online
+  leaderboard is brought forward, §9.1 *Send online*.)*
 
 ---
 
@@ -1086,30 +1087,39 @@ the online leaderboard, which replays it before showing it (no score is trusted 
   ends it (Game over or the run cleared), what the simulation read: fire held, bomb pressed, the
   move kind and its two values, the stick rounded to 1/127 and a touch or mouse target to 1/4 px
   (so play feels the same; the simulation reads the rounded values). Pauses and menus are not
-  recorded. Up to 20 minutes of play; a longer run cannot be sent. The simulation's
-  trigonometry is the game's own (ADR-0031 decision 9), so every browser computes the same score.
+  recorded. Up to 20 minutes of play are recorded; a longer run, or one whose encoded inputs
+  pass the size limit of the leaderboard's request, cannot be sent (*RUN TOO LONG TO SEND* /
+  *PARTIE TROP LONGUE*). The simulation's trigonometry is the game's own (ADR-0031 decision 10),
+  so every browser computes the same score. The score sent is the run's score at the step that
+  ended it.
 - **When the offer shows**: after the High scores (or straight after Game over or the Ending when
   the run did not enter the table), only for a run that ended by Game over or a cleared run
-  (never a run quit from the pause), with a score above 0, a recording under 20 minutes, and a
-  release build holding a leaderboard address. Otherwise nothing changes.
-- **The offer screen**: heading *SEND ONLINE* / *ENVOYER EN LIGNE*; lines *SCORE NAME COUNTRY
-  AND INPUTS* / *SCORE NOM PAYS ET COMMANDES* and *KEPT 2 YEARS* / *GARDE 2 ANS*; rows *SEND* /
+  (never a run quit from the pause), with a score above 0, a recording under 20 minutes, in a
+  release build (a strict `X.Y.Z` version) served from the final address
+  `<game>.benoitbremaud.fr` (ADR-0031 decision 12). Otherwise nothing changes.
+- **The offer screen**: heading *SEND ONLINE* / *ENVOYER EN LIGNE*; the run's score, the name
+  and the flag (or the code alone) that would be sent; lines *INPUTS SENT FOR CHECKING* /
+  *COMMANDES ENVOYEES POUR VERIFIER* and *RETENTION IN PRIVACY* / *DUREES DANS CONFIDENTIALITE*;
+  rows *SEND* /
   *ENVOYER* (the cursor starts on *NOT NOW*), *PRIVACY* / *CONFIDENTIALITE* (opens the
   leaderboard's privacy page in a new tab, the gesture rule of the feedback form) and *NOT NOW* /
   *PAS MAINTENANT*. *Not now*, `back` or 20 s without input go on to the feedback offer. Nothing
   leaves the browser before *SEND*.
-- **The name**: the name entered for this run, without leading or trailing spaces; a run that did
-  not enter the table opens the name entry first (*SEND* then sends; this name is not added to the
-  local table; leaving the entry with `back` returns to the offer). The country is the saved
+- **The name**: the name entered for this run; a run that did not enter the table, or whose entry
+  was skipped (`???`), opens the name entry first (*OK* then sends; this name is not added to the
+  local table; *OK* on an empty name or `back` returns to the offer). The country is the saved
   choice, or none.
 - **After SEND**: *SENDING* / *ENVOI*, then *PENDING VERIFICATION* / *VERIFICATION EN COURS*;
   the screen asks the leaderboard every 15 s for 2 minutes at most and shows *VERIFIED* /
   *VERIFIE*, *REJECTED* / *REFUSE*, *UNVERIFIABLE* / *INVERIFIABLE* or *EXPIRED* / *EXPIRE* when
   the verdict comes; rows *OK* (to the feedback offer) and *ERASE* / *EFFACER* (confirmation,
   default *No*). Errors, each one line, the offer staying: *OFFLINE* / *HORS LIGNE*, *ALREADY
-  SENT* / *DEJA ENVOYE* (`409`), *VERSION NOT ACCEPTED* / *VERSION NON ACCEPTEE*, *TOO MANY TRIES
-  WAIT* / *TROP D ESSAIS ATTENDS* (`429`), *SERVER ERROR* / *ERREUR SERVEUR*. Never an automatic
-  retry of a send.
+  SENT* / *DEJA ENVOYE* (`409`), *VERSION NOT ACCEPTED* / *VERSION NON ACCEPTEE*, *NAME NOT
+  ACCEPTED* / *NOM REFUSE*, *RUN TOO LONG TO SEND* / *PARTIE TROP LONGUE*, *TOO MANY TRIES WAIT* /
+  *TROP D ESSAIS ATTENDS* (`429`), *SERVER ERROR* / *ERREUR SERVEUR* (any other answer, a
+  timeout). After *ALREADY SENT*, *OFFLINE* or a timeout a second line *TO ERASE SEE PRIVACY* /
+  *POUR EFFACER VOIR CONFIDENTIALITE* follows: the run may be stored without a token in this
+  browser. Never an automatic retry of a send.
 - **Kept runs**: each sent run keeps its id, its deletion token, its score, its date and its last
   status in the browser (§9.8), at most 20; with 20 kept, *SEND* shows *ERASE AN ONLINE SCORE
   FIRST* / *EFFACE D ABORD UN SCORE EN LIGNE* and sends nothing.
@@ -1228,9 +1238,10 @@ made with a click, tap or key applies at once; otherwise the preference is appli
 click, tap or key press, including during a run *(v0.4, ADR-0009)*.
 
 **Online scores** *(v0.35, ADR-0031)*: a row *ONLINE SCORES* / *SCORES EN LIGNE* before *Back*,
-only in a build holding a leaderboard address. It lists the kept runs, newest first (score,
-status, date), asks the leaderboard for each pending status when it opens, and erases the
-highlighted run after a confirmation (default *No*); an erased or unknown run leaves the list.
+only where *Send online* exists. It lists the kept runs, newest first (score, status, date),
+asks the leaderboard for the status of every kept run, one at a time, when it opens, and erases
+the highlighted run after a confirmation (default *No*); a run the leaderboard no longer knows
+(erased, or past its retention) leaves the list.
 Empty: *NO ONLINE SCORE* / *AUCUN SCORE EN LIGNE*.
 
 **Autofire (touch and mouse)** *(v0.9)*: off by default; when on, touch and the mouse fire all the time, as in v0.8,
@@ -1383,9 +1394,11 @@ v0.23.
 save document: at most 20 items of a run id (a ULID), a deletion token (64 lowercase hex
 characters), the score, the date sent and the last status; validated by allowlist and parsed
 without throwing, an invalid item dropped (ADR-0006, ADR-0031). The token is the only way to
-erase the run online, so it is never dropped to make room. What is sent online — the name, the
+erase the run online from the game, so it is never dropped to make room. What is sent online — the name, the
 country, the score, the seed and the input records — and its retention are stated by the
-leaderboard's privacy page (retro-leaderboard ADR-0004).
+leaderboard's privacy page (retro-leaderboard ADR-0004), which also gives a contact address
+to erase a run whose token is lost. The kept runs belong to the final address only: another
+origin would not see them.
 
 ### 9.9 Version label *(v0.20)*
 
@@ -1488,7 +1501,7 @@ playable.
 | Licensing | MIT for the code; assets under their own licences in `public/assets/` with `CREDITS.md` | ADR-0005 |
 | Public hosting | `<game>.benoitbremaud.fr` (Cloudflare Pages custom domain, one project per game), attached once the title is final; `pages.dev` URLs before; catalogue in the portfolio's projects page, `benoitbremaud.fr/projets/#jeux` | ADR-0008, ADR-0016, ADR-0017 |
 | Player data | `localStorage` only, versioned key; *(v0.9)* the top-10 entry holds a name of up to 8 characters and an optional country (§9.8) instead of three initials; no backend in 1.0 except the online leaderboard, reached only at the player's choice *(v0.35)* | ADR-0006, ADR-0021, ADR-0031 |
-| Online runs *(v0.35)* | Seed + one 5-byte quantised record per step, raw DEFLATE in base64url (codec 1, shared with retro-leaderboard), deterministic trigonometry in the simulation, `LeaderboardPort` behind a `fetch` adapter, CSP `connect-src` on the leaderboard origin, a headless replay CLI built from each signed tag | ADR-0031 |
+| Online runs *(v0.35)* | Seed + one 5-byte quantised record per step, columns with delta-coded coordinates, raw DEFLATE in base64url (codec 1, shared with retro-leaderboard), deterministic trigonometry in the simulation, `LeaderboardPort` behind a `fetch` adapter, CSP `connect-src` on the leaderboard origin, a headless replay CLI built from each signed tag | ADR-0031 |
 | Performance | 60 fps on a 2019 mid-range phone; ≤ 4 ms of logic per frame; no allocation inside the game loop (pools) | ADR-0002 |
 | Tests | Unit tests on the domain (TDD), headless level simulation with scripted inputs and seeded RNG, one browser smoke test in three engines (ADR-0026); render and audio mocked at their ports | ADR-0003, ADR-0026 |
 | Quality gate | Local only: `just fast` on commit, `just check` on push (lint, typecheck, tests with coverage, Semgrep, dependency audit, gitleaks), `just gate` before every merge (SonarQube quality gate, browser smoke, signed attestation of the head), `just nightly`; no GitHub workflow | ADR-0007, ADR-0013, ADR-0029 |
@@ -1540,7 +1553,7 @@ fully playable at release quality, used to validate the design before producing 
 | Universe | Space + mechanical armada | Military retro-futurist (kept the boss silhouettes); aliens (no battleship bosses); cartoon / organic (custom assets day one) |
 | Narrative | Intro + ending cards | Per-level briefings (1.x candidate); none |
 | Audio | Free chiptune + generated SFX | Custom from day one (blocks the slice); SFX only (boss without music) |
-| Meta 1.0 | Pause, fullscreen, top 10, options, i18n, accessibility, credits | Online leaderboard (backend, anti-cheat, GDPR → v2); boss practice (1.x) |
+| Meta 1.0 *(the online leaderboard row superseded by v0.35, ADR-0031)* | Pause, fullscreen, top 10, options, i18n, accessibility, credits | Online leaderboard (backend, anti-cheat, GDPR → v2); boss practice (1.x) |
 | Rendering tech | Canvas 2D + RenderPort | PixiJS (unneeded GPU); Phaser (confiscates the architecture) |
 | Architecture | Composition + patterns | ECS (oversized, poor UML fit); inheritance tree (explodes on crossed behaviours) |
 | Tests | Pyramid + headless simulation + 1 smoke | Unit only (level regressions invisible); golden images (brittle) |
@@ -1626,4 +1639,4 @@ fully playable at release quality, used to validate the design before producing 
 | Country preselection *(v0.30, superseded in part by v0.34 above)* | Owner, 2026-10-26 (#131, option A of 2026-10-22, 450/500): the **time zone first** (`Intl.DateTimeFormat().resolvedOptions().timeZone`, e.g. `Europe/Paris` → `FR`), then the region of the browser's first language, then none (465/500); the zone → country table **generated from the IANA `zone.tab`** and its backward links, one country per zone, kept only for codes in `COUNTRY_CODES`, committed as domain data and refreshed with releases (455/500). `UTC`, `Etc/*` and unknown zones give no country, so the language decides; a VPN does not change the time zone (system clock); the code is still only a default, stored once the player confirms | The language first, the time zone as fallback (395/500: an English speaker in France keeps `US`, the defect of #131); the time zone only when the language agrees (415/500: a vote rule for the same answers); a hand-written table of ~50 zones (355/500); `zone1970.tab` taking its first country (385/500: `Europe/Berlin` also covers DK, NO, SE); an IP lookup (network call, third party, forbidden in 1.0) |
 | Graze *(v0.31)* | Owner, 2026-10-28 (#146, playtest: bullets crossing the wings read as a bug), option D of the triage (410/500: keep the 6 × 6 hitbox, add a graze): the **graze box is the drawn 32 × 24 ship minus the 6 × 6 hitbox** (445/500); **100 points**, flat (365/500); **once per bullet** (470/500); **neutral for the chain** (410/500); a **spark only, on its own switch, no sound** (430/500; a spark and a tick 415, close: revisit after the playtest). Only a `Vulnerable` ship without a shield charge grazes | A ~12 × 10 hitbox with a rebalance (330/500); the whole sprite as hitbox (280/500); visibility only (410/500, tie broken toward the reward); a per-pixel wing mask (340/500: one mask per sprite, redone with the final art); the 32 × 32 ship box (315/500: rewards empty space); 500 points (290/500: breaks the scale) or 10 (275/500: unnoticed); a graze per step of contact (250/500: parking on a bullet pays) or with a global delay (340/500); a graze extending the chain timer (295/500) or counting as a chained kill (220/500); a +100 pop-up per graze (350/500: clutter) |
 | Chain labels *(v0.32)* | Owner, 2026-10-28 (#147: the ×N and its bar were never explained), option D of the triage (450/500: a first-×2 label and a break label): **CHAIN ×2 - KILL FAST** / **CHAINE ×2 - TUE VITE** and **CHAIN BREAK** / **CHAINE ROMPUE** (475/500; the `menu` font gains `×`); the first ×2 of a run for **1 s**, every break from ×2 or more for **0.5 s**, none at a death (450/500); their **own switch** *CHAIN HINTS* / *AIDE CHAINE*, on by default (450/500); **fixed, centred near the top of the field**, rising 8 px (435/500) | A label only for the first ×2 (435/500); a help page (300/500) or both (345/500); COMBO wording (420/500) or CHAINE ×2 - VITE (380/500); both labels 1 s (390/500) or 1.5 s / 0.75 s (380/500); one shared LABELS switch with the pickup labels (370/500) or the explosions switch (270/500); under the HUD multiplier (400/500) or following the ship (305/500) |
-| Online leaderboard *(v0.35)* | Owner, 2026-11-12 (#167, epic #166, ADR-0031): **record runs as quantised per-step records and send them by explicit choice after the hall of fame**. Frame format raw DEFLATE (405/500; RLE + delta 390, RLE 380); codec spec and vectors in retro-leaderboard (420/500; git dependency 360, npm 310); own deterministic trigonometry (450/500; accept the risk 360, replay in the player's engine 320); results flow + *Options → Online scores* (395/500; options without status 385, results only 345); replay CLI (475/500; ES module 400, tsx 285); tokens under a separate key (420/500; save document v3 330) | See ADR-0031 *Rejected alternatives* |
+| Online leaderboard *(v0.35)* | Owner, 2026-11-12 (#167, epic #166, ADR-0031): **record runs as quantised per-step records and send them by explicit choice after the hall of fame**. Frame format raw DEFLATE (405/500; RLE + delta 390, RLE 380), refined after the review into columns with delta-coded x and y and a size guard (450/500; rows + guard 360, brotli 300); codec spec and vectors in retro-leaderboard (420/500; git dependency 360, npm 310); own deterministic trigonometry (450/500; accept the risk 360, replay in the player's engine 320); results flow + *Options → Online scores* (395/500; options without status 385, results only 345); replay CLI (475/500; ES module 400, tsx 285); tokens under a separate key (420/500; save document v3 330); retention line *RETENTION IN PRIVACY* (380/500; durations 315); the final origin only (430/500; every Pages origin 340, Pages + itch.io 305) | See ADR-0031 *Rejected alternatives* |

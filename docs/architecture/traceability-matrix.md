@@ -6,7 +6,7 @@
 > **Purpose**: prove coverage — every use case is realized, every class and component is used,
 > nothing is orphaned. Update this file in the same change as any diagram.
 
-Diagram abbreviations (v0.35 adds **SD-online** [02-sequence-send-online](diagrams/meta/02-sequence-send-online.md), **STM-online-run** [05-state-online-run](diagrams/meta/05-state-online-run.md), **CD-recording** [04-class-run-recording](diagrams/gameplay/04-class-run-recording.md); the verifier's replay, `ReplayCli` and `Replayer`, realizes retro-leaderboard UC4): **UC** [01-use-case](diagrams/system/01-use-case.md) · **CMP**
+Diagram abbreviations (v0.35 adds **SD-online** [02-sequence-send-online](diagrams/meta/02-sequence-send-online.md), **STM-online-run** [05-state-online-run](diagrams/meta/05-state-online-run.md), **CD-recording** [04-class-run-recording](diagrams/gameplay/04-class-run-recording.md), **CD-online** [04-class-online-runs](diagrams/meta/04-class-online-runs.md); the verifier's replay, `ReplayCli` and `Replayer`, realizes retro-leaderboard UC4): **UC** [01-use-case](diagrams/system/01-use-case.md) · **CMP**
 [03-component](diagrams/system/03-component.md) · **CD**
 [04-class-domain](diagrams/gameplay/04-class-domain.md) · **SD-tick** [02-sequence-fixed-step-tick](diagrams/gameplay/02-sequence-fixed-step-tick.md) ·
 **SD-kill** [02-sequence-enemy-destroyed](diagrams/gameplay/02-sequence-enemy-destroyed.md) ·
@@ -32,8 +32,8 @@ Diagram abbreviations (v0.35 adds **SD-online** [02-sequence-send-online](diagra
 | UC5 Configure the game | SceneMachine, SaveDocument, LocalStorageStore, WebAudioPlayer, DeviceInput | STM-scenes (`Options`, `Visual effects` and `Audio` from title and pause), CD-audio (volumes) | CD-menus (`Menu`, `MenuScreen`, `SceneHost`, `Options`, `SaveStore`) | each option (GDD §9.3); fullscreen in the gesture handler (ADR-0009) |
 | UC6 Remap the controls | SceneMachine, DeviceInput, SaveDocument | SD-remap, STM-scenes (G1b `Controls`, `Confirm restore`) | CD-menus (`ControlsScreen`, `ControlsGrid`, `BindingsEditor`, `ButtonNames`, `KeyLabels`, the `SceneHost` capture) | slots, swap, capture (UC6 text, GDD §4.2, ADR-0009) |
 | UC7 Read the credits | SceneMachine, MessageCatalogue | STM-scenes (`Credits`) | — | mirrors `CREDITS.md` (ADR-0005) |
-| UC9 Publish a run on the online board *(v0.35)* | SceneMachine, RunRecorder + RunCodec, OnlineRuns, FetchLeaderboard | SD-online; STM-scenes (`Send online`, `Name entry (online)`, `Online status`); STM-online-run | CD-recording (`IntentQuantizer`, `RunRecorder`, `RunCodec`, `DetMath`) | consent, errors and kept-run limit (UC9 text, ADR-0031) |
-| UC10 Follow and erase my online runs *(v0.35)* | SceneMachine, OnlineRuns, FetchLeaderboard, LocalStorageStore | SD-online (erase); STM-scenes (`Online scores`); STM-online-run | — | erasure by deletion token (UC10 text, retro-leaderboard ADR-0004) |
+| UC9 Publish a run on the online board *(v0.35)* | SceneMachine, RunRecorder + RecordColumns, OnlineRuns, FetchLeaderboard | SD-online; STM-scenes (`Send online`, `Name entry (online)`, `Online status`); STM-online-run | CD-recording (`IntentQuantizer`, `RunRecorder`, `RecordColumns`, `DetMath`); CD-online (`OnlineRuns`, `LeaderboardPort`, `RequestHandle`) | consent, errors and kept-run limit (UC9 text, ADR-0031) |
+| UC10 Follow and erase my online runs *(v0.35)* | SceneMachine, OnlineRuns, FetchLeaderboard, LocalStorageStore | SD-online (erase); STM-scenes (`Online scores`); STM-online-run | CD-online (`OnlineRuns`, `KeptRuns`, `KeptRunsDocument`, `LeaderboardPort`) | erasure by deletion token (UC10 text, retro-leaderboard ADR-0004) |
 
 UC2 to UC7 are realized at the screen level only: they are plain navigation, reads and writes,
 whose conditional steps live in the use-case text (proportionality rule of the study).
@@ -73,6 +73,8 @@ SD-boss (added with the level brick) uses `Run`, `RunRules`, `World`, `LevelDire
 | `IntentFrame.active`, the `Attract` scene (G2-3b) | CD-menus; STM-scenes (G2); GDD v0.16 §9.1 attract mode; ADR-0009 amendment |
 | NameEntry, LetterGrid, PressGuard (G2-3) | CD-menus; SD-score; STM-scenes (G2); UC3 text |
 | Options, SaveStore, StoragePort (G1a) | CD-menus; STM-scenes (`Boot` reads, each option change writes); UC5 text |
+| IntentQuantizer, RunRecorder, RecordColumns, DetMath, Codec1, Replayer, ReplayCli *(v0.35)* | CD-recording; SD-online (`records()`); CMP; ADR-0031 decisions 1–11, 22 |
+| OnlineRuns, KeptRuns, KeptRun, KeptRunsDocument, LeaderboardPort, RequestHandle *(v0.35)* | CD-online; SD-online; STM-scenes (online states); STM-online-run; ADR-0031 decisions 12–21 |
 
 Every class is used by at least one behaviour diagram or by the GDD rule table of CD. The
 movement and attack strategies are exercised per archetype by the level scripts; their behaviour
@@ -94,6 +96,7 @@ is a calculation covered by unit tests (ADR-0003), not by a diagram.
 | Canvas2DRenderer, DeviceInput, PerformanceClock | SD-tick (through `RenderPort`, `InputPort`, `Clock`), CMP |
 | WebAudioPlayer | SD-kill and SD-hit (SFX through the presenter), CD-audio, CMP |
 | LocalStorageStore | STM-scenes (`Boot`, `Name entry`, `Options`), CD-menus (realizes `StoragePort`), CMP |
+| RunRecorder + RecordColumns, OnlineRuns, FetchLeaderboard, ReplayCli *(v0.35)* | CMP; SD-online; CD-recording; CD-online |
 
 ## 4. Decisions → where they are realized
 
@@ -137,6 +140,7 @@ is a calculation covered by unit tests (ADR-0003), not by a diagram.
 | GDD v0.31 graze (§4.1 graze box, §8 100 points flat, §9.3 *GRAZE* switch, §9.4 spark; #146) | CD (`Bullet.grazed`, `BULLET_GRAZED`, rule table, step order), SD-hit (graze note), CD-menus (`EffectSettings` switch); tests with the code PR: `collision.test.ts` (a bullet in a wing grazes once and stays live, one on the hitbox hits and does not graze, a grazed bullet hitting later kills, no graze while `Entering`, `Invulnerable` or with a shield charge, a reacquired bullet grazes again), `score-keeper.test.ts` (100 flat, chain unchanged), `run-presenter.test.ts` (spark drawn, nothing with the switch off), `save-store.test.ts` (a version-2 save without `graze` loads with it on, a non-boolean rejects the options), `level-simulation.test.ts` (determinism), `level-1-balance.test.ts` (medians re-measured against the 150 000 → 30 000 scale) |
 | GDD v0.32 chain labels (§7.3 labels, §8, §9.3 *CHAIN HINTS* switch, §9.4; #147) | CD (`CHAIN_STEPPED`, `CHAIN_BROKEN`, rule table), SD-enemy-destroyed (chain feedback), CD-menus (`EffectSettings` switch, 12 rows); tests with the code PR: `score-keeper.test.ts` (`CHAIN_STEPPED` at each step, `CHAIN_BROKEN` from ×2 or more only, none at ×1 nor at a death), `run-presenter.test.ts` (×2 label once per run for 1 s, break label 0.5 s, replacement, nothing with the switch off), `save-store.test.ts` (absent `chainHints` reads on), `messages.test.ts` (EN/FR keys), font test (`×` in the `menu` font) |
 | GDD v0.34 country by flag (§9.1 *The country choice*; ADR-0030; #145) | CD-menus (`CountryChoice.byLetters`, `open(hints, saved)`, `country-suggestions` functions, `SceneHost.countryHints`), SD-country-feedback (hints, suggestions, letters), STM-scenes (country choice sub-states), UC1 step 1a text; tests: `suggestedCountries` order, deduplication and unknown codes, both pages' navigation and `back` rules, the overlay drawing of code and flag, the smoke test's country step |
+| GDD v0.35 online leaderboard (§9.1 *Send online*, §9.3 *Online scores*, §9.8; ADR-0031; #167) | UC9, UC10; CMP (RunRecorder + RecordColumns, OnlineRuns, FetchLeaderboard, ReplayCli); CD-recording; CD-online; SD-online; STM-scenes; STM-online-run |
 
 ## 5. Known gaps (accepted)
 

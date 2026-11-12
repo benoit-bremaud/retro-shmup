@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Design of the online leaderboard client, no code yet: each run is recorded as its seed and one
+  quantised input record per step; after the hall of fame the player may choose *SEND ONLINE*,
+  follow the verification and erase sent runs from *Options → Online scores*; the simulation
+  gets its own deterministic trigonometry and a headless replay CLI for the leaderboard's
+  verifier (GDD v0.35 §9.1, §9.3, §9.8, ADR-0031, #167).
 - Every check runs locally in four `just` tiers (`fast`, `check`, `gate`, `nightly`) wired by
   lefthook and pinned by mise; the gate attests the head SHA and `just merge` requires it. The
   five GitHub workflows (CI, CodeQL, Dependency review, Gitleaks, Scorecard), husky, lint-staged,

@@ -107,7 +107,8 @@ epic), one `area:*` (`design`, `uml`, `engine`, `game`, `render`, `audio`, `inpu
 
 - Adding a game framework or rendering library (Phaser, PixiJS…) — see ADR-0001 / ADR-0003.
 - Introducing an ECS or an enemy inheritance tree — see ADR-0003.
-- Any backend, account system or network call in 1.0.
+- Any backend, account system or network call in 1.0, except the online leaderboard of ADR-0031
+  (one origin, only after the player chooses to send a run).
 - Editing the gate's semantics, `.github/branch-protection.md`, `LICENSE`, or the ADRs' *Status*
   without a dedicated PR. The files that define what the gate runs — `justfile`, `lefthook.yml`,
   `mise.toml`, `mise.lock`, `scripts/`, `.github/allowed_signers`, `package.json`,

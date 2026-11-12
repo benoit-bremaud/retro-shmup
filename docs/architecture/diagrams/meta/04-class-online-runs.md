@@ -1,0 +1,126 @@
+# Class diagram — meta — online runs, the leaderboard port and the kept runs (v0.35)
+
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.35 §9.1
+> (*Send online*), §9.3 (*Online scores*), §9.8
+> **Related ADRs**: ADR-0006 (untrusted stored data), ADR-0031 (decisions 12–21)
+> **Realizes**: UC9 and UC10 of [01-use-case](../system/01-use-case.md); the `OnlineRuns` and
+> `FetchLeaderboard` components of [03-component](../system/03-component.md)
+
+## Context
+
+How the domain talks to the leaderboard without importing the browser or awaiting a promise: it
+starts a request through `LeaderboardPort` and reads the returned handle on later steps. The kept
+runs are their own small document, parsed like the save (never throws, invalid items dropped).
+
+## Diagram
+
+```mermaid
+---
+title: cd — online runs
+---
+classDiagram
+  class LeaderboardPort {
+    <<interface>>
+    +submit(run: Submission) RequestHandle~Accepted~
+    +status(id) RequestHandle~RunStatus~
+    +erase(id, token) RequestHandle~Erased~
+  }
+  class RequestHandle~T~ {
+    <<interface>>
+    +state : pending | done | failed
+    +result : T «when done»
+    +error : FailureCode «when failed»
+  }
+  class Submission {
+    seed : number
+    records : Uint8Array
+    frames : number
+    score : number
+    name : string
+    country : string «optional»
+  }
+  class Accepted {
+    id : string «ULID»
+    token : string «64 lowercase hex»
+  }
+  class RunStatus {
+    <<enumeration>>
+    pending
+    verified
+    rejected
+    unverifiable
+    expired
+    unknown «404»
+  }
+  class FailureCode {
+    <<enumeration>>
+    offline
+    timeout
+    too-long
+    duplicate-run
+    unknown-version
+    name-refused
+    bad-request
+    rate-limited
+    server-error
+  }
+  class OnlineRuns {
+    -kept : KeptRuns
+    -handle : RequestHandle «at most one open»
+    +offer(result) boolean
+    +send(name, country) void
+    +step() void «polls the handle, the 15 s status timer»
+    +refreshAll() void «one GET at a time»
+    +erase(id) void
+    +line() MessageKey «status or error line»
+  }
+  class KeptRuns {
+    +MAX = 20
+    +items : KeptRun[]
+    +full() boolean
+    +add(run) void
+    +setStatus(id, status) void
+    +drop(id) void
+  }
+  class KeptRun {
+    id : string
+    token : string
+    score : number
+    sentAt : string «ISO date»
+    status : RunStatus
+  }
+  class KeptRunsDocument {
+    <<module>>
+    +KEY = retro-shmup.online.v1
+    +parseKeptRuns(text) KeptRuns «never throws, allowlist»
+    +serializeKeptRuns(kept) string
+  }
+  class FetchLeaderboard {
+    <<adapter>>
+    -origin : string «__LEADERBOARD_URL__»
+  }
+  class StoragePort {
+    <<interface>>
+  }
+  class SceneMachine
+
+  SceneMachine --> OnlineRuns : Send online, Online scores
+  OnlineRuns --> KeptRuns
+  KeptRuns *-- KeptRun
+  OnlineRuns ..> LeaderboardPort : <<use>>
+  OnlineRuns ..> KeptRunsDocument : parse, serialize
+  OnlineRuns ..> StoragePort : <<use>> read, write
+  LeaderboardPort ..> RequestHandle
+  LeaderboardPort ..> Submission
+  RequestHandle ..> FailureCode
+  FetchLeaderboard ..|> LeaderboardPort
+```
+
+## Notes
+
+- **No promise in the domain**: the adapter settles the handle when `fetch` ends; `OnlineRuns.step`
+  reads `state` once per simulation step, like any other port read. One request is open at a time.
+- **Every answer is untrusted**: the adapter parses each body by allowlist; a 2xx whose body fails
+  the parse settles as `server-error`. Ids must be ULIDs, tokens 64 lowercase hex characters.
+- **The token** goes only into the `DELETE` header; it is never logged and never placed in a URL.
+- **`unknown`** (a `404` on `status`) drops the kept run; a failed `erase` keeps it.

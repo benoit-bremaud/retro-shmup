@@ -29,13 +29,18 @@ stateDiagram-v2
 
   [*] --> NotSent
   NotSent --> Sending : SEND [fewer than 20 kept] / POST /v1/runs
-  Sending --> Pending : 201 / keep id and token
-  Sending --> NotSent : 409, 400, 429, offline or timeout / error line
+  Sending --> Pending : 202 / keep id and token
+  Sending --> NotSent : too long, 409, 400, 429, 5xx, offline or timeout / error line
   Pending --> Verified : status verified
   Pending --> Rejected : status rejected
   Pending --> Unverifiable : status unverifiable
   Pending --> Expired : status expired
   Pending --> Pending : status pending, offline or error
+  Pending --> [*] : 404 / drop the item
+  Verified --> [*] : 404 / drop the item
+  Rejected --> [*] : 404 / drop the item
+  Unverifiable --> [*] : 404 / drop the item
+  Expired --> [*] : 404 / drop the item
   Pending --> Erasing : erase, confirmed / DELETE
   Verified --> Erasing : erase, confirmed / DELETE
   Rejected --> Erasing : erase, confirmed / DELETE
@@ -49,8 +54,9 @@ stateDiagram-v2
 
 ## Notes
 
-- **Asked only while `Pending`**: a final status is never asked again; *Online scores* asks once
-  per opening, the status screen every 15 s for 2 minutes at most.
+- **When the status is asked**: the status screen every 15 s for 2 minutes at most while the run
+  is pending; *Online scores* once per opening for every kept run, so a run the server erased by
+  its retention (`404`, retro-leaderboard ADR-0004) leaves the list and frees its slot.
 - **A failed erasure returns to the status it left** (drawn for two statuses; the three others
   likewise).
 - **A stored status outside the five** is an invalid item, dropped by the parser (ADR-0006); its

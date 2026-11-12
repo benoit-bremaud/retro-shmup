@@ -106,23 +106,25 @@ stateDiagram-v2
   NameEntry --> HighScores : OK / save the table with the saved country
   NameEntry --> OnlineOffer : SKIP or OK on an empty name
   HighScores --> OnlineOffer : back, confirm or a tap [after a run]
-  OnlineOffer --> SendOnline : [sendable run, release build, leaderboard address]
+  OnlineOffer --> SendOnline : [sendable run, release build on the final origin]
   OnlineOffer --> AfterOnline : [otherwise]
-  SendOnline --> AfterOnline : not now, back or after(20 s)
+  SendOnline --> AfterOnline : not now, back or after(20 s without input)
   SendOnline --> SendOnline : privacy / open the privacy page in a new tab
   SendOnline --> SendOnline : send [20 runs kept] / show the erase-first line
-  SendOnline --> OnlineName : send [no name entered this run]
-  OnlineName --> SendOnline : back
-  OnlineName --> OnlineStatus : OK / submit the run
+  SendOnline --> OnlineName : send [no usable name this run, fewer than 20 kept]
+  OnlineName --> SendOnline : back, or OK on an empty name
+  OnlineName --> OnlineStatus : OK [name not empty] / submit the run
   SendOnline --> OnlineStatus : send [a name, fewer than 20 kept] / submit the run
-  OnlineStatus --> SendOnline : refused, offline or timeout / show the error line
+  OnlineStatus --> SendOnline : refused, too long, offline or timeout / show the error line
   OnlineStatus --> OnlineStatus : after(15 s) [pending, under 2 min] / ask the status
   OnlineStatus --> AfterOnline : OK
-  OnlineStatus --> AfterOnline : erase, confirmed / erase the run
+  OnlineStatus --> AfterOnline : erase, confirmed, then 204 or 404 / drop the run
+  OnlineStatus --> OnlineStatus : erase, confirmed, then failed / show the error line
   AfterOnline --> FeedbackOffer : [form address set]
   AfterOnline --> Title : [no form address]
-  Options --> OnlineScores : online scores [leaderboard address] / ask each pending status
-  OnlineScores --> OnlineScores : erase, confirmed / erase the run, drop it
+  Options --> OnlineScores : online scores [feature present] / ask each kept run's status
+  OnlineScores --> OnlineScores : 404 on a status / drop the run
+  OnlineScores --> OnlineScores : erase, confirmed / erase the run, drop it on 204 or 404
   OnlineScores --> Options : back
   FeedbackOffer --> Title : give feedback / open the form, count + 1
   FeedbackOffer --> Title : later, back or after(20 s)
@@ -167,6 +169,8 @@ stateDiagram-v2
   the `OnlineOffer` choice after the hall of fame; without a release build, a leaderboard address
   or a sendable run (ended by Game over or cleared, score above 0, recording not overflowed) it
   passes straight to the former targets, so builds without the feature behave as in v0.34.
+  `send` with 20 runs kept stays on `Send online` with the erase-first line; a usable name is the
+  name entered for this run, never `???`.
   `Name entry (online)` is the name entry's screen whose result is not added to the local table.
   `Online status` shows *Sending*, then *Pending verification* and the verdict; the poll stops
   after 2 minutes. The client view of a kept run's status is in
