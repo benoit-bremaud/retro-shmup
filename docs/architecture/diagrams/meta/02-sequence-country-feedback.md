@@ -1,9 +1,10 @@
-# Sequence diagram — meta — the country first and the feedback form (v0.26)
+# Sequence diagram — meta — the country first and the feedback form (v0.26; country by flag v0.34)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.26 §9.1
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.26 §9.1 (v0.34 for the country by flag)
 > (the country choice, the feedback questionnaire), §9.3, §9.8
 > **Related ADRs**: ADR-0006 (save document), ADR-0009 (gestures), ADR-0021 (the country
-> allowlist and preselection), ADR-0027 (the form link, the saved country)
+> allowlist and the browser hints), ADR-0027 (the form link, the saved country), ADR-0030
+> (the suggested flags, v0.34)
 > **Realizes**: UC3 (record a high score) and the new goal *Give feedback on the game* of
 > [01-use-case](../system/01-use-case.md); the v0.26 states of [05-state-scenes](05-state-scenes.md)
 
@@ -27,18 +28,20 @@ sequenceDiagram
 
   Player->>Scenes: Play on the title
   alt the save holds no country choice
-    Scenes->>Host: preselectedCountry()
-    Host-->>Scenes: FR (time zone, else language region), or none
-    Scenes->>Choice: open(FR)
-    loop each step until OK or NONE
+    Scenes->>Host: countryHints()
+    Host-->>Scenes: [FR, ...] (time zone, then language region), possibly empty
+    Scenes->>Choice: open(hints, saved)
+    Note over Choice: suggestedCountries(hints, saved): six known codes, hints then saved then FR BE CH CA US GB
+    loop each step until a flag, OK or NONE
       Player->>Scenes: a direction, confirm, back or a tap
       Scenes->>Choice: step(frame)
+      Note over Choice: OTHER opens the letters (empty code); back on an empty code returns to the suggestions
     end
-    alt OK or NONE
+    alt a flag, OK or NONE
       Choice-->>Scenes: FR, or none
       Scenes->>Host: optionsChanged(country choice)
       Note over Host: saves the document (version 2)
-    else back on an empty code
+    else back on the suggestions
       Choice-->>Scenes: cancelled
       Scenes->>Scenes: Title, nothing saved
     end

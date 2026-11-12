@@ -1,6 +1,6 @@
 # ADR-0028: Pixel country flags beside the code, from one public-domain sheet
 
-**Status:** Accepted — 2026-10-19. **Extends ADR-0001** (the `RenderPort` gains `drawFlag`) and
+**Status:** Accepted — 2026-10-19. Partially superseded by ADR-0030 (the rejected flag picker). **Extends ADR-0001** (the `RenderPort` gains `drawFlag`) and
 **ADR-0021** (the country code is shown with its flag). Values are GDD v0.27 values (§9.1
 *Country flags*, §9.3). Issue #125.
 
@@ -62,3 +62,9 @@
 - **The flag left of the code** (395/500): a missing flag leaves a hole or breaks the code column.
 - **A dimmed colour flag (380/500) or a bright one (310/500) in the far-background name**: a colour
   spot in a one-colour decoration layer that must never compete with play.
+
+## Amendment 2026-11-12
+
+ADR-0030 (#145) partially supersedes the rejection of "a flag picker grid replacing the letters": the
+flags still do not replace the letters, but six suggested flags now come first and *OTHER* leads to the
+letter grid.

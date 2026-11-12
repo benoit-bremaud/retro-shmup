@@ -1,6 +1,6 @@
 # ADR-0021: Hall of fame entry — an 8-character name and an optional country
 
-**Status:** Accepted — 2026-10-12. Decision 4 amended by ADR-0027 (the country chosen once and saved in the options). **Partially supersedes ADR-0006**: decision 3 (the
+**Status:** Accepted — 2026-10-12. Decision 4 amended by ADR-0027 (the country chosen once and saved in the options) and by ADR-0030 (the browser hints feed six suggested flags, no preselection). **Partially supersedes ADR-0006**: decision 3 (the
 `HighScoreEntry.initials` field of exactly 3 characters becomes `name` and an optional
 `country`), decision 7 ("No personal data beyond three initials" becomes "no personal data beyond
 this name and this optional country") and the matching code-review follow-up (`initials` validated
@@ -126,3 +126,10 @@ English speaker living in France. It stays a UI default stored only on confirmat
 network call, no IP lookup, no Geolocation API. The time zone is coarse, already exposed to every
 script and never stored. The other decisions and the status are unchanged.
 
+## Amendment (2026-11-12, GDD v0.34, #145)
+
+Decision 4's browser signals no longer preselect a code. The time zone's country, then the first
+language's region, now head the six flags the country choice suggests, followed by the saved
+country and a fixed list of common ones (ADR-0030). Nothing is stored until the player picks a
+flag, *NONE*, or a code typed after *OTHER*. Still no network call, no IP lookup, no Geolocation
+API. The other decisions and the status are unchanged.

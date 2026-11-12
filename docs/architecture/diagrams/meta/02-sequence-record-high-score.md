@@ -2,7 +2,7 @@
 
 > **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.16 §9.1
 > (the letter grid, the high-score table, the Ending card), §9.8
-> **Related ADRs**: ADR-0006 (save document), ADR-0021 (the entry, the country preselection)
+> **Related ADRs**: ADR-0006 (save document), ADR-0021 (the entry, the country hints)
 > **Realizes**: UC3 of [01-use-case](../system/01-use-case.md); the G2 states of
 > [05-state-scenes](05-state-scenes.md); `NameEntry`, `LetterGrid` and `HighScoreTable` of
 > [04-class-menus](04-class-menus.md)
@@ -24,9 +24,8 @@ sequenceDiagram
   participant Host as SceneHost
   Scenes->>Table: qualifies(run score)
   Table-->>Scenes: true
-  Scenes->>Host: preselectedCountry()
-  Host-->>Scenes: FR, from Europe/Paris or fr-FR, or none
-  Scenes->>Entry: open(now, opening frame, score, FR)
+  Note over Scenes,Host: since v0.26 the country is chosen before the run (meta/02-sequence-country-feedback)
+  Scenes->>Entry: open(now, opening frame, score, saved country)
   loop each step until the entry is complete
     Player->>Scenes: a direction, confirm, back or a tap
     Scenes->>Entry: step(frame)
@@ -47,8 +46,8 @@ sequenceDiagram
 
 - The browser time zone and language are read once at startup by the composition root (the ADR-0009 snapshot);
   the domain keeps the code only if it is in `COUNTRY_CODES`.
-- `preselectedCountry` reads the browser time zone through the generated zone → country table,
-  else the region of the browser's first language (ADR-0021 decision 4 and its 2026-10-26 amendment); nothing else is read or inferred, and the country is stored only once confirmed.
+- `SceneHost.countryHints` (read by the country choice, not by this flow since v0.26) reads the browser time zone through the generated zone → country table,
+  then the region of the browser's first language (ADR-0021 decision 4 and its 2026-10-26 amendment, ADR-0030); nothing else is read or inferred, and the country is stored only once confirmed.
 - The table and the entries are domain data; the host only stores them (`SaveStore`), which keeps
   the stored top 10 written back with every option change (G1a-1).
 - When storage is unavailable the table still shows the entry for the session (UC3 3a).
