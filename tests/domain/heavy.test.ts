@@ -153,7 +153,7 @@ describe('ringAttack — 12 bullets 30° apart at 60 px/s (GDD v0.10 §5.2.1)', 
     expect(first?.[0]).toMatchObject({ x: 120, y: 72 });
     expect(first?.[0]?.vx).toBeCloseTo(0, 9);
     expect(first?.[0]?.vy).toBeCloseTo(60, 9);
-    for (const shot of first ?? []) expect(Math.hypot(shot.vx, shot.vy)).toBeCloseTo(60, 9);
+    for (const shot of first ?? []) expect(Math.hypot(shot.vx, shot.vy)).toBeCloseTo(60, 5);
   });
 
   it('turns the whole ring by 15° on every other volley, the same on every replay', () => {
@@ -188,7 +188,7 @@ describe('fanAttack — 5 bullets 15° apart, centred on the aim, at 85 px/s', (
     const angles = (first ?? []).map((s) => angleOf(s.vx, s.vy)).sort((a, b) => a - b);
     expect(angles.map((a) => Math.round(a * 1e6) / 1e6)).toEqual([15, 30, 45, 60, 75]);
     for (const shot of first ?? []) {
-      expect(Math.hypot(shot.vx, shot.vy)).toBeCloseTo(85, 9);
+      expect(Math.hypot(shot.vx, shot.vy)).toBeCloseTo(85, 5);
       expect(shot).toMatchObject({ x: 120, y: 72 });
     }
   });

@@ -7,6 +7,7 @@ import { PickupKind } from './pickup';
 import { KitCaps, KitTuning, PlayerTuning, toSteps } from './tuning';
 import { Weapon, WeaponKind } from './weapon';
 import type { PlayerShotSpawner } from './weapon';
+import { detHypot } from './det-math';
 
 /** Lifecycle of the ship (05-state-player). */
 export const PlayerState = {
@@ -250,7 +251,7 @@ export class Player {
     } else if (frame.moveKind === 'target') {
       const dx = frame.moveX - this.position.x;
       const dy = frame.moveY - this.position.y;
-      const distance = Math.hypot(dx, dy);
+      const distance = detHypot(dx, dy);
       if (distance <= reach) {
         this.position.x = frame.moveX;
         this.position.y = frame.moveY;

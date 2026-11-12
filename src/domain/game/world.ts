@@ -22,6 +22,7 @@ import {
   STEP_SECONDS,
 } from './tuning';
 import type { PlayerShotSpawner, ShotSpec } from './weapon';
+import { detSin } from './det-math';
 
 /**
  * What is on the field during a run (class diagram, view A): the player and the active lists,
@@ -143,7 +144,7 @@ export class World implements PlayerShotSpawner, EnemyShotSpawner, WorldView {
       pickup.age += 1;
       const seconds = pickup.age * STEP_SECONDS;
       pickup.position.x =
-        pickup.origin.x + PickupTuning.swayAmplitude * Math.sin(SWAY_RADIANS_PER_SECOND * seconds);
+        pickup.origin.x + PickupTuning.swayAmplitude * detSin(SWAY_RADIANS_PER_SECOND * seconds);
       pickup.position.y = pickup.origin.y + PickupTuning.fallSpeed * seconds;
     }
   }

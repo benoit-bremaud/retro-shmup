@@ -1,5 +1,6 @@
 import type { Vec2 } from './geometry';
 import { KitCaps, LaserTuning, PlayerTuning, SpreadTuning, toSteps } from './tuning';
+import { detCos, detSin } from './det-math';
 
 /** The two weapons (GDD §4.3), chosen by the colour of the last P caught. */
 export const WeaponKind = {
@@ -53,8 +54,8 @@ function spreadShot(degrees: number, damage: number): ShotSpec {
   return {
     offsetX: 0,
     offsetY: -PlayerTuning.noseOffset,
-    vxPerSecond: t.speed * Math.sin(degrees * DEGREES),
-    vyPerSecond: -t.speed * Math.cos(degrees * DEGREES),
+    vxPerSecond: t.speed * detSin(degrees * DEGREES),
+    vyPerSecond: -t.speed * detCos(degrees * DEGREES),
     width: t.width,
     height: t.height,
     damage,

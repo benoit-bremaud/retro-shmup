@@ -56,14 +56,16 @@ describe('level 1 balance (measurement bot, GDD v0.21)', () => {
       console.info(JSON.stringify({ good, average, beginner }, null, 1));
   }, 120_000);
 
-  // Measured 98 % game over, 2 % boss killed since a death resets the weapon (GDD v0.29, #130; the
+  // Measured 96 % game over, 4 % boss killed with the deterministic trigonometry (ADR-0031, #167);
+  // 98 %, 2 % since a death resets the weapon (GDD v0.29, #130; the
   // owner accepted the harder level, compensation after the playtest; v0.24: 60 %, 40 %).
   it('lets the good player reach and sometimes beat the boss', () => {
     expect(good.gameOverRate).toBeLessThanOrEqual(0.99);
     expect(good.bossKillRate).toBeGreaterThanOrEqual(0.01);
   });
 
-  // Measured 3.91 deaths, 98 % game over with the weapon reset at death (GDD v0.29, #130); 3.32,
+  // Measured 3.85 deaths, 96 % game over with the deterministic trigonometry (ADR-0031, #167);
+  // 3.91, 98 % with the weapon reset at death (GDD v0.29, #130); 3.32,
   // 61 %, 40 % boss killed with the 6 × 6 hitbox (GDD v0.24, #106); 2.96, 47 %, 53 % with the v0.21 filler rows (v0.19: 2.74,
   // 45 %, 55 %, the ring breaks on near misses; v0.18: 2.3, 28 %, 73 %; v0.12: 0.56, 2 %, 98 %).
   it('makes the average player lose lives and sometimes the run', () => {

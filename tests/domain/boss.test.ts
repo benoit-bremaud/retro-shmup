@@ -245,7 +245,7 @@ describe('Boss — phases (ADR-0023 decision 3)', () => {
     // The second volley adds the aimed triple at 85 px/s (GDD v0.18 §6.1).
     ticks(boss, world, 75);
     expect(world.bullets).toHaveLength(14 + 14 + 3);
-    for (const b of world.bullets.slice(28)) expect(Math.hypot(b.vx, b.vy)).toBeCloseTo(85, 9);
+    for (const b of world.bullets.slice(28)) expect(Math.hypot(b.vx, b.vy)).toBeCloseTo(85, 5);
   });
 
   it('does not enter phase 2 one tenth above its threshold', () => {
@@ -368,7 +368,7 @@ describe('Boss — the movement swap on the axis itself (ADR-0023 decision 3)', 
     expect(boss.position.x).toBe(120);
     ticks(boss, world, 30);
     // 30 steps of a 360-step sway, rightwards: a second restart would land elsewhere.
-    expect(boss.position.x).toBeCloseTo(120 + 72 * Math.sin((2 * Math.PI * 30) / 360), 6);
+    expect(boss.position.x).toBeCloseTo(120 + 72 * Math.sin((2 * Math.PI * 30) / 360), 5);
     expect(boss.mirror).toBe(false);
   });
 });
@@ -408,10 +408,10 @@ describe('Boss — the Cruiser at 0.9 s (GDD v0.18 §6.1)', () => {
     tick(boss, world);
     expect(world.bullets).toHaveLength(5);
     // GDD v0.18 §6.1: the fan flies at 85 px/s, the ring at 60.
-    for (const b of world.bullets) expect(Math.hypot(b.vx, b.vy)).toBeCloseTo(85, 9);
+    for (const b of world.bullets) expect(Math.hypot(b.vx, b.vy)).toBeCloseTo(85, 5);
     ticks(boss, world, 54);
     expect(world.bullets).toHaveLength(5 + 12);
-    for (const b of world.bullets.slice(5)) expect(Math.hypot(b.vx, b.vy)).toBeCloseTo(60, 9);
+    for (const b of world.bullets.slice(5)) expect(Math.hypot(b.vx, b.vy)).toBeCloseTo(60, 5);
     ticks(boss, world, 54);
     expect(world.bullets).toHaveLength(5 + 12 + 5);
   });
