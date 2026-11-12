@@ -1,6 +1,6 @@
 # State machine diagram — meta — a run sent online, as the game sees it (v0.35)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.35, v0.36, v0.37 §9.1, §9.3
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.35, v0.36, v0.37 §9.1
 > (*Send online*, send errors #173, *WAIT* #177), §9.3 (*Online scores*), §9.8
 > **Related ADRs**: ADR-0031; retro-leaderboard ADR-0001 (verdicts), ADR-0004 (erasure)
 > **Realizes**: UC9 and UC10 of [01-use-case](../system/01-use-case.md)

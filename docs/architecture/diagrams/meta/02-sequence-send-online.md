@@ -1,6 +1,6 @@
 # Sequence diagram — meta — send a run online and erase it (v0.35)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.35, v0.36, v0.37 §9.1, §9.3
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.35, v0.36, v0.37 §9.1
 > (*Send online*, send errors #173, *WAIT* #177), §9.3 (*Online scores*), §9.8
 > **Related ADRs**: ADR-0006 (untrusted stored data), ADR-0027 (new-tab gesture rule), ADR-0031
 > (recording, codec, sending, kept runs); retro-leaderboard ADR-0001, ADR-0003, ADR-0004

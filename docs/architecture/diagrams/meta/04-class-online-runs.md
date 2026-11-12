@@ -1,6 +1,6 @@
 # Class diagram — meta — online runs, the leaderboard port and the kept runs (v0.35)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.35, v0.36, v0.37 §9.1, §9.3
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.35, v0.36, v0.37 §9.1
 > (*Send online*, send errors #173, *WAIT* #177), §9.3 (*Online scores*), §9.8
 > **Related ADRs**: ADR-0006 (untrusted stored data), ADR-0031 (decisions 12–21)
 > **Realizes**: UC9 and UC10 of [01-use-case](../system/01-use-case.md); the `OnlineRuns` and
@@ -79,7 +79,7 @@ classDiagram
     +step() void «settles, then player action, then queued GET, then the 15 s poll»
     +refreshAll() void «one GET at a time»
     +leave() void «stops polling»
-    +erase(id) erasing | busy | gone «planned, 3b»
+    +erase(id) erasing | busy | gone «planned, 3b; gone wins over busy»
     +kept() KeptRun[]
     +state() OnlineState
     +eraseError() FailureCode «or none»

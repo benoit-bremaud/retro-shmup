@@ -111,7 +111,7 @@ stateDiagram-v2
   SendOnline --> AfterOnline : not now, back or after(20 s without input)
   SendOnline --> SendOnline : privacy / open the privacy page in a new tab
   SendOnline --> SendOnline : send [20 runs kept] / show the erase-first line
-  SendOnline --> SendOnline : send [another send or erasure under way] / show WAIT
+  SendOnline --> SendOnline : send [a name, fewer than 20 kept, another send or erasure under way] / show WAIT
   SendOnline --> OnlineName : send [no usable name this run, fewer than 20 kept]
   OnlineName --> SendOnline : back, or OK on an empty name
   OnlineName --> SendOnline : OK [name not empty, another send or erasure under way] / show WAIT
@@ -121,6 +121,7 @@ stateDiagram-v2
   OnlineStatus --> OnlineStatus : after(15 s) [pending, under 2 min] / ask the status
   OnlineStatus --> AfterOnline : OK
   OnlineStatus --> OnlineStatus : erase, confirmed [another under way] / show WAIT
+  OnlineStatus --> AfterOnline : erase, confirmed [run gone] / nothing sent
   OnlineStatus --> AfterOnline : erase, confirmed, then 204 or 404 / drop the run
   OnlineStatus --> OnlineStatus : erase, confirmed, then failed / show the error line
   AfterOnline --> FeedbackOffer : [form address set]
@@ -175,13 +176,13 @@ stateDiagram-v2
   passes straight to the former targets, so builds without the feature behave as in v0.34.
   `send` with 20 runs kept stays on `Send online` with the erase-first line; a usable name is the
   name entered for this run, never `???`.
-- **v0.37 (GDD §9.1, §9.3, #177)**: `send`, the online name entry's *OK* and a confirmed erase
-  that meet another send or erasure under way show *WAIT* and do nothing; an erase of a run that
-  left the list meanwhile sends nothing.
   `Name entry (online)` is the name entry's screen whose result is not added to the local table.
   `Online status` shows *Sending*, then *Pending verification* and the verdict; the poll stops
   after 2 minutes. The client view of a kept run's status is in
   [05-state-online-run](05-state-online-run.md).
+- **v0.37 (GDD §9.1, §9.3, #177)**: `send`, the online name entry's *OK* and a confirmed erase
+  that meet another send or erasure under way show *WAIT* and do nothing; an erase of a run that
+  left the list meanwhile sends nothing.
 - **v0.34 (GDD §9.1, ADR-0030)**: both `Country choice` states have two sub-states, drawn below.
   The cursor and the opening guard restart at each page switch, which plays *MenuConfirm*.
 
