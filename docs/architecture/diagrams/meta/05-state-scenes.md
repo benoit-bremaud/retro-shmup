@@ -1,6 +1,6 @@
 # State machine diagram — meta — screens and their transitions (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.10 §3.2, §3.4, v0.26 §9.1 (country choice, feedback offer), v0.35 §9.1 *Send online* and §9.3 *Online scores*,
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.10 §3.2, §3.4, v0.26 §9.1 (country choice, feedback offer), v0.35 §9.1 *Send online* and §9.3 *Online scores*, v0.37 §9.1, §9.3 (*WAIT*),
 > §4.2, §4.3–§4.6, §5.2.1, §6, §7.2.1, §7.2.2, §7.3, §8, §9.1, §9.2, §9.3, §9.4, §9.7; v0.13 §9.1 menus, §9.3 options layout
 > **Related ADRs**: ADR-0006 (save document), ADR-0009 (gestures, automatic pause), ADR-0010
 > (one run, one bus), ADR-0015 (pause in the first playable), ADR-0018 (taps, locks, pause button),
@@ -111,20 +111,24 @@ stateDiagram-v2
   SendOnline --> AfterOnline : not now, back or after(20 s without input)
   SendOnline --> SendOnline : privacy / open the privacy page in a new tab
   SendOnline --> SendOnline : send [20 runs kept] / show the erase-first line
+  SendOnline --> SendOnline : send [another send or erasure under way] / show WAIT
   SendOnline --> OnlineName : send [no usable name this run, fewer than 20 kept]
   OnlineName --> SendOnline : back, or OK on an empty name
-  OnlineName --> OnlineStatus : OK [name not empty] / submit the run
-  SendOnline --> OnlineStatus : send [a name, fewer than 20 kept] / submit the run
+  OnlineName --> SendOnline : OK [name not empty, another send or erasure under way] / show WAIT
+  OnlineName --> OnlineStatus : OK [name not empty, none under way] / submit the run
+  SendOnline --> OnlineStatus : send [a name, fewer than 20 kept, none under way] / submit the run
   OnlineStatus --> SendOnline : refused, too long, offline or timeout / show the error line
   OnlineStatus --> OnlineStatus : after(15 s) [pending, under 2 min] / ask the status
   OnlineStatus --> AfterOnline : OK
+  OnlineStatus --> OnlineStatus : erase, confirmed [another under way] / show WAIT
   OnlineStatus --> AfterOnline : erase, confirmed, then 204 or 404 / drop the run
   OnlineStatus --> OnlineStatus : erase, confirmed, then failed / show the error line
   AfterOnline --> FeedbackOffer : [form address set]
   AfterOnline --> Title : [no form address]
   Options --> OnlineScores : online scores [feature present] / ask each kept run's status
   OnlineScores --> OnlineScores : 404 on a status / drop the run
-  OnlineScores --> OnlineScores : erase, confirmed / erase the run, drop it on 204 or 404
+  OnlineScores --> OnlineScores : erase, confirmed [another under way] / show WAIT, erase nothing
+  OnlineScores --> OnlineScores : erase, confirmed [none under way] / erase the run, drop it on 204 or 404
   OnlineScores --> Options : back
   FeedbackOffer --> Title : give feedback / open the form, count + 1
   FeedbackOffer --> Title : later, back or after(20 s)
@@ -171,6 +175,9 @@ stateDiagram-v2
   passes straight to the former targets, so builds without the feature behave as in v0.34.
   `send` with 20 runs kept stays on `Send online` with the erase-first line; a usable name is the
   name entered for this run, never `???`.
+- **v0.37 (GDD §9.1, §9.3, #177)**: `send`, the online name entry's *OK* and a confirmed erase
+  that meet another send or erasure under way show *WAIT* and do nothing; an erase of a run that
+  left the list meanwhile sends nothing.
   `Name entry (online)` is the name entry's screen whose result is not added to the local table.
   `Online status` shows *Sending*, then *Pending verification* and the verdict; the poll stops
   after 2 minutes. The client view of a kept run's status is in

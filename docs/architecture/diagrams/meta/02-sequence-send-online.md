@@ -1,7 +1,7 @@
 # Sequence diagram — meta — send a run online and erase it (v0.35)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.35, v0.36 §9.1
-> (*Send online*, send errors #173), §9.3 (*Online scores*), §9.8
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.35, v0.36, v0.37 §9.1, §9.3
+> (*Send online*, send errors #173, *WAIT* #177), §9.3 (*Online scores*), §9.8
 > **Related ADRs**: ADR-0006 (untrusted stored data), ADR-0027 (new-tab gesture rule), ADR-0031
 > (recording, codec, sending, kept runs); retro-leaderboard ADR-0001, ADR-0003, ADR-0004
 > **Realizes**: UC9 and UC10 of [01-use-case](../system/01-use-case.md); the online states of
@@ -31,7 +31,9 @@ sequenceDiagram
   Scenes->>Online: offer(run result)
   Player->>Scenes: SEND
   alt 20 runs kept
-    Online-->>Scenes: refused (erase an online score first)
+    Online-->>Scenes: full (erase an online score first)
+  else another send or erasure under way (v0.37)
+    Online-->>Scenes: busy (WAIT), nothing sent
   else a name and room left
     Scenes->>Rec: seed(), records(), frames()
     Rec-->>Scenes: the seed, a view of the records, their count
@@ -65,14 +67,20 @@ sequenceDiagram
   opt later: Options, Online scores, erase confirmed
     Player->>Scenes: erase the highlighted run
     Scenes->>Online: erase(id)
-    Online->>Port: erase(id, token)
-    Port->>LB: DELETE /v1/runs/{id} (Authorization: Bearer token)
-    alt 204 or 404
-      Port-->>Online: erased
-      Online->>Store: drop the item
-    else offline or server error
-      Port-->>Online: failed
-      Online-->>Scenes: error line, the item stays
+    alt another send or erasure under way (v0.37)
+      Online-->>Scenes: busy (WAIT), nothing erased
+    else the run left the list meanwhile
+      Online-->>Scenes: gone, nothing sent
+    else the run is kept and nothing else is under way
+      Online->>Port: erase(id, token)
+      Port->>LB: DELETE /v1/runs/{id} (Authorization: Bearer token)
+      alt 204 or 404
+        Port-->>Online: erased
+        Online->>Store: drop the item
+      else offline or server error
+        Port-->>Online: failed
+        Online-->>Scenes: error line, the item stays
+      end
     end
   end
 ```
