@@ -20,11 +20,11 @@ export interface SceneHost {
   /** `InputPort.label`: a letter or digit key's printed character, else `''`. */
   keyLabel(code: string): string;
   /**
-   * The country choice's preselection at the first Play, or `undefined`: the browser time zone's
-   * country, else the region of its first language (ADR-0021 decision 4 and its 2026-10-26
-   * amendment, GDD v0.30); the domain checks it is known.
+   * What the browser hints about the player's country, for the choice's suggestions (GDD v0.34
+   * §9.1): the time zone's country, then the region of its first language (ADR-0021 decision 4
+   * and its 2026-10-26 amendment); the domain checks each is known.
    */
-  preselectedCountry(): string | undefined;
+  countryHints(): readonly string[];
   /** Today's date as `YYYY-MM-DD`: the domain reads no clock (ADR-0006). */
   today(): string;
   /** After a new entry: the whole table, to save with the options (SD-score). */
@@ -32,6 +32,7 @@ export interface SceneHost {
 }
 
 const CANCELLED: BindingCapture = { kind: 'cancelled' };
+const NO_HINTS: readonly string[] = [];
 
 /** A host that saves nothing and captures nothing: the tests' default. */
 export const NO_HOST: SceneHost = {
@@ -41,7 +42,7 @@ export const NO_HOST: SceneHost = {
   captureNext: () => CANCELLED,
   cancelCapture: () => undefined,
   keyLabel: () => '',
-  preselectedCountry: () => undefined,
+  countryHints: () => NO_HINTS,
   today: () => '2026-01-01',
   highScoresChanged: () => undefined,
 };

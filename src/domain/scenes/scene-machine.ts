@@ -18,6 +18,7 @@ import {
   drawBanner,
   drawControlsScreen,
   drawCountIn,
+  drawCountrySuggestions,
   drawEnding,
   drawGesturePrompt,
   drawHighScores,
@@ -654,8 +655,8 @@ export class SceneMachine {
     } else if (row === 'highScores') {
       this.openHighScores(-1);
     } else if (row === 'play' && this.options.country === undefined) {
-      // Never asked yet: the country choice first, preselected from the time zone, else the language (GDD v0.30 §9.1).
-      this.openCountry(Scene.StartCountry, frame, this.host.preselectedCountry());
+      // Never asked yet: the country choice first (GDD v0.34 §9.1).
+      this.openCountry(Scene.StartCountry, frame);
     } else if (row === 'play') {
       this.startRun();
     }
@@ -745,17 +746,16 @@ export class SceneMachine {
     this.host.releaseMovement();
   }
 
-  private openCountry(
-    scene: Scene,
-    frame: Readonly<IntentFrame>,
-    preselected: string | undefined,
-  ): void {
+  // The suggestions come from the browser's hints, then the saved country, the cursor on the saved
+  // one (GDD v0.34 §9.1).
+  private openCountry(scene: Scene, frame: Readonly<IntentFrame>): void {
     this.enter(scene);
-    this.countryChoice.open(this.steps, frame, preselected);
+    this.countryChoice.open(this.steps, frame, this.host.countryHints(), this.options.country);
   }
 
-  // A code or NONE is saved at once; the start choice then starts the run, the options' one returns
-  // to its options. Back on an empty code saves nothing: to the title or to the options (GDD v0.26).
+  // A country or NONE is saved at once; the start choice then starts the run, the options' one
+  // returns to its options. Back on the suggestions saves nothing: to the title or to the options
+  // (GDD v0.34).
   private stepCountry(
     scene: typeof Scene.StartCountry | keyof typeof COUNTRY_PARENT,
     _dt: number,
@@ -763,8 +763,13 @@ export class SceneMachine {
   ): void {
     const cursor = this.countryChoice.grid.cursor;
     const filled = this.countryChoice.nextSlot;
+    const byLetters = this.countryChoice.byLetters;
     const exit = this.countryChoice.step(frame, this.steps);
-    if (exit !== undefined || this.countryChoice.nextSlot !== filled)
+    if (
+      exit !== undefined ||
+      this.countryChoice.nextSlot !== filled ||
+      this.countryChoice.byLetters !== byLetters
+    )
       this.audio.play(Sfx.MenuConfirm);
     else if (this.countryChoice.grid.cursor !== cursor) this.audio.play(Sfx.MenuMove);
     if (exit === 'chosen') {
@@ -791,8 +796,7 @@ export class SceneMachine {
     else if (row === 'audio') this.openMenu(OPTIONS_ROUTES[scene].audio, frame);
     else if (row === 'controls') this.openControls(OPTIONS_ROUTES[scene].controls, frame);
     else if (row === 'country') {
-      // From the options the grid starts on the saved code, empty for NONE (GDD v0.26 §9.1).
-      this.openCountry(OPTIONS_ROUTES[scene].country, frame, this.options.country);
+      this.openCountry(OPTIONS_ROUTES[scene].country, frame);
     } else this.change(row);
   }
 
@@ -1193,7 +1197,9 @@ export class SceneMachine {
   }
 
   private overlayCountry(): void {
-    drawNameEntry(this.renderer, this.countryChoice, this.options.language);
+    if (this.countryChoice.byLetters)
+      drawNameEntry(this.renderer, this.countryChoice, this.options.language);
+    else drawCountrySuggestions(this.renderer, this.countryChoice.grid, this.options.language);
   }
 
   private overlayNameEntry(): void {

@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { HUD_FONT_CELL } from '../../src/domain/ports/render-port';
+import { HUD_FONT_CELL, MENU_FONT_CELL } from '../../src/domain/ports/render-port';
 import {
   drawControlsScreen,
   drawCountIn,
+  drawCountrySuggestions,
   drawGesturePrompt,
   drawHighScores,
   drawMenu,
@@ -18,7 +19,13 @@ import { CountryChoice } from '../../src/domain/scenes/country-choice';
 import { createIntentFrame } from '../../src/domain/ports/input-port';
 import { Palette } from '../../src/domain/presentation/palette';
 import { FIELD_HEIGHT, FIELD_WIDTH } from '../../src/domain/presentation/screen';
+import { onLetters } from '../support/country-choice';
 import { RecordingRender } from '../support/recording-render';
+
+/** The width of `text` in the menu font. */
+function menuTextWidth(text: string): number {
+  return (text.length - 1) * MENU_FONT_CELL.width + MENU_FONT_CELL.glyphWidth;
+}
 
 describe('overlays of the frozen scenes (meta/05-state-scenes, enemies brick additions)', () => {
   it('veils the whole play field', () => {
@@ -143,11 +150,9 @@ describe('drawControlsScreen (GDD v0.15 §4.2)', () => {
 });
 
 describe('drawNameEntry (GDD v0.16 §9.1, v0.26)', () => {
-  /** The country choice (GDD v0.26 §9.1), the code preselected from `country`. */
-  function onCountry(country: string | undefined): CountryChoice {
-    const choice = new CountryChoice();
-    choice.open(0, createIntentFrame(), country);
-    return choice;
+  /** The country choice's letters page (GDD v0.34 §9.1), `code` typed. */
+  function onCountry(code: string | undefined): CountryChoice {
+    return onLetters(new CountryChoice(), code ?? '');
   }
 
   function texts(entry: NameEntryView): string[] {
@@ -219,10 +224,38 @@ describe('the feedback screens (GDD v0.26 §9.1)', () => {
 
 describe('country flags beside the code (GDD v0.27 §9.1, ADR-0028)', () => {
   function countryChoice(code: string | undefined): CountryChoice {
-    const choice = new CountryChoice();
-    choice.open(0, createIntentFrame(), code);
-    return choice;
+    return onLetters(new CountryChoice(), code ?? '');
   }
+
+  it('draws each suggestion as its code then its flag, centred in its 60 px cell', () => {
+    const render = new RecordingRender();
+    const choice = new CountryChoice();
+    choice.open(0, createIntentFrame(), [], undefined);
+    drawCountrySuggestions(render, choice.grid, 'fr');
+    const texts = render.texts.map((text) => text.text);
+    expect(texts).toEqual(['PAYS', 'FR', 'BE', 'CH', 'CA', 'US', 'GB', 'AUCUN', 'AUTRE']);
+    expect(render.flags.map((flag) => flag.code)).toEqual(['FR', 'BE', 'CH', 'CA', 'US', 'GB']);
+    const fr = render.texts[1];
+    const flag = render.flags[0];
+    // The code and its flag, 2 px apart, centred together in the cell from x 0 to 60.
+    const start = Math.round((60 - menuTextWidth('FR') - 2 - 16) / 2);
+    expect(fr?.x).toBe(start);
+    expect(flag?.x).toBe(start + menuTextWidth('FR') + 2);
+    expect(render.rectsOf(Palette.menuHighlight).map((r) => [r.x, r.y, r.w])).toEqual([
+      [0, 105, 60],
+    ]);
+  });
+
+  it('centres the code of a suggestion alone when no flag is drawn', () => {
+    const render = new RecordingRender();
+    render.flagsLoaded = false;
+    const choice = new CountryChoice();
+    choice.open(0, createIntentFrame(), [], undefined);
+    drawCountrySuggestions(render, choice.grid, 'en');
+    const fr = render.texts[1];
+    expect(fr?.text).toBe('FR');
+    expect(fr?.x).toBe(Math.round((60 - menuTextWidth('FR')) / 2));
+  });
 
   it('draws the flag 2 px right of the slots, 1 px above the text, once the code is known', () => {
     const render = new RecordingRender();

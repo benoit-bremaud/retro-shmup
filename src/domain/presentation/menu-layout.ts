@@ -92,7 +92,7 @@ export const NAME_ENTRY_LAYOUT = { headingY: 40, slotsY: 72, slotWidth: 16 } as 
  */
 export interface GridCell<Action extends string = string> {
   readonly action: Action;
-  /** The character a `char` cell adds, else `''`. */
+  /** The character a `char` cell adds, the country code of a suggestions `flag` cell (ADR-0030), else `''`. */
   readonly text: string;
   /** The catalogue text an action cell shows. */
   readonly label?: MessageKey;

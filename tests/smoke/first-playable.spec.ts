@@ -117,8 +117,8 @@ const PAUSE_PIXEL = { x: 90, y: 113 };
 /** The middle of the PLAY row of the title menu (three 32 px rows from y 112), in play-field pixels. */
 const PLAY_ROW = { x: 120, y: 128 };
 
-/** The middle of the country grid's NONE cell (row 3, columns 3 and 4; GDD v0.26), in play-field pixels. */
-const NONE_CELL = { x: 120, y: 104 + 3 * 32 + 16 };
+/** The middle of the country suggestions' NONE cell (row 1, the third 60 px cell; GDD v0.34), in play-field pixels. */
+const NONE_CELL = { x: 150, y: 104 + 32 + 16 };
 /** The middle of the RESUME row (three 32 px rows from y 112), in play-field pixels. */
 const RESUME_ROW = { x: 120, y: 128 };
 
