@@ -120,7 +120,7 @@ classDiagram
 - **Decode caps**: inflate stops at `min(frames, maxFrames) × 5 + 1` bytes and requires exactly
   `frames × 5` and the end of the stream, so a crafted `inputs` can neither exhaust memory nor
   carry extra data (ADR-0031 decision 7).
-- **DetMath**: a quarter-wave table of 4 096 steps (4 097 entries) built once from integer arithmetic and a
-  fixed polynomial, linear interpolation; `detHypot` is `Math.sqrt(x * x + y * y)`, correctly
+- **DetMath**: a quarter-wave table of 4 096 steps (4 097 entries) built once from exact
+  floating-point operations and a fixed polynomial, linear interpolation; `detHypot` is `Math.sqrt(x * x + y * y)`, correctly
   rounded everywhere. ESLint allows only the exactly specified `Math` members in
   `src/domain/game`, `src/domain/random` and `src/domain/replay` (ADR-0031 decision 10).

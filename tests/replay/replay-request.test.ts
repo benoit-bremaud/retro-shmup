@@ -1,8 +1,8 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { build } from 'vite';
 import { Run, RunOutcome } from '../../src/domain/game/run';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
@@ -108,6 +108,10 @@ describe('the replay CLI bundle', () => {
   beforeAll(async () => {
     await build({ configFile: 'vite.replay.config.ts', logLevel: 'silent', build: { outDir } });
   }, 60_000);
+
+  afterAll(() => {
+    rmSync(outDir, { recursive: true, force: true });
+  });
 
   function cli(stdin: string): string {
     return execFileSync(process.execPath, [join(outDir, 'replay.mjs')], {

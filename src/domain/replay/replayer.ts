@@ -21,8 +21,8 @@ export type ReplayReport =
  * Plays `frames` records from `seed` through the real `Run`, as the game did: one record per step,
  * the run ending on the step whose outcome becomes `GAME_OVER` or `RUN_CLEARED` (decision 1).
  * Records left after that step are `trailing-frames`; a run still playing after the last record is
- * `unfinished`; an invalid record, or `records` not holding exactly `frames` of them, is `decode`. `config` is for tests only: the game and the CLI
- * replay the real level list.
+ * `unfinished`; an invalid record, or `records` not holding exactly `frames` of them, is
+ * `decode`. `config` is for tests only: the game and the CLI replay the real level list.
  */
 export function replay(
   seed: number,
