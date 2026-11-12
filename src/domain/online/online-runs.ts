@@ -60,6 +60,9 @@ const MAYBE_STORED: ReadonlySet<FailureCode> = new Set<FailureCode>([
   'accepted-unreadable',
 ]);
 
+/** Read-change-write tries before a change counts as not kept. */
+const CHANGE_ATTEMPTS = 3;
+
 const IDLE: OnlineState = { phase: 'idle' };
 const SENDING: OnlineState = { phase: 'sending' };
 
@@ -261,12 +264,19 @@ export class OnlineRuns {
   }
 
   /**
-   * Read, change, write: another tab's runs are re-read first and never overwritten. True only
-   * when `apply` accepted the change and the write succeeded.
+   * Read, change, write, read back: another tab's runs are re-read first and never overwritten.
+   * True only when `apply` accepted the change and the document stored is the one written.
    */
   private change(apply: (runs: KeptRuns) => boolean): boolean {
-    this.runs = this.load();
-    const accepted = apply(this.runs);
-    return this.storage.write(KEPT_RUNS_KEY, serializeKeptRuns(this.runs)) && accepted;
+    // localStorage is not atomic across tabs: a write landing between our read and write is
+    // caught by reading back, and the change is redone on the newer document.
+    for (let attempt = 0; attempt < CHANGE_ATTEMPTS; attempt += 1) {
+      this.runs = this.load();
+      const accepted = apply(this.runs);
+      const text = serializeKeptRuns(this.runs);
+      if (!this.storage.write(KEPT_RUNS_KEY, text)) return false;
+      if (this.storage.read(KEPT_RUNS_KEY) === text) return accepted;
+    }
+    return false;
   }
 }

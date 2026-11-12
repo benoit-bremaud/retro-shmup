@@ -17,5 +17,5 @@ export async function encodeCodec1(records: Uint8Array, frames: number): Promise
 function toBase64Url(bytes: Uint8Array): string {
   let binary = '';
   for (let i = 0; i < bytes.length; i += 1) binary += String.fromCodePoint(bytes[i] ?? 0);
-  return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', ''); // '=' only pads the end;
+  return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', ''); // '=' only pads the end
 }
