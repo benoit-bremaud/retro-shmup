@@ -24,6 +24,8 @@ import { NO_HOST } from '../../src/domain/scenes/scene-host';
 import type { SceneHost } from '../../src/domain/scenes/scene-host';
 import type { ArmedLink, LinkOutcome, LinkPort } from '../../src/domain/ports/link-port';
 import { PORTRAIT } from '../../src/domain/presentation/screen';
+import { MAX_RECORDED_STEPS } from '../../src/domain/replay/record';
+import { replay } from '../../src/domain/replay/replayer';
 import { RecordingRender } from '../support/recording-render';
 import type { RecordedRect } from '../support/recording-render';
 import { STUB_BOSS, testScript } from '../support/script';
@@ -2320,6 +2322,42 @@ describe('SceneMachine — the feedback form (GDD v0.26 §9.1, ADR-0027)', () =>
       idle(fixture.machine, 1);
       expect(fixture.machine.scene).toBe(Scene.Title);
       expect(fixture.host.saved.map((options) => options.feedbackCount)).toEqual([1]);
+    });
+  });
+});
+
+describe('SceneMachine — run recording (ADR-0031 decision 1)', () => {
+  it('records every step the run read, so the replay reaches the same score', () => {
+    let run = new Run({ seed: 3 });
+    const machine = new SceneMachine(
+      new RecordingRender(),
+      new Starfield(() => 0.5),
+      withEffects(ALL_ON),
+      () => {
+        run = new Run({ seed: 3 });
+        return run;
+      },
+    );
+    machine.step(DT, createIntentFrame());
+    machine.step(DT, pressed(Button.Confirm));
+    const frame = createIntentFrame();
+    for (let i = 0; i < MAX_RECORDED_STEPS && machine.scene === Scene.Playing; i += 1) {
+      frame.held = Button.Fire;
+      frame.moveKind = 'direction';
+      frame.moveX = Math.sin(i / 41) * 0.83;
+      frame.moveY = 0.1234;
+      machine.step(DT, frame);
+    }
+    expect(machine.scene).toBe(Scene.GameOver);
+    const recording = machine.recording();
+    expect(recording.sendable()).toBe(true);
+    machine.step(DT, frame);
+    expect(machine.recording().frames()).toBe(recording.frames());
+    expect(replay(3, recording.records(), recording.frames())).toEqual({
+      ok: true,
+      score: run.snapshot().score,
+      outcome: 'game-over',
+      framesRead: recording.frames(),
     });
   });
 });
