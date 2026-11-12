@@ -28,9 +28,8 @@ export function replayRequest(text: string): ReplayReport {
   if (!isInteger(seed, 0, MAX_SEED) || codec !== 1 || typeof inputs !== 'string') return DECODE;
   if (!isInteger(frames, 1, Number.MAX_SAFE_INTEGER)) return DECODE;
   if (frames > MAX_RECORDED_STEPS) return { ok: false, error: 'overflow' };
-  const records = decodeCodec1(inputs, frames);
-  if (records === undefined) return DECODE;
-  return replay(seed, records, frames);
+  const decoded = decodeCodec1(inputs, frames);
+  return decoded.ok ? replay(seed, decoded.records, frames) : DECODE;
 }
 
 function isInteger(value: unknown, min: number, max: number): value is number {

@@ -17,38 +17,54 @@ export function encodeCodec1(records: Uint8Array, frames: number): string {
   return deflateRawSync(columns).toString('base64url');
 }
 
+/** Why codec 1 text was refused (ADR-0031 decision 7); each has its golden vectors. */
+export type DecodeError = 'base64' | 'inflate' | 'length' | 'record';
+
+/** The decoded records, or the first check that failed. */
+export type DecodeResult =
+  | { readonly ok: true; readonly records: Uint8Array }
+  | { readonly ok: false; readonly error: DecodeError };
+
 /**
- * Decodes codec 1 text into exactly `frames` valid records, or `undefined`: text that is not
- * canonical base64url, a DEFLATE stream that is broken, unfinished, followed by excess bytes or
- * inflating past `frames × 5` bytes, a frame count above `MAX_RECORDED_STEPS` (the cap stops a bomb), or an invalid record. Never throws.
+ * Decodes codec 1 text into exactly `frames` valid records. Refusals, in order: `length` for a
+ * frame count outside [1, `MAX_RECORDED_STEPS`]; `base64` for text that is not canonical base64url;
+ * `inflate` for a DEFLATE stream that is broken, unfinished or followed by excess bytes; `length`
+ * for one inflating to other than `frames × 5` bytes (the cap at `frames × 5 + 1` stops a bomb);
+ * `record` for an invalid record. Never throws.
  */
-export function decodeCodec1(text: string, frames: number): Uint8Array | undefined {
-  if (!Number.isSafeInteger(frames) || frames < 1 || frames > MAX_RECORDED_STEPS) return undefined;
-  if (!BASE64URL.test(text)) return undefined;
+export function decodeCodec1(text: string, frames: number): DecodeResult {
+  if (!Number.isSafeInteger(frames) || frames < 1 || frames > MAX_RECORDED_STEPS) {
+    return refused('length');
+  }
+  if (!BASE64URL.test(text)) return refused('base64');
   const compressed = Buffer.from(text, 'base64url');
-  if (compressed.toString('base64url') !== text) return undefined;
+  if (compressed.toString('base64url') !== text) return refused('base64');
   const size = frames * RECORD_BYTES;
   const columns = inflateExactly(compressed, size + 1);
-  if (columns === undefined) return undefined;
+  if (typeof columns === 'string') return refused(columns);
   const records = new Uint8Array(size);
-  if (!fromColumns(columns, frames, records)) return undefined;
+  if (!fromColumns(columns, frames, records)) return refused('length');
   for (let i = 0; i < frames; i += 1) {
-    if (!validRecord(records, i)) return undefined;
+    if (!validRecord(records, i)) return refused('record');
   }
-  return records;
+  return { ok: true, records };
+}
+
+function refused(error: DecodeError): DecodeResult {
+  return { ok: false, error };
 }
 
 /**
- * Inflates a whole raw DEFLATE stream of at most `cap` bytes; `undefined` when it is broken,
- * unfinished, followed by excess input or larger than `cap`. With `info`, Node returns the engine,
- * whose `bytesWritten` counts the input consumed (the typings omit this overload).
+ * Inflates a whole raw DEFLATE stream of at most `cap` bytes: `length` past the cap, `inflate` when
+ * it is broken, unfinished or followed by excess input. With `info`, Node returns the engine, whose
+ * `bytesWritten` counts the input consumed (the typings omit this overload).
  */
-function inflateExactly(compressed: Buffer, cap: number): Uint8Array | undefined {
+function inflateExactly(compressed: Buffer, cap: number): Uint8Array | 'inflate' | 'length' {
   let result: unknown;
   try {
     result = inflateRawSync(compressed, { maxOutputLength: cap, info: true });
-  } catch {
-    return undefined;
+  } catch (error: unknown) {
+    return Reflect.get(Object(error), 'code') === 'ERR_BUFFER_TOO_LARGE' ? 'length' : 'inflate';
   }
   // Node returns `{ buffer, engine }` with `info`; anything else is refused as broken.
   const buffer: unknown = Reflect.get(Object(result), 'buffer');
@@ -56,5 +72,5 @@ function inflateExactly(compressed: Buffer, cap: number): Uint8Array | undefined
     Object(Reflect.get(Object(result), 'engine')),
     'bytesWritten',
   );
-  return buffer instanceof Uint8Array && consumed === compressed.length ? buffer : undefined;
+  return buffer instanceof Uint8Array && consumed === compressed.length ? buffer : 'inflate';
 }
