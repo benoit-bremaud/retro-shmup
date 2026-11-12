@@ -1,7 +1,11 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { PLAYER_CELL, POPCORN_CELL, SHIP_CELL_SIZE } from '../support/ship-cells.js';
+import { readFileSync } from 'node:fs';
 import { Palette } from '../../src/domain/presentation/palette.js';
+import { replay } from '../../src/domain/replay/replayer.js';
+import { decodeCodec1 } from '../../src/replay/codec1.js';
+import { replayerBundle } from './support/replayer-bundle.js';
 
 // The single browser smoke test (ADR-0003; 05-state-scenes; ADR-0018 Consequences): a phone in
 // portrait, then a rotation. A tap on the PLAY row starts a run, the ship reaches its resting
@@ -500,4 +504,33 @@ test.describe('the hall of fame on a desktop with a keyboard', () => {
 
     expect(errors).toEqual([]);
   });
+});
+
+// ADR-0031 decision 11: a committed recorded run replays to the same score in every engine as in
+// Node, so the server's Node verifier never rejects an honest run played in Firefox or Safari.
+test('a recorded run replays to the Node score in this engine', async ({ page }) => {
+  const run: unknown = JSON.parse(readFileSync('tests/smoke/fixtures/recorded-run.json', 'utf8'));
+  const seed: unknown = Reflect.get(Object(run), 'seed');
+  const frames: unknown = Reflect.get(Object(run), 'frames');
+  const inputs: unknown = Reflect.get(Object(run), 'inputs');
+  if (typeof seed !== 'number' || typeof frames !== 'number' || typeof inputs !== 'string') {
+    throw new Error('recorded-run.json is malformed');
+  }
+  const decoded = decodeCodec1(inputs, frames);
+  if (!decoded.ok) throw new Error(`recorded-run.json does not decode: ${decoded.error}`);
+  const expected = replay(seed, decoded.records, frames);
+  expect(expected.ok).toBe(true);
+
+  await page.setContent('<!doctype html><title>replay</title>');
+  await page.addScriptTag({ content: await replayerBundle() });
+  const report: unknown = await page.evaluate(
+    ({ s, r, f }) => {
+      const replayer: unknown = Reflect.get(globalThis, 'retroReplay');
+      const play: unknown = Reflect.get(Object(replayer), 'replay');
+      if (typeof play !== 'function') return 'no replayer';
+      return Reflect.apply(play, undefined, [s, Uint8Array.from(r), f]) as unknown;
+    },
+    { s: seed, r: Array.from(decoded.records), f: frames },
+  );
+  expect(report).toEqual(expected);
 });

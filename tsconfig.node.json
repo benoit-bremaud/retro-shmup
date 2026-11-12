@@ -12,6 +12,7 @@
     "erasableSyntaxOnly": true,
     "skipLibCheck": true,
     "noEmit": true,
+    "allowImportingTsExtensions": true,
     "noUncheckedIndexedAccess": true
   },
   "include": ["vite.config.ts", "vite.replay.config.ts", "vitest.config.ts"]

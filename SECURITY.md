@@ -35,9 +35,12 @@ disclosed through a GitHub security advisory once released.
 - **Attested merges** — `main` requires the `gate` status, written only by `just gate` together
   with an SSH-signed note on the exact head SHA (`.github/allowed_signers`).
 - **Dependency monitoring** — Dependabot alerts and update PRs are enabled for the repository.
-- **No backend, no personal data** — version 1.0 is a static web game with no server, no account
-  and no network call. Player data (options and the local top 10) stays in the browser's
-  `localStorage` and holds nothing personal beyond three-letter initials (ADR-0006).
+- **No backend of its own, minimal personal data** — the game is static, with no account. Player
+  data (options and the local top 10) stays in the browser's `localStorage` and holds nothing
+  personal beyond three-letter initials (ADR-0006). The only network call is the opt-in online
+  leaderboard (ADR-0031): built in only on the release commit for a bare `https:` origin, which
+  the CSP's `connect-src` then allows; requests omit credentials, time out after 10 s, and every
+  answer is parsed by allowlist. Erase tokens are kept under their own `localStorage` key.
 - **No secrets in the repository** — the only credential the project uses is the itch.io butler
   key (`BUTLER_API_KEY`, ADR-0004), not provisioned until the first itch.io release; Cloudflare
   Pages deploys through its GitHub App with no repository-held credential and no GitHub Actions
