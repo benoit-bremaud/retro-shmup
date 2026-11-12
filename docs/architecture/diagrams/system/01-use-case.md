@@ -3,7 +3,7 @@
 > **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.2 — §2, §3.4,
 > §4, §6–§9; v0.10 §6, §8, §9.1 (the vertical slice's end)
 > **Related ADRs**: ADR-0002 (timestep), ADR-0003 (architecture), ADR-0005 (credits),
-> ADR-0006 (player data)
+> ADR-0006 (player data), ADR-0031 (online runs, v0.35)
 > **Realized by**: the sequence, class and state diagrams of `gameplay/` and `meta/`, stitched
 > by the [traceability matrix](../../traceability-matrix.md)
 
@@ -11,7 +11,8 @@
 
 Who interacts with the game, and to achieve what. One primary actor, the **Player**, whatever
 the input device (keyboard, touch, gamepad, mouse): devices are not actors, they produce intents
-(GDD §4.2). There is no secondary actor in 1.0 — no backend, no account, no network (ADR-0006).
+(GDD §4.2). Secondary actors: the feedback form (v0.26) and *(v0.35)* the online leaderboard
+(retro-leaderboard), reached only when the player chooses it (ADR-0031); no account.
 The browser is the environment, not a stakeholder: its events (tab hidden, focus lost, gamepad
 disconnected) appear as **extensions** of UC1, never as use cases.
 
@@ -19,7 +20,7 @@ Use cases are grouped by **domain**, never by implementing component (the compon
 in the component diagram). The in-run verbs — move, shoot, catch a pickup, drop a bomb — are
 **steps** of UC1, not goals: the player does not want to "shoot", they want to finish a run with
 the best score (Cockburn, goal levels). Out of 1.0 (GDD §11): boss practice, level select,
-online leaderboard, the rescue mechanic.
+the rescue mechanic (the online leaderboard was brought forward in v0.35: UC9, UC10).
 
 ## Diagram
 
@@ -61,7 +62,9 @@ step depends on them.
       charge, chain and score carry over between levels.
   11. After level 3 the game shows the Ending; the game compares the final score with the local
       top 10 (*run end*).
-  12. *(v0.26)* The game offers UC8 (*Give feedback* or *Later*) when the build holds a form
+  12. *(v0.35)* The game offers UC9 (*Send* or *Not now*) when its conditions hold (GDD v0.35
+      §9.1 *Send online*).
+  13. *(v0.26)* The game offers UC8 (*Give feedback* or *Later*) when the build holds a form
       address, then returns to the title screen.
 - **Extensions**:
   - 1a. Start comes from a gamepad before any click, tap or key press: the game asks for one,
@@ -166,6 +169,61 @@ step depends on them.
     is opened.
   - 1b. Player uses a gamepad: the gesture prompt asks for a click, tap or key, which opens it.
   - 2a. The browser refuses the new tab: *OPEN BLOCKED* shows for 2 s and the offer stays.
+
+### UC9 — Publish a run on the online board *(v0.35)*
+
+- **Primary actor**: Player. **Secondary actor**: the online leaderboard. **Level**: user goal.
+- **Preconditions**: a release build served from the final origin (ADR-0031 decision 12); the
+  run ended by Game over or was cleared, scored above 0 and its recording did not overflow.
+- **Success guarantee**: the leaderboard stores the run as pending; the browser keeps its id and
+  deletion token; the player sees the verdict if it comes within 2 minutes, else later in UC10.
+- **Main success scenario**:
+  1. The game shows the *Send online* offer: the score, name and flag to send, that the inputs
+     are sent for checking, that the retention is on the privacy page.
+  2. Player chooses *Send*.
+  3. The game sends the version, seed, input records, score, name and country.
+  4. The leaderboard accepts the run (`202`) with its id and a deletion token; the game keeps
+     both.
+  5. The game shows *Pending verification* and asks for the status every 15 s.
+  6. The leaderboard has replayed the run: the game shows *Verified*.
+  7. Player chooses *OK*; the game goes on to the feedback offer.
+- **Extensions**:
+  - 1a. Player chooses *Not now*, `back`, or waits 20 s: nothing is sent; on to step 7's exit.
+  - 1b. Player chooses *Privacy*: the privacy page opens in a new tab; the offer stays.
+  - 2a. The run did not enter the top 10, or its entry was skipped (`???`): the name entry opens
+    first; its name is not added to the local table; *OK* on an empty name or `back` returns to
+    the offer.
+  - 2b. 20 runs are kept: *Erase an online score first* shows; nothing is sent.
+  - 2c. The encoded inputs exceed the request's size limit: *Run too long to send*; nothing is sent.
+  - 4a. Offline, `409`, a `400` (unknown version, name refused, too large), `429`, a server error
+    or a timeout: one line names it; the offer stays; nothing is kept; no automatic retry. After
+    `409`, offline or a timeout, *To erase see privacy* follows (the run may be stored without a
+    token here).
+  - 6a. The verdict is *Rejected*, *Unverifiable* or *Expired*: the game shows it.
+  - 6b. No verdict within 2 minutes: *Pending verification* stays; UC10 follows it later.
+  - 7a. Player chooses *Erase*: UC10 steps 3–4 for this run.
+
+### UC10 — Follow and erase my online runs *(v0.35)*
+
+- **Primary actor**: Player. **Secondary actor**: the online leaderboard. **Level**: user goal.
+- **Preconditions**: a release build served from the final origin.
+- **Success guarantee**: the list shows each kept run with its latest known status; an erased run
+  is gone online and from the list.
+- **Main success scenario**:
+  1. Player opens *Options → Online scores*.
+  2. The game lists the kept runs, newest first, and asks the leaderboard for the status of each,
+     one at a time.
+  3. Player highlights a run, chooses it and confirms *Erase*.
+  4. The game sends the erasure with the run's deletion token; the leaderboard erases the run;
+     the game drops it from the list.
+- **Extensions**:
+  - 2a. No kept run: *No online score*.
+  - 2b. Offline or a server error: the stored statuses stay.
+  - 2c. The leaderboard no longer knows a run (`404`, erased by its retention): it leaves the
+    list.
+  - 3a. Player declines the confirmation: nothing changes.
+  - 4a. The leaderboard does not know the run (`404`, already erased or purged): dropped too.
+  - 4b. Offline or a server error: the run stays, the error line shows.
 
 ### UC4 — Consult the high scores
 

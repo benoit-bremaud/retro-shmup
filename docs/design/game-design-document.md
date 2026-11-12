@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Vertical slice — v0.34 (2026-11-12): v0.34 makes the country choice open on six suggested flags in a 2 × 4 grid, with *NONE* and *OTHER* closing it, the letter grid behind *OTHER* (#145, owner 2026-11-12, §9.1, §9.3, ADR-0030): a flag chooses its country at once; the browser hints, the saved country and a common list fill the six cells. v0.33 (2026-11-07): v0.33 changes the *Quality gate* row of the decision record only (#156, ADR-0029: local CI in four tiers, no GitHub workflow). v0.32 (2026-10-28): v0.32 explains the chain multiplier in play (#147, owner 2026-10-28, §7.3, §8, §9.2, §9.3, §9.4): the first ×2 of a run floats **CHAIN ×2 - KILL FAST** for 1 s and every break from ×2 or more a **CHAIN BREAK** for 0.5 s, centred near the top of the field, on their own effect switch; no tutorial screen. v0.31 (2026-10-28): v0.31 shows and rewards an enemy bullet grazing the ship (#146, owner playtest 2026-10-28, §4.1, §8, §9.3, §9.4): the 6 × 6 hitbox is unchanged; a bullet crossing the drawn 32 × 24 ship outside that core scores 100 points once, outside the chain, with a small spark on its own effect switch. v0.30 (2026-10-26): v0.30 preselects the country from the browser time zone first, the browser language's region second, else none (#131, §9.1, ADR-0021 amendment): an English speaker in France gets `FR`; still offline, the player confirms. v0.29 (2026-10-22): v0.29 reverses the death penalty of v0.2 and v0.8 (#130, owner playtest): losing a life puts the ship back on the base weapon, the Spread at power level 1, and no P is released any more (§4.4, §4.6); bombs, chain and the last life are unchanged. v0.28 (2026-10-19): v0.28 fills an absent high-score table (no save, or an unreadable or newer one) with ten fictional players (150 000 down to 30 000) that real entries push out one by one (§9.1, #128). v0.27 (2026-10-19): v0.27 draws a 16 × 11 pixel flag right of the two-letter country code wherever the code is shown — the options' *Country* row, the High scores, the country choice once the code is known — the code alone when no flag exists (§9.1, §9.3, ADR-0028). v0.26 (2026-10-19): v0.26 asks the player's country once, at the first *Play*, and keeps it in the save (changeable in the options), so the name entry loses its country step; it grows the letter grid's rows for touch (#115); and it adds an optional feedback questionnaire, an external form opened in a new tab from a screen after each run and from the title menu (§9.1, §9.3, §9.8, ADR-0027). v0.25 (2026-10-16): v0.25 makes the menu rows taller where they fit, so a phone can tap them without zooming (#95, §9.1): each menu's row height is 32 logical px or less, by its row count and its header. v0.24 (2026-10-16): v0.24 makes the Laser bolt stop on the first enemy or boss it touches (#107, owner playtest): the Laser keeps its width and damage per level but no longer passes through; and it grows the ship's hitbox from 4 × 4 to a 6 × 6 body core, the wings still harmless (#106, §4.1). v0.23 (2026-10-16): v0.23 settles the audio brick G3 (§9.5): sound effects from a small in-house 8-bit synthesiser, CC0 NES-style music for the slice's screens, the *Audio* options sub-screen with two volumes. v0.22 (2026-10-16): v0.22 lets the hall-of-fame number 1's name drift now and then, very dimly, in the far background of a run (§9.4.1), on its own effect switch. v0.21 (2026-10-16): v0.21 fills the empty stretches of level 1 with filler rows that pay no P (§7.2.3): the average player saw no enemy for 83 s of the first 116 s, 65 s since. v0.20 (2026-10-16): v0.20 shows the game version to the player as a small page text outside the canvas (§9.9, ADR-0025 decision 6). v0.19 (2026-10-16): v0.19 makes the shield ring the shape that collides while a charge is held (#74): any enemy bullet or body touching the drawn 36 × 36 square consumes the charge, once. v0.18 (2026-10-16): v0.18 is the third rebalance of level 1 (#56), after the owner found it far too easy and a committed measurement bot confirmed it: enemy aimed, fan and triple bullets at 85 px/s, the Gunner tougher and faster-firing, the Heavy tougher, the Cruiser at 1 800 shots with faster volleys, and the 70 s formation no longer paying its P. v0.17 (2026-10-15): v0.17 draws the ships with the CC0 placeholder sprites of G4-1 (§3.2.1: the sprite per role, the small enemies drawn at 1× over their 16 × 16 hitbox, the Cruiser built from three ships, the shapes kept as the fallback). v0.16 (2026-10-14; amended 2026-10-15 by the owner after a design-versus-code audit: the High scores columns as built, the browser-shortcut rule of the capture, the name entry as built in G2-3, the attract mode of G2-3b): v0.16 settles the hall of fame of G2 (the letter grid for the name and the country, the high-score table and screen, the Ending card, leaving the slice-end interim). v0.15 (2026-10-14): v0.15 settles the controls screen of G1b (layout, key labels, the device edited, restore confirmation, save version 2). v0.14 (2026-10-14): v0.14 settles the options screens of G1a-3 (row texts and values, the title menu replacing tap-to-start, leaving a menu frees the ship's movement). v0.13 (2026-10-14): v0.13 designs the menus and the options of the screens brick, first part (G1a: title and pause menus, the options screen and its visual-effects sub-screen, menu navigation by touch and mouse, the save document's options). v0.12 (2026-10-14): v0.12 is the second rebalance iteration of level 1 (#45): the Cruiser takes 1 450 level-1 shots and three of the seven formations no longer pay the formation P. v0.11 (2026-10-13): v0.11 rebalances level 1 after the friends' playtest (harder, fewer drops, the ship slightly weaker than the attack; #45). v0.10 (2026-10-12): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot); v0.6 adds the initial values of the enemies brick; v0.7 settles the devices brick (portrait HUD strip, touch pause button, resuming and leaving Game over by tap or Start, mouse takeover, rotation pause); v0.8 settles the player kit (Spread and Laser tables, the death release hop, bomb, shield and pickup rules, P colours, the Carrier, HUD icons); v0.9 follows the brick-E playtest (difficulty ramp by script, a named top 10 with an optional country, pointer fire held by the left button or a steering finger with an autofire option, shot proportions for readability); v0.10 settles the level brick (the 120 s level-1 script, the Heavy, the Cruiser, the WARNING, the boss HP bar and timer, the end-of-level tally and the Results screen, a vertical slice ending after level 1) |
+| **Status** | Vertical slice — v0.35 (2026-11-12): v0.35 lets the player send a finished run to the online leaderboard, by choice, after the hall of fame (#167, epic #166, owner 2026-11-12, §9.1 *Send online*, §9.3 *Online scores*, §9.8, §11, §13, ADR-0031): each run is recorded as its seed and one quantised input record per step, the leaderboard replays it before showing the score, the player follows and erases the sent runs from the options; the first network calls of the game. v0.34 (2026-11-12): v0.34 makes the country choice open on six suggested flags in a 2 × 4 grid, with *NONE* and *OTHER* closing it, the letter grid behind *OTHER* (#145, owner 2026-11-12, §9.1, §9.3, ADR-0030): a flag chooses its country at once; the browser hints, the saved country and a common list fill the six cells. v0.33 (2026-11-07): v0.33 changes the *Quality gate* row of the decision record only (#156, ADR-0029: local CI in four tiers, no GitHub workflow). v0.32 (2026-10-28): v0.32 explains the chain multiplier in play (#147, owner 2026-10-28, §7.3, §8, §9.2, §9.3, §9.4): the first ×2 of a run floats **CHAIN ×2 - KILL FAST** for 1 s and every break from ×2 or more a **CHAIN BREAK** for 0.5 s, centred near the top of the field, on their own effect switch; no tutorial screen. v0.31 (2026-10-28): v0.31 shows and rewards an enemy bullet grazing the ship (#146, owner playtest 2026-10-28, §4.1, §8, §9.3, §9.4): the 6 × 6 hitbox is unchanged; a bullet crossing the drawn 32 × 24 ship outside that core scores 100 points once, outside the chain, with a small spark on its own effect switch. v0.30 (2026-10-26): v0.30 preselects the country from the browser time zone first, the browser language's region second, else none (#131, §9.1, ADR-0021 amendment): an English speaker in France gets `FR`; still offline, the player confirms. v0.29 (2026-10-22): v0.29 reverses the death penalty of v0.2 and v0.8 (#130, owner playtest): losing a life puts the ship back on the base weapon, the Spread at power level 1, and no P is released any more (§4.4, §4.6); bombs, chain and the last life are unchanged. v0.28 (2026-10-19): v0.28 fills an absent high-score table (no save, or an unreadable or newer one) with ten fictional players (150 000 down to 30 000) that real entries push out one by one (§9.1, #128). v0.27 (2026-10-19): v0.27 draws a 16 × 11 pixel flag right of the two-letter country code wherever the code is shown — the options' *Country* row, the High scores, the country choice once the code is known — the code alone when no flag exists (§9.1, §9.3, ADR-0028). v0.26 (2026-10-19): v0.26 asks the player's country once, at the first *Play*, and keeps it in the save (changeable in the options), so the name entry loses its country step; it grows the letter grid's rows for touch (#115); and it adds an optional feedback questionnaire, an external form opened in a new tab from a screen after each run and from the title menu (§9.1, §9.3, §9.8, ADR-0027). v0.25 (2026-10-16): v0.25 makes the menu rows taller where they fit, so a phone can tap them without zooming (#95, §9.1): each menu's row height is 32 logical px or less, by its row count and its header. v0.24 (2026-10-16): v0.24 makes the Laser bolt stop on the first enemy or boss it touches (#107, owner playtest): the Laser keeps its width and damage per level but no longer passes through; and it grows the ship's hitbox from 4 × 4 to a 6 × 6 body core, the wings still harmless (#106, §4.1). v0.23 (2026-10-16): v0.23 settles the audio brick G3 (§9.5): sound effects from a small in-house 8-bit synthesiser, CC0 NES-style music for the slice's screens, the *Audio* options sub-screen with two volumes. v0.22 (2026-10-16): v0.22 lets the hall-of-fame number 1's name drift now and then, very dimly, in the far background of a run (§9.4.1), on its own effect switch. v0.21 (2026-10-16): v0.21 fills the empty stretches of level 1 with filler rows that pay no P (§7.2.3): the average player saw no enemy for 83 s of the first 116 s, 65 s since. v0.20 (2026-10-16): v0.20 shows the game version to the player as a small page text outside the canvas (§9.9, ADR-0025 decision 6). v0.19 (2026-10-16): v0.19 makes the shield ring the shape that collides while a charge is held (#74): any enemy bullet or body touching the drawn 36 × 36 square consumes the charge, once. v0.18 (2026-10-16): v0.18 is the third rebalance of level 1 (#56), after the owner found it far too easy and a committed measurement bot confirmed it: enemy aimed, fan and triple bullets at 85 px/s, the Gunner tougher and faster-firing, the Heavy tougher, the Cruiser at 1 800 shots with faster volleys, and the 70 s formation no longer paying its P. v0.17 (2026-10-15): v0.17 draws the ships with the CC0 placeholder sprites of G4-1 (§3.2.1: the sprite per role, the small enemies drawn at 1× over their 16 × 16 hitbox, the Cruiser built from three ships, the shapes kept as the fallback). v0.16 (2026-10-14; amended 2026-10-15 by the owner after a design-versus-code audit: the High scores columns as built, the browser-shortcut rule of the capture, the name entry as built in G2-3, the attract mode of G2-3b): v0.16 settles the hall of fame of G2 (the letter grid for the name and the country, the high-score table and screen, the Ending card, leaving the slice-end interim). v0.15 (2026-10-14): v0.15 settles the controls screen of G1b (layout, key labels, the device edited, restore confirmation, save version 2). v0.14 (2026-10-14): v0.14 settles the options screens of G1a-3 (row texts and values, the title menu replacing tap-to-start, leaving a menu frees the ship's movement). v0.13 (2026-10-14): v0.13 designs the menus and the options of the screens brick, first part (G1a: title and pause menus, the options screen and its visual-effects sub-screen, menu navigation by touch and mouse, the save document's options). v0.12 (2026-10-14): v0.12 is the second rebalance iteration of level 1 (#45): the Cruiser takes 1 450 level-1 shots and three of the seven formations no longer pay the formation P. v0.11 (2026-10-13): v0.11 rebalances level 1 after the friends' playtest (harder, fewer drops, the ship slightly weaker than the attack; #45). v0.10 (2026-10-12): v0.1 consolidated the inception brainstorming (2026-10-07); v0.2 to v0.4 fold in the rules surfaced by the UML use-case, class and behaviour studies; v0.5 closes the gaps of the first playable build (screens, devices, base shot); v0.6 adds the initial values of the enemies brick; v0.7 settles the devices brick (portrait HUD strip, touch pause button, resuming and leaving Game over by tap or Start, mouse takeover, rotation pause); v0.8 settles the player kit (Spread and Laser tables, the death release hop, bomb, shield and pickup rules, P colours, the Carrier, HUD icons); v0.9 follows the brick-E playtest (difficulty ramp by script, a named top 10 with an optional country, pointer fire held by the left button or a steering finger with an autofire option, shot proportions for readability); v0.10 settles the level brick (the 120 s level-1 script, the Heavy, the Cruiser, the WARNING, the boss HP bar and timer, the end-of-level tally and the Results screen, a vertical slice ending after level 1) |
 | **Working title** | *retro-shmup* (codename; the commercial title is still open) |
 | **Genre** | Retro vertical-scrolling shoot'em up (shmup), 16-bit aesthetic |
 | **Platform** | Web browser (desktop first, mobile playable), TypeScript + native Canvas 2D |
@@ -864,7 +864,8 @@ their own effect switch (§9.3, §9.4); off, the chain works the same, silently.
   **8 s**.
 - **Local top 10** *(v0.9)* with a name of up to 8 characters and an optional country (arcade name
   entry, §9.1), stored in `localStorage` (ADR-0006, ADR-0021, §9.8). No online leaderboard in 1.0 (v2); the
-  country is stored so the v2 board can use it.
+  country is stored so the v2 board can use it. *(superseded by v0.35, ADR-0031: the online
+  leaderboard is brought forward, §9.1 *Send online*.)*
 
 ---
 
@@ -884,6 +885,9 @@ Ending | Game over → Name entry (if top 10) → High scores → Title
 `Options → Country choice → Options` at any time; and the run's end passes by the feedback offer:
 `Ending | Game over → [Name entry → High scores] → Feedback offer → Title`. The title menu's
 *Feedback* row opens the form directly, without the offer screen.
+*(v0.35)* The online offer comes before the feedback offer:
+`Ending | Game over → [Name entry → High scores] → [Send online] → Feedback offer → Title`, and
+`Options → Online scores → Options` (§9.3).
 
 **The vertical slice** *(v0.10)*: one level, so the run is cleared when level 1 ends:
 `Playing → Level results → Title`. The Ending card and the name entry come with the screens
@@ -1076,6 +1080,50 @@ what does not and what they would change, without the owner asking each by hand.
 - **No form address configured** (a build without one): the *Feedback* row and the offer are not
   shown.
 
+**Send online** *(v0.35, owner 2026-11-12, #167, ADR-0031)*: the player may put a finished run on
+the online leaderboard, which replays it before showing it (no score is trusted as sent).
+
+- **Recording**: every run records its seed and, for each simulation step up to the step that
+  ends it (Game over or the run cleared), what the simulation read: fire held, bomb pressed, the
+  move kind and its two values, the stick rounded to 1/127 and a touch or mouse target to 1/4 px
+  (so play feels the same; the simulation reads the rounded values). Pauses and menus are not
+  recorded. Up to 20 minutes of play are recorded; a longer run, or one whose encoded inputs
+  pass the size limit of the leaderboard's request, cannot be sent (*RUN TOO LONG TO SEND* /
+  *PARTIE TROP LONGUE*). The simulation's trigonometry is the game's own (ADR-0031 decision 10),
+  so every browser computes the same score. The score sent is the run's score at the step that
+  ended it.
+- **When the offer shows**: after the High scores (or straight after Game over or the Ending when
+  the run did not enter the table), only for a run that ended by Game over or a cleared run
+  (never a run quit from the pause), with a score above 0, a recording under 20 minutes, in a
+  release build — the very commit of a signed release tag, never a later merge (ADR-0031
+  decision 12) — served from the final address `<game>.benoitbremaud.fr`. Otherwise nothing changes.
+- **The offer screen**: heading *SEND ONLINE* / *ENVOYER EN LIGNE*; the run's score, the name
+  and the flag (or the code alone) that would be sent; lines *INPUTS SENT FOR CHECKING* /
+  *COMMANDES ENVOYEES POUR VERIFIER* and *RETENTION IN PRIVACY* / *DUREES DANS CONFIDENTIALITE*;
+  rows *SEND* /
+  *ENVOYER* (the cursor starts on *NOT NOW*), *PRIVACY* / *CONFIDENTIALITE* (opens the
+  leaderboard's privacy page in a new tab, the gesture rule of the feedback form) and *NOT NOW* /
+  *PAS MAINTENANT*. *Not now*, `back` or 20 s without input go on to the feedback offer. Nothing
+  leaves the browser before *SEND*.
+- **The name**: the name entered for this run; a run that did not enter the table, or whose entry
+  was skipped (`???`), opens the name entry first (*OK* then sends; this name is not added to the
+  local table; *OK* on an empty name or `back` returns to the offer). The country is the saved
+  choice, or none.
+- **After SEND**: *SENDING* / *ENVOI*, then *PENDING VERIFICATION* / *VERIFICATION EN COURS*;
+  the screen asks the leaderboard every 15 s for 2 minutes at most and shows *VERIFIED* /
+  *VERIFIE*, *REJECTED* / *REFUSE*, *UNVERIFIABLE* / *INVERIFIABLE* or *EXPIRED* / *EXPIRE* when
+  the verdict comes; rows *OK* (to the feedback offer) and *ERASE* / *EFFACER* (confirmation,
+  default *No*). Errors, each one line, the offer staying: *OFFLINE* / *HORS LIGNE*, *ALREADY
+  SENT* / *DEJA ENVOYE* (`409`), *VERSION NOT ACCEPTED* / *VERSION NON ACCEPTEE*, *NAME NOT
+  ACCEPTED* / *NOM REFUSE*, *RUN TOO LONG TO SEND* / *PARTIE TROP LONGUE*, *TOO MANY TRIES WAIT* /
+  *TROP D ESSAIS ATTENDS* (`429`), *SERVER ERROR* / *ERREUR SERVEUR* (any other answer, a
+  timeout). After *ALREADY SENT*, *OFFLINE* or a timeout a second line *TO ERASE SEE PRIVACY* /
+  *POUR EFFACER VOIR CONFIDENTIALITE* follows: the run may be stored without a token in this
+  browser. Never an automatic retry of a send.
+- **Kept runs**: each sent run keeps its id, its deletion token, its score, its date and its last
+  status in the browser (§9.8), at most 20; with 20 kept, *SEND* shows *ERASE AN ONLINE SCORE
+  FIRST* / *EFFACE D ABORD UN SCORE EN LIGNE* and sends nothing.
+
 **The attract mode** *(v0.16, G2-3b, owner 2026-10-14 and 2026-10-15)*: after **10 s** on the
 title without any input, the High scores show on their own for **6 s**, then the title comes
 back, and so on while nobody plays. Any physical input counts — any key, bound or not, pressed
@@ -1188,6 +1236,13 @@ is its own switch, on by default, off under `prefers-reduced-motion`; the debris
 blink follow the explosions and the photosensitivity rule (§9.7). Browsers refuse fullscreen outside a user gesture: a change
 made with a click, tap or key applies at once; otherwise the preference is applied at the next
 click, tap or key press, including during a run *(v0.4, ADR-0009)*.
+
+**Online scores** *(v0.35, ADR-0031)*: a row *ONLINE SCORES* / *SCORES EN LIGNE* before *Back*,
+only where *Send online* exists. It lists the kept runs, newest first (score, status, date),
+asks the leaderboard for the status of every kept run, one at a time, when it opens, and erases
+the highlighted run after a confirmation (default *No*); a run the leaderboard no longer knows
+(erased, or past its retention) leaves the list.
+Empty: *NO ONLINE SCORE* / *AUCUN SCORE EN LIGNE*.
 
 **Autofire (touch and mouse)** *(v0.9)*: off by default; when on, touch and the mouse fire all the time, as in v0.8,
 for touchpad users and accessibility (§4.2, ADR-0020). Keyboard and gamepad are unchanged.
@@ -1335,6 +1390,15 @@ of the allowlist; any other value reads as absent, so the question comes again �
 **feedback count**, a whole number from 0 (absent or invalid reads as 0), raised by one at each
 opening of the form. The save version stays 2: both fields are optional, as the volumes were in
 v0.23.
+*(v0.35)* The runs sent online live under their own key `retro-shmup.online.v1`, never in the
+save document: at most 20 items of a run id (a ULID), a deletion token (64 lowercase hex
+characters), the score, the date sent and the last status; validated by allowlist and parsed
+without throwing, an invalid item dropped (ADR-0006, ADR-0031). The token is the only way to
+erase the run online from the game, so it is never dropped to make room. What is sent online — the name, the
+country, the score, the seed and the input records — and its retention are stated by the
+leaderboard's privacy page (retro-leaderboard ADR-0004), which also gives a contact address
+to erase a run whose token is lost. The kept runs belong to the final address only: another
+origin would not see them.
 
 ### 9.9 Version label *(v0.20)*
 
@@ -1393,14 +1457,15 @@ end-of-run statistics · limited "continue" credits · mid-boss per level · gro
 
 ### 11.3 Version 2 (new chantiers)
 
-Online leaderboard (Cloudflare Worker + KV) · replays (enabled by determinism) · PWA / offline ·
+Online leaderboard *(v0.35: brought forward, a separate service, retro-leaderboard; Cloudflare
+Worker + D1, runs replayed on the homelab; ADR-0031)* · replays (enabled by determinism) · PWA / offline ·
 endless / score-attack mode built from the same wave bricks · Steam build (desktop wrapper,
 achievements).
 
 ### 11.4 Explicitly out
 
 Procedural level generation in the main mode · health bars for the player · dense bullet-hell
-patterns · a game framework (Phaser) · ECS · continues in 1.0 · any backend in 1.0.
+patterns · a game framework (Phaser) · ECS · continues in 1.0 · any backend in 1.0 other than the online leaderboard *(v0.35, ADR-0031)*.
 
 ---
 
@@ -1435,7 +1500,8 @@ playable.
 | Delivery | Cloudflare Pages (PR preview = staging, `main` = prod), itch.io via butler on tagged releases | ADR-0004 |
 | Licensing | MIT for the code; assets under their own licences in `public/assets/` with `CREDITS.md` | ADR-0005 |
 | Public hosting | `<game>.benoitbremaud.fr` (Cloudflare Pages custom domain, one project per game), attached once the title is final; `pages.dev` URLs before; catalogue in the portfolio's projects page, `benoitbremaud.fr/projets/#jeux` | ADR-0008, ADR-0016, ADR-0017 |
-| Player data | `localStorage` only, versioned key; *(v0.9)* the top-10 entry holds a name of up to 8 characters and an optional country (§9.8) instead of three initials; no backend in 1.0 | ADR-0006, ADR-0021 |
+| Player data | `localStorage` only, versioned key; *(v0.9)* the top-10 entry holds a name of up to 8 characters and an optional country (§9.8) instead of three initials; no backend in 1.0 except the online leaderboard, reached only at the player's choice *(v0.35)* | ADR-0006, ADR-0021, ADR-0031 |
+| Online runs *(v0.35)* | Seed + one 5-byte quantised record per step, columns with delta-coded coordinates, raw DEFLATE in base64url (codec 1, shared with retro-leaderboard), deterministic trigonometry in the simulation, `LeaderboardPort` behind a `fetch` adapter, CSP `connect-src` on the leaderboard origin, a headless replay CLI built from each signed tag | ADR-0031 |
 | Performance | 60 fps on a 2019 mid-range phone; ≤ 4 ms of logic per frame; no allocation inside the game loop (pools) | ADR-0002 |
 | Tests | Unit tests on the domain (TDD), headless level simulation with scripted inputs and seeded RNG, one browser smoke test in three engines (ADR-0026); render and audio mocked at their ports | ADR-0003, ADR-0026 |
 | Quality gate | Local only: `just fast` on commit, `just check` on push (lint, typecheck, tests with coverage, Semgrep, dependency audit, gitleaks), `just gate` before every merge (SonarQube quality gate, browser smoke, signed attestation of the head), `just nightly`; no GitHub workflow | ADR-0007, ADR-0013, ADR-0029 |
@@ -1487,7 +1553,7 @@ fully playable at release quality, used to validate the design before producing 
 | Universe | Space + mechanical armada | Military retro-futurist (kept the boss silhouettes); aliens (no battleship bosses); cartoon / organic (custom assets day one) |
 | Narrative | Intro + ending cards | Per-level briefings (1.x candidate); none |
 | Audio | Free chiptune + generated SFX | Custom from day one (blocks the slice); SFX only (boss without music) |
-| Meta 1.0 | Pause, fullscreen, top 10, options, i18n, accessibility, credits | Online leaderboard (backend, anti-cheat, GDPR → v2); boss practice (1.x) |
+| Meta 1.0 *(the online leaderboard row superseded by v0.35, ADR-0031)* | Pause, fullscreen, top 10, options, i18n, accessibility, credits | Online leaderboard (backend, anti-cheat, GDPR → v2); boss practice (1.x) |
 | Rendering tech | Canvas 2D + RenderPort | PixiJS (unneeded GPU); Phaser (confiscates the architecture) |
 | Architecture | Composition + patterns | ECS (oversized, poor UML fit); inheritance tree (explodes on crossed behaviours) |
 | Tests | Pyramid + headless simulation + 1 smoke | Unit only (level regressions invisible); golden images (brittle) |
@@ -1573,3 +1639,4 @@ fully playable at release quality, used to validate the design before producing 
 | Country preselection *(v0.30, superseded in part by v0.34 above)* | Owner, 2026-10-26 (#131, option A of 2026-10-22, 450/500): the **time zone first** (`Intl.DateTimeFormat().resolvedOptions().timeZone`, e.g. `Europe/Paris` → `FR`), then the region of the browser's first language, then none (465/500); the zone → country table **generated from the IANA `zone.tab`** and its backward links, one country per zone, kept only for codes in `COUNTRY_CODES`, committed as domain data and refreshed with releases (455/500). `UTC`, `Etc/*` and unknown zones give no country, so the language decides; a VPN does not change the time zone (system clock); the code is still only a default, stored once the player confirms | The language first, the time zone as fallback (395/500: an English speaker in France keeps `US`, the defect of #131); the time zone only when the language agrees (415/500: a vote rule for the same answers); a hand-written table of ~50 zones (355/500); `zone1970.tab` taking its first country (385/500: `Europe/Berlin` also covers DK, NO, SE); an IP lookup (network call, third party, forbidden in 1.0) |
 | Graze *(v0.31)* | Owner, 2026-10-28 (#146, playtest: bullets crossing the wings read as a bug), option D of the triage (410/500: keep the 6 × 6 hitbox, add a graze): the **graze box is the drawn 32 × 24 ship minus the 6 × 6 hitbox** (445/500); **100 points**, flat (365/500); **once per bullet** (470/500); **neutral for the chain** (410/500); a **spark only, on its own switch, no sound** (430/500; a spark and a tick 415, close: revisit after the playtest). Only a `Vulnerable` ship without a shield charge grazes | A ~12 × 10 hitbox with a rebalance (330/500); the whole sprite as hitbox (280/500); visibility only (410/500, tie broken toward the reward); a per-pixel wing mask (340/500: one mask per sprite, redone with the final art); the 32 × 32 ship box (315/500: rewards empty space); 500 points (290/500: breaks the scale) or 10 (275/500: unnoticed); a graze per step of contact (250/500: parking on a bullet pays) or with a global delay (340/500); a graze extending the chain timer (295/500) or counting as a chained kill (220/500); a +100 pop-up per graze (350/500: clutter) |
 | Chain labels *(v0.32)* | Owner, 2026-10-28 (#147: the ×N and its bar were never explained), option D of the triage (450/500: a first-×2 label and a break label): **CHAIN ×2 - KILL FAST** / **CHAINE ×2 - TUE VITE** and **CHAIN BREAK** / **CHAINE ROMPUE** (475/500; the `menu` font gains `×`); the first ×2 of a run for **1 s**, every break from ×2 or more for **0.5 s**, none at a death (450/500); their **own switch** *CHAIN HINTS* / *AIDE CHAINE*, on by default (450/500); **fixed, centred near the top of the field**, rising 8 px (435/500) | A label only for the first ×2 (435/500); a help page (300/500) or both (345/500); COMBO wording (420/500) or CHAINE ×2 - VITE (380/500); both labels 1 s (390/500) or 1.5 s / 0.75 s (380/500); one shared LABELS switch with the pickup labels (370/500) or the explosions switch (270/500); under the HUD multiplier (400/500) or following the ship (305/500) |
+| Online leaderboard *(v0.35)* | Owner, 2026-11-12 (#167, epic #166, ADR-0031): **record runs as quantised per-step records and send them by explicit choice after the hall of fame**. Frame format raw DEFLATE (405/500; RLE + delta 390, RLE 380), refined after the review into columns with delta-coded x and y and a size guard (450/500; rows + guard 360, brotli 300); codec spec and vectors in retro-leaderboard (420/500; git dependency 360, npm 310); own deterministic trigonometry (450/500; accept the risk 360, replay in the player's engine 320); results flow + *Options → Online scores* (395/500; options without status 385, results only 345); replay CLI (475/500; ES module 400, tsx 285); tokens under a separate key (420/500; save document v3 330); retention line *RETENTION IN PRIVACY* (380/500; durations 315); the final origin only (430/500; every Pages origin 340, Pages + itch.io 305); release gate `RELEASE_COMMIT` = built SHA (455/500; tag check 395, release branch 370) | See ADR-0031 *Rejected alternatives* |
