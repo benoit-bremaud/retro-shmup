@@ -8,6 +8,29 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-11-12
 
+### Send online screens (3b-1, part of #167)
+
+- The run end now passes by *Send online* when a leaderboard is configured and the run can be
+  sent: the offer (score, name and flag, *SEND*, *PRIVACY*, *NOT NOW*, cursor on *NOT NOW*, 20 s
+  idle), the online name entry, the status (*SENDING*, *PENDING VERIFICATION*, the verdict, *OK*,
+  *ERASE*), the erase confirmation, the privacy gesture prompt, the error, *WAIT* and erase-first
+  lines (GDD v0.35–v0.37). Nothing is wired in `main.ts` yet: 3b-2 adds *Online scores* and the
+  wiring, then closes #167.
+- A French line longer than the field's 30 characters wraps at a space when drawn; the country
+  sent is the saved code, none for *NONE*.
+
+### WAIT on a busy send or erasure: GDD v0.37 (#178 `439bf45`, closes #177)
+
+- *SEND*, the online name entry's *OK* and *ERASE* show *WAIT* / *ATTENDS* and do nothing while
+  another send or erasure is under way (MCDA 480/500). An erasure of a run already gone sends
+  nothing and wins over busy (Codex P2). UC9, UC10 and meta/02, 04, 05 aligned.
+
+### Lost deletion token cases: GDD v0.36 (#176 `cbed478`, closes #173)
+
+- An unreadable accepted answer and an unsupported browser show *SERVER ERROR*; the unreadable
+  answer and a token the storage refuses add *TO ERASE SEE PRIVACY*, the latter with no *ERASE*.
+  A send left before its answer joins the kept runs when the storage keeps it.
+
 ### Online send pipeline, switched off (#174 `5f20e89`, part of #167)
 
 - Slice 3a: `OnlineRuns` sends a run, follows its verdict (every 15 s, 2 min at most) and erases

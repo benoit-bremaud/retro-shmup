@@ -76,10 +76,11 @@ classDiagram
     -action : send or erase «waits for the GET in flight»
     +offer(result: RunResult) boolean «resets the state»
     +send(run: Submission) sending | full | busy
+    +full() boolean «re-read; SEND checks it before the name entry»
     +step() void «settles, then player action, then queued GET, then the 15 s poll»
     +refreshAll() void «one GET at a time»
     +leave() void «stops polling»
-    +erase(id) erasing | busy | gone «planned, 3b; gone wins over busy»
+    +erase(id) erasing | busy | gone «gone wins over busy»
     +kept() KeptRun[]
     +state() OnlineState
     +eraseError() FailureCode «or none»

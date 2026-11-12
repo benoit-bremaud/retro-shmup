@@ -52,6 +52,27 @@ export interface MenuScreen {
   readonly value?: (row: MessageKey) => RowValue | undefined;
 }
 
+/**
+ * The *Send online* screens (GDD v0.35–v0.37 §9.1): the heading, the run's score, the name and the
+ * flag that would be sent, the info lines above the rows and the notice lines at the foot.
+ */
+export interface SendOnlineView {
+  readonly menu: MenuView;
+  /** The score's digits, built once when the screen opens. */
+  readonly score: string;
+  /** The name and the country code that would be sent, built once; `''` before a name. */
+  readonly nameLine: string;
+  /** The country whose flag follows the name line, `''` for none. */
+  readonly flag: string;
+  /** The offer's two lines, or the sent run's status line. */
+  readonly info: readonly MessageKey[];
+  /** An error, *WAIT* or the erase-first line, and *TO ERASE SEE PRIVACY*; empty when none. */
+  readonly notice: readonly MessageKey[];
+}
+
+/** The *Send online* rows start this far down the field, under the run's lines. */
+export const SEND_ONLINE_HEADER_GAP = 136;
+
 /** A row with a value: its label starts here and its value ends at the mirror edge. */
 export const MENU_VALUE_MARGIN = 24;
 

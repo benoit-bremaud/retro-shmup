@@ -31,6 +31,7 @@ import type {
   MenuScreen,
   MenuView,
   NameEntryView,
+  SendOnlineView,
   SlotColumn,
 } from './menu-layout';
 import { Palette } from './palette';
@@ -185,6 +186,94 @@ export function drawMenuScreen(render: RenderPort, screen: MenuScreen, language:
  */
 export function drawStatusLine(render: RenderPort, key: MessageKey, language: Language): void {
   drawMenuLine(render, message(key, language), FIELD_HEIGHT - 2 * MENU_ROW_HEIGHT);
+}
+
+/** The menu font's characters on one field line: 30 × 8 px − 2 px of the last cell's gap. */
+const LINE_CHARACTERS = Math.floor(
+  (FIELD_WIDTH + MENU_FONT_CELL.width - MENU_FONT_CELL.glyphWidth) / MENU_FONT_CELL.width,
+);
+
+/** The wrapped lines of each text drawn so far: a text is split once, never per frame. */
+const wrapped = new Map<string, readonly string[]>();
+
+/** `text` split at its spaces into lines of `LINE_CHARACTERS` at most (a longer word stays whole). */
+export function wrapLine(text: string): readonly string[] {
+  const known = wrapped.get(text);
+  if (known !== undefined) return known;
+  const lines: string[] = [];
+  let line = '';
+  const words = text.split(' ');
+  for (let i = 0; i < words.length; i += 1) {
+    const word = words[i] ?? '';
+    if (line !== '' && line.length + 1 + word.length > LINE_CHARACTERS) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = line === '' ? word : `${line} ${word}`;
+    }
+  }
+  lines.push(line);
+  wrapped.set(text, lines);
+  return lines;
+}
+
+/** The catalogue texts of `keys`, wrapped, from the top `y`; returns the y under the last line. */
+function drawLines(
+  render: RenderPort,
+  keys: readonly MessageKey[],
+  language: Language,
+  y: number,
+  step: number,
+): number {
+  let top = y;
+  for (let i = 0; i < keys.length; i += 1) {
+    const key = keys[i];
+    if (key === undefined) continue;
+    const lines = wrapLine(message(key, language));
+    for (let j = 0; j < lines.length; j += 1) {
+      drawMenuLine(render, lines[j] ?? '', top);
+      top += step;
+    }
+  }
+  return top;
+}
+
+/** Lines drawn between the score and the rows, 14 px apart (the font is 10 px tall). */
+const SEND_LINE_STEP = 14;
+const SEND_HEADER_Y = 12;
+const SEND_SCORE_Y = 36;
+
+/**
+ * A *Send online* screen (GDD v0.35–v0.37 §9.1) over the veil: the heading, the score, the name and
+ * the flag (or the code alone), the info lines, the rows and the notice lines at the foot.
+ */
+export function drawSendOnline(render: RenderPort, view: SendOnlineView, language: Language): void {
+  drawVeil(render);
+  drawMenuLine(render, message('sendOnline', language), SEND_HEADER_Y);
+  drawMenuLine(render, view.score, SEND_SCORE_Y);
+  const nameY = SEND_SCORE_Y + SEND_LINE_STEP;
+  if (view.nameLine !== '') {
+    const width = menuTextWidth(view.nameLine);
+    const flagRoom = view.flag === '' ? 0 : FLAG_GAP + FLAG_SIZE.width;
+    const x = Math.round((FIELD_WIDTH - width - flagRoom) / 2);
+    render.setRegion('field');
+    render.drawText(view.nameLine, x, nameY, 'menu');
+    if (view.flag !== '') render.drawFlag(view.flag, x + width + FLAG_GAP, flagTop(nameY));
+  }
+  drawLines(render, view.info, language, nameY + 2 * SEND_LINE_STEP, SEND_LINE_STEP);
+  drawMenu(render, view.menu, language);
+  let notice = 0;
+  for (let i = 0; i < view.notice.length; i += 1) {
+    const key = view.notice[i];
+    if (key !== undefined) notice += wrapLine(message(key, language)).length;
+  }
+  drawLines(
+    render,
+    view.notice,
+    language,
+    FIELD_HEIGHT - (notice + 1) * SEND_LINE_STEP,
+    SEND_LINE_STEP,
+  );
 }
 
 /** The gesture prompt (ADR-0009, GDD v0.26 §9.1): a gamepad waits for a tap, click or key. */

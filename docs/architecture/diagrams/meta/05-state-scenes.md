@@ -113,7 +113,11 @@ stateDiagram-v2
   SendOnline --> SendOnline : send [20 runs kept] / show the erase-first line
   SendOnline --> SendOnline : send [a name, fewer than 20 kept, another send or erasure under way] / show WAIT
   SendOnline --> OnlineName : send [no usable name this run, fewer than 20 kept]
-  OnlineName --> SendOnline : back, or OK on an empty name
+  OnlineName --> SendOnline : back or OK on an empty name, or SKIP
+  OnlineName --> SendOnline : OK [name not empty, 20 runs kept] / show the erase-first line
+  SendOnline --> GesturePrompt : privacy [from a gamepad]
+  GesturePrompt --> SendOnline : click, tap or key [opening the privacy page] / open it, or back
+  OnlineStatus --> AfterOnline : 404 on the status / drop the run
   OnlineName --> SendOnline : OK [name not empty, another send or erasure under way] / show WAIT
   OnlineName --> OnlineStatus : OK [name not empty, none under way] / submit the run
   SendOnline --> OnlineStatus : send [a name, fewer than 20 kept, none under way] / submit the run
@@ -183,6 +187,12 @@ stateDiagram-v2
 - **v0.37 (GDD §9.1, §9.3, #177)**: `send`, the online name entry's *OK* and a confirmed erase
   that meet another send or erasure under way show *WAIT* and do nothing; an erase of a run that
   left the list meanwhile sends nothing.
+- **Built (#167, 3b-1)**: the `erase, confirmed` transitions pass by an erase confirmation,
+  *No* first, as `Confirm quit` (scene `OnlineErase`); the privacy page's gesture prompt is its own
+  scene (`OnlineGesture`) that returns to `Send online`. A failed erasure stays on `Online status`
+  with its line; *TO ERASE SEE PRIVACY* follows a send that may be stored without a token, and a
+  run whose token the storage refused shows no *ERASE* row. The country sent is the saved code,
+  none for *NONE*. A French line longer than the field's 30 characters wraps at a space.
 - **v0.34 (GDD §9.1, ADR-0030)**: both `Country choice` states have two sub-states, drawn below.
   The cursor and the opening guard restart at each page switch, which plays *MenuConfirm*.
 
