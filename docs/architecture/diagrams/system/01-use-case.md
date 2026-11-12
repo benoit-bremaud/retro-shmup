@@ -193,8 +193,8 @@ step depends on them.
   - 2a. The run did not enter the top 10, or its entry was skipped (`???`): the name entry opens
     first; its name is not added to the local table; *OK* on an empty name or `back` returns to
     the offer.
-  - 2c. The encoded inputs pass the request's size limit: *Run too long to send*; nothing is sent.
   - 2b. 20 runs are kept: *Erase an online score first* shows; nothing is sent.
+  - 2c. The encoded inputs pass the request's size limit: *Run too long to send*; nothing is sent.
   - 4a. Offline, `409`, a `400` (unknown version, name refused, too large), `429`, a server error
     or a timeout: one line names it; the offer stays; nothing is kept; no automatic retry. After
     `409`, offline or a timeout, *To erase see privacy* follows (the run may be stored without a

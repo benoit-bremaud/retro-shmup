@@ -52,7 +52,7 @@ classDiagram
   class Codec1 {
     <<adapters: browser and src/replay>>
     +CODEC = 1
-    +encode(columns) string «deflate-raw, base64url»
+    +encode(columns) Promise~string~ «deflate-raw, base64url»
     +decode(inputs, frames, maxFrames) DecodeResult «capped inflate»
   }
   class DecodeResult {

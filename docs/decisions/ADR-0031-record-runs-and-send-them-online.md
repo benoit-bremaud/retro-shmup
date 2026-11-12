@@ -107,8 +107,13 @@ server follow-up benoit-bremaud/retro-leaderboard#14.
 
 12. **Where.** Only on the final origin `<game>.benoitbremaud.fr` (ADR-0008): the build constant
     `__LEADERBOARD_URL__` (an `https:` origin, checked at build time) is set only in that Pages
-    project's production environment, and only when `package.json` holds a strict `X.Y.Z` above
-    `0.0.0` (the release PR sets it, the signed tag `vX.Y.Z` marks the same commit). Empty
+    project's production environment, and only when the build is the release commit itself:
+    `package.json` holds a strict `X.Y.Z` above `0.0.0` (the release PR sets it, the signed tag
+    `vX.Y.Z` marks that commit) **and** the Pages variable `RELEASE_COMMIT`, set to the tagged
+    commit's full SHA by the release procedure, equals `CF_PAGES_COMMIT_SHA`. A later merge to
+    `main` rebuilds production with a different SHA, so the feature switches off until the next
+    release (its runs would replay with another simulation than the tag's and be rejected). Missing
+    or different values fail closed. Empty
     constant = feature absent: no offer, no options row, no request. itch.io waits for its own ADR.
 13. **Explicit opt-in, after the hall of fame.** The run's end becomes
     `Ending | Game over → [Name entry → High scores] → [Send online] → Feedback offer → Title`.
@@ -143,8 +148,8 @@ server follow-up benoit-bremaud/retro-leaderboard#14.
     (score, status, date); on opening it asks `GET` for **every** kept run, one at a time, and
     drops a run answered `404` (erased by its retention, leaderboard ADR-0004); it erases one after
     a confirmation (default *No*): `DELETE`, then the item leaves the list on `204` or `404`.
-19. **Lost token.** A `POST` that timed out may have stored the run; a re-send then answers `409`.
-    In both cases the line adds *TO ERASE SEE PRIVACY*.
+19. **Lost token.** A `POST` that timed out or failed offline may have stored the run; a re-send
+    then answers `409`. In these cases the line adds *TO ERASE SEE PRIVACY*.
 20. **Port.** `LeaderboardPort` (`submit`, `status`, `erase`) returns a request handle the domain
     polls each step (`pending`, `done` with a parsed result, `failed` with a code); no promise in
     the domain. `submit` takes the records and their count; the `FetchLeaderboard` adapter
@@ -164,9 +169,10 @@ server follow-up benoit-bremaud/retro-leaderboard#14.
 23. **Release tags and the build on the homelab.** Every release is a signed annotated tag
     `vX.Y.Z` (skill `release-tag`). The verifier checks it with `git verify-tag` against an
     **allowed-signers file pinned on the homelab**, outside the checkout (the repository's own
-    `.github/allowed_signers` is never trusted for this), then runs
-    `pnpm install --frozen-lockfile --ignore-scripts` and `pnpm build:replay` in the same
-    sandbox as the replay, without any secret in its environment.
+    `.github/allowed_signers` is never trusted for this), then runs `pnpm fetch --frozen-lockfile`
+    in a step with network but no secret and no script, and
+    `pnpm install --offline --frozen-lockfile --ignore-scripts && pnpm build:replay` inside the
+    replay's no-network sandbox, without any secret in its environment.
 
 ## MCDA (owner-validated, 2026-11-12)
 
@@ -181,6 +187,7 @@ server follow-up benoit-bremaud/retro-leaderboard#14.
 | Token storage (failure isolation 30, single source 30, migration 20, simplicity 20) | **Separate key with its own parser** (420) | inside the save document, version 3 (330) |
 | Retention line (true 35, informative at a glance 30, fits 20, stays true 15) | **RETENTION IN PRIVACY + the PRIVACY row** (380) | durations on screen (315: incomplete, the top 100 is kept without limit) |
 | Channels (tokens kept 30, CORS and CSP simplicity 25, reach 25, effort 20) | **The final origin only** (430) | every Pages origin (340: tokens lost on the move), Pages + itch.io (305) |
+| Release gate after review (honest runs never rejected 35, simplicity 25, deploy impact 20, verifiable now 20) | **`RELEASE_COMMIT` equals `CF_PAGES_COMMIT_SHA`, else off** (455) | the build checks a tag on its commit (395: tags in the Pages clone unverified), a `release` production branch (370: reopens ADR-0004 and ADR-0016) |
 
 Sensitivity: for the first frame-format question, raising simplicity to 35 and lowering the fit
 weight to 20 would put RLE first (420 against 385), but RLE fails the 64 KiB guard for a touch

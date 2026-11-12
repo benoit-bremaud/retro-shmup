@@ -22,7 +22,7 @@ classDiagram
   class LeaderboardPort {
     <<interface>>
     +submit(run: Submission) RequestHandle~Accepted~
-    +status(id) RequestHandle~RunStatus~
+    +status(id) RequestHandle~StatusAnswer~
     +erase(id, token) RequestHandle~Erased~
   }
   class RequestHandle~T~ {
@@ -50,6 +50,10 @@ classDiagram
     rejected
     unverifiable
     expired
+  }
+  class StatusAnswer {
+    <<union>>
+    RunStatus
     unknown «404»
   }
   class FailureCode {
@@ -112,6 +116,7 @@ classDiagram
   OnlineRuns ..> StoragePort : <<use>> read, write
   LeaderboardPort ..> RequestHandle
   LeaderboardPort ..> Submission
+  StatusAnswer ..> RunStatus
   RequestHandle ..> FailureCode
   FetchLeaderboard ..|> LeaderboardPort
 ```

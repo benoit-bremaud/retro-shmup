@@ -73,7 +73,7 @@ SD-boss (added with the level brick) uses `Run`, `RunRules`, `World`, `LevelDire
 | `IntentFrame.active`, the `Attract` scene (G2-3b) | CD-menus; STM-scenes (G2); GDD v0.16 §9.1 attract mode; ADR-0009 amendment |
 | NameEntry, LetterGrid, PressGuard (G2-3) | CD-menus; SD-score; STM-scenes (G2); UC3 text |
 | Options, SaveStore, StoragePort (G1a) | CD-menus; STM-scenes (`Boot` reads, each option change writes); UC5 text |
-| IntentQuantizer, RunRecorder, RecordColumns, DetMath, Codec1, Replayer, ReplayCli *(v0.35)* | CD-recording; SD-online (`records()`); CMP; ADR-0031 decisions 1–11, 22 |
+| IntentQuantizer, RunRecorder, RecordColumns, DetMath, Codec1, Replayer, ReplayCli *(v0.35)* | CD-recording; SD-online (`records()`); CMP; ADR-0031 decisions 1–11, 22, 23 |
 | OnlineRuns, KeptRuns, KeptRun, KeptRunsDocument, LeaderboardPort, RequestHandle *(v0.35)* | CD-online; SD-online; STM-scenes (online states); STM-online-run; ADR-0031 decisions 12–21 |
 
 Every class is used by at least one behaviour diagram or by the GDD rule table of CD. The
