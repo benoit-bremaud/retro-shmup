@@ -85,4 +85,10 @@ describe('KeptRuns', () => {
     kept.drop('missing');
     expect(kept.items).toEqual([keptRun(2, { status: 'rejected' })]);
   });
+
+  it('keeps a run once when it is added again', () => {
+    const kept = new KeptRuns([keptRun(1)]);
+    expect(kept.add(keptRun(1))).toBe(true);
+    expect(kept.items).toEqual([keptRun(1)]);
+  });
 });

@@ -60,9 +60,6 @@ const MAYBE_STORED: ReadonlySet<FailureCode> = new Set<FailureCode>([
   'accepted-unreadable',
 ]);
 
-/** Read-change-write tries before a change counts as not kept. */
-const CHANGE_ATTEMPTS = 3;
-
 const IDLE: OnlineState = { phase: 'idle' };
 const SENDING: OnlineState = { phase: 'sending' };
 
@@ -70,7 +67,7 @@ const SENDING: OnlineState = { phase: 'sending' };
  * Sending runs, following their verification and erasing them (meta/04-class-online-runs,
  * meta/05-state-online-run). The scene machine calls `step` once per simulation step; the port's
  * handles are read there, never awaited. A `POST` is never retried on its own. The kept runs are
- * re-read before every change, so a second tab never overwrites a token.
+ * re-read before every change (a residual two-tab race remains, #175).
  */
 export class OnlineRuns {
   private runs: KeptRuns;
@@ -264,19 +261,13 @@ export class OnlineRuns {
   }
 
   /**
-   * Read, change, write, read back: another tab's runs are re-read first and never overwritten.
-   * True only when `apply` accepted the change and the document stored is the one written.
+   * Read, change, write: another tab's runs are re-read first. Two tabs writing within the
+   * storage's propagation delay can still drop a run (residual race, one key per run in #175).
+   * True only when `apply` accepted the change and the write succeeded.
    */
   private change(apply: (runs: KeptRuns) => boolean): boolean {
-    // localStorage is not atomic across tabs: a write landing between our read and write is
-    // caught by reading back, and the change is redone on the newer document.
-    for (let attempt = 0; attempt < CHANGE_ATTEMPTS; attempt += 1) {
-      this.runs = this.load();
-      const accepted = apply(this.runs);
-      const text = serializeKeptRuns(this.runs);
-      if (!this.storage.write(KEPT_RUNS_KEY, text)) return false;
-      if (this.storage.read(KEPT_RUNS_KEY) === text) return accepted;
-    }
-    return false;
+    this.runs = this.load();
+    const accepted = apply(this.runs);
+    return this.storage.write(KEPT_RUNS_KEY, serializeKeptRuns(this.runs)) && accepted;
   }
 }

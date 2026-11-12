@@ -157,7 +157,7 @@ classDiagram
 - **Leaving while sending**: a `202` that arrives after `leave()` is kept for *Online scores*
   but not followed, and the state stays idle. A send left before its answer is never reported,
   even when its token may be lost: the privacy page is the way back.
-- **Two tabs**: the kept runs are re-read from storage before every change and read back after
-  the write; a change another tab overwrote in between is redone (3 tries, then the token is
-  flagged as maybe lost), so a tab never drops a token another tab kept.
+- **Two tabs**: the kept runs are re-read from storage before every change. Two tabs writing
+  within the storage's propagation delay can still drop a run and its token (residual race,
+  accepted for 3a); one key per run closes it before the feature is enabled (#175).
 - **Lines**: the scene maps `OnlineState` and `eraseError` to message keys (PR 3b of #167).

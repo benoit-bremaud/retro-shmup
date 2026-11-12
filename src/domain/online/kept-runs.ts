@@ -47,8 +47,9 @@ export class KeptRuns {
     return this.list.length >= MAX_KEPT_RUNS;
   }
 
-  /** Keeps `run` first; false, keeping nothing, when full. */
+  /** Keeps `run` first; true when already kept; false, keeping nothing, when full. */
   add(run: KeptRun): boolean {
+    if (this.list.some((kept) => kept.id === run.id)) return true;
     if (this.full()) return false;
     this.list.unshift(run);
     return true;

@@ -380,41 +380,4 @@ describe('OnlineRuns — robustness', () => {
     expect(kept(store).map((run) => run.id)).toEqual([ID]);
     expect(online.state()).toEqual({ phase: 'idle' });
   });
-
-  it('redoes a change another tab overwrote between its read and write', () => {
-    const store = new MemoryStore();
-    const port = new FakePort();
-    const other = JSON.stringify({
-      v: 1,
-      runs: [
-        {
-          id: '01JC0000000000000000000002',
-          token: TOKEN,
-          score: 6,
-          sentAt: NOW,
-          status: 'verified',
-        },
-      ],
-    });
-    const write = store.write.bind(store);
-    let raced = false;
-    store.write = (key, value) => {
-      write(key, value);
-      if (!raced) {
-        raced = true;
-        write(key, other); // the other tab's write lands just after ours
-      }
-      return true;
-    };
-    const online = sentWith(store, port);
-    expect(kept(store).map((run) => run.id)).toEqual([ID, '01JC0000000000000000000002']);
-    expect(online.state()).toMatchObject({ phase: 'sent', tokenMaybeLost: false });
-  });
-
-  it('flags the token when the document keeps changing under it', () => {
-    const store = new MemoryStore();
-    store.read = () => null;
-    const online = sentWith(store, new FakePort());
-    expect(online.state()).toMatchObject({ phase: 'sent', tokenMaybeLost: true });
-  });
 });
