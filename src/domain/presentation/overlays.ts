@@ -25,7 +25,14 @@ import {
   MENU_ROW_HEIGHT,
   MENU_VALUE_MARGIN,
 } from './menu-layout';
-import type { ControlsView, MenuScreen, MenuView, NameEntryView, SlotColumn } from './menu-layout';
+import type {
+  ControlsView,
+  LetterGridView,
+  MenuScreen,
+  MenuView,
+  NameEntryView,
+  SlotColumn,
+} from './menu-layout';
 import { Palette } from './palette';
 import { FIELD_HEIGHT, FIELD_WIDTH } from './screen';
 
@@ -312,8 +319,8 @@ export function drawEnding(render: RenderPort, score: string, language: Language
 
 /**
  * The name entry (GDD v0.16 §9.1): the heading in the title font, the slots of the name or the
- * code (`-` when empty, the next one on a bar), then the grid, each cell's text centred in it and
- * the highlighted cell on a bar; an unavailable cell (*OK* before a known code) is not drawn.
+ * code (`-` when empty, the next one on a bar), then the grid; an unavailable cell (*OK* before a
+ * known code) is not drawn.
  */
 export function drawNameEntry(render: RenderPort, view: NameEntryView, language: Language): void {
   drawVeil(render);
@@ -338,7 +345,34 @@ export function drawNameEntry(render: RenderPort, view: NameEntryView, language:
     const flagX = left + view.slotCount * width + FLAG_GAP;
     render.drawFlag(view.knownCode, flagX, flagTop(slotsY + textTop));
   }
-  const grid = view.grid;
+  drawGrid(render, view.grid, language, false);
+}
+
+/**
+ * The country suggestions (GDD v0.34 §9.1, ADR-0030): the heading, then the 2 × 4 grid, each
+ * suggested country as its code and its flag, *NONE* and *OTHER* as text.
+ */
+export function drawCountrySuggestions(
+  render: RenderPort,
+  grid: LetterGridView,
+  language: Language,
+): void {
+  drawVeil(render);
+  drawBanner(render, message('country', language), NAME_ENTRY_LAYOUT.headingY);
+  drawGrid(render, grid, language, true);
+}
+
+/**
+ * A letter grid: each available cell's text centred in it, the highlighted cell on a bar. With
+ * `flags`, a cell without a label holds a country code, drawn with its flag after it; the code
+ * stays centred alone when no flag is drawn.
+ */
+function drawGrid(
+  render: RenderPort,
+  grid: LetterGridView,
+  language: Language,
+  flags: boolean,
+): void {
   const cellTextTop = (LETTER_GRID.cellHeight - MENU_FONT_CELL.height) / 2;
   for (let i = 0; i < grid.cells.length; i += 1) {
     const cell = grid.cells[i];
@@ -351,11 +385,13 @@ export function drawNameEntry(render: RenderPort, view: NameEntryView, language:
       render.drawRect(x, y + 1, cellWidth, LETTER_GRID.cellHeight - 2, Palette.menuHighlight);
     }
     const text = cell.label === undefined ? cell.text : message(cell.label, language);
-    render.drawText(
-      text,
-      Math.round(x + (cellWidth - menuTextWidth(text)) / 2),
-      y + cellTextTop,
-      'menu',
-    );
+    const textWidth = menuTextWidth(text);
+    let textX = Math.round(x + (cellWidth - textWidth) / 2);
+    if (flags && cell.label === undefined) {
+      const pairX = Math.round(x + (cellWidth - textWidth - FLAG_GAP - FLAG_SIZE.width) / 2);
+      if (render.drawFlag(text, pairX + textWidth + FLAG_GAP, flagTop(y + cellTextTop)))
+        textX = pairX;
+    }
+    render.drawText(text, textX, y + cellTextTop, 'menu');
   }
 }

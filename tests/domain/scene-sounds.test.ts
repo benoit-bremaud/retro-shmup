@@ -11,7 +11,11 @@ import { RecordingRender } from '../support/recording-render';
 
 const DT = 1 / 60;
 
-function onTitle(): { machine: SceneMachine; audio: RecordingAudio } {
+/** A machine on the title; its save holds FR, or no country when `countryAsked` is false. */
+function onTitle(countryAsked = true): {
+  machine: SceneMachine;
+  audio: RecordingAudio;
+} {
   const audio = new RecordingAudio();
   const machine = new SceneMachine(
     new RecordingRender(),
@@ -34,7 +38,7 @@ function onTitle(): { machine: SceneMachine; audio: RecordingAudio } {
       bindings: DEFAULT_BINDINGS,
       musicVolume: 7,
       sfxVolume: 8,
-      country: 'FR',
+      country: countryAsked ? 'FR' : undefined,
     },
     () => new Run(),
     undefined,
@@ -66,6 +70,23 @@ describe('SceneMachine — menu sounds and the pause mix (GDD v0.23 §9.5, ADR-0
     machine.step(DT, createIntentFrame());
     machine.step(DT, pressed(Button.Confirm));
     expect(audio.played).toEqual([Sfx.MenuMove, Sfx.MenuConfirm]);
+  });
+
+  it('plays the confirm sound when the country choice switches page (GDD v0.34 §9.1)', () => {
+    const { machine, audio } = onTitle(false);
+    machine.step(DT, pressed(Button.Confirm)); // Play: the suggestions first
+    expect(machine.scene).toBe(Scene.StartCountry);
+    const other = createIntentFrame();
+    other.hovered = true;
+    other.hoverX = 210; // OTHER, the fourth 60 px cell of row 1
+    other.hoverY = 104 + 32 + 16;
+    machine.step(DT, other);
+    audio.played.length = 0;
+    machine.step(DT, pressed(Button.Confirm)); // to the letters
+    machine.step(DT, createIntentFrame());
+    machine.step(DT, pressed(Button.Back)); // the empty code: back to the suggestions
+    expect(machine.scene).toBe(Scene.StartCountry);
+    expect(audio.played).toEqual([Sfx.MenuConfirm, Sfx.MenuConfirm]);
   });
 
   it('turns the pause mix on in the pause and off from the count-in', () => {

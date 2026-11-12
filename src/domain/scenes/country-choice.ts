@@ -1,9 +1,10 @@
 import { COUNTRY_CODES } from '../hall-of-fame/country-codes';
+import { suggestedCountries, SUGGESTION_COUNT } from '../hall-of-fame/country-suggestions';
 import { NO_COUNTRY } from '../options';
 import { Button } from '../ports/input-port';
 import type { IntentFrame } from '../ports/input-port';
 import type { MessageKey } from '../i18n/messages';
-import type { LetterGridView, NameEntryView } from '../presentation/menu-layout';
+import type { GridCell, LetterGridView, NameEntryView } from '../presentation/menu-layout';
 import { gridCells, LETTERS, LetterGrid } from './letter-grid';
 import type { EntryCell, GridAction } from './letter-grid';
 
@@ -17,17 +18,48 @@ export const COUNTRY_CELLS: readonly EntryCell[] = gridCells(LETTERS, [
   { action: 'ok', label: 'ok', span: 1 },
 ]);
 
-/** The country grid's *OK* cell. */
-const COUNTRY_OK = COUNTRY_CELLS.findIndex((cell) => cell.action === 'ok');
+/** What a cell of the suggestions page does: choose its flag's country, none, or open the letters. */
+export type FlagAction = 'flag' | 'none' | 'other';
 
-/** How the country choice ends: a code or *NONE* chosen, or `back` on an empty code. */
+/** A suggestions cell: its code changes each time the choice opens, the cell itself never. */
+interface FlagCell extends GridCell<FlagAction> {
+  text: string;
+}
+
+/** Four cells to a row, each two letter columns wide: 60 × 32 px (ADR-0030). */
+const FLAG_SPAN = 2;
+const FLAGS_PER_ROW = 4;
+
+/** The suggestions page: six flags, then *NONE* and *OTHER* closing the second row. */
+function flagCells(): FlagCell[] {
+  const cells: FlagCell[] = [];
+  for (let i = 0; i < SUGGESTION_COUNT + 2; i += 1) {
+    const cell: FlagCell = {
+      action: 'flag',
+      text: '',
+      row: Math.floor(i / FLAGS_PER_ROW),
+      column: (i % FLAGS_PER_ROW) * FLAG_SPAN,
+      span: FLAG_SPAN,
+    };
+    if (i === SUGGESTION_COUNT) cells.push({ ...cell, action: 'none', label: 'noCountry' });
+    else if (i > SUGGESTION_COUNT) cells.push({ ...cell, action: 'other', label: 'otherCountry' });
+    else cells.push(cell);
+  }
+  return cells;
+}
+
+/** The suggestions page's *OTHER* cell, the last one. */
+const OTHER_CELL = SUGGESTION_COUNT + 1;
+
+/** How the country choice ends: a country or *NONE* chosen, or `back` on the suggestions. */
 export type CountryChoiceExit = 'chosen' | 'cancelled';
 
 /**
- * The country choice (GDD v0.26 §9.1, meta/02-sequence-country-feedback): the letters-only grid
- * under the two-letter code, opened before the first run and from the options. *OK* shows only
- * for a code of `COUNTRY_CODES`, *NONE* chooses no country, `back` deletes the last letter and,
- * on an empty code, cancels. It opens on *OK* when the preselected code is known, else on `A`.
+ * The country choice (GDD v0.34 §9.1, ADR-0030, meta/02-sequence-country-feedback), opened before
+ * the first run and from the options, in two pages. The suggestions page shows six flags, *NONE*
+ * and *OTHER*: a flag chooses its country at once, `back` cancels. *OTHER* opens the letters-only
+ * grid under the two-letter code: *OK* shows only for a code of `COUNTRY_CODES`, `back` deletes
+ * the last letter and, on an empty code, returns to the suggestions.
  */
 export class CountryChoice implements NameEntryView {
   readonly heading: MessageKey = 'country';
@@ -36,24 +68,48 @@ export class CountryChoice implements NameEntryView {
   /** The complete known code, else `''`: *OK* shows when set. Kept up to date on input, so a draw joins nothing. */
   private known = '';
   private chosenNone = false;
+  private onLetters = false;
+  private readonly flagCells = flagCells();
+  private readonly flagGrid = new LetterGrid<FlagAction>(this.flagCells);
   private readonly countryGrid = new LetterGrid<GridAction>(
     COUNTRY_CELLS,
     (cell) => cell.action !== 'ok' || this.known !== '',
   );
 
-  /** Opens at step `now` on `preselected`, kept only if it is a known code. */
-  open(now: number, opening: Readonly<IntentFrame>, preselected: string | undefined): void {
+  /**
+   * Opens at step `now` on the suggestions made from the browser's `hints` and the `saved`
+   * country, the cursor on the saved one, else on the first flag.
+   */
+  open(
+    now: number,
+    opening: Readonly<IntentFrame>,
+    hints: readonly string[],
+    saved: string | undefined,
+  ): void {
+    const suggested = suggestedCountries(hints, saved);
+    let start = 0;
+    for (let i = 0; i < SUGGESTION_COUNT; i += 1) {
+      const cell = this.flagCells[i];
+      const code = suggested[i];
+      if (cell === undefined || code === undefined) continue; // Never: six cells, six codes.
+      cell.text = code;
+      if (code === saved) start = i;
+    }
     this.letters.length = 0;
     this.chosenNone = false;
-    if (preselected !== undefined && COUNTRY_CODES.has(preselected)) {
-      this.letters.push(preselected.charAt(0), preselected.charAt(1));
-    }
+    this.onLetters = false;
     this.checkCode();
-    this.countryGrid.reset(now, opening, this.known === '' ? 0 : COUNTRY_OK);
+    this.flagGrid.reset(now, opening, start);
   }
 
+  /** True on the letters page, false on the suggestions. */
+  get byLetters(): boolean {
+    return this.onLetters;
+  }
+
+  /** The grid of the page shown. */
   get grid(): LetterGridView {
-    return this.countryGrid;
+    return this.onLetters ? this.countryGrid : this.flagGrid;
   }
 
   get nextSlot(): number {
@@ -76,8 +132,30 @@ export class CountryChoice implements NameEntryView {
 
   /** One scene step; returns how the choice ends, or `undefined` while it goes on. */
   step(frame: Readonly<IntentFrame>, now: number): CountryChoiceExit | undefined {
+    return this.onLetters ? this.stepLetters(frame, now) : this.stepFlags(frame, now);
+  }
+
+  private stepFlags(frame: Readonly<IntentFrame>, now: number): CountryChoiceExit | undefined {
+    if ((frame.pressed & Button.Back) !== 0) return 'cancelled';
+    const cell = this.flagGrid.step(frame, now);
+    if (cell === undefined) return undefined;
+    if (cell.action === 'other') {
+      this.onLetters = true;
+      this.countryGrid.reset(now, frame);
+      return undefined;
+    }
+    if (cell.action === 'none') this.chosenNone = true;
+    else this.letters.push(cell.text.charAt(0), cell.text.charAt(1));
+    return 'chosen';
+  }
+
+  private stepLetters(frame: Readonly<IntentFrame>, now: number): CountryChoiceExit | undefined {
     if ((frame.pressed & Button.Back) !== 0) {
-      if (this.letters.length === 0) return 'cancelled';
+      if (this.letters.length === 0) {
+        this.onLetters = false;
+        this.flagGrid.reset(now, frame, OTHER_CELL);
+        return undefined;
+      }
       this.deleteLast();
     }
     const cell = this.countryGrid.step(frame, now);

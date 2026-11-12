@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
-import { LETTER_GRID } from '../../src/domain/presentation/menu-layout';
 import { CountryChoice } from '../../src/domain/scenes/country-choice';
+import { later, onLetters, pick, pointOf } from '../support/country-choice';
 
 function frame(edit: Partial<IntentFrame> = {}): IntentFrame {
   return Object.assign(createIntentFrame(), edit);
@@ -11,39 +11,14 @@ function frame(edit: Partial<IntentFrame> = {}): IntentFrame {
 const CONFIRM = frame({ pressed: Button.Confirm });
 const BACK = frame({ pressed: Button.Back });
 
-/** Steps well apart, past every guard: each test's clock. */
-let clock = 1000;
-
-function pointOf(choice: CountryChoice, key: string): { x: number; y: number } {
-  const cell = choice.grid.cells.find((candidate) => (candidate.label ?? candidate.text) === key);
-  if (cell === undefined) throw new Error(`no cell ${key}`);
-  return {
-    x: cell.column * LETTER_GRID.cellWidth + LETTER_GRID.cellWidth / 2,
-    y: LETTER_GRID.top + cell.row * LETTER_GRID.cellHeight + LETTER_GRID.cellHeight / 2,
-  };
-}
-
-function pick(choice: CountryChoice, key: string): ReturnType<CountryChoice['step']> {
-  const { x, y } = pointOf(choice, key);
-  clock += 20;
-  choice.step(frame({ tapRegion: 'field', tapX: x, tapY: y }), clock);
-  return choice.step(frame({ releaseRegion: 'field', releaseX: x, releaseY: y }), clock + 1);
-}
-
-function hover(choice: CountryChoice, key: string): void {
-  const { x, y } = pointOf(choice, key);
-  clock += 20;
-  choice.step(frame({ hovered: true, hoverX: x, hoverY: y }), clock);
-}
-
-function opened(preselected?: string): CountryChoice {
+function opened(hints: readonly string[] = [], saved?: string): CountryChoice {
   const choice = new CountryChoice();
-  choice.open(0, frame(), preselected);
+  choice.open(0, frame(), hints, saved);
   return choice;
 }
 
-function slots(choice: CountryChoice): string {
-  return choice.slot(0) + choice.slot(1);
+function shown(choice: CountryChoice): string[] {
+  return choice.grid.cells.map((cell) => cell.label ?? cell.text);
 }
 
 function cursorKey(choice: CountryChoice): string {
@@ -51,83 +26,131 @@ function cursorKey(choice: CountryChoice): string {
   return cell?.label ?? cell?.text ?? '';
 }
 
+function slots(choice: CountryChoice): string {
+  return choice.slot(0) + choice.slot(1);
+}
+
 function okShown(choice: CountryChoice): boolean {
   return choice.grid.available(choice.grid.cells.findIndex((cell) => cell.label === 'ok'));
 }
 
-describe('CountryChoice (GDD v0.26 §9.1, ADR-0027 decision 6)', () => {
-  it('shows the preselected known code with OK, the cursor on OK', () => {
-    const choice = opened('FR');
+describe('CountryChoice suggestions (GDD v0.34 §9.1, ADR-0030)', () => {
+  it('shows six flags, NONE and OTHER in two rows of four 60 px cells', () => {
+    const choice = opened(['JP']);
+    expect(choice.byLetters).toBe(false);
     expect(choice.heading).toBe('country');
-    expect(slots(choice)).toBe('FR');
-    expect(choice.nextSlot).toBe(-1);
-    expect(okShown(choice)).toBe(true);
-    expect(cursorKey(choice)).toBe('ok');
-    expect(choice.step(CONFIRM, (clock += 20))).toBe('chosen');
-    expect(choice.choice).toBe('FR');
+    expect(shown(choice)).toEqual([
+      'JP',
+      'FR',
+      'BE',
+      'CH',
+      'CA',
+      'US',
+      'noCountry',
+      'otherCountry',
+    ]);
+    expect(choice.grid.cells.map((cell) => [cell.row, cell.column, cell.span])).toEqual([
+      [0, 0, 2],
+      [0, 2, 2],
+      [0, 4, 2],
+      [0, 6, 2],
+      [1, 0, 2],
+      [1, 2, 2],
+      [1, 4, 2],
+      [1, 6, 2],
+    ]);
   });
 
-  it.each(['XX', 'fr', 'FRA', 'none'])('preselects nothing from %s, the cursor on A', (code) => {
-    const choice = opened(code);
-    expect(slots(choice)).toBe('--');
-    expect(cursorKey(choice)).toBe('A');
+  it('opens on the first flag, or on the saved country', () => {
+    expect(cursorKey(opened(['JP']))).toBe('JP');
+    expect(cursorKey(opened(['JP'], 'CH'))).toBe('CH');
+    expect(cursorKey(opened([], 'none'))).toBe('FR');
   });
 
-  it('offers OK only for a complete code of the allowlist', () => {
-    const choice = opened();
-    pick(choice, 'Q');
-    expect(okShown(choice)).toBe(false);
-    pick(choice, 'Q');
-    expect(okShown(choice)).toBe(false); // QQ is not a country
-    expect(pick(choice, 'ok')).toBeUndefined();
-    choice.step(BACK, (clock += 20));
-    pick(choice, 'A');
-    pick(choice, 'Z'); // a third letter is ignored
-    expect(slots(choice)).toBe('QA');
-    expect(okShown(choice)).toBe(true);
+  it('chooses a flag at once, by Confirm or by a tap', () => {
+    const confirmed = opened(['JP']);
+    expect(confirmed.step(CONFIRM, later())).toBe('chosen');
+    expect(confirmed.choice).toBe('JP');
+    const tapped = opened();
+    expect(pick(tapped, 'CA')).toBe('chosen');
+    expect(tapped.choice).toBe('CA');
   });
 
   it('chooses no country on NONE', () => {
-    const choice = opened('FR');
+    const choice = opened();
     expect(pick(choice, 'noCountry')).toBe('chosen');
     expect(choice.choice).toBe('none');
   });
 
-  it('deletes on back and DEL, hiding OK again, and cancels on back with an empty code', () => {
-    const choice = opened('FR');
-    hover(choice, 'ok');
-    expect(choice.step(BACK, (clock += 20))).toBeUndefined();
-    expect(slots(choice)).toBe('F-');
-    expect(okShown(choice)).toBe(false);
-    expect(cursorKey(choice)).toBe('noCountry'); // moved off OK
-    pick(choice, 'delete');
-    expect(slots(choice)).toBe('--');
-    expect(choice.step(BACK, (clock += 20))).toBe('cancelled');
+  it('cancels on back', () => {
+    expect(opened().step(BACK, later())).toBe('cancelled');
   });
 
   it('never acts on the press that opened it', () => {
     const choice = new CountryChoice();
-    const a = pointOf(choice, 'A');
-    choice.open(2000, frame({ pressed: Button.Confirm }), undefined);
-    choice.step(frame({ releaseRegion: 'field', releaseX: a.x, releaseY: a.y }), 2001);
-    expect(slots(choice)).toBe('--');
+    const fr = pointOf(opened(), 'FR');
+    choice.open(2000, frame({ pressed: Button.Confirm }), [], undefined);
+    expect(
+      choice.step(frame({ releaseRegion: 'field', releaseX: fr.x, releaseY: fr.y }), 2001),
+    ).toBeUndefined();
   });
 
-  it('starts afresh when it opens again', () => {
-    const choice = opened('FR');
-    pick(choice, 'noCountry');
-    choice.open(500, frame(), undefined);
+  it('starts afresh when it opens again after a typed code', () => {
+    const choice = onLetters(new CountryChoice(), 'FR');
+    choice.open(500, frame(), ['DE'], undefined);
+    expect(choice.byLetters).toBe(false);
+    expect(shown(choice)[0]).toBe('DE');
     expect(slots(choice)).toBe('--');
-    expect(choice.grid.cursor).toBe(0);
+    expect(choice.knownCode).toBe('');
+  });
+
+  it('forgets NONE when it opens again', () => {
+    const choice = opened();
+    pick(choice, 'noCountry');
+    choice.open(500, frame(), [], undefined);
+    expect(pick(choice, 'FR')).toBe('chosen');
+    expect(choice.choice).toBe('FR');
   });
 });
 
-describe('CountryChoice.knownCode (GDD v0.27, ADR-0028)', () => {
-  it('holds a complete known code, else the empty string', () => {
-    expect(opened('FR').knownCode).toBe('FR');
-    expect(opened(undefined).knownCode).toBe('');
-    const choice = opened('FR');
-    choice.step(BACK, (clock += 20));
+describe('CountryChoice letters (GDD v0.34 §9.1, ADR-0027 decision 6)', () => {
+  it('opens empty on OTHER, the cursor on A', () => {
+    const choice = onLetters(new CountryChoice(), '');
+    expect(choice.byLetters).toBe(true);
+    expect(slots(choice)).toBe('--');
+    expect(cursorKey(choice)).toBe('A');
+    expect(okShown(choice)).toBe(false);
+  });
+
+  it('offers OK only for a complete code of the allowlist', () => {
+    const choice = onLetters(new CountryChoice(), 'QQ');
+    expect(okShown(choice)).toBe(false); // QQ is not a country
+    expect(pick(choice, 'ok')).toBeUndefined();
+    choice.step(BACK, later());
+    pick(choice, 'A');
+    pick(choice, 'Z'); // a third letter is ignored
+    expect(slots(choice)).toBe('QA');
+    expect(choice.knownCode).toBe('QA');
+    expect(pick(choice, 'ok')).toBe('chosen');
+    expect(choice.choice).toBe('QA');
+  });
+
+  it('chooses no country on its NONE', () => {
+    const choice = onLetters(new CountryChoice(), 'F');
+    expect(pick(choice, 'noCountry')).toBe('chosen');
+    expect(choice.choice).toBe('none');
+  });
+
+  it('deletes on back and DEL, then returns to the suggestions on OTHER', () => {
+    const choice = onLetters(new CountryChoice(), 'FR');
+    expect(choice.step(BACK, later())).toBeUndefined();
+    expect(slots(choice)).toBe('F-');
     expect(choice.knownCode).toBe('');
+    pick(choice, 'delete');
+    expect(slots(choice)).toBe('--');
+    expect(choice.step(BACK, later())).toBeUndefined();
+    expect(choice.byLetters).toBe(false);
+    expect(cursorKey(choice)).toBe('otherCountry');
+    expect(choice.step(BACK, later())).toBe('cancelled');
   });
 });

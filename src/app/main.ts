@@ -13,7 +13,7 @@ import type { BakeCanvas } from '../adapters/sprite-bank';
 import { LocalStorageStore } from '../adapters/local-storage-store';
 import { WebAudioPlayer } from '../adapters/web-audio-player';
 import { computeViewport } from '../adapters/viewport';
-import { preselectedCountry } from '../domain/hall-of-fame/preselection';
+import { countryHints } from '../domain/hall-of-fame/country-suggestions';
 import { Run } from '../domain/game/run';
 import { ChampionName } from '../domain/presentation/champion-name';
 import { Starfield } from '../domain/presentation/starfield';
@@ -252,7 +252,7 @@ if (options.fullscreen) input.setFullscreenWanted(true);
 
 // The browser time zone and language are part of the startup snapshot (ADR-0009 decision 4):
 // read once here, the time zone first (ADR-0021 amendment of 2026-10-26).
-const country = preselectedCountry(timeZoneOf(), regionOf(navigator.language));
+const hints = countryHints(timeZoneOf(), regionOf(navigator.language));
 
 let fullscreenWanted = options.fullscreen;
 let bindings = options.bindings;
@@ -279,7 +279,7 @@ const host: SceneHost = {
     input.cancelCapture();
   },
   keyLabel: (code) => input.label(code),
-  preselectedCountry: () => country,
+  countryHints: () => hints,
   today: () => {
     const now = new Date();
     const month = String(now.getMonth() + 1).padStart(2, '0');

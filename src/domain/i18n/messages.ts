@@ -86,6 +86,8 @@ export const MESSAGES = {
   ok: { en: 'OK', fr: 'OK' },
   skip: { en: 'SKIP', fr: 'PASSER' },
   noCountry: { en: 'NONE', fr: 'AUCUN' },
+  /** The suggestions page's way to the letters, for a country without a suggested flag (GDD v0.34). */
+  otherCountry: { en: 'OTHER', fr: 'AUTRE' },
   /** The feedback questionnaire (GDD v0.26 §9.1, §9.3): the title row and the offer screen. */
   feedback: { en: 'FEEDBACK', fr: 'AVIS' },
   yourOpinion: { en: 'YOUR OPINION', fr: 'TON AVIS' },

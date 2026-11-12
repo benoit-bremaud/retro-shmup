@@ -1072,9 +1072,9 @@ class RecordingHost implements SceneHost {
   readonly saved: Options[] = [];
   readonly tables: (readonly HighScoreEntry[])[] = [];
   released = 0;
-  country: string | undefined = undefined;
-  preselectedCountry(): string | undefined {
-    return this.country;
+  hints: readonly string[] = [];
+  countryHints(): readonly string[] {
+    return this.hints;
   }
   today(): string {
     return '2026-10-15';
@@ -1479,7 +1479,6 @@ describe('SceneMachine — the name entry (GDD v0.16 §9.1, SD-score, G2-3)', ()
   } {
     const render = new RecordingRender();
     const host = new RecordingHost();
-    host.country = 'FR';
     const machine = new SceneMachine(
       render,
       new Starfield(() => 0.5),
@@ -1765,7 +1764,7 @@ describe('SceneMachine — the country first (GDD v0.26 §9.1, ADR-0027)', () =>
   function withCountry(country: Options['country']): ReturnType<typeof hosted> {
     const render = new RecordingRender();
     const host = new RecordingHost();
-    host.country = 'FR';
+    host.hints = ['JP'];
     const machine = new SceneMachine(
       render,
       new Starfield(() => 0.5),
@@ -1783,27 +1782,47 @@ describe('SceneMachine — the country first (GDD v0.26 §9.1, ADR-0027)', () =>
     machine.step(DT, createIntentFrame());
   }
 
-  it('asks the country at Play while none is saved, preselected from the language', () => {
+  /** The middle of the suggestions cell at `row`, `slot` (four 60 px cells to a row). */
+  function hoverCell(machine: SceneMachine, row: number, slot: number): void {
+    const frame = createIntentFrame();
+    frame.hovered = true;
+    frame.hoverX = slot * 60 + 30;
+    frame.hoverY = 104 + row * 32 + 16;
+    machine.step(DT, frame);
+  }
+
+  it('asks the country at Play while none is saved, the hints first', () => {
     const { machine, render } = withCountry(undefined);
     press(machine, Button.Confirm);
     expect(machine.scene).toBe(Scene.StartCountry);
     machine.render(1, 16);
-    expect(fieldTextsOf(render).slice(0, 3)).toEqual(['COUNTRY', 'F', 'R']);
+    expect(fieldTextsOf(render).slice(0, 3)).toEqual(['COUNTRY', 'JP', 'FR']);
   });
 
-  it('saves the chosen code, then starts the run', () => {
+  it('saves the flag chosen, then starts the run', () => {
     const { machine, host } = withCountry(undefined);
     press(machine, Button.Confirm);
-    press(machine, Button.Confirm); // OK, preselected for the known FR
-    expect(host.saved.map((options) => options.country)).toEqual(['FR']);
+    press(machine, Button.Confirm); // JP, the first flag
+    expect(host.saved.map((options) => options.country)).toEqual(['JP']);
     expect(machine.scene).toBe(Scene.Playing);
   });
 
-  it('returns to the title and saves nothing on back with an empty code', () => {
+  it('returns to the title and saves nothing on back', () => {
     const { machine, host } = withCountry(undefined);
     press(machine, Button.Confirm);
     press(machine, Button.Back);
-    press(machine, Button.Back); // the code is empty
+    expect(machine.scene).toBe(Scene.Title);
+    expect(host.saved).toEqual([]);
+  });
+
+  it('types a code after OTHER, back there returning to the flags', () => {
+    const { machine, render, host } = withCountry(undefined);
+    press(machine, Button.Confirm);
+    hoverCell(machine, 1, 3); // OTHER
+    press(machine, Button.Confirm);
+    machine.render(1, 16);
+    expect(fieldTextsOf(render).slice(0, 3)).toEqual(['COUNTRY', '-', '-']);
+    press(machine, Button.Back); // the empty code: back to the flags
     expect(machine.scene).toBe(Scene.StartCountry);
     press(machine, Button.Back);
     expect(machine.scene).toBe(Scene.Title);
@@ -1816,17 +1835,15 @@ describe('SceneMachine — the country first (GDD v0.26 §9.1, ADR-0027)', () =>
     expect(machine.scene).toBe(Scene.Playing);
   });
 
-  it('opens the country from the options on the saved code and returns there', () => {
-    const { machine, render, host } = withCountry('DE');
+  it('opens the country from the options on the saved country and returns there', () => {
+    const { machine, host } = withCountry('DE');
     downBy(machine, 2);
     press(machine, Button.Confirm); // Options
     idle(machine);
     downBy(machine, 5); // the Country row
     press(machine, Button.Confirm);
     expect(machine.scene).toBe(Scene.TitleCountry);
-    machine.render(1, 16);
-    expect(fieldTextsOf(render).slice(0, 3)).toEqual(['COUNTRY', 'D', 'E']);
-    press(machine, Button.Confirm); // OK on the saved code
+    press(machine, Button.Confirm); // DE, the saved country under the cursor
     expect(machine.scene).toBe(Scene.TitleOptions);
     expect(host.saved.map((options) => options.country)).toEqual(['DE']);
   });
@@ -1845,25 +1862,19 @@ describe('SceneMachine — the country first (GDD v0.26 §9.1, ADR-0027)', () =>
   it('saves none on NONE at the start, then starts the run', () => {
     const { machine, host } = withCountry(undefined);
     press(machine, Button.Confirm);
-    const none = createIntentFrame();
-    none.hovered = true;
-    none.hoverX = 120;
-    none.hoverY = 104 + 3 * 32 + 16; // NONE, row 3, columns 3 and 4
-    machine.step(DT, none);
+    hoverCell(machine, 1, 2); // NONE
     press(machine, Button.Confirm);
     expect(host.saved.map((options) => options.country)).toEqual(['none']);
     expect(machine.scene).toBe(Scene.Playing);
   });
 
-  it('returns to the options and saves nothing on back with an empty code', () => {
+  it('returns to the options and saves nothing on back', () => {
     const { machine, host } = withCountry('DE');
     downBy(machine, 2);
     press(machine, Button.Confirm);
     idle(machine);
     downBy(machine, 5);
     press(machine, Button.Confirm);
-    press(machine, Button.Back);
-    press(machine, Button.Back);
     press(machine, Button.Back);
     expect(machine.scene).toBe(Scene.TitleOptions);
     expect(host.saved).toEqual([]);
@@ -1879,7 +1890,7 @@ describe('SceneMachine — the country first (GDD v0.26 §9.1, ADR-0027)', () =>
     downBy(machine, 5);
     press(machine, Button.Confirm);
     expect(machine.scene).toBe(Scene.PauseCountry);
-    press(machine, Button.Confirm); // OK on DE
+    press(machine, Button.Confirm); // DE, the saved country
     expect(machine.scene).toBe(Scene.PauseOptions);
     expect(host.saved.map((options) => options.country)).toEqual(['DE']);
   });
