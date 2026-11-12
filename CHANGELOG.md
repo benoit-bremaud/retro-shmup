@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   lefthook and pinned by mise; the gate attests the head SHA and `just merge` requires it. The
   five GitHub workflows (CI, CodeQL, Dependency review, Gitleaks, Scorecard), husky, lint-staged,
   commitlint and the Makefile are gone (ADR-0029, #156).
+- The country choice opens on six suggested flags (the browser's time zone and language, the saved
+  country, then FR, BE, CH, CA, US, GB), with *NONE* and *OTHER*; a flag chooses at once and
+  *OTHER* opens the letter grid (GDD v0.34 §9.1, ADR-0030, #145).
 - The country is preselected from the browser time zone first (`Europe/Paris` → `FR`), then the
   browser language's region, offline; an English speaker in France now gets `FR`
   (GDD v0.30 §9.1, #131).

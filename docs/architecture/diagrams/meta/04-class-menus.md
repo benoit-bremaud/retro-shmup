@@ -86,7 +86,7 @@ classDiagram
     +captureNext() BindingCapture
     +cancelCapture() void
     +keyLabel(code: string) string
-    +preselectedCountry() string | undefined
+    +countryHints() readonly string[]
     +today() string
     +highScoresChanged(entries) void
   }
@@ -244,8 +244,16 @@ classDiagram
   class CountryChoice {
     +choice: string, a code or none
     +knownCode: string, cached on input, v0.27
-    +open(now, opening, preselected) void
+    +byLetters: boolean, v0.34
+    +grid: the suggestions or the letters page
+    +open(now, opening, hints, saved) void
     +step(frame, now) chosen | cancelled | undefined
+  }
+  class CountrySuggestions {
+    <<functions>>
+    +SUGGESTION_COUNT: 6
+    +countryHints(timeZone, languageRegion) string[]
+    +suggestedCountries(hints, saved) string[]
   }
   class SaveStore {
     +load() Options, parseBindings and parseHighScores
@@ -290,6 +298,7 @@ classDiagram
   NameEntry *-- LetterGrid
   CountryChoice *-- LetterGrid
   CountryChoice ..|> NameEntryView
+  CountryChoice ..> CountrySuggestions : suggestedCountries on open
   SceneMachine *-- CountryChoice
   LiveOptions ..> CountryChoice : setCountry on chosen
   NameEntry ..|> NameEntryView
@@ -403,7 +412,7 @@ classDiagram
   saves and pushes new bindings with `setBindings`.
 - **The stored top 10** (decision A3) reaches the scene machine as its constructor parameter
   `highScores` (`main.ts` passes `save.highScores`), built into a `HighScoreTable`.
-  `SceneHost.preselectedCountry` (#131: renamed from `countryOfLanguage`, time zone first, computed by `preselectedCountry` in `hall-of-fame/preselection.ts`), `today` and `highScoresChanged`, `NameEntry` and `LetterGrid`
+  `SceneHost.countryHints` (#145: replaces `preselectedCountry`, itself renamed from `countryOfLanguage` in #131; the time zone's country then the language region, computed by `countryHints` in `hall-of-fame/country-suggestions.ts`), `today` and `highScoresChanged`, `NameEntry` and `LetterGrid`
   are built (G2-3).
 - **Menu members** (decision A4): `Menu` implements `OpenableMenu` (`reset(now, opening)`, what a
   scene needs to open and draw any menu); `ignore(frame)` is the title lock's step; `lastSideways`
@@ -439,9 +448,9 @@ classDiagram
   active frame or after `SceneTuning.attractSeconds` (6) through `openMenu`, with no lock.
 - **Country first (v0.26, ADR-0027 decision 6)**: `CountryChoice` is the former country step of
   `NameEntry`, a scene of its own: opened before the first run while `Options.country` is absent
-  (`StartCountry`, preselected by `SceneHost.preselectedCountry`), and from the options' *Country*
-  row (`TitleCountry`, `PauseCountry`, preselected with the saved code). `back` on an empty code
-  returns `cancelled`. `Options.country` is absent, `none` or a code of `COUNTRY_CODES`; the
+  (`StartCountry`, hints from `SceneHost.countryHints`), and from the options' *Country*
+  row (`TitleCountry`, `PauseCountry`, with the saved code). `back` on the suggestions page
+  returns `cancelled` (v0.34). `Options.country` is absent, `none` or a code of `COUNTRY_CODES`; the
   options row shows the code, or `--`, as a `TextValue`. `NameEntry` has the name only and copies
   the saved code into the entry. The grid is 32 px tall per row from y 104 (#115).
 - **Flags (v0.27, ADR-0028, #125)**: the overlays that draw a country code — the options'
@@ -460,8 +469,12 @@ classDiagram
   or down, any other tilt sideways; left and right wrap within the row, up and down over the rows
   in the cursor's column, skipping empty places and a hidden *OK*. A hover or a picking release
   moves the cursor and its column to the pointer. When *OK* disappears under the cursor
-  (`settle`), the cursor steps to the previous cell of its row. The country choice opens on *OK* when
-  the preselected code is known, else on `A`, and *NONE* ends at once. The view interfaces (`NameEntryView`, `LetterGridView`,
+  (`settle`), the cursor steps to the previous cell of its row. The country choice (v0.34, ADR-0030)
+  has two pages: the suggestions (a `LetterGrid` of 8 `FlagCell`s, 60 × 32 px, six of them with the
+  `suggestedCountries(hints, saved)` codes set at `open`, then *NONE* and *OTHER*; cursor on the
+  saved country, else the first cell) and the letters, opened empty on `A` by *OTHER*; a flag or
+  *NONE* ends the choice at once, `back` on an empty code returns to the suggestions on *OTHER*.
+  `drawCountrySuggestions` draws the first page, `drawNameEntry` the second. The view interfaces (`NameEntryView`, `LetterGridView`,
   `GridCell`) live in `presentation/menu-layout.ts` with the grid geometry; `GridAction` is the
   scene's (`name-entry.ts`). `HighScoreTable` keeps ten entries, best
   first, a score above 0 entering only above the tenth, ties after the older; `SaveStore` parses

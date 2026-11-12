@@ -42,11 +42,11 @@ stateDiagram-v2
   Options --> AudioScreen : audio
   AudioScreen --> Options : back
   Options --> OptionsCountry : country
-  OptionsCountry --> Options : OK, NONE or back / save the choice on OK or NONE
+  OptionsCountry --> Options : a flag, OK, NONE or back on the suggestions / save the choice unless back
   Title --> CountryChoice : start [no country choice saved]
-  CountryChoice --> Title : back on an empty code
-  CountryChoice --> GesturePrompt : OK or NONE [from a gamepad, no gesture yet] / save the choice
-  CountryChoice --> InRun : OK or NONE [gesture done] / save the choice
+  CountryChoice --> Title : back on the suggestions
+  CountryChoice --> GesturePrompt : a flag, OK or NONE [from a gamepad, no gesture yet] / save the choice
+  CountryChoice --> InRun : a flag, OK or NONE [gesture done] / save the choice
   Title --> Title : feedback [tap, click or key] / open the form, count + 1
   Title --> GesturePrompt : feedback [from a gamepad]
   FeedbackOffer --> GesturePrompt : give feedback [from a gamepad]
@@ -143,6 +143,24 @@ stateDiagram-v2
   the pause; it and the title's *Feedback* row are absent when the build holds no form address.
   Opening the form from a gamepad passes by the gesture prompt, which then opens the form and
   returns where it came from (drawn below). `HighScores --> Title` stays for the title's own visit.
+- **v0.34 (GDD §9.1, ADR-0030)**: both `Country choice` states have two sub-states, drawn below.
+  The cursor and the opening guard restart at each page switch, which plays *MenuConfirm*.
+
+```mermaid
+---
+title: stm — Country choice, suggestions and letters (v0.34)
+---
+stateDiagram-v2
+  state "Suggestions (6 flags, NONE, OTHER)" as Suggestions
+  state "Letters (grid, empty code)" as Letters
+  [*] --> Suggestions : open(hints, saved) / cursor on the saved country, else the first flag
+  Suggestions --> Letters : OTHER / empty code, cursor on A
+  Suggestions --> [*] : a flag, or NONE / chosen, saved
+  Suggestions --> [*] : back / cancelled, nothing saved
+  Letters --> Letters : a letter, DEL, or back [code not empty] / add or delete the last letter
+  Letters --> Suggestions : back [code empty] / cursor on OTHER
+  Letters --> [*] : OK [code known], or NONE / chosen, saved
+```
 - **Name entry** follows both Ending and Game over when the score qualifies (GDD v0.2 §9.1); a run
   quit from the pause never reaches it. High scores then show the new entry highlighted (UC3).
 
@@ -369,8 +387,8 @@ bricks deliver.
 - **Difficulty ramp** (GDD v0.9 §7.1, §10): the level brick F replaces the 45 s interim loop with
   the real ~120 s level-1 script rising to the Heavy, then the boss.
 - **Named top 10 and country** (GDD v0.9 §8, §9.1, §9.8): the screens brick G brings the name
-  entry (8-character letter picker, skip as `???`, country preselected from the browser
-  time zone, else the language's region, v0.30), the save-document schema and its allowlist validation (ADR-0006,
+  entry (8-character letter picker, skip as `???`, country suggested from the browser
+  time zone, else the language's region, v0.30; six suggested flags first since v0.34), the save-document schema and its allowlist validation (ADR-0006,
   ADR-0021: first `version: 1` with `name` and `country`, no migration), and the bitmap font glyphs the entry needs (A–Z, 0–9, space, `?`). The pixel flags wait for the
   assets brick.
 
@@ -565,7 +583,7 @@ stateDiagram-v2
   must start on the new screen, §9.1); the title reached from `High scores` is locked for 1 s, as
   after Game over.
 - The country step opens with its own opening guard: the press that confirmed the name never acts
-  on it; it opens on *OK* when the preselected code is known.
+  on it. (Superseded in v0.26 and v0.34: the country choice now opens on its suggestions page.)
 - **The letter grid** is one model for both steps (the country step shows the letters only, with
   *DEL*, *NONE* and *OK*), sharing `Menu`'s press, release and opening-guard rules; the cursor
   moves in two dimensions and wraps.

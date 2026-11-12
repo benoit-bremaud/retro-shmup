@@ -87,9 +87,9 @@ step depends on them.
   - 9a. Vertical slice (GDD v0.10 §9.1, ADR-0022): the level list holds level 1 only, so after
     its results the run is cleared; since GDD v0.16 (G2) it goes to the Ending and the top-10
     comparison (steps 10 and 11), the next levels arriving with level 2.
-  - 1a. *(v0.26)* No country choice is saved: the game shows the country grid, preselected from
-    the browser time zone, else the browser language's region (v0.30); Player confirms a code with *OK* or chooses *NONE*, which is saved, then
-    step 2; `back` on an empty code returns to the title. Player changes it later in UC5.
+  - 1a. *(v0.26)* No country choice is saved: the game shows the country choice: six suggested
+    flags (v0.34: the browser time zone's country, the browser language's region, the saved country, then FR, BE, CH, CA, US, GB), *NONE* and *OTHER*; Player picks a flag or *NONE*, which is saved, then
+    step 2, or takes *OTHER* to type a code on the letter grid and confirm it with *OK*; `back` on the suggestions returns to the title. Player changes it later in UC5.
   - 11a. The final score enters the top 10: UC3 runs at *run end*, then step 12.
   - *a. At any moment of play (steps 4–8), Player pauses: UC2.
   - *b. At any moment of play, the tab is hidden, the window loses focus, the gamepad in use
