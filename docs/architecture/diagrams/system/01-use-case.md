@@ -196,6 +196,7 @@ step depends on them.
     the offer.
   - 2b. 20 runs are kept: *Erase an online score first* shows; nothing is sent.
   - 2c. The encoded inputs exceed the request's size limit: *Run too long to send*; nothing is sent.
+  - 2e. *(v0.37)* Another send or erasure is still under way: *Wait*; nothing is sent.
   - 2d. *(v0.36)* The browser cannot pack the run: *Server error*; nothing is sent.
   - 4a. Offline, `409`, a `400` (unknown version, name refused, too large), `429`, a server error,
     a timeout or *(v0.36)* a `202` whose answer cannot be read: one line names it; the offer
@@ -230,6 +231,7 @@ step depends on them.
   - 3a. Player declines the confirmation: nothing changes.
   - 4a. The leaderboard does not know the run (`404`, already erased or purged): dropped too.
   - 4b. Offline or a server error: the run stays, the error line shows.
+  - 4c. *(v0.37)* Another send or erasure is still under way: *Wait*; nothing is erased.
 
 ### UC4 — Consult the high scores
 
