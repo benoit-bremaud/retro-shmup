@@ -83,7 +83,7 @@ describe('PathMovement — Popcorn S curve (GDD v0.6 §5.2.1)', () => {
     run(popcorn, shipAt(0, 0), 60);
     const y = -8 + 70;
     expect(popcorn.position.y).toBeCloseTo(y, 9);
-    expect(popcorn.position.x).toBeCloseTo(80 + 40 * Math.sin((2 * Math.PI * y) / 160), 9);
+    expect(popcorn.position.x).toBeCloseTo(80 + 40 * Math.sin((2 * Math.PI * y) / 160), 5);
   });
 
   it('mirrored, negates the offset: the same axis, the other side', () => {

@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { BossState } from '../../src/domain/game/boss';
 import type { BossDefinition } from '../../src/domain/game/boss';
 import { CRUISER } from '../../src/domain/game/cruiser';
+import { CARRIER } from '../../src/domain/game/enemy';
 import { GameEventKind } from '../../src/domain/game/events';
 import type { GameEvent } from '../../src/domain/game/events';
 import { LEVEL_1 } from '../../src/domain/game/level-script';
+import type { LevelScript } from '../../src/domain/game/level-script';
 import { PickupKind } from '../../src/domain/game/pickup';
 import { Run, RunOutcome } from '../../src/domain/game/run';
+import type { RunConfig } from '../../src/domain/game/run';
 import {
   ENEMY_BULLET_POOL_SIZE,
   ENEMY_POOL_SIZE,
@@ -15,17 +18,39 @@ import {
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import { RunPresenter } from '../../src/domain/presentation/run-presenter';
 import { RecordingRender } from '../support/recording-render';
+import { testScript } from '../support/script';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
 
 // Headless level simulation (ADR-0002, ADR-0003): the real run, scripted inputs, no browser.
 const DT = 1 / 60;
 const ONE_PASS = 7200; // the waves of level 1 last 120 s, then the WARNING starts the Cruiser
+/** Steps of the kit script below before its WARNING starts the Cruiser. */
+const KIT_STEPS = 1800;
 /**
- * A seed whose drops give the scripted ship the power to kill the 1 800-shot Cruiser (GDD v0.18):
- * found by trying seeds 1 to 14 in order (kills on 3, 10 and 11); on a change to the random draws,
- * search the same way. The kill rates themselves are guarded by `tests/balance`.
+ * Carriers that bring the ship the kit a boss kill needs (GDD v0.18 §6.1: power 5, a shield,
+ * bombs), then the Cruiser. Level 1's own drops left the kill to the luck of one seed in 14, and
+ * the slightest change to the simulation (ADR-0031's deterministic trigonometry) moved the weave
+ * off its pickups; the kill rates themselves are guarded by `tests/balance`.
  */
-const BOSS_KILL_SEED = 10;
+const KIT_THEN_CRUISER: LevelScript = testScript(
+  [
+    PickupKind.PRed,
+    PickupKind.PRed,
+    PickupKind.PRed,
+    PickupKind.PRed,
+    PickupKind.Shield,
+    PickupKind.Bomb,
+    PickupKind.Bomb,
+    PickupKind.Bomb,
+  ].map((cargo, k) => ({
+    at: 3 * k,
+    archetype: CARRIER,
+    count: 1,
+    spawn: { x: -16, y: 64 },
+    cargo,
+  })),
+  { warningAt: KIT_STEPS / 60, boss: CRUISER },
+);
 const frame = createIntentFrame();
 
 /** A weaving player who fires most of the time: same index, same frame. */
@@ -84,9 +109,39 @@ function dodging(run: Run): IntentFrame {
   return frame;
 }
 
-/** The weave for the waves, then the dodging ship once the WARNING has started the boss. */
+/** Fires and flies to the first pickup on the field, else waits low in the middle. */
+function collecting(run: Run): IntentFrame {
+  const snapshot = run.snapshot();
+  frame.moveKind = 'target';
+  frame.moveX = 120;
+  frame.moveY = 270;
+  if (snapshot.pickups.count > 0) {
+    const pickup = snapshot.pickups.at(0).position;
+    frame.moveX = pickup.x;
+    frame.moveY = Math.max(pickup.y, 200);
+  }
+  frame.held = Button.Fire;
+  frame.pressed = 0;
+  return frame;
+}
+
+/** The dodging ship, which bombs a bullet it can no longer step away from. */
+function bombing(run: Run): IntentFrame {
+  dodging(run);
+  const snapshot = run.snapshot();
+  const me = snapshot.player.position;
+  frame.pressed = 0;
+  for (let k = 0; k < snapshot.enemyBullets.count; k += 1) {
+    const bullet = snapshot.enemyBullets.at(k).position;
+    const below = me.y - bullet.y;
+    if (Math.abs(me.x - bullet.x) < 6 && below > -4 && below < 10) frame.pressed = Button.Bomb;
+  }
+  return frame;
+}
+
+/** Collects the kit, then fights the Cruiser from its WARNING. */
 function fighter(run: Run, i: number): IntentFrame {
-  return i < ONE_PASS ? scripted(i) : dodging(run);
+  return i < KIT_STEPS ? collecting(run) : bombing(run);
 }
 
 function idle(): IntentFrame {
@@ -107,8 +162,12 @@ const BOSS_KINDS = [
 ] as const;
 
 /** Plays a run from `seed` and returns its event log and final state as JSON (ADR-0019). */
-function replay(steps: number, seed = 1, fightsBoss = false): string {
-  const run = new Run({ seed });
+function replay(
+  steps: number,
+  config: RunConfig = { seed: 1 },
+  input: (run: Run, i: number) => IntentFrame = (_run, i) => scripted(i),
+): string {
+  const run = new Run(config);
   const log: string[] = [];
   const record = (event: Readonly<GameEvent>): void => {
     log.push(`${String(event.kind)}:${String(event.subject)}:${event.position.x.toFixed(3)}`);
@@ -130,7 +189,7 @@ function replay(steps: number, seed = 1, fightsBoss = false): string {
     );
   };
   for (const kind of BOSS_KINDS) events.subscribe(kind, recordBoss);
-  for (let i = 0; i < steps; i += 1) run.step(DT, fightsBoss ? fighter(run, i) : scripted(i));
+  for (let i = 0; i < steps; i += 1) run.step(DT, input(run, i));
   const snapshot = run.snapshot();
   const boss = snapshot.boss;
   return JSON.stringify({
@@ -169,9 +228,9 @@ describe('Level simulation — level 1, headless', () => {
   });
 
   it('replays identically through the whole boss fight: warning, phase, destruction, level end', () => {
-    // Seed 10, not 1 (GDD v0.18): the 1 800-shot Cruiser dies only to a ship that kept its power,
-    // and seed 1's drops leave the scripted ship short of the kill in 90 s (the boss flees).
-    const { log } = JSON.parse(replay(ONE_PASS + 6000, BOSS_KILL_SEED, true)) as { log: string[] };
+    // The kit script, not level 1 (GDD v0.18): the 1 800-shot Cruiser dies only to a full kit.
+    const fight = (): string => replay(KIT_STEPS + 6000, { levels: [KIT_THEN_CRUISER] }, fighter);
+    const { log } = JSON.parse(fight()) as { log: string[] };
     const kinds = log.map((entry) => entry.split(':')[0]);
     // The scripted ship destroys the boss: every boss event but its escape is in the log.
     for (const kind of BOSS_KINDS) {
@@ -179,14 +238,12 @@ describe('Level simulation — level 1, headless', () => {
       expect(kinds, String(kind)).toContain(String(kind));
     }
     expect(kinds).not.toContain(String(GameEventKind.BossFled));
-    expect(replay(ONE_PASS + 6000, BOSS_KILL_SEED, true)).toBe(
-      replay(ONE_PASS + 6000, BOSS_KILL_SEED, true),
-    );
+    expect(fight()).toBe(fight());
   });
 
   it('lets the seed change the drops (ADR-0019)', () => {
     const logs = new Set<string>();
-    for (let seed = 1; seed <= 6; seed += 1) logs.add(replay(ONE_PASS, seed));
+    for (let seed = 1; seed <= 6; seed += 1) logs.add(replay(ONE_PASS, { seed }));
     expect(logs.size).toBeGreaterThan(1);
   });
 
@@ -317,7 +374,7 @@ describe('Level simulation — the Cruiser, headless (GDD v0.10 §6, §6.1)', ()
   });
 
   it('is cleared by the scripted ship: the boss destroyed, its bonus paid, RUN_CLEARED', () => {
-    const run = new Run({ seed: BOSS_KILL_SEED });
+    const run = new Run({ levels: [KIT_THEN_CRUISER] });
     let bonusSeconds = -1;
     let cleared = 0;
     run.events().subscribe(GameEventKind.BossDestroyed, (e) => {
@@ -326,7 +383,7 @@ describe('Level simulation — the Cruiser, headless (GDD v0.10 §6, §6.1)', ()
     run.events().subscribe(GameEventKind.LevelCleared, () => {
       cleared += 1;
     });
-    for (let i = 0; i < ONE_PASS + 6000 && run.outcome() === RunOutcome.Playing; i += 1) {
+    for (let i = 0; i < KIT_STEPS + 6000 && run.outcome() === RunOutcome.Playing; i += 1) {
       run.step(DT, fighter(run, i));
     }
     expect(run.outcome()).toBe(RunOutcome.RunCleared);

@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The simulation's sines, cosines and lengths now come from its own deterministic trigonometry
+  (`det-math`, error below 1e-6), so a recorded run replays to the same bits in every engine; ESLint
+  allows only the exactly specified `Math` members in `src/domain/game` and `src/domain/random`
+  (ADR-0031 decision 10, #167).
 - Design of the online leaderboard client, no code yet: each run is recorded as its seed and one
   quantised input record per step; after the hall of fame the player may choose *SEND ONLINE*,
   follow the verification and erase sent runs from *Options → Online scores*; the simulation

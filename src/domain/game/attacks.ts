@@ -2,6 +2,7 @@ import type { Body } from './body';
 import { aimVelocity } from './movements';
 import type { WorldView } from './movements';
 import { toSteps } from './tuning';
+import { detCos, detSin } from './det-math';
 
 /**
  * Where enemy attacks put their bullets (class diagram). Declared with the attack patterns, its
@@ -114,13 +115,13 @@ export function ringAttack(config: Readonly<RingAttackConfig>): AttackPattern {
   const uy = new Float64Array(count);
   for (let i = 0; i < count; i += 1) {
     const angle = (2 * Math.PI * i) / count;
-    ux[i] = Math.sin(angle);
-    uy[i] = Math.cos(angle);
+    ux[i] = detSin(angle);
+    uy[i] = detCos(angle);
   }
   return timedAttack(period, (self, _world, spawn, volley) => {
     const turn = rotate * volley;
-    const cos = Math.cos(turn);
-    const sin = Math.sin(turn);
+    const cos = detCos(turn);
+    const sin = detSin(turn);
     for (let i = 0; i < count; i += 1) {
       const x = ux[i] ?? 0;
       const y = uy[i] ?? 0;
@@ -153,8 +154,8 @@ export function fanAttack(config: Readonly<FanAttackConfig>): AttackPattern {
   const sines = new Float64Array(count);
   for (let i = 0; i < count; i += 1) {
     const offset = (i - (count - 1) / 2) * config.spreadDeg * RADIANS_PER_DEGREE;
-    cosines[i] = Math.cos(offset);
-    sines[i] = Math.sin(offset);
+    cosines[i] = detCos(offset);
+    sines[i] = detSin(offset);
   }
   return timedAttack(period, (self, world, spawn) => {
     aimVelocity(aim, self.position, world.playerPosition(), 1);

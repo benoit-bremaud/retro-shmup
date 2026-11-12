@@ -55,6 +55,33 @@ const RESTRICTED_SYNTAX = [
   },
 ];
 
+// No allocation inside the game loop (CLAUDE.md): a `for...of` over an array allocates an
+// iterator in every V8 tier below TurboFan (measured 2026-10-08), so source code uses index
+// loops, which never allocate.
+const SOURCE_SYNTAX = [
+  ...RESTRICTED_SYNTAX,
+  {
+    selector: 'ForOfStatement',
+    message: 'Use an index loop: for...of allocates an iterator (no allocation in the loop).',
+  },
+];
+
+// A replay must give the same bits in every engine (ADR-0031 decision 10): the simulation uses
+// only the Math members ECMAScript defines exactly, and det-math for the trigonometry.
+const EXACT_MATH_SYNTAX = [
+  ...SOURCE_SYNTAX,
+  {
+    selector:
+      "MemberExpression[object.name='Math'][property.name!=/^(abs|ceil|floor|round|trunc|sign|min|max|sqrt|fround|imul|clz32|PI)$/]",
+    message: 'Approximated Math member: use det-math or an exact operation (ADR-0031).',
+  },
+  {
+    selector:
+      "BinaryExpression[operator='**']:not([left.type='Literal'][right.type='Literal']), AssignmentExpression[operator='**=']",
+    message: '`**` is approximated on variables: multiply instead (ADR-0031).',
+  },
+];
+
 export default defineConfig(
   {
     ignores: [
@@ -90,21 +117,15 @@ export default defineConfig(
     },
   },
   {
-    // No allocation inside the game loop (CLAUDE.md): a `for...of` over an array allocates an
-    // iterator in every V8 tier below TurboFan (measured 2026-10-08), so source code uses index
-    // loops, which never allocate.
     files: ['src/**/*.ts'],
     rules: {
       '@typescript-eslint/prefer-for-of': 'off',
-      'no-restricted-syntax': [
-        'error',
-        ...RESTRICTED_SYNTAX,
-        {
-          selector: 'ForOfStatement',
-          message: 'Use an index loop: for...of allocates an iterator (no allocation in the loop).',
-        },
-      ],
+      'no-restricted-syntax': ['error', ...SOURCE_SYNTAX],
     },
+  },
+  {
+    files: ['src/domain/game/**/*.ts', 'src/domain/random/**/*.ts'],
+    rules: { 'no-restricted-syntax': ['error', ...EXACT_MATH_SYNTAX] },
   },
   {
     // Tool configuration files must export a default object and run under Node.

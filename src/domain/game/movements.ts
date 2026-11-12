@@ -2,6 +2,7 @@ import type { Body } from './body';
 import type { Vec2 } from './geometry';
 import { FIELD_WIDTH } from './geometry';
 import { CarrierTuning, DiverTuning, PopcornTuning, STEPS_PER_SECOND, toSteps } from './tuning';
+import { detHypot, detSin } from './det-math';
 
 /** What a strategy may read of the world (class diagram): the ship's position. */
 export interface WorldView {
@@ -25,7 +26,7 @@ export function aimVelocity(
 ): void {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
-  const distance = Math.hypot(dx, dy);
+  const distance = detHypot(dx, dy);
   if (distance === 0) {
     velocity.x = 0;
     velocity.y = speed;
@@ -44,7 +45,7 @@ const TAU = 2 * Math.PI;
 export const PathMovement: MovementPattern = {
   tick(self: Body): void {
     const y = self.origin.y + (PopcornTuning.speed * self.age) / STEPS_PER_SECOND;
-    const offset = PopcornTuning.amplitude * Math.sin((TAU * y) / PopcornTuning.wavelength);
+    const offset = PopcornTuning.amplitude * detSin((TAU * y) / PopcornTuning.wavelength);
     self.position.x = self.origin.x + (self.mirror ? -offset : offset);
     self.position.y = y;
   },
@@ -148,7 +149,7 @@ export function swayMovement(config: Readonly<SwayMovementConfig>): MovementPatt
   const amplitude = config.amplitude;
   return Object.freeze({
     tick(self: Body): void {
-      const offset = amplitude * Math.sin(radiansPerStep * self.age);
+      const offset = amplitude * detSin(radiansPerStep * self.age);
       self.position.x = FIELD_WIDTH / 2 + (self.mirror ? -offset : offset);
     },
   });
