@@ -155,7 +155,7 @@ server follow-up benoit-bremaud/retro-leaderboard#14.
     in this browser and add the same line: a `202` whose body cannot be read
     (`accepted-unreadable`, shown as *SERVER ERROR*) and a `202` whose token the storage refused
     (the status line stays). A browser that cannot encode the run fails as `unsupported`, shown as
-    *SERVER ERROR*. GDD §9.1 takes these lines in its own revision before the screens (PR 3b, #173).
+    *SERVER ERROR*. GDD v0.36 §9.1 lists these lines (#173).
 20. **Port.** `LeaderboardPort` (`submit`, `status`, `erase`) returns a request handle the domain
     polls each step (`pending`, `done` with a parsed result, `failed` with a code); no promise in
     the domain. `submit` takes the records and their count; the `FetchLeaderboard` adapter
