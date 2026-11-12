@@ -82,8 +82,8 @@ const EXACT_MATH_SYNTAX = [
   },
   {
     selector:
-      "BinaryExpression[operator='**']:not([left.type='Literal'][right.type='Literal'][right.raw=/^[0-9]+$/]), AssignmentExpression[operator='**=']",
-    message: '`**` is approximated unless both are literals with an integer exponent (ADR-0031).',
+      "BinaryExpression[operator='**']:not([left.type='Literal'][left.raw=/^[0-9]+$/][right.type='Literal'][right.raw=/^[0-9]+$/]), AssignmentExpression[operator='**=']",
+    message: '`**` is approximated unless both operands are integer literals (ADR-0031).',
   },
 ];
 
