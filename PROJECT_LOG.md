@@ -8,7 +8,16 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-11-13
 
-### Refused name reopens the name entry: GDD v0.38 (part of #167)
+### Online scores in pages: GDD v0.39 (part of #167)
+
+- 20 kept runs do not fit one screen at the 16 px touch minimum, and a row cannot hold score,
+  date and status: pages of 10 with *NEXT* / *PREV* (owner, 415/500; compact rows 310,
+  scrolling 280), each row score and date, the highlighted run's status under the heading
+  (435/500; two lines per run 350, short codes 345). Title options only.
+- After a drop the highlight stays on its run and the view follows that run's page (owner,
+  460/500; staying on page 2 on its first row 340, on the same row 220), answering a Codex P2.
+
+### Refused name reopens the name entry: GDD v0.38 (#180 `d92982c`, part of #167)
 
 - After *NAME NOT ACCEPTED* the refused name is forgotten for the run and the next *SEND* opens
   the name entry again (owner, MCDA 470/500; resending the same name 250 or a *CHANGE NAME* row 360

@@ -151,6 +151,9 @@ server follow-up benoit-bremaud/retro-leaderboard#14.
     (score, status, date); on opening it asks `GET` for **every** kept run, one at a time, and
     drops a run answered `404` (erased by its retention, leaderboard ADR-0004); it erases one after
     a confirmation (default *No*): `DELETE`, then the item leaves the list on `204` or `404`.
+    *Layout note (2026-11-13, #167):* GDD v0.39 §9.3 shows 10 runs per page (score and date per
+    row, the highlighted run's status under the heading) and reaches the screen from the title's
+    options only, never from the pause.
 19. **Lost token.** A `POST` that timed out or failed offline may have stored the run; a re-send
     then answers `409`. In these cases the line adds *TO ERASE SEE PRIVACY*.
     *Implementation note (2026-11-12, #167):* two more cases leave a stored run without a token
