@@ -8,6 +8,15 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-11-13
 
+### Merge of PR #192 (`06c6b7c`, closes #175)
+
+- One `localStorage` key per kept online run (`retro-shmup.online.v1.<ULID>`), `StoragePort.keys/remove`,
+  20-run limit at SEND only, *Online scores* paging past 20 runs. UML in #191, ADR in #190.
+- Reviews: adversarial round 2 open (Must fixed: an erase that finds its run gone reloads the list),
+  architecture-guardian Shoulds fixed. `just gate` attested on `a1267fc`, 1966 tests.
+- Follow-ups not done: a scene-level test for a run erased in another tab, CHANGELOG line wrap,
+  a failed `remove` re-asks the run forever, ADR-0031:225 still states the old 20-run rule.
+
 ### One storage key per online run: ADR-0032, GDD v0.40 (part of #175)
 
 - Two tabs could drop each other's kept run and deletion token through the single
