@@ -958,6 +958,8 @@ export class SceneMachine {
 
   private openOnlineStatus(frame: Readonly<IntentFrame>, notice: readonly MessageKey[]): void {
     this.enter(Scene.OnlineStatus);
+    this.privacy.unblock();
+    this.lockLeft = LOCK_STEPS; // a hurried second Confirm never skips the answer
     this.shownState = undefined;
     this.sendView.notice = notice;
     this.showOnlineState(frame);
@@ -966,7 +968,11 @@ export class SceneMachine {
   // The status follows the send's answer and the verdict; OK goes on, ERASE asks first.
   private stepOnlineStatus(_dt: number, frame: Readonly<IntentFrame>): void {
     if (!this.showOnlineState(frame)) return;
-    if (this.erasingId !== undefined && this.settledErase(this.erasingId)) return;
+    if (this.erasingId !== undefined && this.settledErase(this.erasingId, frame)) return;
+    if (this.locked()) {
+      this.sendView.menu.ignore(frame);
+      return;
+    }
     const row = this.stepMenu(this.sendView.menu, frame);
     if (row === 'ok') this.afterOnline(frame);
     else if (row === 'erase') this.openMenu(Scene.OnlineErase, frame);
@@ -1006,7 +1012,7 @@ export class SceneMachine {
   }
 
   /** The erasure under way ended: gone from the kept runs goes on, a failure shows its line. */
-  private settledErase(id: string): boolean {
+  private settledErase(id: string, frame: Readonly<IntentFrame>): boolean {
     const online = this.runs();
     const error = online.eraseError();
     if (error !== undefined) {
@@ -1014,9 +1020,9 @@ export class SceneMachine {
       this.sendView.notice = lines(failureLine(error));
       return false;
     }
-    if (online.kept().some((run) => run.id === id)) return false;
+    if (online.keeps(id)) return false;
     this.erasingId = undefined;
-    this.afterOnline(this.quantised);
+    this.afterOnline(frame);
     return true;
   }
 
@@ -1033,7 +1039,8 @@ export class SceneMachine {
         return;
       }
       if (result === 'erasing') this.erasingId = id;
-      this.backToStatus(frame, result === 'busy' ? WAIT_LINE : this.sendView.notice);
+      // A new erasure clears the last line; WAIT keeps the one under way.
+      this.backToStatus(frame, result === 'busy' ? WAIT_LINE : NO_LINES);
     } else if (row === 'no' || this.backed(frame)) {
       this.backToStatus(frame, this.sendView.notice);
     }
@@ -1052,6 +1059,7 @@ export class SceneMachine {
   private afterOnline(frame: Readonly<IntentFrame>): void {
     this.online?.leave();
     this.erasingId = undefined;
+    this.privacy.unblock();
     if (!this.feedback.enabled) {
       this.toTitle(frame);
       return;
@@ -1541,8 +1549,7 @@ export class SceneMachine {
 
   /** *Send online* and the status, with *OPEN BLOCKED* for 2 s after a refused privacy page. */
   private overlaySendOnline(): void {
-    drawSendOnline(this.renderer, this.sendView, this.options.language);
-    if (this.privacy.blocked) drawStatusLine(this.renderer, 'openBlocked', this.options.language);
+    drawSendOnline(this.renderer, this.sendView, this.options.language, this.privacy.blocked);
   }
 
   private overlayGesture(): void {

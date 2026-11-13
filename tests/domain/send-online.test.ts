@@ -307,6 +307,7 @@ describe('Send online — the offer (GDD v0.35 §9.1)', () => {
       idle(machine, 70);
       activateSend(machine);
       if (run === 1) break;
+      idle(machine, 70); // past the status's lock
       press(machine, Button.Confirm); // OK before the answer
       idle(machine, 70);
       press(machine, Button.Back); // the feedback offer → the title
@@ -410,6 +411,7 @@ describe('Send online — the name entry (GDD v0.35 §9.1)', () => {
 
   it('returns to the offer with WAIT while another send is under way (GDD v0.37)', () => {
     const fixture = onStatus();
+    idle(fixture.machine, 70); // past the status's lock
     press(fixture.machine, Button.Confirm); // OK: left before the answer
     expect(fixture.machine.scene).toBe(Scene.FeedbackOffer);
     idle(fixture.machine, 70); // past the offer's lock
@@ -438,9 +440,16 @@ describe('Send online — the status (GDD v0.35–v0.37 §9.1)', () => {
     expect(texts(fixture)).toContain('VERIFIED');
   });
 
+  it('ignores Confirm for 1 s after it opens, so a hurried press never skips the answer', () => {
+    const fixture = onStatus();
+    press(fixture.machine, Button.Confirm);
+    expect(fixture.machine.scene).toBe(Scene.OnlineStatus);
+  });
+
   it('goes on to the feedback offer on OK', () => {
     const fixture = onStatus();
     accept(fixture);
+    idle(fixture.machine, 70);
     press(fixture.machine, Button.Confirm);
     expect(fixture.machine.scene).toBe(Scene.FeedbackOffer);
   });
@@ -485,6 +494,7 @@ describe('Send online — erasing the sent run (GDD v0.35–v0.37 §9.1)', () =>
   function onConfirm(): Fixture {
     const fixture = onStatus();
     accept(fixture);
+    idle(fixture.machine, 70); // past the status's lock
     move(fixture.machine, 0, 1); // ERASE
     press(fixture.machine, Button.Confirm);
     expect(fixture.machine.scene).toBe(Scene.OnlineErase);
@@ -521,6 +531,20 @@ describe('Send online — erasing the sent run (GDD v0.35–v0.37 §9.1)', () =>
     idle(fixture.machine, 1);
     expect(fixture.machine.scene).toBe(Scene.OnlineStatus);
     expect(texts(fixture)).toContain('SERVER ERROR');
+  });
+
+  it('clears an old error line when a new erasure starts', () => {
+    const fixture = onConfirm();
+    move(fixture.machine, 0, 1);
+    press(fixture.machine, Button.Confirm);
+    fixture.port.erases[0]?.fail('server-error');
+    idle(fixture.machine, 1);
+    move(fixture.machine, 0, 1); // ERASE
+    press(fixture.machine, Button.Confirm);
+    move(fixture.machine, 0, 1); // Yes
+    press(fixture.machine, Button.Confirm);
+    expect(fixture.port.erased).toHaveLength(2);
+    expect(texts(fixture)).not.toContain('SERVER ERROR');
   });
 
   it('shows WAIT when the erasure meets another request (GDD v0.37)', () => {
@@ -592,6 +616,43 @@ describe('Send online — the privacy page (GDD v0.35 §9.1, ADR-0027)', () => {
     expect(fixture.machine.scene).toBe(Scene.SendOnline);
   });
 
+  it('opens the page through the gesture and returns to the offer', () => {
+    const fixture = onPrivacyRow();
+    press(fixture.machine, Button.Confirm);
+    fixture.link.outcome = 'opened';
+    idle(fixture.machine, 1);
+    expect(fixture.machine.scene).toBe(Scene.SendOnline);
+    expect(texts(fixture)).not.toContain('OPEN BLOCKED');
+  });
+
+  it('clears OPEN BLOCKED once the offer is left, so the next run never shows it', () => {
+    const fixture = onPrivacyRow();
+    fixture.link.outcome = 'refused';
+    press(fixture.machine, Button.Confirm);
+    move(fixture.machine, 0, -1); // SEND
+    press(fixture.machine, Button.Confirm);
+    expect(fixture.machine.scene).toBe(Scene.OnlineName);
+    typeNameA(fixture.machine);
+    expect(fixture.machine.scene).toBe(Scene.OnlineStatus);
+    expect(texts(fixture)).not.toContain('OPEN BLOCKED');
+  });
+
+  it('draws OPEN BLOCKED above the notice lines', () => {
+    const fixture = onStatus();
+    fixture.port.submits[0]?.fail('offline');
+    idle(fixture.machine, 70);
+    move(fixture.machine, 0, -1); // PRIVACY
+    fixture.link.outcome = 'refused';
+    press(fixture.machine, Button.Confirm);
+    fixture.machine.render(1, 16);
+    const ys = fixture.render.texts
+      .filter((t) => t.region === 'field')
+      .filter((t) => ['OPEN BLOCKED', 'OFFLINE', 'TO ERASE SEE PRIVACY'].includes(t.text))
+      .map((t) => t.y);
+    expect(new Set(ys).size).toBe(3);
+    expect(ys[0]).toBeLessThan(ys[1] ?? 0);
+  });
+
   it('returns to the offer with OPEN BLOCKED when the gesture was refused', () => {
     const fixture = onPrivacyRow();
     press(fixture.machine, Button.Confirm);
@@ -619,9 +680,12 @@ describe('online lines', () => {
     expect(failureLine(code)).toBe(key);
   });
 
-  it('names each status', () => {
-    expect(statusLine('expired')).toBe('expired');
-  });
+  it.each(['pending', 'verified', 'rejected', 'unverifiable', 'expired'] as const)(
+    'names the status %s',
+    (status) => {
+      expect(statusLine(status)).toBe(status);
+    },
+  );
 
   it('wraps at spaces, keeps a short text whole and returns the same lines again', () => {
     expect(wrapLine('POUR EFFACER VOIR CONFIDENTIALITE')).toEqual([

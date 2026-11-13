@@ -36,6 +36,7 @@ stateDiagram-v2
   state "Name entry (online)" as OnlineName
   state "Online status" as OnlineStatus
   state "Online scores" as OnlineScores
+  state "Gesture prompt (privacy)" as OnlineGesture
   state OnlineOffer <<choice>>
   state AfterOnline <<choice>>
 
@@ -113,10 +114,10 @@ stateDiagram-v2
   SendOnline --> SendOnline : send [20 runs kept] / show the erase-first line
   SendOnline --> SendOnline : send [a name, fewer than 20 kept, another send or erasure under way] / show WAIT
   SendOnline --> OnlineName : send [no usable name this run, fewer than 20 kept]
-  OnlineName --> SendOnline : back or OK on an empty name, or SKIP
+  OnlineName --> SendOnline : back [name empty], OK on an empty name, or SKIP
   OnlineName --> SendOnline : OK [name not empty, 20 runs kept] / show the erase-first line
-  SendOnline --> GesturePrompt : privacy [from a gamepad]
-  GesturePrompt --> SendOnline : click, tap or key [opening the privacy page] / open it, or back
+  SendOnline --> OnlineGesture : privacy [from a gamepad]
+  OnlineGesture --> SendOnline : click, tap or key [opening the privacy page] / open it, or back
   OnlineStatus --> AfterOnline : 404 on the status / drop the run
   OnlineName --> SendOnline : OK [name not empty, another send or erasure under way] / show WAIT
   OnlineName --> OnlineStatus : OK [name not empty, none under way] / submit the run
@@ -190,7 +191,10 @@ stateDiagram-v2
 - **Built (#167, 3b-1)**: the `erase, confirmed` transitions pass by an erase confirmation,
   *No* first, as `Confirm quit` (scene `OnlineErase`); the privacy page's gesture prompt is its own
   scene (`OnlineGesture`) that returns to `Send online`. A failed erasure stays on `Online status`
-  with its line; *TO ERASE SEE PRIVACY* follows a send that may be stored without a token, and a
+  with its line, and a new erasure clears it. `back` in the online name entry deletes the last
+  letter first, as in the hall-of-fame entry (v0.16), and leaves on an empty name. `Online status`
+  ignores Confirm for 1 s after it opens, as the offer does, so a hurried press never skips the
+  answer; *OPEN BLOCKED* ends when the offer is left. *TO ERASE SEE PRIVACY* follows a send that may be stored without a token, and a
   run whose token the storage refused shows no *ERASE* row. The country sent is the saved code,
   none for *NONE*. A French line longer than the field's 30 characters wraps at a space.
 - **v0.34 (GDD §9.1, ADR-0030)**: both `Country choice` states have two sub-states, drawn below.

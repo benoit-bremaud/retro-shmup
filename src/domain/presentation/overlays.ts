@@ -247,7 +247,12 @@ const SEND_SCORE_Y = 36;
  * A *Send online* screen (GDD v0.35–v0.37 §9.1) over the veil: the heading, the score, the name and
  * the flag (or the code alone), the info lines, the rows and the notice lines at the foot.
  */
-export function drawSendOnline(render: RenderPort, view: SendOnlineView, language: Language): void {
+export function drawSendOnline(
+  render: RenderPort,
+  view: SendOnlineView,
+  language: Language,
+  blocked: boolean,
+): void {
   drawVeil(render);
   drawMenuLine(render, message('sendOnline', language), SEND_HEADER_Y);
   drawMenuLine(render, view.score, SEND_SCORE_Y);
@@ -267,11 +272,15 @@ export function drawSendOnline(render: RenderPort, view: SendOnlineView, languag
     const key = view.notice[i];
     if (key !== undefined) notice += wrapLine(message(key, language)).length;
   }
+  if (blocked) notice += 1;
+  const noticeTop = FIELD_HEIGHT - (notice + 1) * SEND_LINE_STEP;
+  // *OPEN BLOCKED* goes first, above the notice: no line is drawn over another.
+  if (blocked) drawMenuLine(render, message('openBlocked', language), noticeTop);
   drawLines(
     render,
     view.notice,
     language,
-    FIELD_HEIGHT - (notice + 1) * SEND_LINE_STEP,
+    blocked ? noticeTop + SEND_LINE_STEP : noticeTop,
     SEND_LINE_STEP,
   );
 }

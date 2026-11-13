@@ -143,6 +143,13 @@ export class OnlineRuns {
     return 'erasing';
   }
 
+  /** Whether run `id` is still kept, as last read (no allocation: read once per step). */
+  keeps(id: string): boolean {
+    const items = this.runs.items;
+    for (let i = 0; i < items.length; i += 1) if (items[i]?.id === id) return true;
+    return false;
+  }
+
   kept(): readonly KeptRun[] {
     return this.runs.items;
   }

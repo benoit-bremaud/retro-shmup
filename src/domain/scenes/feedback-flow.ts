@@ -92,4 +92,9 @@ export class FeedbackFlow {
   block(): void {
     this.blockedLeft = BLOCKED_STEPS;
   }
+
+  /** The screen that showed *OPEN BLOCKED* was left: the line goes with it. */
+  unblock(): void {
+    this.blockedLeft = 0;
+  }
 }
