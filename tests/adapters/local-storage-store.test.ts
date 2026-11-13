@@ -66,26 +66,29 @@ describe('LocalStorageStore (ADR-0006 decisions 3, 5)', () => {
   });
 
   it('skips a key removed during the scan', () => {
-    const backing = storage();
-    backing.items.set('p.a', '1');
-    const store = new LocalStorageStore(() => ({
-      ...backing,
+    // Two keys when the scan starts; the second is removed by another tab before it is read.
+    const racing: StorageLike = {
+      getItem: () => null,
+      setItem: () => undefined,
+      removeItem: () => undefined,
       length: 2,
-      key: (i) => (i === 0 ? 'p.a' : null),
-      getItem: backing.getItem,
-      setItem: backing.setItem,
-      removeItem: backing.removeItem,
-    }));
+      key: (index: number) => (index === 0 ? 'p.a' : null),
+    };
+    const store = new LocalStorageStore(() => racing);
     expect(store.keys('p.')).toEqual(['p.a']);
   });
 
   it('lists nothing and removes nothing, never throwing, when the storage throws', () => {
     expect(new LocalStorageStore(() => storage(true)).keys('p.')).toEqual([]);
-    expect(() => new LocalStorageStore(() => storage(true)).remove('k')).not.toThrow();
+    expect(() => {
+      new LocalStorageStore(() => storage(true)).remove('k');
+    }).not.toThrow();
     const blocked = new LocalStorageStore(() => {
       throw new Error('SecurityError');
     });
     expect(blocked.keys('p.')).toEqual([]);
-    expect(() => blocked.remove('k')).not.toThrow();
+    expect(() => {
+      blocked.remove('k');
+    }).not.toThrow();
   });
 });
