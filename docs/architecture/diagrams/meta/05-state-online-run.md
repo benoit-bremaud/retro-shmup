@@ -29,7 +29,7 @@ stateDiagram-v2
 
   [*] --> NotSent
   NotSent --> Sending : SEND [fewer than 20 kept at SEND, no other send or erasure under way] / POST /v1/runs
-  NotSent --> NotSent : SEND [another send or erasure under way] / WAIT
+  NotSent --> NotSent : SEND [fewer than 20 kept, another send or erasure under way] / WAIT
   NotSent --> NotSent : SEND [20 or more kept] / ERASE AN ONLINE SCORE FIRST
   Sending --> Pending : 202 / keep id and token
   Sending --> NotSent : too long, unsupported, 400, 429 or 5xx / error line

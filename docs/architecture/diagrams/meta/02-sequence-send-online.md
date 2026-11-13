@@ -24,6 +24,7 @@ sequenceDiagram
   participant Rec as RunRecorder
   participant Online as OnlineRuns
   participant Port as LeaderboardPort (fetch adapter)
+  participant Keys as KeptRunKeys
   participant Store as StoragePort
   participant LB as Online leaderboard
 
@@ -44,7 +45,8 @@ sequenceDiagram
     alt 202
       LB-->>Port: {id, deletionToken}
       Port-->>Online: handle done: id, token (parsed by allowlist)
-      Online->>Store: write retro-shmup.online.v1.<id> (token, score, sentAt, pending), no limit check (ADR-0032)
+      Online->>Keys: keepRun(run), no limit check (ADR-0032)
+      Keys->>Store: write retro-shmup.online.v1.<id> (token, score, sentAt, pending)
       opt the storage refuses the write
         Online-->>Scenes: status line and TO ERASE SEE PRIVACY, no ERASE row
       end
@@ -54,9 +56,10 @@ sequenceDiagram
         LB-->>Port: {status}, or 404
         Port-->>Online: status, or unknown (its key is removed)
       end
-      Online->>Store: read retro-shmup.online.v1.<id>
+      Online->>Keys: restatusRun(id, last status)
+      Keys->>Store: read retro-shmup.online.v1.<id>
       opt the key still holds a valid run (ADR-0032 decision 5)
-        Online->>Store: rewrite it with the last status
+        Keys->>Store: rewrite it with the last status
       end
     else 202 with an unreadable body
       Port-->>Online: handle failed: accepted-unreadable
@@ -79,10 +82,11 @@ sequenceDiagram
       Port->>LB: DELETE /v1/runs/{id} (Authorization: Bearer token)
       alt 204 or 404
         Port-->>Online: erased
-        Online->>Store: remove retro-shmup.online.v1.<id>
+        Online->>Keys: forgetRun(id)
+        Keys->>Store: remove retro-shmup.online.v1.<id>
       else offline or server error
         Port-->>Online: failed
-        Online-->>Scenes: error line, the item stays
+        Online-->>Scenes: error line, its key stays
       end
     end
   end
