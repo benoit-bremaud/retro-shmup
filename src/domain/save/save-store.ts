@@ -159,7 +159,7 @@ function parseJson(raw: string): unknown {
  * discrete moments only, never inside the fixed step.
  */
 export class SaveStore {
-  private readonly storage: StoragePort;
+  private readonly storage: Pick<StoragePort, 'read' | 'write'>;
   private readonly reducedMotion: boolean;
   /** A newer document read by an older build is never overwritten this session (UC4 2c). */
   private readOnly = false;
@@ -170,7 +170,7 @@ export class SaveStore {
   /** The options last loaded or saved, written with the table. */
   private options: Options;
 
-  constructor(storage: StoragePort, reducedMotion: boolean) {
+  constructor(storage: Pick<StoragePort, 'read' | 'write'>, reducedMotion: boolean) {
     this.storage = storage;
     this.reducedMotion = reducedMotion;
     this.options = defaultOptions(reducedMotion);

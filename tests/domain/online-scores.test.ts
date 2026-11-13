@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_BINDINGS } from '../../src/domain/input/default-bindings';
 import type { Options } from '../../src/domain/options';
 import { Run, RunOutcome } from '../../src/domain/game/run';
-import { KEPT_RUNS_KEY } from '../../src/domain/online/kept-runs';
+import type { KeptRun } from '../../src/domain/online/kept-runs';
 import { OnlineRuns } from '../../src/domain/online/online-runs';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
@@ -11,7 +11,7 @@ import { Starfield } from '../../src/domain/presentation/starfield';
 import { OnlineScoresScreen } from '../../src/domain/scenes/online-scores';
 import { NO_HOST } from '../../src/domain/scenes/scene-host';
 import { Scene, SceneMachine } from '../../src/domain/scenes/scene-machine';
-import { FakePort, MemoryStore } from '../support/leaderboard-fakes';
+import { FakePort, MemoryStore, storeKeptRuns } from '../support/leaderboard-fakes';
 import { RecordingRender } from '../support/recording-render';
 
 const DT = 1 / 60;
@@ -40,9 +40,9 @@ const OPTIONS: Options = {
 
 const NO_LINK: LinkPort = { arm: () => undefined, takeOutcome: () => 'none' };
 
-/** The id of kept run `i` (a valid ULID). */
+/** The id of kept run `i` (a valid ULID); a lower `i` is newer, so it is listed first. */
 function idOf(i: number): string {
-  return `01JC${String(i).padStart(22, '0')}`;
+  return `01JC${String(999 - i).padStart(22, '0')}`;
 }
 
 /** The text of kept run `i`'s row: its score `i + 1` right-aligned, then the date. */
@@ -50,15 +50,14 @@ function rowOf(i: number): string {
   return `${String(i + 1).padStart(7)}  2026-11-1${String(i % 10)}`;
 }
 
-function keptDocument(count: number): string {
-  const runs = Array.from({ length: count }, (_, i) => ({
+function keptRuns(count: number): KeptRun[] {
+  return Array.from({ length: count }, (_, i) => ({
     id: idOf(i),
     token: TOKEN,
     score: i + 1,
     sentAt: `2026-11-1${String(i % 10)}T10:00:00.000Z`,
-    status: i === 0 ? 'verified' : 'pending',
+    status: i === 0 ? ('verified' as const) : ('pending' as const),
   }));
-  return JSON.stringify({ v: 1, runs });
 }
 
 interface Fixture {
@@ -83,7 +82,7 @@ function setup(kept: number, withOnline = true): Fixture {
   const render = new RecordingRender();
   const port = new FakePort();
   const store = new MemoryStore();
-  if (kept > 0) store.values.set(KEPT_RUNS_KEY, keptDocument(kept));
+  storeKeptRuns(store, keptRuns(kept));
   const online = new OnlineRuns(port, store, () => '2026-11-13T10:00:00.000Z');
   const machine = new SceneMachine(
     render,
@@ -359,6 +358,78 @@ describe('Online scores — the highlight across pages (GDD v0.39 §9.3)', () =>
     expect(texts(fixture)).not.toContain('NEXT');
     press(fixture.machine, Button.Confirm);
     expect(fixture.machine.scene).toBe(Scene.TitleOptions);
+  });
+
+  it('goes on past 20 runs: 9 runs on a page with PREV and NEXT (GDD v0.40)', () => {
+    const fixture = onScores(21);
+    move(fixture.machine, -1, 2); // NEXT
+    press(fixture.machine, Button.Confirm);
+    const page2 = texts(fixture);
+    expect(page2).toHaveLength(14); // heading, status, 9 runs, PREV, NEXT, BACK
+    expect(page2[2]).toBe(rowOf(10));
+    expect(page2.slice(-3)).toEqual(['PREV', 'NEXT', 'BACK']);
+    move(fixture.machine, -1, 2); // NEXT
+    press(fixture.machine, Button.Confirm);
+    expect(texts(fixture)).toEqual([
+      'ONLINE SCORES',
+      'PENDING VERIFICATION',
+      rowOf(19),
+      rowOf(20),
+      'PREV',
+      'BACK',
+    ]);
+    move(fixture.machine, 1, 2); // PREV
+    press(fixture.machine, Button.Confirm);
+    expect(texts(fixture)[2]).toBe(rowOf(10)); // page 2, its first row
+  });
+
+  it.each([
+    [20, [10, 10]],
+    [21, [10, 9, 2]],
+    [29, [10, 9, 10]],
+    [30, [10, 9, 9, 2]],
+    [31, [10, 9, 9, 3]],
+  ])('splits %i runs into pages of %j (GDD v0.40)', (count, sizes) => {
+    const fixture = onScores(count);
+    const shown: number[] = [];
+    for (;;) {
+      const page = texts(fixture);
+      shown.push(page.filter((text) => /^ *\d+ {2}\d{4}-/.test(text)).length);
+      if (!page.includes('NEXT')) break;
+      move(fixture.machine, -1, 2); // NEXT
+      press(fixture.machine, Button.Confirm);
+    }
+    expect(shown).toEqual(sizes);
+  });
+
+  it('follows its run to page 2 when 21 runs become 20 (GDD v0.40)', () => {
+    const fixture = onScores(21);
+    for (let i = 0; i < 2; i += 1) {
+      move(fixture.machine, -1, 2); // NEXT
+      press(fixture.machine, Button.Confirm);
+    }
+    move(fixture.machine, 1); // run 20
+    answer(fixture, 1, { 0: 'unknown' });
+    const shown = texts(fixture);
+    expect(shown[2]).toBe(rowOf(11)); // run 0 gone: page 2 holds runs 11 to 20
+    expect(shown).not.toContain('NEXT');
+    eraseHighlighted(fixture.machine);
+    fixture.port.statuses[1]?.done('pending');
+    idle(fixture.machine);
+    expect(fixture.port.erased).toEqual([[idOf(20), TOKEN]]);
+  });
+
+  it('closes an emptied last page to the page before (GDD v0.40)', () => {
+    const fixture = onScores(21);
+    for (let i = 0; i < 2; i += 1) {
+      move(fixture.machine, -1, 2); // NEXT
+      press(fixture.machine, Button.Confirm);
+    }
+    move(fixture.machine, 1, 2); // PREV
+    answer(fixture, 21, { 19: 'unknown', 20: 'unknown' });
+    const shown = texts(fixture);
+    expect(shown[2]).toBe(rowOf(10));
+    expect(shown.slice(-2)).toEqual(['PREV', 'BACK']);
   });
 
   it('keeps a highlighted PREV on page 2 while it holds runs', () => {

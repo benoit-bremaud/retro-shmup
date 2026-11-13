@@ -15,11 +15,39 @@ export interface KeptRunsReader {
   keeps(id: string): boolean;
 }
 
-/** Runs per page (GDD v0.39 §9.3): 10 runs, a page switch and *BACK* make 12 rows at most. */
+/** Runs per page (GDD v0.39 §9.3): 10 runs, a page switch and *BACK* make 12 rows at most… */
 const RUNS_PER_PAGE = 10;
+/** …and 9 on a page holding both *PREV* and *NEXT* (GDD v0.40 §9.3, more than 20 runs kept). */
+const RUNS_BETWEEN = 9;
 /** The heading and the status line above the rows (GDD v0.39 §9.3): gap 32. */
 const HEADER_GAP = 2 * MENU_HEADER_GAP.menu;
 const SCORE_DIGITS = 7;
+
+/** How many of `total` runs the page starting at run `start` shows. */
+function pageCount(total: number, page: number, start: number): number {
+  const left = total - start;
+  if (page === 0 || left <= RUNS_PER_PAGE) return Math.min(left, RUNS_PER_PAGE);
+  return RUNS_BETWEEN;
+}
+
+/** The first run shown on `page`. */
+function pageStart(total: number, page: number): number {
+  let start = 0;
+  for (let p = 0; p < page; p += 1) start += pageCount(total, p, start);
+  return start;
+}
+
+/** The page that shows run `index`. */
+function pageOf(total: number, index: number): number {
+  let page = 0;
+  let start = 0;
+  for (;;) {
+    const count = pageCount(total, page, start);
+    if (index < start + count || count === 0) return page;
+    start += count;
+    page += 1;
+  }
+}
 
 /** A run row's text: the score right-aligned, then the UTC date of the send (`YYYY-MM-DD`). */
 function runText(run: KeptRun): string {
@@ -27,10 +55,11 @@ function runText(run: KeptRun): string {
 }
 
 /**
- * *Online scores* (GDD v0.39 §9.3, UC10): the kept runs in pages of 10, then *NEXT* on page 1 when
- * more are kept, *PREV* on page 2, and *BACK*. The page is rebuilt when the kept runs change (a
- * status or a drop), never per step: the highlight stays on its run, a dropped highlighted run
- * passes it to the next one (the previous at the end), and the page shown is that run's.
+ * *Online scores* (GDD v0.39, v0.40 §9.3, UC10): the kept runs in pages of 10 (9 on a page with
+ * both *PREV* and *NEXT*), *NEXT* when more runs follow, *PREV* past page 1, and *BACK*. The page
+ * is rebuilt when the kept runs change (a status or a drop), never per step: the highlight stays
+ * on its run, a dropped highlighted run passes it to the next one (the previous at the end), and
+ * the page shown is that run's.
  */
 export class OnlineScoresScreen implements OnlineScoresView {
   menu: Menu<OnlineScoresRow> = new Menu<OnlineScoresRow>(['back'], { headerGap: HEADER_GAP });
@@ -40,6 +69,8 @@ export class OnlineScoresScreen implements OnlineScoresView {
   notice: MessageKey | undefined;
   private runs: readonly KeptRun[] = [];
   private page = 0;
+  /** The first run of the page shown, set on a rebuild. */
+  private start = 0;
   /** The run whose erase is under way, until it leaves the list or fails. */
   private erasingId: string | undefined;
 
@@ -76,8 +107,10 @@ export class OnlineScoresScreen implements OnlineScoresView {
       this.followRun(runs, was.id, index, frame);
       return;
     }
-    // A highlighted page switch or *BACK* keeps its page, unless page 2 is left without runs.
-    const page = this.page * RUNS_PER_PAGE < runs.length ? this.page : 0;
+    // A highlighted page switch or *BACK* keeps its page, unless it is left without runs: it then
+    // closes to the page before (GDD v0.40).
+    let page = this.page;
+    while (page > 0 && pageStart(runs.length, page) >= runs.length) page -= 1;
     this.rebuild(page, frame);
     if (page !== this.page || row === undefined) this.menu.highlighted = 0;
     else this.highlightRow(row === 'next' && !this.menu.rows.includes('next') ? 'back' : row);
@@ -87,12 +120,12 @@ export class OnlineScoresScreen implements OnlineScoresView {
   /** The kept run on the highlighted row, if a run row is highlighted. */
   highlightedRun(): KeptRun | undefined {
     if (this.menu.rows[this.menu.highlighted] !== 'score') return undefined;
-    return this.runs[this.page * RUNS_PER_PAGE + this.menu.highlighted];
+    return this.runs[this.start + this.menu.highlighted];
   }
 
-  /** *NEXT* or *PREV*: the other page, its first row highlighted, behind the opening guard. */
-  turn(now: number, frame: Readonly<IntentFrame>): void {
-    this.showPage(this.page === 0 ? 1 : 0);
+  /** *NEXT* or *PREV*: that page, its first row highlighted, behind the opening guard. */
+  turn(row: 'next' | 'prev', now: number, frame: Readonly<IntentFrame>): void {
+    this.showPage(row === 'next' ? this.page + 1 : this.page - 1);
     this.menu.reset(now, frame);
   }
 
@@ -139,10 +172,10 @@ export class OnlineScoresScreen implements OnlineScoresView {
       this.menu.highlighted = 0;
       return;
     }
-    const page = Math.floor(at / RUNS_PER_PAGE);
+    const page = pageOf(runs.length, at);
     this.rebuild(page, frame);
     this.page = page;
-    this.menu.highlighted = at - page * RUNS_PER_PAGE;
+    this.menu.highlighted = at - this.start;
   }
 
   private highlightRow(row: OnlineScoresRow): void {
@@ -162,11 +195,13 @@ export class OnlineScoresScreen implements OnlineScoresView {
   }
 
   private build(page: number): Menu<OnlineScoresRow> {
-    const shown = this.runs.slice(page * RUNS_PER_PAGE, (page + 1) * RUNS_PER_PAGE);
+    const total = this.runs.length;
+    this.start = pageStart(total, page);
+    const shown = this.runs.slice(this.start, this.start + pageCount(total, page, this.start));
     const rows: OnlineScoresRow[] = shown.map(() => 'score');
     const texts = shown.map(runText);
-    if (page === 0 && this.runs.length > RUNS_PER_PAGE) rows.push('next');
-    if (page === 1) rows.push('prev');
+    if (page > 0) rows.push('prev');
+    if (this.start + shown.length < total) rows.push('next');
     rows.push('back');
     this.texts = texts;
     return new Menu<OnlineScoresRow>(rows, { headerGap: HEADER_GAP });

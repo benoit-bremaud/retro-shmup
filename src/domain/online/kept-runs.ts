@@ -1,14 +1,18 @@
 import type { RunStatus } from '../ports/leaderboard-port';
+import type { StoragePort } from '../ports/storage-port';
 
 /**
- * The runs sent online, kept so the player can follow and erase them (ADR-0031 decision 17). They
- * live under their own key, never in the save document, and are parsed by allowlist without
- * throwing: an invalid item is dropped, the others kept (ADR-0006).
+ * The runs sent online, kept so the player can follow and erase them (ADR-0031 decision 17). Each
+ * run lives under its own key, `retro-shmup.online.v1.<id>`, never in the save document, so two
+ * tabs never overwrite each other's runs (ADR-0032). Values are parsed by allowlist without
+ * throwing: an invalid key or value is ignored and never removed (ADR-0006). This module owns the
+ * key layout; `OnlineRuns` never builds a key.
  */
 
-export const KEPT_RUNS_KEY = 'retro-shmup.online.v1';
+/** The key's `v1` is the schema version; a schema change uses a new prefix. */
+export const KEPT_RUN_PREFIX = 'retro-shmup.online.v1.';
+/** Checked when the player chooses *SEND* only: concurrent tabs may keep more (decision 4). */
 export const MAX_KEPT_RUNS = 20;
-const VERSION = 1;
 
 /** A sent run: the token is the player's own way to erase it. */
 export interface KeptRun {
@@ -30,68 +34,62 @@ const STATUSES: readonly RunStatus[] = [
   'expired',
 ];
 
-/** The kept runs, newest first, 20 at most. */
-export class KeptRuns {
-  private list: KeptRun[];
-
-  constructor(items: readonly KeptRun[]) {
-    this.list = items.slice(0, MAX_KEPT_RUNS);
+/** Every valid kept run, newest first by id (a ULID sorts by time), with no cap. */
+export function readKeptRuns(store: StoragePort): readonly KeptRun[] {
+  const keys = store.keys(KEPT_RUN_PREFIX);
+  const runs: KeptRun[] = [];
+  for (let i = 0; i < keys.length; i += 1) {
+    const id = (keys[i] ?? '').slice(KEPT_RUN_PREFIX.length);
+    if (!ULID.test(id)) continue;
+    const run = parseKeptRun(id, store.read(KEPT_RUN_PREFIX + id));
+    if (run !== undefined) runs.push(run);
   }
-
-  get items(): readonly KeptRun[] {
-    return this.list;
-  }
-
-  /** With 20 kept, nothing is sent until the player erases one: a token is never dropped. */
-  full(): boolean {
-    return this.list.length >= MAX_KEPT_RUNS;
-  }
-
-  /** Keeps `run` first; true when already kept; false, keeping nothing, when full. */
-  add(run: KeptRun): boolean {
-    if (this.list.some((kept) => kept.id === run.id)) return true;
-    if (this.full()) return false;
-    this.list.unshift(run);
-    return true;
-  }
-
-  setStatus(id: string, status: RunStatus): void {
-    this.list = this.list.map((run) => (run.id === id ? { ...run, status } : run));
-  }
-
-  drop(id: string): void {
-    this.list = this.list.filter((run) => run.id !== id);
-  }
+  return runs.sort((a, b) => (a.id < b.id ? 1 : -1));
 }
 
-/** The kept runs stored under `KEPT_RUNS_KEY`; anything unreadable is an empty list. */
-export function parseKeptRuns(text: string | null): KeptRuns {
-  if (text === null) return new KeptRuns([]);
-  let document: unknown;
+/** The kept run `id`, read from its own key, or `undefined` when gone or invalid. */
+export function readKeptRun(store: StoragePort, id: string): KeptRun | undefined {
+  return parseKeptRun(id, store.read(KEPT_RUN_PREFIX + id));
+}
+
+/**
+ * Keeps an accepted run without checking the limit (decision 4); true when already kept (never
+ * overwritten), false when the storage refused it.
+ */
+export function keepRun(store: StoragePort, run: KeptRun): boolean {
+  if (readKeptRun(store, run.id) !== undefined) return true;
+  return store.write(KEPT_RUN_PREFIX + run.id, serialize(run));
+}
+
+/**
+ * Rewrites run `id` with `status` only while its key still holds a valid run, read again just
+ * before, so a run another tab erased is not recreated (decision 5).
+ */
+export function restatusRun(store: StoragePort, id: string, status: RunStatus): boolean {
+  const run = readKeptRun(store, id);
+  if (run === undefined) return false;
+  return store.write(KEPT_RUN_PREFIX + id, serialize({ ...run, status }));
+}
+
+/** Removes run `id`'s key: erased, or unknown to the leaderboard. */
+export function forgetRun(store: StoragePort, id: string): void {
+  store.remove(KEPT_RUN_PREFIX + id);
+}
+
+/** The value stored under run `id`'s key, or `undefined` when absent or invalid. */
+export function parseKeptRun(id: string, text: string | null): KeptRun | undefined {
+  if (text === null || !ULID.test(id)) return undefined;
+  let value: unknown;
   try {
-    document = JSON.parse(text);
+    value = JSON.parse(text);
   } catch {
-    return new KeptRuns([]);
+    return undefined;
   }
-  if (typeof document !== 'object' || document === null) return new KeptRuns([]);
-  const runs: unknown = own(document, 'runs');
-  if (own(document, 'v') !== VERSION || !Array.isArray(runs)) return new KeptRuns([]);
-  const items: KeptRun[] = [];
-  for (let i = 0; i < runs.length && items.length < MAX_KEPT_RUNS; i += 1) {
-    const run = parseKeptRun(runs[i]);
-    if (run !== undefined) items.push(run);
-  }
-  return new KeptRuns(items);
-}
-
-function parseKeptRun(value: unknown): KeptRun | undefined {
   if (typeof value !== 'object' || value === null) return undefined;
-  const id: unknown = own(value, 'id');
   const token: unknown = own(value, 'token');
   const score: unknown = own(value, 'score');
   const sentAt: unknown = own(value, 'sentAt');
   const status: unknown = own(value, 'status');
-  if (typeof id !== 'string' || !ULID.test(id)) return undefined;
   if (typeof token !== 'string' || !TOKEN.test(token)) return undefined;
   if (typeof score !== 'number' || !Number.isSafeInteger(score) || score < 0) return undefined;
   if (typeof sentAt !== 'string' || !ISO_DATE.test(sentAt)) return undefined;
@@ -105,6 +103,7 @@ function own(value: object, name: string): unknown {
   return Object.hasOwn(value, name) ? Reflect.get(value, name) : undefined;
 }
 
-export function serializeKeptRuns(kept: KeptRuns): string {
-  return JSON.stringify({ v: VERSION, runs: kept.items });
+function serialize(run: KeptRun): string {
+  const { token, score, sentAt, status } = run;
+  return JSON.stringify({ token, score, sentAt, status });
 }

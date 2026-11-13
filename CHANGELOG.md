@@ -14,8 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   decodes codec 1 and replays a run to its score for the leaderboard's verifier; nothing is sent
   yet (ADR-0031 decisions 1–7 and 22, #167).
 - The online send pipeline, switched off until a release enables it: the online runs domain
-  (send, follow the verification every 15 s for 2 minutes, erase, at most 20 kept runs under
-  `retro-shmup.online.v1`), a `fetch` adapter (credentials omitted, 10 s timeout, allowlist
+  (send, follow the verification every 15 s for 2 minutes, erase; each kept run under its own
+  key `retro-shmup.online.v1.<id>`, ADR-0032), a `fetch` adapter (credentials omitted, 10 s timeout, allowlist
   parsing, 60 000-character guard), a browser codec 1 encoder, the build-time switch that sets
   the leaderboard origin and its CSP `connect-src` only on the release commit, and a smoke test
   replaying a recorded run to the Node score in Chromium, Firefox and WebKit (ADR-0031 decisions
@@ -28,6 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   heading, erasing a run after a confirmation; and the game wiring of the online leaderboard,
   present only in a release build on its origin (#167). A refused name now reopens the name
   entry on the next *SEND* (GDD v0.38).
+- Two tabs no longer drop each other's kept online run and deletion token: one storage key per
+  run, the 20-run limit checked at *SEND* only, an accepted run always kept, and *Online scores*
+  paging on past 20 runs, 9 on a page with *PREV* and *NEXT* (ADR-0032, GDD v0.40, #175).
 - The chain multiplier explains itself in play: the first ×2 of a run floats *CHAIN ×2 - KILL
   FAST* for 1 s, and every break from ×2 or more floats *CHAIN BREAK* for 0.5 s, near the top of
   the field, on their own *CHAIN HINTS* / *AIDE CHAINE* effect switch (GDD v0.32 §7.3, #147).

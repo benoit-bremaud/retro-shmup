@@ -1,14 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { KEPT_RUNS_KEY, MAX_KEPT_RUNS, parseKeptRuns } from '../../../src/domain/online/kept-runs';
+import { MAX_KEPT_RUNS, readKeptRuns } from '../../../src/domain/online/kept-runs';
+import type { KeptRun } from '../../../src/domain/online/kept-runs';
 import {
   OnlineRuns,
   STATUS_POLL_STEPS,
   STATUS_WATCH_STEPS,
 } from '../../../src/domain/online/online-runs';
 import type { Submission } from '../../../src/domain/ports/leaderboard-port';
-import { FakePort, MemoryStore } from '../../support/leaderboard-fakes';
+import {
+  clearKeptRuns,
+  FakePort,
+  MemoryStore,
+  storeKeptRuns,
+} from '../../support/leaderboard-fakes';
 
 const ID = '01JC0000000000000000000001';
+const ID2 = '01JC0000000000000000000002';
 const TOKEN = 'b'.repeat(64);
 const NOW = '2026-11-12T10:00:00.000Z';
 
@@ -21,30 +28,29 @@ const RUN: Submission = {
   country: 'FR',
 };
 
-function setup(stored: string | null = null): {
+function setup(stored: readonly KeptRun[] = []): {
   online: OnlineRuns;
   port: FakePort;
   store: MemoryStore;
 } {
   const port = new FakePort();
   const store = new MemoryStore();
-  if (stored !== null) store.write(KEPT_RUNS_KEY, stored);
+  storeKeptRuns(store, stored);
   return { online: new OnlineRuns(port, store, () => NOW), port, store };
 }
 
-function kept(store: MemoryStore): ReturnType<typeof parseKeptRuns>['items'] {
-  return parseKeptRuns(store.read(KEPT_RUNS_KEY)).items;
+function kept(store: MemoryStore): readonly KeptRun[] {
+  return readKeptRuns(store);
 }
 
-function fullDocument(): string {
-  const runs = Array.from({ length: MAX_KEPT_RUNS }, (_, i) => ({
-    id: `01JC${String(i).padStart(22, '0')}`,
+function fullDocument(): KeptRun[] {
+  return Array.from({ length: MAX_KEPT_RUNS }, (_, i) => ({
+    id: `01JC${String(100 + i).padStart(22, '0')}`,
     token: TOKEN,
     score: i,
     sentAt: NOW,
-    status: 'verified',
+    status: 'verified' as const,
   }));
-  return JSON.stringify({ v: 1, runs });
 }
 
 describe('OnlineRuns — the offer', () => {
@@ -164,37 +170,46 @@ describe('OnlineRuns — following the verification', () => {
 });
 
 describe('OnlineRuns — Online scores', () => {
-  function stored(): string {
-    return JSON.stringify({
-      v: 1,
-      runs: [
-        { id: ID, token: TOKEN, score: 5, sentAt: NOW, status: 'pending' },
-        {
-          id: '01JC0000000000000000000002',
-          token: TOKEN,
-          score: 6,
-          sentAt: NOW,
-          status: 'verified',
-        },
-      ],
-    });
+  function stored(): KeptRun[] {
+    return [
+      { id: ID, token: TOKEN, score: 5, sentAt: NOW, status: 'pending' },
+      { id: ID2, token: TOKEN, score: 6, sentAt: NOW, status: 'verified' },
+    ];
   }
 
-  it('asks every kept run one at a time and drops the unknown ones', () => {
+  it('asks every kept run one at a time, newest first, and removes the unknown ones', () => {
     const { online, port, store } = setup(stored());
     online.refreshAll();
     online.step();
-    expect(port.asked).toEqual([ID]);
-    port.statuses[0]?.done('unknown');
+    expect(port.asked).toEqual([ID2]);
+    port.statuses[0]?.done('expired');
     online.step();
     online.step();
-    expect(port.asked).toEqual([ID, '01JC0000000000000000000002']);
-    port.statuses[1]?.done('expired');
+    expect(port.asked).toEqual([ID2, ID]);
+    port.statuses[1]?.done('unknown');
     online.step();
     expect(online.kept()).toEqual([
-      { id: '01JC0000000000000000000002', token: TOKEN, score: 6, sentAt: NOW, status: 'expired' },
+      { id: ID2, token: TOKEN, score: 6, sentAt: NOW, status: 'expired' },
     ]);
     expect(kept(store)).toEqual(online.kept());
+  });
+
+  it('does not bring back a run another tab erased when its status arrives (ADR-0032)', () => {
+    const { online, port, store } = setup(stored());
+    online.refreshAll();
+    online.step();
+    clearKeptRuns(store);
+    port.statuses[0]?.done('verified');
+    online.step();
+    expect(kept(store)).toEqual([]);
+    expect(online.kept()).toEqual([]);
+  });
+
+  it('lists every kept run past 20, sent from several tabs at once (ADR-0032)', () => {
+    const { online } = setup([...fullDocument(), ...stored()]);
+    online.refreshAll();
+    expect(online.kept()).toHaveLength(MAX_KEPT_RUNS + 2);
+    expect(online.full()).toBe(true);
   });
 
   it('erases with the token and drops the run once erased', () => {
@@ -205,8 +220,16 @@ describe('OnlineRuns — Online scores', () => {
     expect(port.erased).toEqual([[ID, TOKEN]]);
     port.erases[0]?.done('erased');
     online.step();
-    expect(kept(store).map((run) => run.id)).toEqual(['01JC0000000000000000000002']);
+    expect(kept(store).map((run) => run.id)).toEqual([ID2]);
     expect(online.erase(ID)).toBe('gone');
+  });
+
+  it('drops from the list a run another tab erased when the player erases it too', () => {
+    const { online, store } = setup(stored());
+    online.refreshAll();
+    clearKeptRuns(store);
+    expect(online.erase(ID)).toBe('gone');
+    expect(online.kept()).toEqual([]);
   });
 
   it('keeps the run when the erasure fails', () => {
@@ -235,9 +258,24 @@ describe('OnlineRuns — robustness', () => {
     const older = new OnlineRuns(port, store, () => NOW);
     sentWith(store, port);
     older.send({ ...RUN, score: 7 });
-    port.submits.at(-1)?.done({ id: '01JC0000000000000000000002', token: TOKEN });
+    port.submits.at(-1)?.done({ id: ID2, token: TOKEN });
     older.step();
-    expect(kept(store).map((run) => run.id)).toEqual(['01JC0000000000000000000002', ID]);
+    expect(kept(store).map((run) => run.id)).toEqual([ID2, ID]);
+  });
+
+  it('keeps an accepted run although another tab filled the 20 meanwhile (ADR-0032)', () => {
+    const { online, port, store } = setup();
+    online.send(RUN);
+    storeKeptRuns(store, fullDocument());
+    port.submits[0]?.done({ id: ID, token: TOKEN });
+    online.step();
+    expect(kept(store)).toHaveLength(MAX_KEPT_RUNS + 1);
+    expect(online.state()).toEqual({
+      phase: 'sent',
+      id: ID,
+      status: 'pending',
+      tokenMaybeLost: false,
+    });
   });
 
   it('flags the token as maybe lost when it cannot be stored', () => {
@@ -253,21 +291,10 @@ describe('OnlineRuns — robustness', () => {
   });
 
   it('serves a player action before the rest of the refresh queue', () => {
-    const { online, port } = setup(
-      JSON.stringify({
-        v: 1,
-        runs: [
-          { id: ID, token: TOKEN, score: 5, sentAt: NOW, status: 'pending' },
-          {
-            id: '01JC0000000000000000000002',
-            token: TOKEN,
-            score: 6,
-            sentAt: NOW,
-            status: 'pending',
-          },
-        ],
-      }),
-    );
+    const { online, port } = setup([
+      { id: ID, token: TOKEN, score: 5, sentAt: NOW, status: 'pending' },
+      { id: ID2, token: TOKEN, score: 6, sentAt: NOW, status: 'pending' },
+    ]);
     online.refreshAll();
     online.step();
     expect(online.erase(ID)).toBe('erasing');
@@ -276,7 +303,7 @@ describe('OnlineRuns — robustness', () => {
     port.statuses[0]?.done('pending');
     online.step();
     expect(port.erased).toEqual([[ID, TOKEN]]);
-    expect(port.asked).toEqual([ID]);
+    expect(port.asked).toEqual([ID2]);
   });
 
   it('stops asking once the player leaves, and a new offer starts idle', () => {

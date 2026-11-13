@@ -4,6 +4,9 @@ import type { StoragePort } from '../domain/ports/storage-port';
 export interface StorageLike {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+  readonly length: number;
+  key(index: number): string | null;
 }
 
 /**
@@ -33,6 +36,29 @@ export class LocalStorageStore implements StoragePort {
       return true;
     } catch {
       return false;
+    }
+  }
+
+  keys(prefix: string): readonly string[] {
+    try {
+      const storage = this.storage();
+      const found: string[] = [];
+      for (let i = 0; i < storage.length; i += 1) {
+        const key = storage.key(i);
+        // Another tab may remove a key while we scan: `key` then answers null.
+        if (key?.startsWith(prefix) === true) found.push(key);
+      }
+      return found;
+    } catch {
+      return [];
+    }
+  }
+
+  remove(key: string): void {
+    try {
+      this.storage().removeItem(key);
+    } catch {
+      // Unavailable storage: the key stays; the next `unknown` status removes it again.
     }
   }
 }

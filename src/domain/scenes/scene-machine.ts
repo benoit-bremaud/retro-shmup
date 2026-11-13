@@ -1235,7 +1235,7 @@ export class SceneMachine {
     screen.followErase(online.eraseError(), online);
     const row = this.stepMenu(screen.menu, frame);
     if (row === 'score') this.openMenu(Scene.ScoresErase, frame);
-    else if (row === 'next' || row === 'prev') screen.turn(this.steps, frame);
+    else if (row === 'next' || row === 'prev') screen.turn(row, this.steps, frame);
     else if (row === 'back' || this.backed(frame)) {
       online.leave();
       this.openMenu(Scene.TitleOptions, frame);

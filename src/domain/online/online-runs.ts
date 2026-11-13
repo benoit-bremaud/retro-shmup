@@ -10,8 +10,15 @@ import type {
   Submission,
 } from '../ports/leaderboard-port';
 import type { StoragePort } from '../ports/storage-port';
-import { KEPT_RUNS_KEY, parseKeptRuns, serializeKeptRuns } from './kept-runs';
-import type { KeptRun, KeptRuns } from './kept-runs';
+import {
+  forgetRun,
+  keepRun,
+  MAX_KEPT_RUNS,
+  readKeptRun,
+  readKeptRuns,
+  restatusRun,
+} from './kept-runs';
+import type { KeptRun } from './kept-runs';
 
 /** The status is asked every 15 s (ADR-0031 decision 16)… */
 export const STATUS_POLL_STEPS = 15 * STEPS_PER_SECOND;
@@ -66,11 +73,11 @@ const SENDING: OnlineState = { phase: 'sending' };
 /**
  * Sending runs, following their verification and erasing them (meta/04-class-online-runs,
  * meta/05-state-online-run). The scene machine calls `step` once per simulation step; the port's
- * handles are read there, never awaited. A `POST` is never retried on its own. The kept runs are
- * re-read before every change (a residual two-tab race remains, #175).
+ * handles are read there, never awaited. A `POST` is never retried on its own. Each kept run has
+ * its own storage key (ADR-0032): a change touches only its run, then the snapshot is read again.
  */
 export class OnlineRuns {
-  private runs: KeptRuns;
+  private runs: readonly KeptRun[];
   private open: OpenRequest | undefined;
   private action: PlayerAction | undefined;
   private current: OnlineState = IDLE;
@@ -99,27 +106,26 @@ export class OnlineRuns {
     return result.outcome !== 'quit' && result.sendable && result.score > 0;
   }
 
-  /** *SEND*: `full` with 20 runs kept, `busy` while another send or erase is under way. */
+  /** *SEND*: `full` with 20 or more runs kept, `busy` while another send or erase is under way. */
   send(run: Submission): 'sending' | 'full' | 'busy' {
-    this.runs = this.load();
-    if (this.runs.full()) return 'full';
+    if (this.full()) return 'full';
     if (!this.start({ kind: 'submit', run })) return 'busy';
     this.current = SENDING;
     this.following = true;
     return 'sending';
   }
 
-  /** Whether 20 runs are kept, re-read first: *SEND* then shows the erase-first line. */
+  /** Whether 20 or more runs are kept, re-read first: *SEND* then shows the erase-first line. */
   full(): boolean {
     this.runs = this.load();
-    return this.runs.full();
+    return this.runs.length >= MAX_KEPT_RUNS;
   }
 
   /** *Online scores* opened: asks every kept run, one at a time. */
   refreshAll(): void {
     this.runs = this.load();
     this.refreshQueue.length = 0;
-    const items = this.runs.items;
+    const items = this.runs;
     for (let i = 0; i < items.length; i += 1) this.refreshQueue.push(items[i]?.id ?? '');
   }
 
@@ -136,8 +142,11 @@ export class OnlineRuns {
    * meanwhile (it wins over `busy`), `busy` while another send or erasure is under way.
    */
   erase(id: string): 'erasing' | 'busy' | 'gone' {
-    const run = this.find(id);
-    if (run === undefined) return 'gone';
+    const run = readKeptRun(this.storage, id);
+    if (run === undefined) {
+      this.runs = this.load(); // Another tab erased it: its row leaves the list.
+      return 'gone';
+    }
     if (!this.start({ kind: 'erase', id, token: run.token })) return 'busy';
     this.eraseFailure = undefined;
     return 'erasing';
@@ -145,13 +154,13 @@ export class OnlineRuns {
 
   /** Whether run `id` is still kept, as last read (no allocation: read once per step). */
   keeps(id: string): boolean {
-    const items = this.runs.items;
+    const items = this.runs;
     for (let i = 0; i < items.length; i += 1) if (items[i]?.id === id) return true;
     return false;
   }
 
   kept(): readonly KeptRun[] {
-    return this.runs.items;
+    return this.runs;
   }
 
   state(): OnlineState {
@@ -221,10 +230,8 @@ export class OnlineRuns {
       case 'erase':
         if (open.handle.state === 'done') {
           if (this.watched?.id === open.id) this.watched = undefined;
-          this.change((runs) => {
-            runs.drop(open.id);
-            return true;
-          });
+          forgetRun(this.storage, open.id);
+          this.runs = this.load();
         } else {
           this.eraseFailure = open.handle.error;
         }
@@ -243,8 +250,10 @@ export class OnlineRuns {
     if (handle.state !== 'done') return;
     const { id, token } = handle.result;
     const run: KeptRun = { id, token, score, sentAt: this.now(), status: 'pending' };
-    // A token that could not be kept (storage full or blocked) cannot erase the run later.
-    const kept = this.change((runs) => runs.add(run));
+    // Kept without checking the limit (ADR-0032 decision 4); a token the storage refused (full or
+    // blocked) cannot erase the run later.
+    const kept = keepRun(this.storage, run);
+    this.runs = this.load();
     if (!following) return; // kept for Online scores; the player left the screen
     this.current = { phase: 'sent', id, status: 'pending', tokenMaybeLost: !kept };
     this.watched = { id, steps: 0 };
@@ -252,11 +261,9 @@ export class OnlineRuns {
 
   private settleStatus(id: string, answer: StatusAnswer): void {
     const isWatched = this.watched?.id === id;
-    this.change((runs) => {
-      if (answer === 'unknown') runs.drop(id);
-      else runs.setStatus(id, answer);
-      return true;
-    });
+    if (answer === 'unknown') forgetRun(this.storage, id);
+    else restatusRun(this.storage, id, answer);
+    this.runs = this.load();
     if (!isWatched) return;
     if (answer === 'unknown') {
       this.watched = undefined;
@@ -268,23 +275,7 @@ export class OnlineRuns {
     this.current = { phase: 'sent', id, status: answer, tokenMaybeLost: lost };
   }
 
-  private find(id: string): KeptRun | undefined {
-    this.runs = this.load();
-    return this.runs.items.find((run) => run.id === id);
-  }
-
-  private load(): KeptRuns {
-    return parseKeptRuns(this.storage.read(KEPT_RUNS_KEY));
-  }
-
-  /**
-   * Read, change, write: another tab's runs are re-read first. Two tabs writing within the
-   * storage's propagation delay can still drop a run (residual race, one key per run in #175).
-   * True only when `apply` accepted the change and the write succeeded.
-   */
-  private change(apply: (runs: KeptRuns) => boolean): boolean {
-    this.runs = this.load();
-    const accepted = apply(this.runs);
-    return this.storage.write(KEPT_RUNS_KEY, serializeKeptRuns(this.runs)) && accepted;
+  private load(): readonly KeptRun[] {
+    return readKeptRuns(this.storage);
   }
 }

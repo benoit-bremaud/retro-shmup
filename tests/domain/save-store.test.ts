@@ -11,7 +11,7 @@ import { defaultOptions, SAVE_KEY, SaveStore } from '../../src/domain/save/save-
 import type { StoragePort } from '../../src/domain/ports/storage-port';
 
 /** An in-memory storage; `available: false` behaves like a browser that refuses storage. */
-class MemoryStorage implements StoragePort {
+class MemoryStorage implements Pick<StoragePort, 'read' | 'write'> {
   readonly values = new Map<string, string>();
   available = true;
   writes = 0;
