@@ -162,3 +162,7 @@ classDiagram
   within the storage's propagation delay can still drop a run and its token (residual race,
   accepted for 3a); one key per run closes it before the feature is enabled (#175).
 - **Lines**: the scene maps `OnlineState` and `eraseError` to message keys (PR 3b of #167).
+- **Built (#167, 3b-2)**: `main.ts` builds `OnlineRuns` over `FetchLeaderboard` and the
+  browser's storage only when the build's leaderboard origin is set (ADR-0031 decision 12); the
+  privacy page is `<origin>/privacy`. *Online scores* (`OnlineScoresScreen`) reads `kept()` by
+  identity each step and rebuilds its page on a change only.

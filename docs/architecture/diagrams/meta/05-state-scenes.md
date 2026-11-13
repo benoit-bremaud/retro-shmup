@@ -192,7 +192,7 @@ stateDiagram-v2
   that meet another send or erasure under way show *WAIT* and do nothing; an erase of a run that
   left the list meanwhile sends nothing.
 - **v0.38 (GDD §9.1, #167)**: a refused name is forgotten for the run, so the next `send` [fewer than 20 kept]
-  takes the `no usable name this run` edge to the online name entry (design; built in 3b-2, #167).
+  takes the `no usable name this run` edge to the online name entry (built in 3b-2, #167).
 - **v0.39 (GDD §9.3, #167)**: `Online scores` shows 10 runs per page with *NEXT* / *PREV*;
   choosing a run opens the erase confirmation (*No* first). It is reached from the title's
   `Options` only, never from `PauseOptions`. A drop keeps the highlight on its run, and the
@@ -206,6 +206,11 @@ stateDiagram-v2
   answer; *OPEN BLOCKED* ends when the offer is left. *TO ERASE SEE PRIVACY* follows a send that may be stored without a token, and a
   run whose token the storage refused shows no *ERASE* row. The country sent is the saved code,
   none for *NONE*. A French line longer than the field's 30 characters wraps at a space.
+- **Built (#167, 3b-2)**: `Online scores` is the scene `OnlineScores`, its erase confirmation
+  `ScoresErase` (*No* first, as `OnlineErase`); the title's `Options` show the row only when the
+  build holds a leaderboard. The page is rebuilt when the kept runs change, never per step. `back`
+  and *BACK* call `leave()`, so no more status is asked. A refused name is forgotten (v0.38): the
+  `failed` state clears it before returning to `Send online`.
 - **v0.34 (GDD §9.1, ADR-0030)**: both `Country choice` states have two sub-states, drawn below.
   The cursor and the opening guard restart at each page switch, which plays *MenuConfirm*.
 

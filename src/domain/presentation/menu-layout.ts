@@ -70,6 +70,19 @@ export interface SendOnlineView {
   readonly notice: readonly MessageKey[];
 }
 
+/**
+ * *Online scores* (GDD v0.39 §9.3): its rows (a run row draws its text, the others their catalogue
+ * text), the highlighted run's status under the heading and an error or *WAIT* at the foot.
+ */
+export interface OnlineScoresView {
+  readonly menu: MenuView;
+  /** The run rows' texts (score and date), in row order, built on a rebuild only. */
+  readonly texts: readonly string[];
+  /** The line under the heading; `undefined` while *NEXT*, *PREV* or *BACK* is highlighted. */
+  readonly status: MessageKey | undefined;
+  readonly notice: MessageKey | undefined;
+}
+
 /** The *Send online* rows start this far down the field, under the run's lines. */
 export const SEND_ONLINE_HEADER_GAP = 136;
 

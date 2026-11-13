@@ -381,7 +381,7 @@ describe('Send online — the name entry (GDD v0.35 §9.1)', () => {
   it('sends no country when the saved choice is NONE', () => {
     const fixture = onStatus({ country: 'none' });
     expect(fixture.port.submitted[0]).not.toHaveProperty('country');
-    fixture.port.submits[0]?.fail('name-refused');
+    fixture.port.submits[0]?.fail('server-error');
     idle(fixture.machine, 1);
     expect(texts(fixture)).toContain('A');
   });
@@ -469,6 +469,26 @@ describe('Send online — the status (GDD v0.35–v0.37 §9.1)', () => {
     const shown = texts(fixture);
     expect(shown).toContain('NAME NOT ACCEPTED');
     expect(shown).not.toContain('TO ERASE SEE PRIVACY');
+  });
+
+  it('forgets a refused name, so SEND reopens the name entry (GDD v0.38)', () => {
+    const fixture = onStatus();
+    fixture.port.submits[0]?.fail('name-refused');
+    idle(fixture.machine, 70);
+    expect(texts(fixture)).not.toContain('A FR');
+    activateSend(fixture.machine);
+    expect(fixture.machine.scene).toBe(Scene.OnlineName);
+    expect(fixture.port.submitted).toHaveLength(1);
+  });
+
+  it('keeps the name after another failure, so SEND sends it again', () => {
+    const fixture = onStatus();
+    fixture.port.submits[0]?.fail('server-error');
+    idle(fixture.machine, 70);
+    expect(texts(fixture)).toContain('A FR');
+    activateSend(fixture.machine);
+    expect(fixture.machine.scene).toBe(Scene.OnlineStatus);
+    expect(fixture.port.submitted).toHaveLength(2);
   });
 
   it('adds TO ERASE SEE PRIVACY after a send that may be stored', () => {

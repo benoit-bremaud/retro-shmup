@@ -68,8 +68,9 @@ Roadmap (GDD section 11):
   limited continues, mid-bosses, ground targets, the ejected-pilots rescue mechanic (GDD section
   12), custom art and music.
 - **In progress (#167)** — opt-in online leaderboard: a finished run can be sent to
-  retro-leaderboard, which replays it to verify the score (ADR-0031). The send pipeline is in
-  place but switched off; the screens come next.
+  retro-leaderboard, which replays it to verify the score (ADR-0031). The send pipeline and the
+  send and *Online scores* screens are built; the feature switches on with the first release on
+  the final origin.
 - **v2** — replays to watch, PWA / offline, endless mode, Steam build.
 
 ## Documentation

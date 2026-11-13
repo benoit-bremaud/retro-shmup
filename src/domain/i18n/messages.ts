@@ -124,6 +124,11 @@ export const MESSAGES = {
   toErase: { en: 'TO ERASE SEE PRIVACY', fr: 'POUR EFFACER VOIR CONFIDENTIALITE' },
   eraseFirst: { en: 'ERASE AN ONLINE SCORE FIRST', fr: 'EFFACE D ABORD UN SCORE EN LIGNE' },
   wait: { en: 'WAIT', fr: 'ATTENDS' },
+  /** *Online scores* (GDD v0.39 §9.3): the title options' row and its screen. */
+  onlineScores: { en: 'ONLINE SCORES', fr: 'SCORES EN LIGNE' },
+  noOnlineScore: { en: 'NO ONLINE SCORE', fr: 'AUCUN SCORE EN LIGNE' },
+  next: { en: 'NEXT', fr: 'SUIVANT' },
+  prev: { en: 'PREV', fr: 'PRECEDENT' },
   /** A language is always named in itself (GDD v0.14 §9.1). */
   english: { en: 'ENGLISH', fr: 'ENGLISH' },
   francais: { en: 'FRANCAIS', fr: 'FRANCAIS' },
