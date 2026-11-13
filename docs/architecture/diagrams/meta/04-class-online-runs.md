@@ -72,7 +72,7 @@ classDiagram
     server-error
   }
   class OnlineRuns {
-    -runs : KeptRun[] «re-read after every key change, at SEND, full() and refreshAll()»
+    -runs : KeptRun[] «re-read after every key change, at SEND, full(), refreshAll() and an erase that finds its run gone»
     -open : RequestHandle «at most one open»
     -action : send or erase «waits for the GET in flight»
     +offer(result: RunResult) boolean «resets the state»
