@@ -256,6 +256,13 @@ describe('Send online — the offer (GDD v0.35 §9.1)', () => {
     expect(fixture.machine.scene).toBe(Scene.SendOnline);
     idle(fixture.machine, 70);
     expect(texts(fixture)).toContain('A FR');
+    const nameX = (): number | undefined => {
+      texts(fixture);
+      return fixture.render.texts.find((t) => t.text === 'A FR')?.x;
+    };
+    expect(nameX()).toBe(96); // (240 - text 30 - flag room 18) / 2
+    fixture.render.flagsLoaded = false; // a country missing from the sheet: the code alone, centred
+    expect(nameX()).toBe(105); // (240 - 30) / 2
     activateSend(fixture.machine); // a name: sent at once
     expect(fixture.machine.scene).toBe(Scene.OnlineStatus);
     expect(fixture.port.submitted[0]).toMatchObject({ name: 'A', country: 'FR', score: 500 });

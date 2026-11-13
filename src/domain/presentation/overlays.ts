@@ -259,11 +259,13 @@ export function drawSendOnline(
   const nameY = SEND_SCORE_Y + SEND_LINE_STEP;
   if (view.nameLine !== '') {
     const width = menuTextWidth(view.nameLine);
-    const flagRoom = view.flag === '' ? 0 : FLAG_GAP + FLAG_SIZE.width;
-    const x = Math.round((FIELD_WIDTH - width - flagRoom) / 2);
+    const withFlag = Math.round((FIELD_WIDTH - width - FLAG_GAP - FLAG_SIZE.width) / 2);
     render.setRegion('field');
+    // A country missing from the flag sheet, or a sheet not loaded, shows the code alone, centred.
+    const flagged =
+      view.flag !== '' && render.drawFlag(view.flag, withFlag + width + FLAG_GAP, flagTop(nameY));
+    const x = flagged ? withFlag : Math.round((FIELD_WIDTH - width) / 2);
     render.drawText(view.nameLine, x, nameY, 'menu');
-    if (view.flag !== '') render.drawFlag(view.flag, x + width + FLAG_GAP, flagTop(nameY));
   }
   drawLines(render, view.info, language, nameY + 2 * SEND_LINE_STEP, SEND_LINE_STEP);
   drawMenu(render, view.menu, language);
