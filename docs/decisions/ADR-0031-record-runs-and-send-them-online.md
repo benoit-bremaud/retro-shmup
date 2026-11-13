@@ -127,6 +127,8 @@ server follow-up benoit-bremaud/retro-leaderboard#14.
 14. **The name.** The entry's name of this run; a run without an entry, or with `???`, first opens
     the name entry (its result is not added to the local table; *OK* on an empty name and `back`
     return to the offer). The country is the saved choice, or none.
+    *Implementation note (2026-11-13, #167, GDD v0.38):* a name the leaderboard refused (`400`,
+    name refused) is forgotten for the run, so the next *SEND* opens the name entry.
 15. **Requests.** `POST /v1/runs` with `{ game: "shmup", mode: "arcade", version, seed, codec,
     frames, inputs, score, name, country? }`, success `202 Accepted` with the run id and deletion
     token; `GET /v1/runs/{id}` for the status, `404` when the run is unknown or erased;

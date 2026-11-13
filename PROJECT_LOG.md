@@ -6,9 +6,15 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ---
 
-## 2026-11-12
+## 2026-11-13
 
-### Send online screens (3b-1, part of #167)
+### Refused name reopens the name entry: GDD v0.38 (part of #167)
+
+- After *NAME NOT ACCEPTED* the refused name is forgotten for the run and the next *SEND* opens
+  the name entry again (owner, MCDA 470/500; resending the same name 250 or a *CHANGE NAME* row 360
+  rejected). UC9 4a and meta/05 updated; the code lands in 3b-2.
+
+### Send online screens (3b-1, #179 `e5e2dc9`, part of #167)
 
 - The run end now passes by *Send online* when a leaderboard is configured and the run can be
   sent: the offer (score, name and flag, *SEND*, *PRIVACY*, *NOT NOW*, cursor on *NOT NOW*, 20 s
@@ -18,6 +24,10 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   wiring, then closes #167.
 - A French line longer than the field's 30 characters wraps at a space when drawn; the country
   sent is the saved code, none for *NONE*.
+- Review: two adversarial rounds and a verify round; Codex P2 fixed (the name is centred alone
+  when its flag cannot be drawn). Gate attested on `724d326`.
+
+## 2026-11-12
 
 ### WAIT on a busy send or erasure: GDD v0.37 (#178 `439bf45`, closes #177)
 

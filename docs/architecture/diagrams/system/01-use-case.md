@@ -191,7 +191,8 @@ step depends on them.
 - **Extensions**:
   - 1a. Player chooses *Not now*, `back`, or waits 20 s: nothing is sent; on to step 7's exit.
   - 1b. Player chooses *Privacy*: the privacy page opens in a new tab; the offer stays.
-  - 2a. The run did not enter the top 10, or its entry was skipped (`???`): the name entry opens
+  - 2a. The run did not enter the top 10, its entry was skipped (`???`), or *(v0.38)* the
+    leaderboard refused its name (4a): the name entry opens
     first; its name is not added to the local table; *OK* on an empty name or `back` returns to
     the offer.
   - 2b. 20 runs are kept: *Erase an online score first* shows; nothing is sent.
@@ -203,6 +204,8 @@ step depends on them.
     a timeout or *(v0.36)* a `202` whose answer cannot be read: one line names it; the offer
     stays; nothing is kept; no automatic retry. After `409`, offline, a timeout or an unreadable
     `202`, *To erase see privacy* follows (the run may be stored without a token here).
+    *(v0.38)* After *Name not accepted* the name is forgotten: the next *Send* opens the name
+    entry (2a).
   - 4b. *(v0.36)* The run is accepted but the browser storage refuses its token: the status line
     shows, then *To erase see privacy*; *Erase* is not offered for it.
   - 4c. *(v0.36)* Player leaves the screen before the answer: nothing is shown; an accepted run
