@@ -106,7 +106,6 @@ No `docs/architecture/qa/test-plan.md` exists: no JRN rows.
 - ROB-13: N/A, static host without logs; the orchestrator may close it.
 - Send-online screens after a run and the online erase: not exercised (local copy covered only the list, empty state, pagination and failure path).
 - iOS Safari on a real device: not available; WebKit engine on desktop only.
-- `.playwright-mcp/` at the worktree root is an untracked artefact of the browser tool; delete it before committing.
 
 ## Delta vs previous report
 No previous report: fixed 0, still failing 0, new 5 issues.

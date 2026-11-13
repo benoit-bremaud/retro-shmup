@@ -8,11 +8,12 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-11-13
 
-### One storage key per online run: ADR-0032 (part of #175)
+### One storage key per online run: ADR-0032, GDD v0.40 (part of #175)
 
 - Two tabs could drop each other's kept run and deletion token through the single
   `retro-shmup.online.v1` document. ADR-0032 amends ADR-0031 decision 17: one key per run,
-  `StoragePort.keys(prefix)` and `remove(key)`, the 20-run limit counted by keys, no migration.
+  `StoragePort.keys(prefix)` and `remove(key)`, the limit checked at *SEND* only, an accepted run
+  always kept (owner 420/500; refusing its token past 20 370), listed by id, no migration.
   UML then code follow in their own PRs. Blocks enabling the online leaderboard.
 
 ### FULL QA pass of the vertical slice (failed)

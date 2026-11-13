@@ -50,7 +50,11 @@ The forces that shape the decision:
      read(key: string): string | null;        // null: absent or unavailable
      write(key: string, value: string): boolean; // false: persistence unavailable, not an error
    }
+   ```
 
+   *Amended 2026-11-13 by ADR-0032 (#175):* the port also has `keys(prefix)` and `remove(key)`.
+
+   ```ts
    export const SAVE_KEY = 'retro-shmup.v1';
 
    export interface HighScoreEntry {
