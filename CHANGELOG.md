@@ -77,7 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - The canvas no longer jumps while the page loads: it stays hidden until its first fit
-  (Lighthouse CLS 0.126 to 0 on a throttled load, #184).
+  (CLS 0.129 to 0 on a throttled local prod build, #184).
 - A Laser bolt no longer passes through enemies: it stops on the first enemy or boss it touches
   (GDD v0.24 §4.3, #107).
 

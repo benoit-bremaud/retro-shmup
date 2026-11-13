@@ -5,7 +5,7 @@ import main from '../../src/app/main.ts?raw';
 // until it is fitted, so it never jumps on screen (no layout shift, #184); the browser smoke test
 // asserts the canvas is visible after load, which covers both files at runtime.
 describe('canvas first fit (#184)', () => {
-  it('marks the canvas fitted once its size is set', () => {
+  it('marks the canvas fitted in fitToWindow', () => {
     expect(main).toContain("visible.classList.add('fitted')");
   });
 });
