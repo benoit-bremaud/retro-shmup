@@ -220,6 +220,7 @@ function fitToWindow(): void {
   visible.height = viewport.deviceHeight;
   visible.style.width = `${String(viewport.cssWidth)}px`;
   visible.style.height = `${String(viewport.cssHeight)}px`;
+  visible.classList.add('fitted');
   renderer.resize(viewport);
   input.resize(viewport.layout, visible.getBoundingClientRect());
 }
