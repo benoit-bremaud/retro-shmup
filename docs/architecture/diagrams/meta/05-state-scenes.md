@@ -1,11 +1,11 @@
 # State machine diagram — meta — screens and their transitions (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.10 §3.2, §3.4, v0.26 §9.1 (country choice, feedback offer), v0.35 §9.1 *Send online* and §9.3 *Online scores*, v0.37 §9.1, §9.3 (*WAIT*), v0.38 §9.1 (refused name), v0.39 §9.3 (*Online scores* pages),
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.10 §3.2, §3.4, v0.26 §9.1 (country choice, feedback offer), v0.35 §9.1 *Send online* and §9.3 *Online scores*, v0.37 §9.1, §9.3 (*WAIT*), v0.38 §9.1 (refused name), v0.39 §9.3 (*Online scores* pages), v0.40 §9.1, §9.3 (kept runs past 20),
 > §4.2, §4.3–§4.6, §5.2.1, §6, §7.2.1, §7.2.2, §7.3, §8, §9.1, §9.2, §9.3, §9.4, §9.7; v0.13 §9.1 menus, §9.3 options layout
 > **Related ADRs**: ADR-0006 (save document), ADR-0009 (gestures, automatic pause), ADR-0010
 > (one run, one bus), ADR-0015 (pause in the first playable), ADR-0018 (taps, locks, pause button),
 > ADR-0019 (run seed, player-kit build order), ADR-0020 (pointer fire, autofire option), ADR-0021 (hall of fame entry), ADR-0022 (level
-> brick, `Results`, the one-level slice), ADR-0031 (online runs, v0.35)
+> brick, `Results`, the one-level slice), ADR-0031 (online runs, v0.35), ADR-0032 (one key per run, v0.40)
 > **Realizes**: UC1–UC10 of [01-use-case](../system/01-use-case.md) at the screen level; the
 > `SceneMachine` component of [03-component](../system/03-component.md)
 
@@ -111,14 +111,14 @@ stateDiagram-v2
   OnlineOffer --> AfterOnline : [otherwise]
   SendOnline --> AfterOnline : not now, back or after(20 s without input)
   SendOnline --> SendOnline : privacy / open the privacy page in a new tab
-  SendOnline --> SendOnline : send [20 runs kept] / show the erase-first line
+  SendOnline --> SendOnline : send [20 or more kept] / show the erase-first line
   SendOnline --> SendOnline : send [a name, fewer than 20 kept, another send or erasure under way] / show WAIT
   SendOnline --> OnlineName : send [no usable name this run, fewer than 20 kept]
   OnlineName --> SendOnline : back [name empty], OK on an empty name, or SKIP
-  OnlineName --> SendOnline : OK [name not empty, 20 runs kept] / show the erase-first line
+  OnlineName --> SendOnline : OK [name not empty, 20 or more kept] / show the erase-first line
   SendOnline --> OnlineGesture : privacy [from a gamepad]
   OnlineGesture --> SendOnline : click, tap or key [opening the privacy page] / open it, or back
-  OnlineStatus --> AfterOnline : 404 on the status / drop the run
+  OnlineStatus --> AfterOnline : 404 on the status / remove the run's key
   OnlineName --> SendOnline : OK [name not empty, another send or erasure under way] / show WAIT
   OnlineName --> OnlineStatus : OK [name not empty, none under way] / submit the run
   SendOnline --> OnlineStatus : send [a name, fewer than 20 kept, none under way] / submit the run
@@ -128,16 +128,16 @@ stateDiagram-v2
   OnlineStatus --> AfterOnline : OK
   OnlineStatus --> OnlineStatus : erase, confirmed [run kept, another under way] / show WAIT
   OnlineStatus --> AfterOnline : erase, confirmed [run gone] / nothing sent
-  OnlineStatus --> AfterOnline : erase, confirmed, then 204 or 404 / drop the run
+  OnlineStatus --> AfterOnline : erase, confirmed, then 204 or 404 / remove the run's key
   OnlineStatus --> OnlineStatus : erase, confirmed, then failed / show the error line
   AfterOnline --> FeedbackOffer : [form address set]
   AfterOnline --> Title : [no form address]
   Options --> OnlineScores : online scores [feature present] / ask each kept run's status
-  OnlineScores --> OnlineScores : 404 on a status / drop the run
+  OnlineScores --> OnlineScores : 404 on a status / remove the run's key
   OnlineScores --> OnlineScores : erase, confirmed [run kept, another under way] / show WAIT, erase nothing
-  OnlineScores --> OnlineScores : erase, confirmed [none under way] / erase the run, drop it on 204 or 404
+  OnlineScores --> OnlineScores : erase, confirmed [none under way] / erase the run, remove its key on 204 or 404
   OnlineScores --> OnlineScores : erase, confirmed, then failed / show the error line
-  OnlineScores --> OnlineScores : next or prev / show the other page
+  OnlineScores --> OnlineScores : next or prev / show the next or previous page
   OnlineScores --> Options : back
   FeedbackOffer --> Title : give feedback / open the form, count + 1
   FeedbackOffer --> Title : later, back or after(20 s)
@@ -182,7 +182,7 @@ stateDiagram-v2
   the `OnlineOffer` choice after the hall of fame; without a release build, a leaderboard address
   or a sendable run (ended by Game over or cleared, score above 0, recording not overflowed) it
   passes straight to the former targets, so builds without the feature behave as in v0.34.
-  `send` with 20 runs kept stays on `Send online` with the erase-first line; a usable name is the
+  `send` with 20 or more runs kept stays on `Send online` with the erase-first line; a usable name is the
   name entered for this run, never `???`, and *(v0.38)* not a name the leaderboard refused.
   `Name entry (online)` is the name entry's screen whose result is not added to the local table.
   `Online status` shows *Sending*, then *Pending verification* and the verdict; the poll stops
@@ -197,6 +197,10 @@ stateDiagram-v2
   choosing a run opens the erase confirmation (*No* first). It is reached from the title's
   `Options` only, never from `PauseOptions`. A drop keeps the highlight on its run, and the
   view follows that run's page.
+- **v0.40 (GDD §9.1, §9.3, ADR-0032, #175)**: each kept run has its own storage key; `send` with
+  20 or more kept shows the erase-first line. Past 20 kept runs the pages go on: page 1 shows 10,
+  a page with both *PREV* and *NEXT* 9, the last page up to 10; any page past the first left
+  without runs closes to the page before.
 - **Built (#167, 3b-1)**: the `erase, confirmed` transitions pass by an erase confirmation,
   *No* first, as `Confirm quit` (scene `OnlineErase`); the privacy page's gesture prompt is its own
   scene (`OnlineGesture`) that returns to `Send online`. A failed erasure stays on `Online status`

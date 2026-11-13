@@ -1,9 +1,9 @@
-# Sequence diagram — meta — send a run online and erase it (v0.35)
+# Sequence diagram — meta — send a run online and erase it (v0.40)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.35, v0.36, v0.37 §9.1
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.35, v0.36, v0.37, v0.40 §9.1
 > (*Send online*, send errors #173, *WAIT* #177), §9.3 (*Online scores*), §9.8
 > **Related ADRs**: ADR-0006 (untrusted stored data), ADR-0027 (new-tab gesture rule), ADR-0031
-> (recording, codec, sending, kept runs); retro-leaderboard ADR-0001, ADR-0003, ADR-0004
+> (recording, codec, sending, kept runs), ADR-0032 (one key per run); retro-leaderboard ADR-0001, ADR-0003, ADR-0004
 > **Realizes**: UC9 and UC10 of [01-use-case](../system/01-use-case.md); the online states of
 > [05-state-scenes](05-state-scenes.md)
 
@@ -24,13 +24,14 @@ sequenceDiagram
   participant Rec as RunRecorder
   participant Online as OnlineRuns
   participant Port as LeaderboardPort (fetch adapter)
+  participant Keys as KeptRunKeys
   participant Store as StoragePort
   participant LB as Online leaderboard
 
   Note over Scenes: run end, after the hall of fame, OnlineOffer guard holds
   Scenes->>Online: offer(run result)
   Player->>Scenes: SEND
-  alt 20 runs kept
+  alt 20 or more runs kept
     Online-->>Scenes: full (erase an online score first)
   else another send or erasure under way (v0.37)
     Online-->>Scenes: busy (WAIT), nothing sent
@@ -44,7 +45,8 @@ sequenceDiagram
     alt 202
       LB-->>Port: {id, deletionToken}
       Port-->>Online: handle done: id, token (parsed by allowlist)
-      Online->>Store: write retro-shmup.online.v1 (id, token, score, sentAt, pending)
+      Online->>Keys: keepRun(run), no limit check (ADR-0032)
+      Keys->>Store: write retro-shmup.online.v1.<id> (token, score, sentAt, pending)
       opt the storage refuses the write
         Online-->>Scenes: status line and TO ERASE SEE PRIVACY, no ERASE row
       end
@@ -52,9 +54,17 @@ sequenceDiagram
         Online->>Port: status(id)
         Port->>LB: GET /v1/runs/{id}
         LB-->>Port: {status}, or 404
-        Port-->>Online: status, or unknown (the item is dropped)
+        Port-->>Online: status, or unknown
       end
-      Online->>Store: write the last status
+      opt unknown
+        Online->>Keys: forgetRun(id)
+        Keys->>Store: remove retro-shmup.online.v1.<id>
+      end
+      Online->>Keys: restatusRun(id, last status)
+      Keys->>Store: read retro-shmup.online.v1.<id>
+      opt the key still holds a valid run (ADR-0032 decision 5)
+        Keys->>Store: rewrite it with the last status
+      end
     else 202 with an unreadable body
       Port-->>Online: handle failed: accepted-unreadable
       Online-->>Scenes: error line and TO ERASE SEE PRIVACY
@@ -76,10 +86,11 @@ sequenceDiagram
       Port->>LB: DELETE /v1/runs/{id} (Authorization: Bearer token)
       alt 204 or 404
         Port-->>Online: erased
-        Online->>Store: drop the item
+        Online->>Keys: forgetRun(id)
+        Keys->>Store: remove retro-shmup.online.v1.<id>
       else offline or server error
         Port-->>Online: failed
-        Online-->>Scenes: error line, the item stays
+        Online-->>Scenes: error line, its key stays
       end
     end
   end
