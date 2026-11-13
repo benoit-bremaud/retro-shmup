@@ -97,6 +97,33 @@ export const MESSAGES = {
   openBlocked: { en: 'OPEN BLOCKED', fr: 'OUVERTURE BLOQUEE' },
   /** The gesture prompt: a gamepad cannot open a tab, a tap, click or key can (ADR-0009). */
   gesturePrompt: { en: 'TAP OR PRESS A KEY', fr: 'TOUCHE OU APPUIE' },
+  /**
+   * *Send online* (GDD v0.35–v0.37 §9.1). A text longer than the field's 30 menu-font characters
+   * is wrapped at a space when drawn.
+   */
+  sendOnline: { en: 'SEND ONLINE', fr: 'ENVOYER EN LIGNE' },
+  inputsSent: { en: 'INPUTS SENT FOR CHECKING', fr: 'COMMANDES ENVOYEES POUR VERIFIER' },
+  retention: { en: 'RETENTION IN PRIVACY', fr: 'DUREES DANS CONFIDENTIALITE' },
+  send: { en: 'SEND', fr: 'ENVOYER' },
+  privacy: { en: 'PRIVACY', fr: 'CONFIDENTIALITE' },
+  notNow: { en: 'NOT NOW', fr: 'PAS MAINTENANT' },
+  sending: { en: 'SENDING', fr: 'ENVOI' },
+  pending: { en: 'PENDING VERIFICATION', fr: 'VERIFICATION EN COURS' },
+  verified: { en: 'VERIFIED', fr: 'VERIFIE' },
+  rejected: { en: 'REJECTED', fr: 'REFUSE' },
+  unverifiable: { en: 'UNVERIFIABLE', fr: 'INVERIFIABLE' },
+  expired: { en: 'EXPIRED', fr: 'EXPIRE' },
+  erase: { en: 'ERASE', fr: 'EFFACER' },
+  offline: { en: 'OFFLINE', fr: 'HORS LIGNE' },
+  alreadySent: { en: 'ALREADY SENT', fr: 'DEJA ENVOYE' },
+  versionRefused: { en: 'VERSION NOT ACCEPTED', fr: 'VERSION NON ACCEPTEE' },
+  nameRefused: { en: 'NAME NOT ACCEPTED', fr: 'NOM REFUSE' },
+  runTooLong: { en: 'RUN TOO LONG TO SEND', fr: 'PARTIE TROP LONGUE' },
+  tooManyTries: { en: 'TOO MANY TRIES WAIT', fr: 'TROP D ESSAIS ATTENDS' },
+  serverError: { en: 'SERVER ERROR', fr: 'ERREUR SERVEUR' },
+  toErase: { en: 'TO ERASE SEE PRIVACY', fr: 'POUR EFFACER VOIR CONFIDENTIALITE' },
+  eraseFirst: { en: 'ERASE AN ONLINE SCORE FIRST', fr: 'EFFACE D ABORD UN SCORE EN LIGNE' },
+  wait: { en: 'WAIT', fr: 'ATTENDS' },
   /** A language is always named in itself (GDD v0.14 §9.1). */
   english: { en: 'ENGLISH', fr: 'ENGLISH' },
   francais: { en: 'FRANCAIS', fr: 'FRANCAIS' },

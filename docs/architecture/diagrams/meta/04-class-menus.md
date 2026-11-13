@@ -136,11 +136,13 @@ classDiagram
     -screenOf(scene) MenuScene | undefined
   }
   class FeedbackFlow {
+    +constructor(settings, address = feedbackUrl)
     +enabled: boolean
     +blocked: boolean, 2 s after a refused tab
     +step(at: ArmedAt, context) LinkOutcome
     +disarm() void
     +block() void
+    +unblock() void
   }
   class LinkPort {
     <<interface>>
@@ -315,7 +317,7 @@ classDiagram
   LocalStorageStore ..|> StoragePort
   SceneHost ..> SaveStore : composition root
   SceneHost ..> InputPort : composition root
-  SceneMachine --> FeedbackFlow : title row, offer, gesture prompt
+  SceneMachine --> "2" FeedbackFlow : feedback form; privacy page (address as is)
   FeedbackFlow --> LinkPort : arms the row's band and keys, ADR-0027
 ```
 

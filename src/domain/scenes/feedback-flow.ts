@@ -24,19 +24,25 @@ export interface FeedbackSettings {
 
 export const NO_FEEDBACK: FeedbackSettings = { form: '', version: '', link: NO_LINK };
 
+/** Builds the address opened from the page `form` and the context read on an arming. */
+export type LinkAddress = (form: string, context: FeedbackContext) => string;
+
 /**
- * The feedback form's opening (GDD v0.26 §9.1, ADR-0027 decisions 2 to 5): arms the link while a
- * feedback row is highlighted, so the adapter can open it inside the gesture's handler, and keeps
- * *OPEN BLOCKED* on screen for 2 s after a refusal. The address is built on an arming only.
+ * A page opened in a new tab (GDD v0.26 §9.1, ADR-0027 decisions 2 to 5): arms the link while its
+ * row is highlighted, so the adapter can open it inside the gesture's handler, and keeps *OPEN
+ * BLOCKED* on screen for 2 s after a refusal. The address is built on an arming only. The
+ * feedback form by default; the leaderboard's privacy page passes its page as is (GDD v0.35).
  */
 export class FeedbackFlow {
   private readonly settings: FeedbackSettings;
+  private readonly address: LinkAddress;
   private armed: ArmedAt | undefined;
   private url = '';
   private blockedLeft = 0;
 
-  constructor(settings: FeedbackSettings) {
+  constructor(settings: FeedbackSettings, address: LinkAddress = feedbackUrl) {
     this.settings = settings;
+    this.address = address;
   }
 
   /** False in a build without a form address: no *Feedback* row, no offer. */
@@ -59,7 +65,7 @@ export class FeedbackFlow {
     if (this.blockedLeft > 0) this.blockedLeft -= 1;
     if (at === undefined) this.disarm();
     else if (at !== this.armed) {
-      if (this.armed === undefined) this.url = feedbackUrl(this.settings.form, context());
+      if (this.armed === undefined) this.url = this.address(this.settings.form, context());
       this.armed = at;
       this.settings.link.arm({ url: this.url, band: at.band, keys: at.keys });
     }
@@ -85,5 +91,10 @@ export class FeedbackFlow {
   /** The browser refused the tab: *OPEN BLOCKED* for 2 s. */
   block(): void {
     this.blockedLeft = BLOCKED_STEPS;
+  }
+
+  /** The screen that showed *OPEN BLOCKED* was left: the line goes with it. */
+  unblock(): void {
+    this.blockedLeft = 0;
   }
 }

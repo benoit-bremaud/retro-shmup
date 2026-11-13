@@ -8,7 +8,9 @@ import type { RunView, Simulation } from '../game/run';
 import { ResultsTuning, SceneTuning, STEP_SECONDS, toSteps } from '../game/tuning';
 import { Button, createIntentFrame } from '../ports/input-port';
 import type { IntentFrame } from '../ports/input-port';
-import type { LinkOutcome } from '../ports/link-port';
+import type { LinkOutcome, LinkPort } from '../ports/link-port';
+import { failureLine, statusLine } from '../online/online-lines';
+import type { OnlineRuns, OnlineState, RunResult } from '../online/online-runs';
 import type { RenderPort } from '../ports/render-port';
 import { quantizeIntent } from '../replay/record';
 import { RunRecorder } from '../replay/run-recorder';
@@ -26,6 +28,7 @@ import {
   drawHighScores,
   drawMenuScreen,
   drawNameEntry,
+  drawSendOnline,
   drawStatusLine,
   drawVeil,
   drawWarning,
@@ -38,7 +41,11 @@ import type { Options, RowValue, VolumeRow } from '../options';
 import { ChampionName } from '../presentation/champion-name';
 import { STARFIELD_LAYERS } from '../presentation/starfield';
 import type { Starfield } from '../presentation/starfield';
-import { MENU_HEADER_GAP, MENU_ROW_HEIGHT } from '../presentation/menu-layout';
+import {
+  MENU_HEADER_GAP,
+  MENU_ROW_HEIGHT,
+  SEND_ONLINE_HEADER_GAP,
+} from '../presentation/menu-layout';
 import type { MenuScreen } from '../presentation/menu-layout';
 import { HighScoreTable } from '../hall-of-fame/high-scores';
 import type { HighScoreEntry } from '../hall-of-fame/high-scores';
@@ -49,6 +56,7 @@ import { CountryChoice } from './country-choice';
 import { ANY_GESTURE, FeedbackFlow, NO_FEEDBACK } from './feedback-flow';
 import type { ArmedAt, FeedbackSettings } from './feedback-flow';
 import { NameEntry } from './name-entry';
+import { COUNTRY_CODES } from '../hall-of-fame/country-codes';
 import { NO_HOST } from './scene-host';
 import type { SceneHost } from './scene-host';
 import type { OpenableMenu } from './menu';
@@ -89,6 +97,15 @@ export const Scene = {
   /** The feedback offer after a run end, and the gesture prompt a gamepad opens it through. */
   FeedbackOffer: 'FEEDBACK_OFFER',
   FeedbackGesture: 'FEEDBACK_GESTURE',
+  /**
+   * *Send online* (GDD v0.35–v0.37 §9.1): the offer, its name entry, the sent run's status, the
+   * erase confirmation and the gesture prompt of the privacy page.
+   */
+  SendOnline: 'SEND_ONLINE',
+  OnlineName: 'ONLINE_NAME',
+  OnlineStatus: 'ONLINE_STATUS',
+  OnlineErase: 'ONLINE_ERASE',
+  OnlineGesture: 'ONLINE_GESTURE',
 } as const;
 export type Scene = (typeof Scene)[keyof typeof Scene];
 
@@ -110,6 +127,16 @@ export interface SceneOutputs {
   readonly audio?: AudioPort;
   /** The feedback form (GDD v0.26 §9.1); off by default. */
   readonly feedback?: FeedbackSettings;
+  /** The online leaderboard (GDD v0.35 §9.1); absent outside a release build on the final origin. */
+  readonly online?: OnlineSettings;
+}
+
+/** The online leaderboard's runs and its privacy page, opened through the feedback's link. */
+export interface OnlineSettings {
+  readonly runs: OnlineRuns;
+  /** The privacy page's address. */
+  readonly privacy: string;
+  readonly link: LinkPort;
 }
 
 /** What differs between scenes for drawing, read by `render`. */
@@ -156,6 +183,11 @@ const SCENE_TRAITS: Readonly<Record<Scene, SceneTraits>> = {
   [Scene.PauseCountry]: { frozen: true, scrolls: false, drawsRun: true, pauseButton: false },
   [Scene.FeedbackOffer]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
   [Scene.FeedbackGesture]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
+  [Scene.SendOnline]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
+  [Scene.OnlineName]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
+  [Scene.OnlineStatus]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
+  [Scene.OnlineErase]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
+  [Scene.OnlineGesture]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
 };
 
 /** Where each options scene's Back and sub-screen lead (meta/05-state-scenes). */
@@ -241,6 +273,11 @@ const SCENE_MUSIC: Readonly<Record<Scene, Track | 'run'>> = {
   [Scene.PauseCountry]: 'run',
   [Scene.FeedbackOffer]: Track.Title,
   [Scene.FeedbackGesture]: Track.Title,
+  [Scene.SendOnline]: Track.Title,
+  [Scene.OnlineName]: Track.Title,
+  [Scene.OnlineStatus]: Track.Title,
+  [Scene.OnlineErase]: Track.Title,
+  [Scene.OnlineGesture]: Track.Title,
 };
 
 const COUNT_IN_STEPS = toSteps(SceneTuning.countInSeconds);
@@ -256,6 +293,28 @@ const ATTRACT_IDLE_STEPS = toSteps(SceneTuning.attractIdleSeconds);
 const ATTRACT_STEPS = toSteps(SceneTuning.attractSeconds);
 /** The feedback offer leaves after 20 s without input (GDD v0.26 §9.1). */
 const OFFER_IDLE_STEPS = toSteps(SceneTuning.feedbackOfferIdleSeconds);
+/** The rows of the *Send online* offer and of the sent run's status. */
+type SendRow = 'send' | 'privacy' | 'notNow' | 'ok' | 'erase';
+
+/** The offer's two lines (GDD v0.35 §9.1) and the notices, built once. */
+const OFFER_INFO: readonly MessageKey[] = ['inputsSent', 'retention'];
+const NO_LINES: readonly MessageKey[] = [];
+const WAIT_LINE: readonly MessageKey[] = ['wait'];
+const ERASE_FIRST_LINE: readonly MessageKey[] = ['eraseFirst'];
+const TO_ERASE_LINE: readonly MessageKey[] = ['toErase'];
+/** One line, or a line and *TO ERASE SEE PRIVACY*, per catalogue key: built once each. */
+const ONE_LINE = new Map<MessageKey, readonly MessageKey[]>();
+const LOST_LINES = new Map<MessageKey, readonly MessageKey[]>();
+
+function lines(key: MessageKey, tokenMaybeLost = false): readonly MessageKey[] {
+  const cache = tokenMaybeLost ? LOST_LINES : ONE_LINE;
+  const known = cache.get(key);
+  if (known !== undefined) return known;
+  const built: readonly MessageKey[] = tokenMaybeLost ? [key, 'toErase'] : [key];
+  cache.set(key, built);
+  return built;
+}
+
 /** The vertical slice has one level; the run snapshot gains its level with level 2. */
 const SLICE_LEVEL = 1;
 
@@ -356,6 +415,44 @@ export class SceneMachine {
   private readonly feedbackVersion: string;
   /** The last run's score and level, sent with the form; 0 and 1 before any run (§9.1). */
   private lastScore = 0;
+  /** How the last run ended and the name entered for it, `''` when skipped or not asked. */
+  private lastOutcome: RunResult['outcome'] = 'game-over';
+  private runName = '';
+  private readonly online: OnlineRuns | undefined;
+  /** The privacy page, opened as the feedback form is (GDD v0.35 §9.1). */
+  private readonly privacy: FeedbackFlow;
+  private readonly sendMenu = new Menu<SendRow>(['send', 'privacy', 'notNow'], {
+    headerGap: SEND_ONLINE_HEADER_GAP,
+  });
+  private readonly privacyArmings = rowArmings(this.sendMenu, 1);
+  private readonly statusMenu = new Menu<SendRow>(['ok', 'erase'], {
+    headerGap: SEND_ONLINE_HEADER_GAP,
+  });
+  /** A run stored without a token in this browser offers no *ERASE* (GDD v0.36 §9.1). */
+  private readonly statusOkMenu = new Menu<SendRow>(['ok'], { headerGap: SEND_ONLINE_HEADER_GAP });
+  private readonly eraseMenu = new Menu(['no', 'yes'] as const, {
+    headerGap: MENU_HEADER_GAP.menu,
+  });
+  /** What the *Send online* screens show, changed on a transition only. */
+  private readonly sendView: {
+    menu: Menu<SendRow>;
+    score: string;
+    nameLine: string;
+    flag: string;
+    info: readonly MessageKey[];
+    notice: readonly MessageKey[];
+  } = {
+    menu: this.sendMenu,
+    score: '',
+    nameLine: '',
+    flag: '',
+    info: OFFER_INFO,
+    notice: NO_LINES,
+  };
+  /** The online state the status screen last showed, compared by identity. */
+  private shownState: OnlineState | undefined;
+  /** The sent run being erased, until it leaves the kept runs or its erasure fails. */
+  private erasingId: string | undefined;
   /** The high scores were reached from a run end, so they lead to the feedback offer. */
   private highScoresAfterRun = false;
   private readonly pauseMenu = new Menu(['resume', 'options', 'quit'] as const, {
@@ -406,6 +503,7 @@ export class SceneMachine {
       header: { key: 'yourOpinion', font: 'title' },
       note: 'quickQuestions',
     },
+    [Scene.OnlineErase]: { menu: this.eraseMenu, header: { key: 'erase', font: 'menu' } },
     [Scene.Paused]: { menu: this.pauseMenu, header: { key: 'pause', font: 'title' } },
     [Scene.ConfirmQuit]: { menu: this.quitMenu, header: { key: 'quitQuestion', font: 'menu' } },
     [Scene.TitleOptions]: this.optionsScreen(),
@@ -458,6 +556,13 @@ export class SceneMachine {
     this.options = new LiveOptions(options);
     this.feedback = new FeedbackFlow(outputs.feedback ?? NO_FEEDBACK);
     this.feedbackVersion = outputs.feedback?.version ?? '';
+    this.online = outputs.online?.runs;
+    this.privacy = new FeedbackFlow(
+      outputs.online === undefined
+        ? NO_FEEDBACK
+        : { form: outputs.online.privacy, version: '', link: outputs.online.link },
+      (form) => form,
+    );
     this.titleMenu = new Menu<TitleRow>(
       this.feedback.enabled
         ? ['play', 'highScores', 'options', 'feedback']
@@ -488,6 +593,23 @@ export class SceneMachine {
       },
       [Scene.FeedbackGesture]: {
         step: this.stepFeedbackGesture.bind(this),
+        overlay: this.overlayGesture.bind(this),
+      },
+      [Scene.SendOnline]: {
+        step: this.stepSendOnline.bind(this),
+        overlay: this.overlaySendOnline.bind(this),
+      },
+      [Scene.OnlineName]: {
+        step: this.stepOnlineName.bind(this),
+        overlay: this.overlayNameEntry.bind(this),
+      },
+      [Scene.OnlineStatus]: {
+        step: this.stepOnlineStatus.bind(this),
+        overlay: this.overlaySendOnline.bind(this),
+      },
+      [Scene.OnlineErase]: { step: this.stepOnlineErase.bind(this), overlay: menu },
+      [Scene.OnlineGesture]: {
+        step: this.stepOnlineGesture.bind(this),
         overlay: this.overlayGesture.bind(this),
       },
       [Scene.Playing]: { step: this.stepPlaying.bind(this), overlay: NO_OVERLAY },
@@ -616,6 +738,8 @@ export class SceneMachine {
     this.steps += 1;
     // The form's address names the device: a new one re-arms it with a fresh context (ADR-0027).
     if (frame.device !== this.lastDevice) this.feedback.refresh();
+    // A send or erasure goes on whatever the screen; its answer is read once per step.
+    this.online?.step();
     this.lastDevice = frame.device;
     this.handlers[this.current].step(dt, frame);
     this.audio.music(this.track());
@@ -698,10 +822,244 @@ export class SceneMachine {
   }
 
   /**
-   * After a run end (GDD v0.26 §9.1): the feedback offer when the build holds a form address,
-   * else the title; the run is released either way.
+   * After a run end (GDD v0.35 §9.1): *Send online* when the run can be sent, else straight on to
+   * what follows it. The run is released; its recording stays until the next run.
    */
   private afterRun(frame: Readonly<IntentFrame>): void {
+    this.releaseRun();
+    const result = {
+      outcome: this.lastOutcome,
+      sendable: this.recorder.sendable(),
+      score: this.lastScore,
+    };
+    if (this.online?.offer(result) !== true) {
+      this.afterOnline(frame);
+      return;
+    }
+    this.sendView.score = String(this.lastScore);
+    this.showName();
+    this.openSendOnline(frame, NO_LINES);
+    this.lockLeft = LOCK_STEPS; // as on the feedback offer: hammering Confirm never sends
+  }
+
+  /** The leaderboard's runs: the send screens open only when the build has the leaderboard. */
+  private runs(): OnlineRuns {
+    if (this.online === undefined) throw new Error('send screens without a leaderboard');
+    return this.online;
+  }
+
+  /** The saved country when it is a known code: *NONE* sends none (GDD v0.35 §9.1). */
+  private sentCountry(): string | undefined {
+    const country = this.options.country;
+    return country !== undefined && COUNTRY_CODES.has(country) ? country : undefined;
+  }
+
+  /** The name and the country's flag that would be sent, built when the name changes. */
+  private showName(): void {
+    const country = this.sentCountry();
+    this.sendView.flag = country ?? '';
+    if (this.runName === '') this.sendView.nameLine = '';
+    else
+      this.sendView.nameLine = country === undefined ? this.runName : `${this.runName} ${country}`;
+  }
+
+  private openSendOnline(frame: Readonly<IntentFrame>, notice: readonly MessageKey[]): void {
+    this.enter(Scene.SendOnline);
+    this.sendMenu.reset(this.steps, frame);
+    this.sendMenu.highlighted = this.sendMenu.rows.indexOf('notNow');
+    this.sendView.menu = this.sendMenu;
+    this.sendView.info = OFFER_INFO;
+    this.sendView.notice = notice;
+  }
+
+  // Send, Privacy and Not now; Not now, back or 20 s without input go on. Pause is ignored.
+  private stepSendOnline(_dt: number, frame: Readonly<IntentFrame>): void {
+    this.sceneSteps = frame.active ? 0 : this.sceneSteps + 1;
+    if (this.locked()) {
+      this.sendMenu.ignore(frame);
+      this.privacy.disarm();
+      return;
+    }
+    const onPrivacy = this.sendMenu.highlighted === 1 ? 1 : 0;
+    const outcome = this.privacy.step(this.privacyArmings[onPrivacy], this.feedbackContext);
+    const row = this.stepMenu(this.sendMenu, frame);
+    if (row === 'privacy' || outcome === 'opened') {
+      if (outcome === 'opened') this.privacy.disarm();
+      else if (outcome === 'refused') this.privacy.block();
+      else this.enter(Scene.OnlineGesture);
+    } else if (row === 'send') {
+      this.trySend(frame);
+    } else if (row === 'notNow' || this.backed(frame) || this.sceneSteps >= OFFER_IDLE_STEPS) {
+      this.afterOnline(frame);
+    }
+  }
+
+  // A gamepad opens the privacy page through the next tap, click or key; back returns too.
+  private stepOnlineGesture(_dt: number, frame: Readonly<IntentFrame>): void {
+    const outcome = this.privacy.step(ANY_GESTURE, this.feedbackContext);
+    if (outcome === 'none' && !this.backed(frame)) return;
+    this.openSendOnline(frame, this.sendView.notice);
+    if (outcome === 'refused') this.privacy.block();
+  }
+
+  /** *SEND*: the erase-first line with 20 runs kept, else the name entry first when none is usable. */
+  private trySend(frame: Readonly<IntentFrame>): void {
+    if (this.runs().full()) {
+      this.sendView.notice = ERASE_FIRST_LINE;
+    } else if (this.runName === '') {
+      this.enter(Scene.OnlineName);
+      this.nameEntry.open(this.steps, frame, this.lastScore, this.options.country);
+    } else {
+      this.submit(frame);
+    }
+  }
+
+  /** Sends the run, or shows why not on the offer (GDD v0.37: *WAIT* while another is under way). */
+  private submit(frame: Readonly<IntentFrame>): void {
+    const recorder = this.recorder;
+    const country = this.sentCountry();
+    const result = this.runs().send({
+      seed: recorder.seed(),
+      records: recorder.records(),
+      frames: recorder.frames(),
+      score: this.lastScore,
+      name: this.runName,
+      ...(country === undefined ? {} : { country }),
+    });
+    if (result === 'sending') {
+      this.openOnlineStatus(frame, NO_LINES);
+      return;
+    }
+    const notice = result === 'full' ? ERASE_FIRST_LINE : WAIT_LINE;
+    if (this.current === Scene.SendOnline) this.sendView.notice = notice;
+    else this.openSendOnline(frame, notice);
+  }
+
+  // The name entry of a run without a usable name: OK sends it (never added to the local table);
+  // SKIP, OK on an empty name, or back on an empty name return to the offer.
+  private stepOnlineName(_dt: number, frame: Readonly<IntentFrame>): void {
+    if (this.backed(frame) && this.nameEntry.nextSlot === 0) {
+      this.openSendOnline(frame, NO_LINES);
+      return;
+    }
+    const cursor = this.nameEntry.grid.cursor;
+    const filled = this.nameEntry.nextSlot;
+    const exit = this.nameEntry.step(frame, this.steps);
+    if (exit !== undefined || this.nameEntry.nextSlot !== filled) this.audio.play(Sfx.MenuConfirm);
+    else if (this.nameEntry.grid.cursor !== cursor) this.audio.play(Sfx.MenuMove);
+    if (exit === 'skipped') {
+      this.openSendOnline(frame, NO_LINES);
+    } else if (exit === 'entered') {
+      this.runName = this.nameEntry.name;
+      this.showName();
+      this.submit(frame);
+    }
+  }
+
+  private openOnlineStatus(frame: Readonly<IntentFrame>, notice: readonly MessageKey[]): void {
+    this.enter(Scene.OnlineStatus);
+    this.privacy.unblock();
+    this.lockLeft = LOCK_STEPS; // a hurried second Confirm never skips the answer
+    this.shownState = undefined;
+    this.sendView.notice = notice;
+    this.showOnlineState(frame);
+  }
+
+  // The status follows the send's answer and the verdict; OK goes on, ERASE asks first.
+  private stepOnlineStatus(_dt: number, frame: Readonly<IntentFrame>): void {
+    if (!this.showOnlineState(frame)) return;
+    if (this.erasingId !== undefined && this.settledErase(this.erasingId, frame)) return;
+    if (this.locked()) {
+      this.sendView.menu.ignore(frame);
+      return;
+    }
+    const row = this.stepMenu(this.sendView.menu, frame);
+    if (row === 'ok') this.afterOnline(frame);
+    else if (row === 'erase') this.openMenu(Scene.OnlineErase, frame);
+  }
+
+  /**
+   * Shows a new online state on its transition only: a failed send returns to the offer with its
+   * line, a run gone from the leaderboard goes on. False when the screen was left.
+   */
+  private showOnlineState(frame: Readonly<IntentFrame>): boolean {
+    const state = this.runs().state();
+    if (state === this.shownState) return true;
+    this.shownState = state;
+    switch (state.phase) {
+      case 'failed':
+        this.openSendOnline(frame, lines(failureLine(state.error), state.tokenMaybeLost));
+        return false;
+      case 'idle':
+        this.afterOnline(frame);
+        return false;
+      case 'sending':
+        this.sendView.info = lines('sending');
+        this.useStatusMenu(this.statusOkMenu, frame);
+        return true;
+      case 'sent':
+        this.sendView.info = lines(statusLine(state.status));
+        if (state.tokenMaybeLost) this.sendView.notice = TO_ERASE_LINE;
+        this.useStatusMenu(state.tokenMaybeLost ? this.statusOkMenu : this.statusMenu, frame);
+        return true;
+    }
+  }
+
+  private useStatusMenu(menu: Menu<SendRow>, frame: Readonly<IntentFrame>): void {
+    if (this.sendView.menu === menu) return;
+    this.sendView.menu = menu;
+    menu.reset(this.steps, frame);
+  }
+
+  /** The erasure under way ended: gone from the kept runs goes on, a failure shows its line. */
+  private settledErase(id: string, frame: Readonly<IntentFrame>): boolean {
+    const online = this.runs();
+    const error = online.eraseError();
+    if (error !== undefined) {
+      this.erasingId = undefined;
+      this.sendView.notice = lines(failureLine(error));
+      return false;
+    }
+    if (online.keeps(id)) return false;
+    this.erasingId = undefined;
+    this.afterOnline(frame);
+    return true;
+  }
+
+  // No is first, so a hurried Confirm never erases; Yes erases the sent run (GDD v0.37: WAIT while
+  // another request is under way, on to the feedback offer when the run is already gone).
+  private stepOnlineErase(_dt: number, frame: Readonly<IntentFrame>): void {
+    const row = this.stepMenu(this.eraseMenu, frame);
+    if (row === 'yes') {
+      const state = this.runs().state();
+      const id = state.phase === 'sent' ? state.id : '';
+      const result = this.runs().erase(id);
+      if (result === 'gone') {
+        this.afterOnline(frame);
+        return;
+      }
+      if (result === 'erasing') this.erasingId = id;
+      // A new erasure clears the last line; WAIT keeps the one under way.
+      this.backToStatus(frame, result === 'busy' ? WAIT_LINE : NO_LINES);
+    } else if (row === 'no' || this.backed(frame)) {
+      this.backToStatus(frame, this.sendView.notice);
+    }
+  }
+
+  private backToStatus(frame: Readonly<IntentFrame>, notice: readonly MessageKey[]): void {
+    this.enter(Scene.OnlineStatus);
+    this.sendView.menu.reset(this.steps, frame);
+    this.sendView.notice = notice;
+  }
+
+  /**
+   * After *Send online* (GDD v0.26 §9.1): the feedback offer when the build holds a form address,
+   * else the title; the run is released either way. A request under way goes on, unreported.
+   */
+  private afterOnline(frame: Readonly<IntentFrame>): void {
+    this.online?.leave();
+    this.erasingId = undefined;
+    this.privacy.unblock();
     if (!this.feedback.enabled) {
       this.toTitle(frame);
       return;
@@ -1008,6 +1366,8 @@ export class SceneMachine {
   private endRun(frame: Readonly<IntentFrame>): void {
     const score = this.run?.snapshot().score ?? 0;
     this.lastScore = score;
+    this.lastOutcome = this.current === Scene.Ending ? 'run-cleared' : 'game-over';
+    this.runName = '';
     if (!this.table.qualifies(score)) {
       this.afterRun(frame);
       return;
@@ -1030,6 +1390,7 @@ export class SceneMachine {
     if (exit === 'skipped') {
       this.afterRun(frame);
     } else if (exit === 'entered') {
+      this.runName = this.nameEntry.name;
       const rank = this.table.insert(this.nameEntry.entry(this.host.today()));
       this.host.highScoresChanged(this.table.entries);
       this.releaseRun();
@@ -1081,7 +1442,10 @@ export class SceneMachine {
   /** Every scene change goes through here, so each scene's timer starts at 0. */
   private enter(scene: Scene): void {
     // An opening stays armed on its own screen only (ADR-0027 decision 5).
-    if (scene !== this.current) this.feedback.disarm();
+    if (scene !== this.current) {
+      this.feedback.disarm();
+      this.privacy.disarm();
+    }
     this.current = scene;
     this.sceneSteps = 0;
     // The pause mix (ADR-0009 decision 3): on in the pause and its menus, off from the count-in.
@@ -1181,6 +1545,11 @@ export class SceneMachine {
   private overlayFeedbackMenu(): void {
     this.overlayMenu();
     if (this.feedback.blocked) drawStatusLine(this.renderer, 'openBlocked', this.options.language);
+  }
+
+  /** *Send online* and the status, with *OPEN BLOCKED* for 2 s after a refused privacy page. */
+  private overlaySendOnline(): void {
+    drawSendOnline(this.renderer, this.sendView, this.options.language, this.privacy.blocked);
   }
 
   private overlayGesture(): void {

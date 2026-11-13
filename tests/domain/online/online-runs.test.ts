@@ -5,80 +5,12 @@ import {
   STATUS_POLL_STEPS,
   STATUS_WATCH_STEPS,
 } from '../../../src/domain/online/online-runs';
-import type {
-  Accepted,
-  Erased,
-  FailureCode,
-  LeaderboardPort,
-  RequestHandle,
-  StatusAnswer,
-  Submission,
-} from '../../../src/domain/ports/leaderboard-port';
-import type { StoragePort } from '../../../src/domain/ports/storage-port';
+import type { Submission } from '../../../src/domain/ports/leaderboard-port';
+import { FakePort, MemoryStore } from '../../support/leaderboard-fakes';
 
 const ID = '01JC0000000000000000000001';
 const TOKEN = 'b'.repeat(64);
 const NOW = '2026-11-12T10:00:00.000Z';
-
-/** A handle the test settles by hand, as the adapter does when `fetch` ends. */
-class Settable<T> {
-  handle: RequestHandle<T> = { state: 'pending' };
-  done(result: T): void {
-    this.handle = { state: 'done', result };
-  }
-  fail(error: FailureCode): void {
-    this.handle = { state: 'failed', error };
-  }
-}
-
-class FakePort implements LeaderboardPort {
-  readonly submitted: Submission[] = [];
-  readonly asked: string[] = [];
-  readonly erased: [string, string][] = [];
-  readonly submits: Settable<Accepted>[] = [];
-  readonly statuses: Settable<StatusAnswer>[] = [];
-  readonly erases: Settable<Erased>[] = [];
-
-  submit(run: Submission): RequestHandle<Accepted> {
-    this.submitted.push(run);
-    return this.track(this.submits);
-  }
-  status(id: string): RequestHandle<StatusAnswer> {
-    this.asked.push(id);
-    return this.track(this.statuses);
-  }
-  erase(id: string, token: string): RequestHandle<Erased> {
-    this.erased.push([id, token]);
-    return this.track(this.erases);
-  }
-  // The domain reads `handle` through a getter so a later settle is seen.
-  private track<T>(list: Settable<T>[]): RequestHandle<T> {
-    const settable = new Settable<T>();
-    list.push(settable);
-    return {
-      get state() {
-        return settable.handle.state;
-      },
-      get result() {
-        return settable.handle.state === 'done' ? settable.handle.result : undefined;
-      },
-      get error() {
-        return settable.handle.state === 'failed' ? settable.handle.error : undefined;
-      },
-    } as unknown as RequestHandle<T>;
-  }
-}
-
-class MemoryStore implements StoragePort {
-  readonly values = new Map<string, string>();
-  read(key: string): string | null {
-    return this.values.get(key) ?? null;
-  }
-  write(key: string, value: string): boolean {
-    this.values.set(key, value);
-    return true;
-  }
-}
 
 const RUN: Submission = {
   seed: 7,
@@ -267,13 +199,14 @@ describe('OnlineRuns — Online scores', () => {
 
   it('erases with the token and drops the run once erased', () => {
     const { online, port, store } = setup(stored());
-    expect(online.erase(ID)).toBe(true);
-    expect(online.erase(ID)).toBe(false);
+    expect(online.erase(ID)).toBe('erasing');
+    expect(online.erase(ID)).toBe('busy');
+    expect(online.erase('missing')).toBe('gone'); // gone wins over busy (GDD v0.37)
     expect(port.erased).toEqual([[ID, TOKEN]]);
     port.erases[0]?.done('erased');
     online.step();
     expect(kept(store).map((run) => run.id)).toEqual(['01JC0000000000000000000002']);
-    expect(online.erase('missing')).toBe(false);
+    expect(online.erase(ID)).toBe('gone');
   });
 
   it('keeps the run when the erasure fails', () => {
@@ -337,8 +270,8 @@ describe('OnlineRuns — robustness', () => {
     );
     online.refreshAll();
     online.step();
-    expect(online.erase(ID)).toBe(true);
-    expect(online.erase(ID)).toBe(false);
+    expect(online.erase(ID)).toBe('erasing');
+    expect(online.erase(ID)).toBe('busy');
     expect(online.send(RUN)).toBe('busy');
     port.statuses[0]?.done('pending');
     online.step();

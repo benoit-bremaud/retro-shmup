@@ -109,6 +109,12 @@ export class OnlineRuns {
     return 'sending';
   }
 
+  /** Whether 20 runs are kept, re-read first: *SEND* then shows the erase-first line. */
+  full(): boolean {
+    this.runs = this.load();
+    return this.runs.full();
+  }
+
   /** *Online scores* opened: asks every kept run, one at a time. */
   refreshAll(): void {
     this.runs = this.load();
@@ -125,12 +131,23 @@ export class OnlineRuns {
     this.current = IDLE;
   }
 
-  /** Erases a kept run after the player confirmed; false when unknown or another action runs. */
-  erase(id: string): boolean {
+  /**
+   * Erases a kept run after the player confirmed (GDD v0.37): `gone` when it left the list
+   * meanwhile (it wins over `busy`), `busy` while another send or erasure is under way.
+   */
+  erase(id: string): 'erasing' | 'busy' | 'gone' {
     const run = this.find(id);
-    if (run === undefined) return false;
+    if (run === undefined) return 'gone';
+    if (!this.start({ kind: 'erase', id, token: run.token })) return 'busy';
     this.eraseFailure = undefined;
-    return this.start({ kind: 'erase', id, token: run.token });
+    return 'erasing';
+  }
+
+  /** Whether run `id` is still kept, as last read (no allocation: read once per step). */
+  keeps(id: string): boolean {
+    const items = this.runs.items;
+    for (let i = 0; i < items.length; i += 1) if (items[i]?.id === id) return true;
+    return false;
   }
 
   kept(): readonly KeptRun[] {
