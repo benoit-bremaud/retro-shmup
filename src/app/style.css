@@ -26,6 +26,12 @@ body {
   cursor: crosshair;
 }
 
+/* Served at 240 × 320, the canvas takes its integer scale from script: hidden until that first
+   fit, it never jumps on screen (no layout shift, #184). */
+#screen:not(.fitted) {
+  visibility: hidden;
+}
+
 /* The version label (GDD v0.20 §9.9): page text in the bottom-right corner, never in the way of a
    press and never selected. */
 #version {
