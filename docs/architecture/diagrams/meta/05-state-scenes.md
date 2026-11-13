@@ -122,7 +122,8 @@ stateDiagram-v2
   OnlineName --> SendOnline : OK [name not empty, another send or erasure under way] / show WAIT
   OnlineName --> OnlineStatus : OK [name not empty, none under way] / submit the run
   SendOnline --> OnlineStatus : send [a name, fewer than 20 kept, none under way] / submit the run
-  OnlineStatus --> SendOnline : refused, too long, offline or timeout / show the error line
+  OnlineStatus --> SendOnline : name refused / show the error line, forget the name
+  OnlineStatus --> SendOnline : other refusal, too long, offline or timeout / show the error line
   OnlineStatus --> OnlineStatus : after(15 s) [pending, under 2 min] / ask the status
   OnlineStatus --> AfterOnline : OK
   OnlineStatus --> OnlineStatus : erase, confirmed [run kept, another under way] / show WAIT
@@ -188,6 +189,8 @@ stateDiagram-v2
 - **v0.37 (GDD §9.1, §9.3, #177)**: `send`, the online name entry's *OK* and a confirmed erase
   that meet another send or erasure under way show *WAIT* and do nothing; an erase of a run that
   left the list meanwhile sends nothing.
+- **v0.38 (GDD §9.1, #167)**: a refused name is forgotten for the run, so the next `send` takes
+  the `no usable name this run` edge to the online name entry.
 - **Built (#167, 3b-1)**: the `erase, confirmed` transitions pass by an erase confirmation,
   *No* first, as `Confirm quit` (scene `OnlineErase`); the privacy page's gesture prompt is its own
   scene (`OnlineGesture`) that returns to `Send online`. A failed erasure stays on `Online status`

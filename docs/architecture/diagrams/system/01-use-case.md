@@ -203,6 +203,8 @@ step depends on them.
     a timeout or *(v0.36)* a `202` whose answer cannot be read: one line names it; the offer
     stays; nothing is kept; no automatic retry. After `409`, offline, a timeout or an unreadable
     `202`, *To erase see privacy* follows (the run may be stored without a token here).
+    *(v0.38)* After *Name not accepted* the name is forgotten: the next *Send* opens the name
+    entry (2a).
   - 4b. *(v0.36)* The run is accepted but the browser storage refuses its token: the status line
     shows, then *To erase see privacy*; *Erase* is not offered for it.
   - 4c. *(v0.36)* Player leaves the screen before the answer: nothing is shown; an accepted run
