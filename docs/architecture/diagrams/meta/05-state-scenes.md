@@ -192,7 +192,7 @@ stateDiagram-v2
   that meet another send or erasure under way show *WAIT* and do nothing; an erase of a run that
   left the list meanwhile sends nothing.
 - **v0.38 (GDD §9.1, #167)**: a refused name is forgotten for the run, so the next `send` [fewer than 20 kept]
-  takes the `no usable name this run` edge to the online name entry (design; built in 3b-2, #167).
+  takes the `no usable name this run` edge to the online name entry (built in 3b-2, #167).
 - **v0.39 (GDD §9.3, #167)**: `Online scores` shows 10 runs per page with *NEXT* / *PREV*;
   choosing a run opens the erase confirmation (*No* first). It is reached from the title's
   `Options` only, never from `PauseOptions`. A drop keeps the highlight on its run, and the

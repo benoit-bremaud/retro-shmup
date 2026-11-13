@@ -988,6 +988,11 @@ export class SceneMachine {
     this.shownState = state;
     switch (state.phase) {
       case 'failed':
+        // A refused name is forgotten: the next SEND opens the name entry (GDD v0.38 §9.1).
+        if (state.error === 'name-refused') {
+          this.runName = '';
+          this.showName();
+        }
         this.openSendOnline(frame, lines(failureLine(state.error), state.tokenMaybeLost));
         return false;
       case 'idle':
