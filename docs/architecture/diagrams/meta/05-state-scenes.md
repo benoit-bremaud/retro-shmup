@@ -133,11 +133,11 @@ stateDiagram-v2
   AfterOnline --> FeedbackOffer : [form address set]
   AfterOnline --> Title : [no form address]
   Options --> OnlineScores : online scores [feature present] / ask each kept run's status
-  OnlineScores --> OnlineScores : 404 on a status / drop the run
+  OnlineScores --> OnlineScores : 404 on a status / remove the run's key
   OnlineScores --> OnlineScores : erase, confirmed [run kept, another under way] / show WAIT, erase nothing
-  OnlineScores --> OnlineScores : erase, confirmed [none under way] / erase the run, drop it on 204 or 404
+  OnlineScores --> OnlineScores : erase, confirmed [none under way] / erase the run, remove its key on 204 or 404
   OnlineScores --> OnlineScores : erase, confirmed, then failed / show the error line
-  OnlineScores --> OnlineScores : next or prev / show the other page
+  OnlineScores --> OnlineScores : next or prev / show the next or previous page
   OnlineScores --> Options : back
   FeedbackOffer --> Title : give feedback / open the form, count + 1
   FeedbackOffer --> Title : later, back or after(20 s)
@@ -193,6 +193,9 @@ stateDiagram-v2
   left the list meanwhile sends nothing.
 - **v0.38 (GDD §9.1, #167)**: a refused name is forgotten for the run, so the next `send` [fewer than 20 kept]
   takes the `no usable name this run` edge to the online name entry (built in 3b-2, #167).
+- **v0.40 (GDD §9.3, ADR-0032, #175)**: past 20 kept runs the pages go on; a page with both
+  *PREV* and *NEXT* shows 9 runs, the last page shows up to 10; a page left without runs closes to
+  the page before.
 - **v0.39 (GDD §9.3, #167)**: `Online scores` shows 10 runs per page with *NEXT* / *PREV*;
   choosing a run opens the erase confirmation (*No* first). It is reached from the title's
   `Options` only, never from `PauseOptions`. A drop keeps the highlight on its run, and the

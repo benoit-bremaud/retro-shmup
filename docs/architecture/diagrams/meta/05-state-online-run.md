@@ -7,7 +7,7 @@
 
 ## Context
 
-The client's copy of one run's status, kept in `retro-shmup.online.v1`. The server's own state
+The client's copy of one run's status, kept under its own key `retro-shmup.online.v1.<id>` (ADR-0032). The server's own state
 machine is retro-leaderboard `05-state-run`; the game only mirrors the statuses `GET /v1/runs/{id}`
 returns and forgets the run once it is erased. Notation: `trigger [guard] / effect`.
 
@@ -28,7 +28,7 @@ stateDiagram-v2
   state "Erasing" as Erasing
 
   [*] --> NotSent
-  NotSent --> Sending : SEND [fewer than 20 kept, no other send or erasure under way] / POST /v1/runs
+  NotSent --> Sending : SEND [fewer than 20 kept at SEND, no other send or erasure under way] / POST /v1/runs
   NotSent --> NotSent : SEND [another send or erasure under way] / WAIT
   Sending --> Pending : 202 / keep id and token
   Sending --> NotSent : too long, unsupported, 400, 429 or 5xx / error line

@@ -71,7 +71,7 @@ classDiagram
     server-error
   }
   class OnlineRuns {
-    -runs : KeptRuns «re-read before every change»
+    -runs : KeptRuns «re-read from the keys before every change»
     -open : RequestHandle «at most one open»
     -action : send or erase «waits for the GET in flight»
     +offer(result: RunResult) boolean «resets the state»
@@ -98,12 +98,11 @@ classDiagram
     failed(error, tokenMaybeLost)
   }
   class KeptRuns {
-    +MAX = 20
-    +items : KeptRun[]
-    +full() boolean
-    +add(run) boolean «false when full»
-    +setStatus(id, status) void
-    +drop(id) void
+    <<snapshot>>
+    +MAX = 20 «checked at SEND only»
+    +items : KeptRun[] «every valid run, id descending»
+    +full() boolean «20 or more»
+    +keeps(id) boolean
   }
   class KeptRun {
     id : string
@@ -112,11 +111,13 @@ classDiagram
     sentAt : string «ISO date»
     status : RunStatus
   }
-  class KeptRunsDocument {
+  class KeptRunKeys {
     <<module>>
-    +KEY = retro-shmup.online.v1
-    +parseKeptRuns(text) KeptRuns «never throws, allowlist»
-    +serializeKeptRuns(kept) string
+    +PREFIX = retro-shmup.online.v1.
+    +keptRunKey(id) string
+    +parseKeptRun(id, text) KeptRun «or none; never throws, allowlist»
+    +serializeKeptRun(run) string «token, score, sentAt, status»
+    +readKeptRuns(store) KeptRuns «invalid keys ignored, never removed»
   }
   class FetchLeaderboard {
     <<adapter>>
@@ -134,8 +135,8 @@ classDiagram
   OnlineRuns --> KeptRuns
   KeptRuns *-- KeptRun
   OnlineRuns ..> LeaderboardPort : <<use>>
-  OnlineRuns ..> KeptRunsDocument : parse, serialize
-  OnlineRuns ..> StoragePort : <<use>> read, write
+  OnlineRuns ..> KeptRunKeys : one key per run
+  OnlineRuns ..> StoragePort : <<use>> keys, read, write, remove
   LeaderboardPort ..> RequestHandle
   LeaderboardPort ..> Submission
   StatusAnswer ..> RunStatus
@@ -150,7 +151,7 @@ classDiagram
 - **Every answer is untrusted**: the adapter parses each body by allowlist; a `202` whose body fails
   the parse settles as `accepted-unreadable` (the run is stored), any other 2xx as `server-error`. Ids must be ULIDs, tokens 64 lowercase hex characters.
 - **The token** goes only into the `DELETE` header; it is never logged and never placed in a URL.
-- **`unknown`** (a `404` on `status`) drops the kept run; a failed `erase` keeps it and sets
+- **`unknown`** (a `404` on `status`) removes the kept run's key; a failed `erase` keeps it and sets
   `eraseError`, never the send screen's state.
 - **Token maybe lost** (decision 19): a failed `POST` that may have stored the run (`offline`,
   `timeout`, `duplicate-run`, `accepted-unreadable`), or a `202` whose token the storage refused,
@@ -158,9 +159,12 @@ classDiagram
 - **Leaving while sending**: a `202` that arrives after `leave()` is kept for *Online scores*
   but not followed, and the state stays idle. A send left before its answer is never reported,
   even when its token may be lost: the privacy page is the way back.
-- **Two tabs**: the kept runs are re-read from storage before every change. Two tabs writing
-  within the storage's propagation delay can still drop a run and its token (residual race,
-  accepted for 3a); one key per run closes it before the feature is enabled (#175).
+- **One key per run** *(ADR-0032, #175)*: each kept run lives under `retro-shmup.online.v1.<id>`.
+  Keeping a run after a `202` writes its key without checking the limit (concurrent tabs may keep
+  more than 20); a status answer rewrites its key only while that key still holds a valid run;
+  `unknown` and an erasure answered `204` or `404` remove the key. Two tabs never drop each
+  other's run; the short read-then-write window can bring an erased run back until its next `GET`
+  answers `unknown`.
 - **Lines**: the scene maps `OnlineState` and `eraseError` to message keys (PR 3b of #167).
 - **Built (#167, 3b-2)**: `main.ts` builds `OnlineRuns` over `FetchLeaderboard` and the
   browser's storage only when the build's leaderboard origin is set (ADR-0031 decision 12); the

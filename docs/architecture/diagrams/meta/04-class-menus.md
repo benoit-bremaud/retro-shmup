@@ -287,6 +287,8 @@ classDiagram
     <<interface>>
     +read(key: string) string | null
     +write(key: string, value: string) boolean
+    +keys(prefix: string) readonly string[] «ADR-0032, [] when unreadable»
+    +remove(key: string) void «ADR-0032»
   }
   class LocalStorageStore {
     adapter, try/catch on every call
@@ -381,6 +383,7 @@ classDiagram
   button going up, none for a cancelled finger) and the mouse hover (`hovered`, `hoverX`,
   `hoverY`, play-field pixels, only when the cursor reaches a new field point).
 - **`SaveStore` owns the schema rules, `StoragePort` only the strings** (ADR-0006 decision 3).
+  `keys` and `remove` serve the kept online runs only (ADR-0032); `SaveStore` uses `read` and `write`.
   `load()` falls back to the defaults (table included, #128) on a missing, unreadable or unknown document, and
   `prefers-reduced-motion` presets the effect switches on a first launch only (GDD §9.3).
   `saveOptions` writes the whole document once per change, never inside the fixed step

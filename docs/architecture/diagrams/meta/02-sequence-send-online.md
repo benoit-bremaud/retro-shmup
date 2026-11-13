@@ -44,7 +44,7 @@ sequenceDiagram
     alt 202
       LB-->>Port: {id, deletionToken}
       Port-->>Online: handle done: id, token (parsed by allowlist)
-      Online->>Store: write retro-shmup.online.v1 (id, token, score, sentAt, pending)
+      Online->>Store: write retro-shmup.online.v1.<id> (token, score, sentAt, pending), no limit check (ADR-0032)
       opt the storage refuses the write
         Online-->>Scenes: status line and TO ERASE SEE PRIVACY, no ERASE row
       end

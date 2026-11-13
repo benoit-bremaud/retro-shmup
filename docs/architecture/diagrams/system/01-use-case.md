@@ -222,7 +222,7 @@ step depends on them.
   is gone online and from the list.
 - **Main success scenario**:
   1. Player opens *Options → Online scores* from the title (never from the pause, v0.39).
-  2. The game lists the kept runs, newest first, 10 per page *(v0.39)*, and asks the leaderboard
+  2. The game lists the kept runs, newest first, 10 per page *(v0.39)*, as many pages as needed and 9 runs on a page with *PREV* and *NEXT* *(v0.40)*, and asks the leaderboard
      for the status of each, one at a time; the highlighted run's status shows under the heading.
   3. Player highlights a run, chooses it and confirms *Erase*.
   4. The game sends the erasure with the run's deletion token; the leaderboard erases the run;
