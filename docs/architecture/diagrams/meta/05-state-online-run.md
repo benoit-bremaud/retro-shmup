@@ -1,8 +1,8 @@
-# State machine diagram — meta — a run sent online, as the game sees it (v0.35)
+# State machine diagram — meta — a run sent online, as the game sees it (v0.40)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.35, v0.36, v0.37 §9.1
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.35, v0.36, v0.37, v0.40 §9.1
 > (*Send online*, send errors #173, *WAIT* #177), §9.3 (*Online scores*), §9.8
-> **Related ADRs**: ADR-0031; retro-leaderboard ADR-0001 (verdicts), ADR-0004 (erasure)
+> **Related ADRs**: ADR-0031, ADR-0032 (one key per run); retro-leaderboard ADR-0001 (verdicts), ADR-0004 (erasure)
 > **Realizes**: UC9 and UC10 of [01-use-case](../system/01-use-case.md)
 
 ## Context
@@ -30,6 +30,7 @@ stateDiagram-v2
   [*] --> NotSent
   NotSent --> Sending : SEND [fewer than 20 kept at SEND, no other send or erasure under way] / POST /v1/runs
   NotSent --> NotSent : SEND [another send or erasure under way] / WAIT
+  NotSent --> NotSent : SEND [20 or more kept] / ERASE AN ONLINE SCORE FIRST
   Sending --> Pending : 202 / keep id and token
   Sending --> NotSent : too long, unsupported, 400, 429 or 5xx / error line
   Sending --> NotSent : 409, offline or timeout / error line, TO ERASE SEE PRIVACY
@@ -40,17 +41,17 @@ stateDiagram-v2
   Pending --> Unverifiable : status unverifiable
   Pending --> Expired : status expired
   Pending --> Pending : status pending, offline or error
-  Pending --> [*] : 404 / drop the item
-  Verified --> [*] : 404 / drop the item
-  Rejected --> [*] : 404 / drop the item
-  Unverifiable --> [*] : 404 / drop the item
-  Expired --> [*] : 404 / drop the item
+  Pending --> [*] : 404 / remove its key
+  Verified --> [*] : 404 / remove its key
+  Rejected --> [*] : 404 / remove its key
+  Unverifiable --> [*] : 404 / remove its key
+  Expired --> [*] : 404 / remove its key
   Pending --> Erasing : erase, confirmed [no other send or erasure under way] / DELETE
   Verified --> Erasing : erase, confirmed [no other send or erasure under way] / DELETE
   Rejected --> Erasing : erase, confirmed [no other send or erasure under way] / DELETE
   Unverifiable --> Erasing : erase, confirmed [no other send or erasure under way] / DELETE
   Expired --> Erasing : erase, confirmed [no other send or erasure under way] / DELETE
-  Erasing --> [*] : 204 or 404 / drop the item
+  Erasing --> [*] : 204 or 404 / remove its key
   Erasing --> Pending : failed [was pending]
   Erasing --> Verified : failed [was verified]
   NotSent --> [*] : not now, back or after(20 s)
@@ -64,5 +65,6 @@ stateDiagram-v2
   its retention (`404`, retro-leaderboard ADR-0004) leaves the list and frees its slot.
 - **A failed erasure returns to the status it left** (drawn for two statuses; the three others
   likewise).
-- **A stored status outside the five** is an invalid item, dropped by the parser (ADR-0006); its
-  token is lost with it, which only a hand-edited storage can cause.
+- **A stored status outside the five** makes its key invalid: the reader ignores it and never
+  removes it (ADR-0006, ADR-0032), so the run leaves the list while its token stays in the
+  storage; only a hand-edited storage can cause it.

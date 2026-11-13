@@ -7,7 +7,7 @@
 > ADR-0010 (presentation outside the outcome), ADR-0014 (logical screen, regions, step units),
 > ADR-0015 (portrait screen, devices together, injected browser objects), ADR-0018 (pause
 > button, taps, mouse takeover, page-level pointer listeners), ADR-0019 (run seed from the
-> composition root), ADR-0031 (online runs, the replay CLI, v0.35)
+> composition root), ADR-0031 (online runs, the replay CLI, v0.35), ADR-0032 (one key per run)
 > **Realizes**: the structure behind every use case of [01-use-case](01-use-case.md)
 
 ## Context

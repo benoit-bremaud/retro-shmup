@@ -2,7 +2,7 @@
 
 > **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.13 and v0.14 §9.1
 > (menus; v0.25: the row height per menu, #95; v0.14: leaving a menu frees the movement), §9.3 (options and their layout), §9.4, §9.8
-> **Related ADRs**: ADR-0006 (save document, `StoragePort`), ADR-0009 (fullscreen at the next
+> **Related ADRs**: ADR-0006 (save document, `StoragePort`), ADR-0032 (`keys`, `remove`), ADR-0009 (fullscreen at the next
 > gesture), ADR-0015 (the last device used), ADR-0020 decision 4 (the autofire option), ADR-0021
 > (the high-score entry)
 > **Realizes**: UC5 of [01-use-case](../system/01-use-case.md); the `Options` and `Visual
@@ -287,8 +287,8 @@ classDiagram
     <<interface>>
     +read(key: string) string | null
     +write(key: string, value: string) boolean
-    +keys(prefix: string) readonly string[] «ADR-0032, [] when unreadable»
-    +remove(key: string) void «ADR-0032»
+    +keys(prefix: string) readonly string[] «ADR-0032, never throws, [] when unreadable, a key removed during the scan skipped»
+    +remove(key: string) void «ADR-0032, never throws»
   }
   class LocalStorageStore {
     adapter, try/catch on every call
@@ -338,7 +338,7 @@ classDiagram
   SceneMachine *-- NameEntry
   SceneMachine *-- HighScoreTable
   SaveStore ..> DEFAULT_HIGH_SCORES : used while the save holds no table
-  SaveStore --> StoragePort
+  SaveStore --> StoragePort : read, write only
   LocalStorageStore ..|> StoragePort
   SceneHost ..> SaveStore : composition root
   SceneHost ..> InputPort : composition root

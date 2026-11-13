@@ -3,7 +3,7 @@
 > **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.2 — §2, §3.4,
 > §4, §6–§9; v0.10 §6, §8, §9.1 (the vertical slice's end)
 > **Related ADRs**: ADR-0002 (timestep), ADR-0003 (architecture), ADR-0005 (credits),
-> ADR-0006 (player data), ADR-0031 (online runs, v0.35)
+> ADR-0006 (player data), ADR-0031 (online runs, v0.35), ADR-0032 (one key per run, v0.40)
 > **Realized by**: the sequence, class and state diagrams of `gameplay/` and `meta/`, stitched
 > by the [traceability matrix](../../traceability-matrix.md)
 
@@ -195,7 +195,7 @@ step depends on them.
     leaderboard refused its name (4a): the name entry opens
     first; its name is not added to the local table; *OK* on an empty name or `back` returns to
     the offer.
-  - 2b. 20 runs are kept: *Erase an online score first* shows; nothing is sent.
+  - 2b. 20 or more runs are kept *(v0.40)*: *Erase an online score first* shows; nothing is sent.
   - 2c. The encoded inputs exceed the request's size limit: *Run too long to send*; nothing is sent.
   - 2d. *(v0.36)* The browser cannot pack the run: *Server error*; nothing is sent.
   - 2e. *(v0.37)* Another send or erasure is still under way: *Wait*; nothing is sent (after the

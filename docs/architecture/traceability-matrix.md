@@ -32,8 +32,8 @@ Diagram abbreviations (v0.35 adds **SD-online** [02-sequence-send-online](diagra
 | UC5 Configure the game | SceneMachine, SaveDocument, LocalStorageStore, WebAudioPlayer, DeviceInput | STM-scenes (`Options`, `Visual effects` and `Audio` from title and pause), CD-audio (volumes) | CD-menus (`Menu`, `MenuScreen`, `SceneHost`, `Options`, `SaveStore`) | each option (GDD §9.3); fullscreen in the gesture handler (ADR-0009) |
 | UC6 Remap the controls | SceneMachine, DeviceInput, SaveDocument | SD-remap, STM-scenes (G1b `Controls`, `Confirm restore`) | CD-menus (`ControlsScreen`, `ControlsGrid`, `BindingsEditor`, `ButtonNames`, `KeyLabels`, the `SceneHost` capture) | slots, swap, capture (UC6 text, GDD §4.2, ADR-0009) |
 | UC7 Read the credits | SceneMachine, MessageCatalogue | STM-scenes (`Credits`) | — | mirrors `CREDITS.md` (ADR-0005) |
-| UC9 Publish a run on the online board *(v0.35)* | SceneMachine, RunRecorder + RecordColumns, OnlineRuns, FetchLeaderboard | SD-online; STM-scenes (`Send online`, `Name entry (online)`, `Online status`); STM-online-run | CD-recording (`IntentQuantizer`, `RunRecorder`, `RecordColumns`, `DetMath`); CD-online (`OnlineRuns`, `LeaderboardPort`, `RequestHandle`) | consent, errors and kept-run limit (UC9 text, ADR-0031) |
-| UC10 Follow and erase my online runs *(v0.35)* | SceneMachine, OnlineScoresScreen, OnlineRuns, FetchLeaderboard, LocalStorageStore | SD-online (erase); STM-scenes (`Online scores`); STM-online-run | CD-menus (`OnlineScoresScreen`); CD-online (`OnlineRuns`, `KeptRuns`, `KeptRunKeys`, `LeaderboardPort`) | erasure by deletion token (UC10 text, retro-leaderboard ADR-0004) |
+| UC9 Publish a run on the online board *(v0.35)* | SceneMachine, RunRecorder + RecordColumns, OnlineRuns, FetchLeaderboard | SD-online; STM-scenes (`Send online`, `Name entry (online)`, `Online status`); STM-online-run | CD-recording (`IntentQuantizer`, `RunRecorder`, `RecordColumns`, `DetMath`); CD-online (`OnlineRuns`, `LeaderboardPort`, `RequestHandle`) | consent, errors and kept-run limit (UC9 text, ADR-0031, ADR-0032 decision 4) |
+| UC10 Follow and erase my online runs *(v0.35)* | SceneMachine, OnlineScoresScreen, OnlineRuns, FetchLeaderboard, LocalStorageStore | SD-online (erase); STM-scenes (`Online scores`); STM-online-run | CD-menus (`OnlineScoresScreen`); CD-online (`OnlineRuns`, `KeptRun`, `KeptRunKeys`, `LeaderboardPort`) | erasure by deletion token (UC10 text, retro-leaderboard ADR-0004) |
 
 UC2 to UC7 are realized at the screen level only: they are plain navigation, reads and writes,
 whose conditional steps live in the use-case text (proportionality rule of the study).
@@ -74,7 +74,7 @@ SD-boss (added with the level brick) uses `Run`, `RunRules`, `World`, `LevelDire
 | NameEntry, LetterGrid, PressGuard (G2-3) | CD-menus; SD-score; STM-scenes (G2); UC3 text |
 | Options, SaveStore, StoragePort (G1a) | CD-menus; STM-scenes (`Boot` reads, each option change writes); UC5 text |
 | IntentQuantizer, RunRecorder, RecordColumns, DetMath, Codec1, Replayer, ReplayCli *(v0.35)* | CD-recording; SD-online (`records()`); CMP; ADR-0031 decisions 1–11, 22, 23 |
-| OnlineRuns, KeptRuns, KeptRun, KeptRunKeys, LeaderboardPort, RequestHandle *(v0.35)* | CD-online; SD-online; STM-scenes (online states); STM-online-run; ADR-0031 decisions 12–21; ADR-0032 |
+| OnlineRuns, KeptRun, KeptRunKeys, LeaderboardPort, RequestHandle *(v0.35)* | CD-online; SD-online; STM-scenes (online states); STM-online-run; ADR-0031 decisions 12–21; ADR-0032 |
 
 Every class is used by at least one behaviour diagram or by the GDD rule table of CD. The
 movement and attack strategies are exercised per archetype by the level scripts; their behaviour
