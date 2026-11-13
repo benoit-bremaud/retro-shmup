@@ -191,7 +191,8 @@ step depends on them.
 - **Extensions**:
   - 1a. Player chooses *Not now*, `back`, or waits 20 s: nothing is sent; on to step 7's exit.
   - 1b. Player chooses *Privacy*: the privacy page opens in a new tab; the offer stays.
-  - 2a. The run did not enter the top 10, or its entry was skipped (`???`): the name entry opens
+  - 2a. The run did not enter the top 10, its entry was skipped (`???`), or *(v0.38)* the
+    leaderboard refused its name (4a): the name entry opens
     first; its name is not added to the local table; *OK* on an empty name or `back` returns to
     the offer.
   - 2b. 20 runs are kept: *Erase an online score first* shows; nothing is sent.

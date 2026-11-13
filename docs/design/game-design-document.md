@@ -1106,9 +1106,10 @@ the online leaderboard, which replays it before showing it (no score is trusted 
   *PAS MAINTENANT*. *Not now*, `back` or 20 s without input go on to the feedback offer. Nothing
   leaves the browser before *SEND*.
 - **The name**: the name entered for this run; a run that did not enter the table, or whose entry
-  was skipped (`???`), opens the name entry first (*OK* then sends; this name is not added to the
-  local table; *OK* on an empty name or `back` returns to the offer). The country is the saved
-  choice, or none.
+  was skipped (`???`), *(v0.38)* or whose name the leaderboard refused (*NAME NOT ACCEPTED*), opens
+  the name entry first (*OK* then sends; this name is not added to the local table; *OK* on an
+  empty name or `back` returns to the offer). After a refusal the offer shows no name until one is
+  entered; the local table keeps its entry. The country is the saved choice, or none.
 - **After SEND**: *SENDING* / *ENVOI*, then *PENDING VERIFICATION* / *VERIFICATION EN COURS*;
   the screen asks the leaderboard every 15 s for 2 minutes at most and shows *VERIFIED* /
   *VERIFIE*, *REJECTED* / *REFUSE*, *UNVERIFIABLE* / *INVERIFIABLE* or *EXPIRED* / *EXPIRE* when
@@ -1121,8 +1122,7 @@ the online leaderboard, which replays it before showing it (no score is trusted 
   run).
   After *ALREADY SENT*, *OFFLINE*, a timeout or *(v0.36)* an unreadable accepted answer a second line *TO
   ERASE SEE PRIVACY* / *POUR EFFACER VOIR CONFIDENTIALITE* follows: the run may be stored without
-  a token in this browser. *(v0.38)* After *NAME NOT ACCEPTED* the refused name is forgotten for
-  this run: the next *SEND* opens the name entry again. *(v0.36)* An accepted run whose token the browser storage refuses (full
+  a token in this browser. *(v0.36)* An accepted run whose token the browser storage refuses (full
   or blocked, or 20 runs kept by another tab) keeps its status line, adds the same second line
   and offers no *ERASE* (no token). A send the player leaves
   before its answer is never reported on screen: an accepted run still joins the kept runs when the storage keeps it, and
@@ -1654,4 +1654,4 @@ fully playable at release quality, used to validate the design before producing 
 | Chain labels *(v0.32)* | Owner, 2026-10-28 (#147: the ×N and its bar were never explained), option D of the triage (450/500: a first-×2 label and a break label): **CHAIN ×2 - KILL FAST** / **CHAINE ×2 - TUE VITE** and **CHAIN BREAK** / **CHAINE ROMPUE** (475/500; the `menu` font gains `×`); the first ×2 of a run for **1 s**, every break from ×2 or more for **0.5 s**, none at a death (450/500); their **own switch** *CHAIN HINTS* / *AIDE CHAINE*, on by default (450/500); **fixed, centred near the top of the field**, rising 8 px (435/500) | A label only for the first ×2 (435/500); a help page (300/500) or both (345/500); COMBO wording (420/500) or CHAINE ×2 - VITE (380/500); both labels 1 s (390/500) or 1.5 s / 0.75 s (380/500); one shared LABELS switch with the pickup labels (370/500) or the explosions switch (270/500); under the HUD multiplier (400/500) or following the ship (305/500) |
 | Online leaderboard *(v0.35)* | Owner, 2026-11-12 (#167, epic #166, ADR-0031): **record runs as quantised per-step records and send them by explicit choice after the hall of fame**. Frame format raw DEFLATE (405/500; RLE + delta 390, RLE 380), refined after the review into columns with delta-coded x and y and a size guard (450/500; rows + guard 360, brotli 300); codec spec and vectors in retro-leaderboard (420/500; git dependency 360, npm 310); own deterministic trigonometry (450/500; accept the risk 360, replay in the player's engine 320); results flow + *Options → Online scores* (395/500; options without status 385, results only 345); replay CLI (475/500; ES module 400, tsx 285); tokens under a separate key (420/500; save document v3 330); retention line *RETENTION IN PRIVACY* (380/500; durations 315); the final origin only (430/500; every Pages origin 340, Pages + itch.io 305); release gate `RELEASE_COMMIT` = built SHA (455/500; tag check 395, release branch 370) | See ADR-0031 *Rejected alternatives* |
 | Busy send or erasure *(v0.37)* | Owner, 2026-11-12 (#177): *SEND* or a confirmed erasure that meets another send or erasure still under way shows *WAIT* / *ATTENDS* and does nothing (480/500; a greyed row without a reason 310, queueing it behind the request under way 230) | A greyed row without a reason (the player cannot tell why); queueing the player action behind the send or erasure under way (a second pending action, kept or lost when the screen is left) |
-| Refused name *(v0.38)* | Owner, 2026-11-13 (#167): after *NAME NOT ACCEPTED* the refused name is forgotten and the next *SEND* reopens the name entry (470/500) | Resending the same refused name on *SEND* (refused again every time); a dedicated *CHANGE NAME* row (one more row for a rare case) |
+| Refused name *(v0.38)* | Owner, 2026-11-13 (#167): after *NAME NOT ACCEPTED* the refused name is forgotten and the next *SEND* reopens the name entry (470/500; resending 250, a *CHANGE NAME* row 360) | Resending the same refused name on *SEND* (refused again every time); a dedicated *CHANGE NAME* row (one more row for a rare case) |

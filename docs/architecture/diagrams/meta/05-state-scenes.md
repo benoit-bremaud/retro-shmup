@@ -1,6 +1,6 @@
 # State machine diagram — meta — screens and their transitions (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.10 §3.2, §3.4, v0.26 §9.1 (country choice, feedback offer), v0.35 §9.1 *Send online* and §9.3 *Online scores*, v0.37 §9.1, §9.3 (*WAIT*),
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.10 §3.2, §3.4, v0.26 §9.1 (country choice, feedback offer), v0.35 §9.1 *Send online* and §9.3 *Online scores*, v0.37 §9.1, §9.3 (*WAIT*), v0.38 §9.1 (refused name),
 > §4.2, §4.3–§4.6, §5.2.1, §6, §7.2.1, §7.2.2, §7.3, §8, §9.1, §9.2, §9.3, §9.4, §9.7; v0.13 §9.1 menus, §9.3 options layout
 > **Related ADRs**: ADR-0006 (save document), ADR-0009 (gestures, automatic pause), ADR-0010
 > (one run, one bus), ADR-0015 (pause in the first playable), ADR-0018 (taps, locks, pause button),
@@ -181,7 +181,7 @@ stateDiagram-v2
   or a sendable run (ended by Game over or cleared, score above 0, recording not overflowed) it
   passes straight to the former targets, so builds without the feature behave as in v0.34.
   `send` with 20 runs kept stays on `Send online` with the erase-first line; a usable name is the
-  name entered for this run, never `???`.
+  name entered for this run, never `???`, and *(v0.38)* not a name the leaderboard refused.
   `Name entry (online)` is the name entry's screen whose result is not added to the local table.
   `Online status` shows *Sending*, then *Pending verification* and the verdict; the poll stops
   after 2 minutes. The client view of a kept run's status is in
@@ -189,8 +189,8 @@ stateDiagram-v2
 - **v0.37 (GDD §9.1, §9.3, #177)**: `send`, the online name entry's *OK* and a confirmed erase
   that meet another send or erasure under way show *WAIT* and do nothing; an erase of a run that
   left the list meanwhile sends nothing.
-- **v0.38 (GDD §9.1, #167)**: a refused name is forgotten for the run, so the next `send` takes
-  the `no usable name this run` edge to the online name entry.
+- **v0.38 (GDD §9.1, #167)**: a refused name is forgotten for the run, so the next `send` [fewer than 20 kept]
+  takes the `no usable name this run` edge to the online name entry (design; built in 3b-2, #167).
 - **Built (#167, 3b-1)**: the `erase, confirmed` transitions pass by an erase confirmation,
   *No* first, as `Confirm quit` (scene `OnlineErase`); the privacy page's gesture prompt is its own
   scene (`OnlineGesture`) that returns to `Send online`. A failed erasure stays on `Online status`
