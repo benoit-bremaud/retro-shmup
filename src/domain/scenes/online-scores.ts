@@ -1,6 +1,7 @@
 import type { MessageKey } from '../i18n/messages';
 import type { KeptRun } from '../online/kept-runs';
-import { statusLine } from '../online/online-lines';
+import type { FailureCode } from '../ports/leaderboard-port';
+import { failureLine, statusLine } from '../online/online-lines';
 import type { IntentFrame } from '../ports/input-port';
 import { MENU_HEADER_GAP } from '../presentation/menu-layout';
 import type { OnlineScoresView } from '../presentation/menu-layout';
@@ -34,6 +35,8 @@ export class OnlineScoresScreen implements OnlineScoresView {
   notice: MessageKey | undefined;
   private runs: readonly KeptRun[] = [];
   private page = 0;
+  /** The run whose erase is under way, until it leaves the list or fails. */
+  private erasingId: string | undefined;
 
   /** The status line: the highlighted run's status, *NO ONLINE SCORE* when none is kept. */
   get status(): MessageKey | undefined {
@@ -45,6 +48,7 @@ export class OnlineScoresScreen implements OnlineScoresView {
   /** Opens on page 1, its first row highlighted. */
   open(runs: readonly KeptRun[], now: number, frame: Readonly<IntentFrame>): void {
     this.notice = undefined;
+    this.erasingId = undefined;
     this.runs = runs;
     this.showPage(0);
     this.menu.reset(now, frame);
@@ -53,6 +57,12 @@ export class OnlineScoresScreen implements OnlineScoresView {
   /** Follows the kept runs (compared by identity, so an unchanged list costs nothing). */
   sync(runs: readonly KeptRun[], frame: Readonly<IntentFrame>): void {
     if (runs === this.runs) return;
+    // A status answer only: the rows (score, date) are unchanged and the status is read live, so
+    // keep the menu and any press under way.
+    if (this.sameRuns(runs)) {
+      this.runs = runs;
+      return;
+    }
     const row = this.menu.rows[this.menu.highlighted];
     const was = this.highlightedRun();
     const index = was === undefined ? -1 : this.runs.indexOf(was);
@@ -75,12 +85,37 @@ export class OnlineScoresScreen implements OnlineScoresView {
     return this.runs[this.page * RUNS_PER_PAGE + this.menu.highlighted];
   }
 
-  /** *NEXT* or *PREV*: the other page, its first row highlighted. */
-  turn(frame: Readonly<IntentFrame>): void {
-    const page = this.page === 0 ? 1 : 0;
-    this.rebuild(page, frame);
-    this.page = page;
-    this.menu.highlighted = 0;
+  /** *NEXT* or *PREV*: the other page, its first row highlighted, behind the opening guard. */
+  turn(now: number, frame: Readonly<IntentFrame>): void {
+    this.showPage(this.page === 0 ? 1 : 0);
+    this.menu.reset(now, frame);
+  }
+
+  /** Back from the erase confirmation: the same row, behind the opening guard (§9.1). */
+  reopen(now: number, frame: Readonly<IntentFrame>): void {
+    const highlighted = this.menu.highlighted;
+    this.menu.reset(now, frame);
+    this.menu.highlighted = highlighted;
+  }
+
+  /** *Yes* was confirmed: *WAIT* when another request is under way, else follow the erase. */
+  erased(id: string, result: 'erasing' | 'busy' | 'gone'): void {
+    this.notice = result === 'busy' ? 'wait' : undefined;
+    if (result === 'erasing') this.erasingId = id;
+  }
+
+  /** Shows the erase's failure; stops following once it failed or the run left the list. */
+  followErase(error: FailureCode | undefined, keeps: (id: string) => boolean): void {
+    const id = this.erasingId;
+    if (id === undefined) return;
+    if (error !== undefined) this.notice = failureLine(error);
+    if (error !== undefined || !keeps(id)) this.erasingId = undefined;
+  }
+
+  private sameRuns(runs: readonly KeptRun[]): boolean {
+    if (runs.length !== this.runs.length) return false;
+    for (let i = 0; i < runs.length; i += 1) if (runs[i]?.id !== this.runs[i]?.id) return false;
+    return true;
   }
 
   private followRun(
@@ -90,7 +125,7 @@ export class OnlineScoresScreen implements OnlineScoresView {
     frame: Readonly<IntentFrame>,
   ): void {
     let at = -1;
-    for (let i = 0; i < runs.length; i += 1) if (runs[i]?.id === id) at = i;
+    for (let i = 0; i < runs.length && at < 0; i += 1) if (runs[i]?.id === id) at = i;
     // Dropped: the next run takes its place, or the previous one at the end.
     if (at < 0) at = Math.min(index, runs.length - 1);
     if (at < 0) {

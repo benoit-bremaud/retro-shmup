@@ -8,6 +8,7 @@ import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
 import type { IntentFrame } from '../../src/domain/ports/input-port';
 import type { LinkPort } from '../../src/domain/ports/link-port';
 import { Starfield } from '../../src/domain/presentation/starfield';
+import { OnlineScoresScreen } from '../../src/domain/scenes/online-scores';
 import { NO_HOST } from '../../src/domain/scenes/scene-host';
 import { Scene, SceneMachine } from '../../src/domain/scenes/scene-machine';
 import { FakePort, MemoryStore } from '../support/leaderboard-fakes';
@@ -129,6 +130,25 @@ function texts(fixture: Fixture): string[] {
   fixture.render.texts.length = 0;
   fixture.machine.render(1, 16);
   return fixture.render.texts.filter((t) => t.region === 'field').map((t) => t.text);
+}
+
+/** The field y of the text drawn as `label`, for a tap on its row. */
+function textY(fixture: Fixture, label: string): number {
+  texts(fixture);
+  return fixture.render.texts.find((t) => t.text === label)?.y ?? -1;
+}
+
+/** A tap pressed and released at field y, then a quiet step. */
+function tap(machine: SceneMachine, y: number): void {
+  const frame = createIntentFrame();
+  frame.tapRegion = 'field';
+  frame.tapX = 120;
+  frame.tapY = y;
+  frame.releaseRegion = 'field';
+  frame.releaseX = 120;
+  frame.releaseY = y;
+  machine.step(DT, frame);
+  machine.step(DT, createIntentFrame());
 }
 
 /** The title's Options: Play, High scores, then Options. */
@@ -348,5 +368,46 @@ describe('Online scores — the highlight across pages (GDD v0.39 §9.3)', () =>
     move(fixture.machine, 1, 2); // PREV
     answer(fixture, 1, { 0: 'unknown' });
     expect(texts(fixture)).toContain('PREV');
+  });
+});
+
+describe('Online scores — guards against a doubled press (GDD §9.1)', () => {
+  it('keeps the menu, and a press under way, when a status answer changes no row', () => {
+    const screen = new OnlineScoresScreen();
+    const run = { id: idOf(0), token: TOKEN, score: 1, sentAt: '2026-11-10T10:00:00.000Z' };
+    screen.open([{ ...run, status: 'pending' }], 0, createIntentFrame());
+    const menu = screen.menu;
+    screen.sync([{ ...run, status: 'verified' }], createIntentFrame());
+    expect(screen.menu).toBe(menu);
+    expect(screen.status).toBe('verified');
+  });
+
+  it('stays on page 2 when NEXT is tapped twice in a row', () => {
+    const fixture = onScores(20);
+    idle(fixture.machine, 10); // past the screen's own opening guard
+    const y = textY(fixture, 'NEXT'); // PREV takes this row on page 2
+    tap(fixture.machine, y);
+    expect(texts(fixture)).toContain('PREV');
+    tap(fixture.machine, y); // within the opening guard
+    expect(texts(fixture)).toContain('PREV');
+  });
+
+  it('stays on the list when No is tapped twice in a row', () => {
+    const fixture = onScores(2);
+    press(fixture.machine, Button.Confirm);
+    idle(fixture.machine, 10);
+    const y = textY(fixture, 'NO'); // a run row lies under it on the list
+    tap(fixture.machine, y);
+    expect(fixture.machine.scene).toBe(Scene.OnlineScores);
+    tap(fixture.machine, y); // within the opening guard
+    expect(fixture.machine.scene).toBe(Scene.OnlineScores);
+  });
+
+  it('highlights the previous run, on page 1, when page 2 loses its only run', () => {
+    const fixture = onScores(11);
+    move(fixture.machine, -1, 2); // NEXT
+    press(fixture.machine, Button.Confirm); // page 2, run 10 highlighted
+    answer(fixture, 11, { 10: 'unknown' });
+    expect(texts(fixture)[1]).toBe('PENDING VERIFICATION'); // run 9, not run 0 (verified)
   });
 });

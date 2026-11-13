@@ -494,7 +494,6 @@ export class SceneMachine {
   private readonly titleTouchOptions: MenuScene;
   private readonly onlineScores = new OnlineScoresScreen();
   /** The kept run being erased from *Online scores*, until it leaves them or its erasure fails. */
-  private scoresErasingId: string | undefined;
   /** Whether the options opened without *Controls* (touch used last), frozen until they reopen. */
   private optionsTouch = false;
   private readonly restoreMenu = new Menu(['no', 'yes'] as const, {
@@ -1225,7 +1224,6 @@ export class SceneMachine {
     const online = this.runs();
     online.refreshAll();
     this.enter(Scene.OnlineScores);
-    this.scoresErasingId = undefined;
     this.onlineScores.open(online.kept(), this.steps, frame);
   }
 
@@ -1235,15 +1233,10 @@ export class SceneMachine {
     const online = this.runs();
     const screen = this.onlineScores;
     screen.sync(online.kept(), frame);
-    const erasing = this.scoresErasingId;
-    if (erasing !== undefined) {
-      const error = online.eraseError();
-      if (error !== undefined) screen.notice = failureLine(error);
-      if (error !== undefined || !online.keeps(erasing)) this.scoresErasingId = undefined;
-    }
+    screen.followErase(online.eraseError(), (id) => online.keeps(id));
     const row = this.stepMenu(screen.menu, frame);
     if (row === 'score') this.openMenu(Scene.ScoresErase, frame);
-    else if (row === 'next' || row === 'prev') screen.turn(frame);
+    else if (row === 'next' || row === 'prev') screen.turn(this.steps, frame);
     else if (row === 'back' || this.backed(frame)) {
       online.leave();
       this.openMenu(Scene.TitleOptions, frame);
@@ -1258,12 +1251,10 @@ export class SceneMachine {
     const screen = this.onlineScores;
     if (row === 'yes') {
       const id = screen.highlightedRun()?.id ?? '';
-      const result = this.runs().erase(id);
-      screen.notice = result === 'busy' ? 'wait' : undefined;
-      if (result === 'erasing') this.scoresErasingId = id;
+      screen.erased(id, this.runs().erase(id));
     }
     this.enter(Scene.OnlineScores);
-    screen.menu.ignore(frame);
+    screen.reopen(this.steps, frame);
   }
 
   private stepEffects(

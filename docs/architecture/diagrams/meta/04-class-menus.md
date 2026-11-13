@@ -78,6 +78,26 @@ classDiagram
     +open(table: HighScoreTable, highlighted: number) void
     +step(frame) boolean
   }
+  class OnlineScoresScreen {
+    +menu: Menu
+    +texts: readonly string[]
+    +notice: MessageKey
+    +status: MessageKey
+    +open(runs, now, frame) void
+    +sync(runs, frame) void
+    +highlightedRun() KeptRun
+    +turn(now, frame) void
+    +reopen(now, frame) void
+    +erased(id, result) void
+    +followErase(error, keeps) void
+  }
+  class OnlineScoresView {
+    <<interface>>
+    +menu: MenuView
+    +texts: readonly string[]
+    +status: MessageKey
+    +notice: MessageKey
+  }
   class SceneHost {
     <<interface>>
     +optionsChanged(options: Options) void
@@ -284,6 +304,9 @@ classDiagram
   ControlsScreen --> SceneHost : capture, keyLabel, optionsChanged
   HighScoresScreen ..|> HighScoresView
   HighScoresScreen ..> HighScoreTable : rows formatted on open
+  SceneMachine *-- OnlineScoresScreen
+  OnlineScoresScreen ..|> OnlineScoresView
+  OnlineScoresScreen *-- Menu : rebuilt when the kept runs change
   Menu ..|> OpenableMenu
   OpenableMenu --|> MenuView
   SceneMachine *-- LiveOptions
