@@ -1,7 +1,7 @@
 // Composition root (ADR-0003): creates the adapters, wires them through the ports and starts the
 // frame loop. The only module allowed to touch window, document, navigator, matchMedia,
 // requestAnimationFrame and Math.random (ADR-0014). Covered by the browser smoke test
-// (ADR-0003 §7), not by unit tests.
+// (ADR-0003 §7), plus one source wiring test of the canvas first fit (#184).
 import './style.css';
 import { Canvas2DRenderer } from '../adapters/canvas2d-renderer';
 import { encodeCodec1 } from '../adapters/codec1-encoder';
@@ -205,8 +205,8 @@ globalThis.addEventListener('contextmenu', (event) => {
  * Chooses the logical screen for the window (ADR-0015 decision 1, ADR-0018 decision 6), sizes the
  * off-screen canvas to it and the visible canvas to its integer scale, then hands the viewport to
  * the renderer and, with the canvas client rectangle read once here, to the input adapter
- * (ADR-0018 decision 6). Resizing a canvas resets its context, so the renderer resets its own
- * state too.
+ * (ADR-0018 decision 6), and marks the canvas fitted so the page shows it (#184). Resizing a
+ * canvas resets its context, so the renderer resets its own state too.
  */
 function fitToWindow(): void {
   const viewport = computeViewport(

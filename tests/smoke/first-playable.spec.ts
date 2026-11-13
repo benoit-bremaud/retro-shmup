@@ -272,6 +272,8 @@ test('a phone starts, pauses and resumes by touch; a rotation pauses without res
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('./');
+  // The page CSS hides the canvas until its first fit (#184): it must be shown again.
+  await expect(page.locator('#screen')).toBeVisible();
 
   await expect.poll(() => paintedPixels(page)).toBeGreaterThan(0);
   expect((await geometry(page)).portrait).toBe(true);
