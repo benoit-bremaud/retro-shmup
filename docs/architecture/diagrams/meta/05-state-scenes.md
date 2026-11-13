@@ -136,6 +136,7 @@ stateDiagram-v2
   OnlineScores --> OnlineScores : 404 on a status / drop the run
   OnlineScores --> OnlineScores : erase, confirmed [run kept, another under way] / show WAIT, erase nothing
   OnlineScores --> OnlineScores : erase, confirmed [none under way] / erase the run, drop it on 204 or 404
+  OnlineScores --> OnlineScores : erase, confirmed, then failed / show the error line
   OnlineScores --> OnlineScores : next or prev / show the other page
   OnlineScores --> Options : back
   FeedbackOffer --> Title : give feedback / open the form, count + 1

@@ -221,7 +221,7 @@ step depends on them.
 - **Success guarantee**: the list shows each kept run with its latest known status; an erased run
   is gone online and from the list.
 - **Main success scenario**:
-  1. Player opens *Options → Online scores*.
+  1. Player opens *Options → Online scores* from the title (never from the pause, v0.39).
   2. The game lists the kept runs, newest first, 10 per page *(v0.39)*, and asks the leaderboard
      for the status of each, one at a time; the highlighted run's status shows under the heading.
   3. Player highlights a run, chooses it and confirms *Erase*.

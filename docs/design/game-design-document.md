@@ -1159,7 +1159,8 @@ scrolling (at most 12 rows of at least 16 logical px: 192 px of the 320). One ro
 - *(v0.25, #95)* **Row height**: each menu has its own row height, the tallest that fits, between
   16 and 32 logical px: `min(32, max(16, floor((320 − 2 × gap) / rows)))`, where `gap` is the
   space its header takes above the first row (none on the title, 16 for a header in the menu
-  font, 32 in the title font, 48 on the controls screen: its title and the device line), kept
+  font, 32 in the title font, 48 on the controls screen: its title and the device line; *(v0.39)* 32 on
+  *Online scores*: its menu-font heading and the status line), kept
   free below the rows too. The rows stay centred on the field; the highlight bar, the hit area
   of a tap or click (the whole row band) and the text's centring follow the row height. At the
   usual phone scales (×4 portrait, 1.33 to 1.52 CSS px per logical px) the title, pause, quit
@@ -1248,7 +1249,7 @@ made with a click, tap or key applies at once; otherwise the preference is appli
 click, tap or key press, including during a run *(v0.4, ADR-0009)*.
 
 **Online scores** *(v0.35, ADR-0031)*: a row *ONLINE SCORES* / *SCORES EN LIGNE* before *Back*,
-only where *Send online* exists. It lists the kept runs, newest first (score, status, date),
+only where *Send online* exists. It lists the kept runs, newest first (score, status, date; the row layout superseded by v0.39 below),
 asks the leaderboard for the status of every kept run, one at a time, when it opens, and erases
 the highlighted run after a confirmation (default *No*); a run the leaderboard no longer knows
 (erased, or past its retention) leaves the list. *(v0.37)* An erasure confirmed while another
@@ -1259,10 +1260,15 @@ Empty: *NO ONLINE SCORE* / *AUCUN SCORE EN LIGNE*.
 *(v0.39)* Layout: a menu-font row is 30 characters, too short for the score, the date and a
 status such as *PENDING VERIFICATION*, and 20 runs do not fit one screen at the 16 px row
 minimum (v0.25). So each run row shows its score and its date (`YYYY-MM-DD`); the highlighted
-run's status shows in full on a line under the heading. The list shows 10 runs per page: page 1
-ends with *NEXT* / *SUIVANT* when more runs are kept, page 2 with *PREV* / *PRECEDENT*, then
-*BACK* (12 rows at most, no scrolling, v0.13). Choosing a run opens the erase confirmation; an
-error or *WAIT* line shows at the foot. *Online scores* is reached from the title's options only,
+run's status shows in full on a line under the heading (empty while *NEXT*, *PREV* or *BACK* is
+highlighted). The date is the UTC date of the send. The list shows 10 runs per page: page 1 ends
+with *NEXT* / *SUIVANT* when more runs are kept, page 2 with *PREV* / *PRECEDENT*, and each page
+ends with *BACK* (12 rows at most, no scrolling, v0.13). The heading is in the menu font, as
+*High scores*, with the status line under it: gap 32, so 12 rows are 21 px tall (v0.25). A page
+switch highlights its first row; a run dropped from the list (erased, or `404` on its status)
+moves the highlight to the next run, or the previous one at the end; a page 2 left without runs
+closes to page 1. Choosing a run opens the erase confirmation; an error or *WAIT* line shows at
+the foot. *Online scores* is reached from the title's options only,
 never from the pause (no request during a run).
 
 **Autofire (touch and mouse)** *(v0.9)*: off by default; when on, touch and the mouse fire all the time, as in v0.8,
@@ -1663,4 +1669,4 @@ fully playable at release quality, used to validate the design before producing 
 | Online leaderboard *(v0.35)* | Owner, 2026-11-12 (#167, epic #166, ADR-0031): **record runs as quantised per-step records and send them by explicit choice after the hall of fame**. Frame format raw DEFLATE (405/500; RLE + delta 390, RLE 380), refined after the review into columns with delta-coded x and y and a size guard (450/500; rows + guard 360, brotli 300); codec spec and vectors in retro-leaderboard (420/500; git dependency 360, npm 310); own deterministic trigonometry (450/500; accept the risk 360, replay in the player's engine 320); results flow + *Options → Online scores* (395/500; options without status 385, results only 345); replay CLI (475/500; ES module 400, tsx 285); tokens under a separate key (420/500; save document v3 330); retention line *RETENTION IN PRIVACY* (380/500; durations 315); the final origin only (430/500; every Pages origin 340, Pages + itch.io 305); release gate `RELEASE_COMMIT` = built SHA (455/500; tag check 395, release branch 370) | See ADR-0031 *Rejected alternatives* |
 | Busy send or erasure *(v0.37)* | Owner, 2026-11-12 (#177): *SEND* or a confirmed erasure that meets another send or erasure still under way shows *WAIT* / *ATTENDS* and does nothing (480/500; a greyed row without a reason 310, queueing it behind the request under way 230) | A greyed row without a reason (the player cannot tell why); queueing the player action behind the send or erasure under way (a second pending action, kept or lost when the screen is left) |
 | Refused name *(v0.38)* | Owner, 2026-11-13 (#167): after *NAME NOT ACCEPTED* the refused name is forgotten and the next *SEND* reopens the name entry (470/500; resending 250, a *CHANGE NAME* row 360) | Resending the same refused name on *SEND* (refused again every time); a dedicated *CHANGE NAME* row (one more row for a rare case) |
-| Online scores layout *(v0.39)* | Owner, 2026-11-13 (#167): pages of 10 runs with *NEXT* / *PREV* (415/500); each row score and date, the highlighted run's status under the heading (435/500); title options only | One list in rows of 14 px (310, below the touch minimum of v0.25); a scrolling list (280, against v0.13); two lines per run (350); short status codes (345) |
+| Online scores layout *(v0.39)* | Owner, 2026-11-13 (#167): pages of 10 runs with *NEXT* / *PREV* (415/500); each row score and date, the highlighted run's status under the heading (435/500); title options only | One list in rows of 14 px (310, below the touch minimum of v0.25 and still over 12 rows); a scrolling list (280, against v0.13); two lines per run (350); short status codes (345) |
