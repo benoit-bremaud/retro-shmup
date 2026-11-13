@@ -1,6 +1,6 @@
 # State machine diagram — meta — screens and their transitions (1.0)
 
-> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.10 §3.2, §3.4, v0.26 §9.1 (country choice, feedback offer), v0.35 §9.1 *Send online* and §9.3 *Online scores*, v0.37 §9.1, §9.3 (*WAIT*), v0.38 §9.1 (refused name),
+> **Source specs**: [Game Design Document](../../../design/game-design-document.md) v0.10 §3.2, §3.4, v0.26 §9.1 (country choice, feedback offer), v0.35 §9.1 *Send online* and §9.3 *Online scores*, v0.37 §9.1, §9.3 (*WAIT*), v0.38 §9.1 (refused name), v0.39 §9.3 (*Online scores* pages),
 > §4.2, §4.3–§4.6, §5.2.1, §6, §7.2.1, §7.2.2, §7.3, §8, §9.1, §9.2, §9.3, §9.4, §9.7; v0.13 §9.1 menus, §9.3 options layout
 > **Related ADRs**: ADR-0006 (save document), ADR-0009 (gestures, automatic pause), ADR-0010
 > (one run, one bus), ADR-0015 (pause in the first playable), ADR-0018 (taps, locks, pause button),
@@ -136,6 +136,7 @@ stateDiagram-v2
   OnlineScores --> OnlineScores : 404 on a status / drop the run
   OnlineScores --> OnlineScores : erase, confirmed [run kept, another under way] / show WAIT, erase nothing
   OnlineScores --> OnlineScores : erase, confirmed [none under way] / erase the run, drop it on 204 or 404
+  OnlineScores --> OnlineScores : next or prev / show the other page
   OnlineScores --> Options : back
   FeedbackOffer --> Title : give feedback / open the form, count + 1
   FeedbackOffer --> Title : later, back or after(20 s)
@@ -191,6 +192,9 @@ stateDiagram-v2
   left the list meanwhile sends nothing.
 - **v0.38 (GDD §9.1, #167)**: a refused name is forgotten for the run, so the next `send` [fewer than 20 kept]
   takes the `no usable name this run` edge to the online name entry (design; built in 3b-2, #167).
+- **v0.39 (GDD §9.3, #167)**: `Online scores` shows 10 runs per page with *NEXT* / *PREV*;
+  choosing a run opens the erase confirmation (*No* first). It is reached from the title's
+  `Options` only, never from `PauseOptions`.
 - **Built (#167, 3b-1)**: the `erase, confirmed` transitions pass by an erase confirmation,
   *No* first, as `Confirm quit` (scene `OnlineErase`); the privacy page's gesture prompt is its own
   scene (`OnlineGesture`) that returns to `Send online`. A failed erasure stays on `Online status`
