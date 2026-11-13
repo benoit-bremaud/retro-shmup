@@ -11,7 +11,7 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 ### Refused name reopens the name entry: GDD v0.38 (part of #167)
 
 - After *NAME NOT ACCEPTED* the refused name is forgotten for the run and the next *SEND* opens
-  the name entry again (owner, MCDA 470/500; resending the same name or a *CHANGE NAME* row
+  the name entry again (owner, MCDA 470/500; resending the same name 250 or a *CHANGE NAME* row 360
   rejected). UC9 4a and meta/05 updated; the code lands in 3b-2.
 
 ### Send online screens (3b-1, #179 `e5e2dc9`, part of #167)
