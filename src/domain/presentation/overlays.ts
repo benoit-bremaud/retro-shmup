@@ -31,6 +31,7 @@ import type {
   MenuScreen,
   MenuView,
   NameEntryView,
+  OnlineScoresView,
   SendOnlineView,
   SlotColumn,
 } from './menu-layout';
@@ -285,6 +286,36 @@ export function drawSendOnline(
     blocked ? noticeTop + SEND_LINE_STEP : noticeTop,
     SEND_LINE_STEP,
   );
+}
+
+/**
+ * *Online scores* (GDD v0.39 §9.3) over the veil: the heading in the menu font, the highlighted
+ * run's status under it, the rows (a run row shows its score and date) and the foot line.
+ */
+export function drawOnlineScores(
+  render: RenderPort,
+  view: OnlineScoresView,
+  language: Language,
+): void {
+  drawVeil(render);
+  const menu = view.menu;
+  drawMenuLine(render, message('onlineScores', language), menu.top - 2 * MENU_ROW_HEIGHT);
+  if (view.status !== undefined) {
+    drawMenuLine(render, message(view.status, language), menu.top - MENU_ROW_HEIGHT);
+  }
+  for (let i = 0; i < menu.rows.length; i += 1) {
+    const key = menu.rows[i];
+    if (key === undefined) continue;
+    const text = key === 'score' ? (view.texts[i] ?? '') : message(key, language);
+    drawActionRow(
+      render,
+      text,
+      menu.top + i * menu.rowHeight,
+      menu.rowHeight,
+      i === menu.highlighted,
+    );
+  }
+  if (view.notice !== undefined) drawStatusLine(render, view.notice, language);
 }
 
 /** The gesture prompt (ADR-0009, GDD v0.26 §9.1): a gamepad waits for a tap, click or key. */

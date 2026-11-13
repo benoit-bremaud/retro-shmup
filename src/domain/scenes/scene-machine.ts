@@ -28,6 +28,7 @@ import {
   drawHighScores,
   drawMenuScreen,
   drawNameEntry,
+  drawOnlineScores,
   drawSendOnline,
   drawStatusLine,
   drawVeil,
@@ -52,6 +53,7 @@ import type { HighScoreEntry } from '../hall-of-fame/high-scores';
 import { ControlsScreen } from './controls-screen';
 import { HighScoresScreen } from './high-scores-screen';
 import { Menu } from './menu';
+import { OnlineScoresScreen } from './online-scores';
 import { CountryChoice } from './country-choice';
 import { ANY_GESTURE, FeedbackFlow, NO_FEEDBACK } from './feedback-flow';
 import type { ArmedAt, FeedbackSettings } from './feedback-flow';
@@ -106,6 +108,9 @@ export const Scene = {
   OnlineStatus: 'ONLINE_STATUS',
   OnlineErase: 'ONLINE_ERASE',
   OnlineGesture: 'ONLINE_GESTURE',
+  /** *Online scores* (GDD v0.39 §9.3), from the title's options only, and its erase confirmation. */
+  OnlineScores: 'ONLINE_SCORES',
+  ScoresErase: 'SCORES_ERASE',
 } as const;
 export type Scene = (typeof Scene)[keyof typeof Scene];
 
@@ -188,6 +193,8 @@ const SCENE_TRAITS: Readonly<Record<Scene, SceneTraits>> = {
   [Scene.OnlineStatus]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
   [Scene.OnlineErase]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
   [Scene.OnlineGesture]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
+  [Scene.OnlineScores]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
+  [Scene.ScoresErase]: { frozen: false, scrolls: true, drawsRun: false, pauseButton: false },
 };
 
 /** Where each options scene's Back and sub-screen lead (meta/05-state-scenes). */
@@ -221,7 +228,10 @@ const RESTORE_PARENT = {
   [Scene.PauseRestore]: Scene.PauseControls,
 } as const;
 
-/** The options rows; *Controls* is hidden when the last device used is touch (GDD v0.15 §4.2). */
+/**
+ * The options rows; *Controls* is hidden when the last device used is touch (GDD v0.15 §4.2);
+ * *Online scores* shows in the title's options only, with a leaderboard (GDD v0.39 §9.3).
+ */
 type OptionsRow =
   | 'visualEffects'
   | 'audio'
@@ -230,6 +240,7 @@ type OptionsRow =
   | 'language'
   | 'country'
   | 'fullscreen'
+  | 'onlineScores'
   | 'back';
 const EFFECTS_PARENT = {
   [Scene.TitleEffects]: Scene.TitleOptions,
@@ -278,6 +289,8 @@ const SCENE_MUSIC: Readonly<Record<Scene, Track | 'run'>> = {
   [Scene.OnlineStatus]: Track.Title,
   [Scene.OnlineErase]: Track.Title,
   [Scene.OnlineGesture]: Track.Title,
+  [Scene.OnlineScores]: Track.Title,
+  [Scene.ScoresErase]: Track.Title,
 };
 
 const COUNT_IN_STEPS = toSteps(SceneTuning.countInSeconds);
@@ -474,6 +487,14 @@ export class SceneMachine {
     ['visualEffects', 'audio', 'autofire', 'language', 'country', 'fullscreen', 'back'],
     { flips: this.hasValue, headerGap: MENU_HEADER_GAP.title },
   );
+  /** The title's options: the shared ones, plus *Online scores* with a leaderboard (§9.3). */
+  private readonly titleOptionsMenu: Menu<OptionsRow>;
+  private readonly titleTouchOptionsMenu: Menu<OptionsRow>;
+  private readonly titleOptions: MenuScene;
+  private readonly titleTouchOptions: MenuScene;
+  private readonly onlineScores = new OnlineScoresScreen();
+  /** The kept run being erased from *Online scores*, until it leaves them or its erasure fails. */
+  private scoresErasingId: string | undefined;
   /** Whether the options opened without *Controls* (touch used last), frozen until they reopen. */
   private optionsTouch = false;
   private readonly restoreMenu = new Menu(['no', 'yes'] as const, {
@@ -504,9 +525,9 @@ export class SceneMachine {
       note: 'quickQuestions',
     },
     [Scene.OnlineErase]: { menu: this.eraseMenu, header: { key: 'erase', font: 'menu' } },
+    [Scene.ScoresErase]: { menu: this.eraseMenu, header: { key: 'erase', font: 'menu' } },
     [Scene.Paused]: { menu: this.pauseMenu, header: { key: 'pause', font: 'title' } },
     [Scene.ConfirmQuit]: { menu: this.quitMenu, header: { key: 'quitQuestion', font: 'menu' } },
-    [Scene.TitleOptions]: this.optionsScreen(),
     [Scene.PauseOptions]: this.optionsScreen(),
     [Scene.TitleEffects]: this.effectsScreen(),
     [Scene.PauseEffects]: this.effectsScreen(),
@@ -572,6 +593,10 @@ export class SceneMachine {
     this.titleArmings = this.feedback.enabled
       ? rowArmings(this.titleMenu, this.titleMenu.rows.indexOf('feedback'))
       : undefined;
+    this.titleOptionsMenu = this.withOnlineScores(this.fullOptionsMenu);
+    this.titleTouchOptionsMenu = this.withOnlineScores(this.touchOptionsMenu);
+    this.titleOptions = { ...this.optionsScreen(), menu: this.titleOptionsMenu };
+    this.titleTouchOptions = { ...this.optionsScreen(), menu: this.titleTouchOptionsMenu };
     this.controls = new ControlsScreen(this.options, host);
     this.handlers = this.buildHandlers();
     this.applyVolumes();
@@ -612,6 +637,11 @@ export class SceneMachine {
         step: this.stepOnlineGesture.bind(this),
         overlay: this.overlayGesture.bind(this),
       },
+      [Scene.OnlineScores]: {
+        step: this.stepOnlineScores.bind(this),
+        overlay: this.overlayOnlineScores.bind(this),
+      },
+      [Scene.ScoresErase]: { step: this.stepScoresErase.bind(this), overlay: menu },
       [Scene.Playing]: { step: this.stepPlaying.bind(this), overlay: NO_OVERLAY },
       [Scene.Paused]: { step: this.stepPaused.bind(this), overlay: menu },
       [Scene.CountIn]: {
@@ -695,6 +725,13 @@ export class SceneMachine {
       header: { key: 'options', font: 'title' },
       value: this.value,
     };
+  }
+
+  /** The title's copy of an options menu: *Online scores* before *Back* when online. */
+  private withOnlineScores(shared: Menu<OptionsRow>): Menu<OptionsRow> {
+    if (this.online === undefined) return shared;
+    const rows: readonly OptionsRow[] = [...shared.rows.slice(0, -1), 'onlineScores', 'back'];
+    return new Menu<OptionsRow>(rows, { flips: this.hasValue, headerGap: MENU_HEADER_GAP.title });
   }
 
   private touchOptionsScreen(): MenuScene {
@@ -1164,15 +1201,69 @@ export class SceneMachine {
     _dt: number,
     frame: Readonly<IntentFrame>,
   ): void {
-    const menu = this.optionsTouch ? this.touchOptionsMenu : this.fullOptionsMenu;
-    const row = this.stepMenu(menu, frame);
+    const row = this.stepMenu(this.optionsMenu(scene), frame);
     if (this.backTo(row, frame, OPTIONS_ROUTES[scene].parent)) return;
     if (row === 'visualEffects') this.openMenu(OPTIONS_ROUTES[scene].effects, frame);
     else if (row === 'audio') this.openMenu(OPTIONS_ROUTES[scene].audio, frame);
     else if (row === 'controls') this.openControls(OPTIONS_ROUTES[scene].controls, frame);
     else if (row === 'country') {
       this.openCountry(OPTIONS_ROUTES[scene].country, frame);
-    } else this.change(row);
+    } else if (row === 'onlineScores') this.openOnlineScores(frame);
+    else this.change(row);
+  }
+
+  /** The options menu a scene shows: the title's has its own copy (§9.3). */
+  private optionsMenu(scene: keyof typeof OPTIONS_ROUTES): Menu<OptionsRow> {
+    if (scene === Scene.TitleOptions) {
+      return this.optionsTouch ? this.titleTouchOptionsMenu : this.titleOptionsMenu;
+    }
+    return this.optionsTouch ? this.touchOptionsMenu : this.fullOptionsMenu;
+  }
+
+  /** *Online scores* opens on page 1 and asks every kept run's status (GDD v0.39 §9.3, UC10). */
+  private openOnlineScores(frame: Readonly<IntentFrame>): void {
+    const online = this.runs();
+    online.refreshAll();
+    this.enter(Scene.OnlineScores);
+    this.scoresErasingId = undefined;
+    this.onlineScores.open(online.kept(), this.steps, frame);
+  }
+
+  // The page follows the kept runs; a run opens the erase confirmation, NEXT and PREV turn the
+  // page, BACK or back leave: no more status requests (GDD v0.39 §9.3).
+  private stepOnlineScores(_dt: number, frame: Readonly<IntentFrame>): void {
+    const online = this.runs();
+    const screen = this.onlineScores;
+    screen.sync(online.kept(), frame);
+    const erasing = this.scoresErasingId;
+    if (erasing !== undefined) {
+      const error = online.eraseError();
+      if (error !== undefined) screen.notice = failureLine(error);
+      if (error !== undefined || !online.keeps(erasing)) this.scoresErasingId = undefined;
+    }
+    const row = this.stepMenu(screen.menu, frame);
+    if (row === 'score') this.openMenu(Scene.ScoresErase, frame);
+    else if (row === 'next' || row === 'prev') screen.turn(frame);
+    else if (row === 'back' || this.backed(frame)) {
+      online.leave();
+      this.openMenu(Scene.TitleOptions, frame);
+    }
+  }
+
+  // No is first, so a hurried Confirm never erases; Yes erases the highlighted run, WAIT while
+  // another request is under way; a run already gone just leaves the list (GDD v0.37, v0.39).
+  private stepScoresErase(_dt: number, frame: Readonly<IntentFrame>): void {
+    const row = this.stepMenu(this.eraseMenu, frame);
+    if (row === undefined && !this.backed(frame)) return;
+    const screen = this.onlineScores;
+    if (row === 'yes') {
+      const id = screen.highlightedRun()?.id ?? '';
+      const result = this.runs().erase(id);
+      screen.notice = result === 'busy' ? 'wait' : undefined;
+      if (result === 'erasing') this.scoresErasingId = id;
+    }
+    this.enter(Scene.OnlineScores);
+    screen.menu.ignore(frame);
   }
 
   private stepEffects(
@@ -1474,8 +1565,11 @@ export class SceneMachine {
   /** The menu screen of a scene: the table's, or the options without *Controls* on touch. */
   private screenOf(scene: Scene): MenuScene | undefined {
     if (scene === Scene.Title) return this.titleScreen;
-    const touchOptions = scene === Scene.TitleOptions || scene === Scene.PauseOptions;
-    return touchOptions && this.optionsTouch ? this.touchOptions : this.menuScreens[scene];
+    if (scene === Scene.TitleOptions) {
+      return this.optionsTouch ? this.titleTouchOptions : this.titleOptions;
+    }
+    const touchOptions = scene === Scene.PauseOptions && this.optionsTouch;
+    return touchOptions ? this.touchOptions : this.menuScreens[scene];
   }
 
   /** Consumes one locked step; true while Confirm and taps are still ignored. */
@@ -1555,6 +1649,10 @@ export class SceneMachine {
   /** *Send online* and the status, with *OPEN BLOCKED* for 2 s after a refused privacy page. */
   private overlaySendOnline(): void {
     drawSendOnline(this.renderer, this.sendView, this.options.language, this.privacy.blocked);
+  }
+
+  private overlayOnlineScores(): void {
+    drawOnlineScores(this.renderer, this.onlineScores, this.options.language);
   }
 
   private overlayGesture(): void {

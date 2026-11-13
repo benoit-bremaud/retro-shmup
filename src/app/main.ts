@@ -4,6 +4,8 @@
 // (ADR-0003 §7), not by unit tests.
 import './style.css';
 import { Canvas2DRenderer } from '../adapters/canvas2d-renderer';
+import { encodeCodec1 } from '../adapters/codec1-encoder';
+import { FetchLeaderboard } from '../adapters/fetch-leaderboard';
 import { DeviceInput } from '../adapters/input/device-input';
 import type { InputEnvironment } from '../adapters/input/device-input';
 import { PerformanceClock } from '../adapters/performance-clock';
@@ -19,6 +21,8 @@ import { ChampionName } from '../domain/presentation/champion-name';
 import { Starfield } from '../domain/presentation/starfield';
 import { SaveStore } from '../domain/save/save-store';
 import { SceneMachine } from '../domain/scenes/scene-machine';
+import type { OnlineSettings } from '../domain/scenes/scene-machine';
+import { OnlineRuns } from '../domain/online/online-runs';
 import { feedbackForm } from '../domain/feedback/feedback-link';
 import type { SceneHost } from '../domain/scenes/scene-host';
 import { FrameLoop } from './frame-loop';
@@ -243,7 +247,8 @@ watchPixelRatio();
 // GDD §9.3: reduced motion presets the shake, the flashes and the slow motion off on a first
 // launch; afterwards the saved options win (ADR-0006, read once here, outside the loop).
 const calm = globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const save = new SaveStore(new LocalStorageStore(() => globalThis.localStorage), calm);
+const storage = new LocalStorageStore(() => globalThis.localStorage);
+const save = new SaveStore(storage, calm);
 const options = save.load();
 input.setBindings(options.bindings); // the saved ones, else the defaults (GDD v0.15 §4.2)
 input.setAutofire(options.autofire);
@@ -291,6 +296,26 @@ const host: SceneHost = {
   },
 };
 
+// The online leaderboard exists only in a release build on its origin (ADR-0031 decision 12):
+// otherwise the game has no network call at all and *Send online* is never offered.
+const online: OnlineSettings | undefined =
+  __LEADERBOARD_URL__ === ''
+    ? undefined
+    : {
+        runs: new OnlineRuns(
+          new FetchLeaderboard(
+            __LEADERBOARD_URL__,
+            __APP_VERSION__,
+            (url, init) => fetch(url, init),
+            encodeCodec1,
+          ),
+          storage,
+          () => new Date().toISOString(),
+        ),
+        privacy: `${__LEADERBOARD_URL__}/privacy`,
+        link: input,
+      };
+
 // Presentation randomness is unseeded on purpose: it never touches the outcome (ADR-0010).
 // Each run draws its seed here, the only module allowed Math.random (ADR-0014, ADR-0019): the
 // domain replays a run from (seed, script, inputs).
@@ -305,6 +330,7 @@ const scenes: FrameTarget = new SceneMachine(
     champion: new ChampionName(Math.random),
     audio,
     feedback: { form: feedbackForm(__FEEDBACK_FORM__), version: __APP_VERSION__, link: input },
+    ...(online === undefined ? {} : { online }),
   },
 );
 const loop = new FrameLoop(new PerformanceClock(), input, scenes, (callback) => {

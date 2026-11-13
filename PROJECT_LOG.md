@@ -8,6 +8,16 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-11-13
 
+### Online scores and the game wiring (3b-2, closes #167)
+
+- *Online scores* (`OnlineScoresScreen`, scenes `OnlineScores` and `ScoresErase`) built to GDD
+  v0.39: pages of 10, *NEXT* / *PREV* / *BACK*, the status under the heading, the highlight
+  following its run across pages, *WAIT* and error lines at the foot. Title options only.
+- `main.ts` wires `OnlineRuns` over `FetchLeaderboard` when the build holds a leaderboard origin
+  (the release commit only, ADR-0031 decision 12); otherwise the game makes no network call.
+- The refused-name rule of v0.38 is coded. Headless screenshots checked with a temporary
+  unreachable origin (not committed).
+
 ### Online scores in pages: GDD v0.39 (part of #167)
 
 - 20 kept runs do not fit one screen at the 16 px touch minimum, and a row cannot hold score,

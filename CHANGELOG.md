@@ -22,7 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   6, 11, 12, 15–20, #167).
 - The *Send online* screens after a run (GDD v0.35–v0.37 §9.1): the offer, the online name
   entry, the verification status with *ERASE*, the privacy page, the error and *WAIT* lines, in
-  English and French; not wired into the game yet (#167, slice 3b-2).
+  English and French (#167).
+- *Online scores* in the title's options (GDD v0.39 §9.3): the kept runs in pages of 10 with
+  *NEXT* / *PREV*, each row its score and UTC date, the highlighted run's status under the
+  heading, erasing a run after a confirmation; and the game wiring of the online leaderboard,
+  present only in a release build on its origin (#167). A refused name now reopens the name
+  entry on the next *SEND* (GDD v0.38).
 - The chain multiplier explains itself in play: the first ×2 of a run floats *CHAIN ×2 - KILL
   FAST* for 1 s, and every break from ×2 or more floats *CHAIN BREAK* for 0.5 s, near the top of
   the field, on their own *CHAIN HINTS* / *AIDE CHAINE* effect switch (GDD v0.32 §7.3, #147).
