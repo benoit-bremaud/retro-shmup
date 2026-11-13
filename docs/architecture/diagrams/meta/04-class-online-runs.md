@@ -160,7 +160,8 @@ classDiagram
 - **One key per run** *(ADR-0032, #175)*: each kept run lives under `retro-shmup.online.v1.<id>`;
   `KeptRunKeys` owns the key layout, `OnlineRuns` never builds a key. *(ADR-0032 § Consequences,
   refined in #175)*: the `KeptRuns` snapshot is a plain `KeptRun[]`; `MAX_KEPT_RUNS` and the
-  one-key operations live in `KeptRunKeys`.
+  one-key operations live in `KeptRunKeys`. In code, `KeptRunKeys` is the module
+  `src/domain/online/kept-runs.ts` and `PREFIX` is exported as `KEPT_RUN_PREFIX`.
   Keeping a run after a `202` writes its key without checking the limit (concurrent tabs may keep
   more than 20); a status answer rewrites its key only while that key still holds a valid run;
   `unknown` and an erasure answered `204` or `404` remove the key. Two tabs never drop each

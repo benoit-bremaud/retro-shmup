@@ -58,7 +58,7 @@ export class LocalStorageStore implements StoragePort {
     try {
       this.storage().removeItem(key);
     } catch {
-      // Unavailable storage: the key stays, and the next status request finds the run gone.
+      // Unavailable storage: the key stays; the next `unknown` status removes it again.
     }
   }
 }

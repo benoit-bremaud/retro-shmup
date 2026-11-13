@@ -383,6 +383,42 @@ describe('Online scores — the highlight across pages (GDD v0.39 §9.3)', () =>
     expect(texts(fixture)[2]).toBe(rowOf(10)); // page 2, its first row
   });
 
+  it.each([
+    [20, [10, 10]],
+    [21, [10, 9, 2]],
+    [29, [10, 9, 10]],
+    [30, [10, 9, 9, 2]],
+    [31, [10, 9, 9, 3]],
+  ])('splits %i runs into pages of %j (GDD v0.40)', (count, sizes) => {
+    const fixture = onScores(count);
+    const shown: number[] = [];
+    for (;;) {
+      const page = texts(fixture);
+      shown.push(page.filter((text) => /^ *\d+ {2}\d{4}-/.test(text)).length);
+      if (!page.includes('NEXT')) break;
+      move(fixture.machine, -1, 2); // NEXT
+      press(fixture.machine, Button.Confirm);
+    }
+    expect(shown).toEqual(sizes);
+  });
+
+  it('follows its run to page 2 when 21 runs become 20 (GDD v0.40)', () => {
+    const fixture = onScores(21);
+    for (let i = 0; i < 2; i += 1) {
+      move(fixture.machine, -1, 2); // NEXT
+      press(fixture.machine, Button.Confirm);
+    }
+    move(fixture.machine, 1); // run 20
+    answer(fixture, 1, { 0: 'unknown' });
+    const shown = texts(fixture);
+    expect(shown[2]).toBe(rowOf(11)); // run 0 gone: page 2 holds runs 11 to 20
+    expect(shown).not.toContain('NEXT');
+    eraseHighlighted(fixture.machine);
+    fixture.port.statuses[1]?.done('pending');
+    idle(fixture.machine);
+    expect(fixture.port.erased).toEqual([[idOf(20), TOKEN]]);
+  });
+
   it('closes an emptied last page to the page before (GDD v0.40)', () => {
     const fixture = onScores(21);
     for (let i = 0; i < 2; i += 1) {

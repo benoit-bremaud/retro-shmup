@@ -111,6 +111,16 @@ describe('kept runs, one storage key per run (ADR-0032)', () => {
     expect(store.values.size).toBe(2);
   });
 
+  it.each([
+    ['not a ULID', 'not-a-ulid'],
+    ['a lowercase ULID', '01jc0000000000000000000001'],
+  ])('reads no run under an id that is %s', (_label, id) => {
+    const store = new MemoryStore();
+    store.write(`${KEPT_RUN_PREFIX}${id}`, value(keptRun(1)));
+    expect(readKeptRun(store, id)).toBeUndefined();
+    expect(parseKeptRun(id, value(keptRun(1)))).toBeUndefined();
+  });
+
   it('drops extra fields and never reads an inherited one', () => {
     const run = keptRun(1);
     expect(parseKeptRun(run.id, value(run, { extra: true }))).toEqual(run);

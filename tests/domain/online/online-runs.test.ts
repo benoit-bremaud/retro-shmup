@@ -224,6 +224,14 @@ describe('OnlineRuns — Online scores', () => {
     expect(online.erase(ID)).toBe('gone');
   });
 
+  it('drops from the list a run another tab erased when the player erases it too', () => {
+    const { online, store } = setup(stored());
+    online.refreshAll();
+    clearKeptRuns(store);
+    expect(online.erase(ID)).toBe('gone');
+    expect(online.kept()).toEqual([]);
+  });
+
   it('keeps the run when the erasure fails', () => {
     const { online, port } = setup(stored());
     online.erase(ID);

@@ -73,8 +73,8 @@ const SENDING: OnlineState = { phase: 'sending' };
 /**
  * Sending runs, following their verification and erasing them (meta/04-class-online-runs,
  * meta/05-state-online-run). The scene machine calls `step` once per simulation step; the port's
- * handles are read there, never awaited. A `POST` is never retried on its own. Each kept run has its
- * own storage key (ADR-0032): a change touches only its run, then the snapshot is read again.
+ * handles are read there, never awaited. A `POST` is never retried on its own. Each kept run has
+ * its own storage key (ADR-0032): a change touches only its run, then the snapshot is read again.
  */
 export class OnlineRuns {
   private runs: readonly KeptRun[];
@@ -143,7 +143,10 @@ export class OnlineRuns {
    */
   erase(id: string): 'erasing' | 'busy' | 'gone' {
     const run = readKeptRun(this.storage, id);
-    if (run === undefined) return 'gone';
+    if (run === undefined) {
+      this.runs = this.load(); // Another tab erased it: its row leaves the list.
+      return 'gone';
+    }
     if (!this.start({ kind: 'erase', id, token: run.token })) return 'busy';
     this.eraseFailure = undefined;
     return 'erasing';

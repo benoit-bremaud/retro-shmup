@@ -19,6 +19,9 @@ export interface KeptRunsReader {
 const RUNS_PER_PAGE = 10;
 /** …and 9 on a page holding both *PREV* and *NEXT* (GDD v0.40 §9.3, more than 20 runs kept). */
 const RUNS_BETWEEN = 9;
+/** The heading and the status line above the rows (GDD v0.39 §9.3): gap 32. */
+const HEADER_GAP = 2 * MENU_HEADER_GAP.menu;
+const SCORE_DIGITS = 7;
 
 /** How many of `total` runs the page starting at run `start` shows. */
 function pageCount(total: number, page: number, start: number): number {
@@ -45,9 +48,6 @@ function pageOf(total: number, index: number): number {
     page += 1;
   }
 }
-/** The heading and the status line above the rows (GDD v0.39 §9.3): gap 32. */
-const HEADER_GAP = 2 * MENU_HEADER_GAP.menu;
-const SCORE_DIGITS = 7;
 
 /** A run row's text: the score right-aligned, then the UTC date of the send (`YYYY-MM-DD`). */
 function runText(run: KeptRun): string {
@@ -55,10 +55,11 @@ function runText(run: KeptRun): string {
 }
 
 /**
- * *Online scores* (GDD v0.39, v0.40 §9.3, UC10): the kept runs in pages of 10 (9 on a page with both
- * *PREV* and *NEXT*), *NEXT* when more runs follow, *PREV* past page 1, and *BACK*. The page is rebuilt when the kept runs change (a
- * status or a drop), never per step: the highlight stays on its run, a dropped highlighted run
- * passes it to the next one (the previous at the end), and the page shown is that run's.
+ * *Online scores* (GDD v0.39, v0.40 §9.3, UC10): the kept runs in pages of 10 (9 on a page with
+ * both *PREV* and *NEXT*), *NEXT* when more runs follow, *PREV* past page 1, and *BACK*. The page
+ * is rebuilt when the kept runs change (a status or a drop), never per step: the highlight stays
+ * on its run, a dropped highlighted run passes it to the next one (the previous at the end), and
+ * the page shown is that run's.
  */
 export class OnlineScoresScreen implements OnlineScoresView {
   menu: Menu<OnlineScoresRow> = new Menu<OnlineScoresRow>(['back'], { headerGap: HEADER_GAP });

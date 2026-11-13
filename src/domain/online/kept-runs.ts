@@ -78,7 +78,7 @@ export function forgetRun(store: StoragePort, id: string): void {
 
 /** The value stored under run `id`'s key, or `undefined` when absent or invalid. */
 export function parseKeptRun(id: string, text: string | null): KeptRun | undefined {
-  if (text === null) return undefined;
+  if (text === null || !ULID.test(id)) return undefined;
   let value: unknown;
   try {
     value = JSON.parse(text);
@@ -90,7 +90,6 @@ export function parseKeptRun(id: string, text: string | null): KeptRun | undefin
   const score: unknown = own(value, 'score');
   const sentAt: unknown = own(value, 'sentAt');
   const status: unknown = own(value, 'status');
-  if (!ULID.test(id)) return undefined;
   if (typeof token !== 'string' || !TOKEN.test(token)) return undefined;
   if (typeof score !== 'number' || !Number.isSafeInteger(score) || score < 0) return undefined;
   if (typeof sentAt !== 'string' || !ISO_DATE.test(sentAt)) return undefined;
