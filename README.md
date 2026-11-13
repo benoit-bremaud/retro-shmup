@@ -192,7 +192,7 @@ run online.
 **Online scores (opt-in, once released).** Only the release build on the game's own address can
 send a run, and only after you choose *SEND*. The run sent holds its seed, your recorded inputs,
 its score, the name you entered and, if you chose one, your country code — no cookie, no
-identifier. The game keeps the run's id and a private erase token on your device (at most 20), so
+identifier. The game keeps the run's id and a private erase token on your device (at most 20 per send check), so
 you can erase it later from *Options → Online scores*; the leaderboard's privacy page gives the
 other way.
 

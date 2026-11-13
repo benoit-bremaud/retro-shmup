@@ -4,7 +4,7 @@
 |---|---|---|---|---|---|
 | full | 7ccedfd / none (first report of this folder; no deploy note) | staging (https://retro-shmup.pages.dev, serves 7ccedfd) | W | qa-tester, product part, Sonnet | not published (orchestrator) |
 
-Checklist: `61702fb560a9`
+Checklist: `61702fb560a9` (hash of the qa-browser-check checklist version used)
 
 ## Plan
 Level `full`, product part. Browser game (W): keyboard, touch (390 portrait, mobile landscape, 320x568) and mouse; Chromium, Firefox and WebKit; EN and FR; effect toggles and reduced motion; tampered save documents; persistence across reload; Lighthouse and a layout-shift trace; header and cache review by `curl`. In: FON, DAT, UI, A11Y, PERF, ROB, USA, PRI. Out: SEC (security part), ROB-11 and MOB (not applicable), ROB-13 (static host).

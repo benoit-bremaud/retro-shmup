@@ -29,9 +29,11 @@
 3. **Reading.** The kept runs are the keys under the prefix `retro-shmup.online.v1.` whose suffix is
    a ULID and whose value parses by allowlist (ADR-0006); an invalid key or value is ignored, never
    removed by the reader, and never touches the save document. Every valid run is listed, with no
-   cap, newest first by id descending (a ULID sorts by time).
-4. **Limit.** The 20-run limit is checked only when the player chooses *SEND*: with 20 valid runs
-   kept, *SEND* shows *ERASE AN ONLINE SCORE FIRST*. The write after a `202` never checks it again,
+   cap, newest first by id descending (a ULID sorts by time). *Online scores* goes on past two
+   pages: a page with both *PREV* and *NEXT* shows 9 runs, so no page passes 12 rows (owner,
+   2026-11-13: 450/500, against one overflow page 360 and runs past 20 hidden 225).
+4. **Limit.** The 20-run limit is checked only when the player chooses *SEND*: with 20 or more
+   valid runs kept, *SEND* shows *ERASE AN ONLINE SCORE FIRST*. The write after a `202` never checks it again,
    so sends from several tabs at once may keep more than 20 (owner, 2026-11-13: 420/500, against
    refusing the token past 20, 370/500). A token is never dropped to make room.
 5. **Status and erasure.** A status answer `unknown` (`404`) and an erasure answered `204` or `404`
@@ -55,7 +57,7 @@
   meta/04 (`KeptRuns`), meta/05 (online-run state), meta/04-class-menus (`StoragePort`),
   system/03-component and the traceability matrix. The code PR updates `CHANGELOG.md`.
 - GDD v0.40: §9.1 drops the "20 runs kept by another tab" refusal, §9.3 lists every kept run by
-  id, §9.8 names the per-run key.
+  id on as many pages as needed, §9.8 names the per-run key.
 
 ## Rejected alternatives
 
