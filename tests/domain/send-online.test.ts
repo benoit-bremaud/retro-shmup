@@ -625,7 +625,22 @@ describe('Send online — the privacy page (GDD v0.35 §9.1, ADR-0027)', () => {
     expect(texts(fixture)).not.toContain('OPEN BLOCKED');
   });
 
-  it('clears OPEN BLOCKED once the offer is left, so the next run never shows it', () => {
+  it('clears OPEN BLOCKED when the offer is left, so the next run never shows it', () => {
+    const fixture = onOffer({ form: '' });
+    move(fixture.machine, 0, -1); // PRIVACY
+    fixture.link.outcome = 'refused';
+    press(fixture.machine, Button.Confirm);
+    expect(texts(fixture)).toContain('OPEN BLOCKED');
+    press(fixture.machine, Button.Back);
+    expect(fixture.machine.scene).toBe(Scene.Title);
+    idle(fixture.machine, 65);
+    endRun(fixture.machine);
+    expect(fixture.machine.scene).toBe(Scene.SendOnline);
+    idle(fixture.machine, 30);
+    expect(texts(fixture)).not.toContain('OPEN BLOCKED');
+  });
+
+  it('clears OPEN BLOCKED once the status screen opens', () => {
     const fixture = onPrivacyRow();
     fixture.link.outcome = 'refused';
     press(fixture.machine, Button.Confirm);
@@ -645,12 +660,9 @@ describe('Send online — the privacy page (GDD v0.35 §9.1, ADR-0027)', () => {
     fixture.link.outcome = 'refused';
     press(fixture.machine, Button.Confirm);
     fixture.machine.render(1, 16);
-    const ys = fixture.render.texts
-      .filter((t) => t.region === 'field')
-      .filter((t) => ['OPEN BLOCKED', 'OFFLINE', 'TO ERASE SEE PRIVACY'].includes(t.text))
-      .map((t) => t.y);
-    expect(new Set(ys).size).toBe(3);
-    expect(ys[0]).toBeLessThan(ys[1] ?? 0);
+    const y = (text: string): number | undefined =>
+      fixture.render.texts.find((t) => t.region === 'field' && t.text === text)?.y;
+    expect([y('OPEN BLOCKED'), y('OFFLINE'), y('TO ERASE SEE PRIVACY')]).toEqual([264, 278, 292]);
   });
 
   it('returns to the offer with OPEN BLOCKED when the gesture was refused', () => {
