@@ -1267,7 +1267,7 @@ highlighted). The date is the UTC date of the send. The list shows 10 runs per p
 with *NEXT* / *SUIVANT* when more runs are kept, page 2 with *PREV* / *PRECEDENT*, and each page
 ends with *BACK* (12 rows at most, no scrolling, v0.13). *(v0.40)* When more than 20 runs are
 kept (sends from two tabs at once), the pages go on: a page that holds both *PREV* and *NEXT*
-shows 9 runs, page 1 still shows 10 and the last page ends with *PREV* and *BACK* (owner
+shows 9 runs, page 1 still shows 10 and the last page shows up to 10 and ends with *PREV* and *BACK* (owner
 2026-11-13, 450/500; a single overflow page 360, runs past 20 hidden 225). The heading is in the menu font, as
 *High scores*, with the status line under it: gap 32, so 12 rows are 21 px tall (v0.25). *NEXT*
 or *PREV* highlights the first row of the page it opens; the highlighted run, once dropped from

@@ -55,7 +55,9 @@
 - `KeptRuns` becomes a read-only snapshot of the parsed runs; keeping, re-statusing and forgetting
   a run are one-key operations. The UML update follows in its own PR: meta/02 (send sequence),
   meta/04 (`KeptRuns`), meta/05 (online-run state), meta/04-class-menus (`StoragePort`),
-  system/03-component and the traceability matrix. The code PR updates `CHANGELOG.md`.
+  meta/05-state-scenes (*Online scores* page edges), system/01-use-case (UC10),
+  system/03-component and the traceability matrix. The code PR also pages `online-scores.ts` past
+  two pages and updates `CHANGELOG.md`.
 - GDD v0.40: §9.1 drops the "20 runs kept by another tab" refusal, §9.3 lists every kept run by
   id on as many pages as needed, §9.8 names the per-run key.
 
