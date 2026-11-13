@@ -147,6 +147,7 @@ server follow-up benoit-bremaud/retro-leaderboard#14.
     touching the save document. With 20 kept, *SEND* shows *ERASE AN ONLINE SCORE FIRST*.
     A token is never dropped to make room: it is the player's own way to erase the run (the
     privacy page's contact address is the other, leaderboard ADR-0004).
+    *Amended 2026-11-13 by ADR-0032 (#175):* one key per run, `retro-shmup.online.v1.<id>`.
 18. **Options → Online scores.** A new options row, present with the feature, lists the kept runs
     (score, status, date); on opening it asks `GET` for **every** kept run, one at a time, and
     drops a run answered `404` (erased by its retention, leaderboard ADR-0004); it erases one after

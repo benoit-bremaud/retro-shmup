@@ -1422,8 +1422,8 @@ of the allowlist; any other value reads as absent, so the question comes again â
 **feedback count**, a whole number from 0 (absent or invalid reads as 0), raised by one at each
 opening of the form. The save version stays 2: both fields are optional, as the volumes were in
 v0.23.
-*(v0.35)* The runs sent online live under their own key `retro-shmup.online.v1`, never in the
-save document: at most 20 items of a run id (a ULID), a deletion token (64 lowercase hex
+*(v0.35, key per run since ADR-0032)* The runs sent online live under one key per run,
+`retro-shmup.online.v1.<run id>`, never in the save document: at most 20 items of a run id (a ULID), a deletion token (64 lowercase hex
 characters), the score, the date sent and the last status; validated by allowlist and parsed
 without throwing, an invalid item dropped (ADR-0006, ADR-0031). The token is the only way to
 erase the run online from the game, so it is never dropped to make room. What is sent online â€” the name, the

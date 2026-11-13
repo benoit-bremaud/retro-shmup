@@ -8,6 +8,24 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ## 2026-11-13
 
+### One storage key per online run: ADR-0032 (part of #175)
+
+- Two tabs could drop each other's kept run and deletion token through the single
+  `retro-shmup.online.v1` document. ADR-0032 amends ADR-0031 decision 17: one key per run,
+  `StoragePort.keys(prefix)` and `remove(key)`, the 20-run limit counted by keys, no migration.
+  UML then code follow in their own PRs. Blocks enabling the online leaderboard.
+
+### FULL QA pass of the vertical slice (failed)
+
+- Report and screenshots under `docs/architecture/qa/2026-11-13-*`. Musts: #184 layout shift at
+  load (CLS 0.126), #185 accessibility (landmark, heading, canvas name, `lang`, label contrast).
+  Should: #186 cache headers. Nice: #187 options back row, #188 404/robots/favicon/meta. #189: a
+  blink under reduced motion. Owner order: #175, then #184 and #185, then the levels 2-3 epic.
+
+### Merge of PR #183 (`7ccedfd`, closes #167)
+
+- *Online scores* and the game wiring merged on `main`; #167 closed. Follow-ups: #175, #182.
+
 ### Online scores and the game wiring (3b-2, closes #167)
 
 - *Online scores* (`OnlineScoresScreen`, scenes `OnlineScores` and `ScoresErase`) built to GDD
