@@ -89,7 +89,7 @@ classDiagram
     +turn(now, frame) void
     +reopen(now, frame) void
     +erased(id, result) void
-    +followErase(error, keeps) void
+    +followErase(error, runs) void
   }
   class OnlineScoresView {
     <<interface>>

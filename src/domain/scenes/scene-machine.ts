@@ -493,7 +493,6 @@ export class SceneMachine {
   private readonly titleOptions: MenuScene;
   private readonly titleTouchOptions: MenuScene;
   private readonly onlineScores = new OnlineScoresScreen();
-  /** The kept run being erased from *Online scores*, until it leaves them or its erasure fails. */
   /** Whether the options opened without *Controls* (touch used last), frozen until they reopen. */
   private optionsTouch = false;
   private readonly restoreMenu = new Menu(['no', 'yes'] as const, {
@@ -1233,7 +1232,7 @@ export class SceneMachine {
     const online = this.runs();
     const screen = this.onlineScores;
     screen.sync(online.kept(), frame);
-    screen.followErase(online.eraseError(), (id) => online.keeps(id));
+    screen.followErase(online.eraseError(), online);
     const row = this.stepMenu(screen.menu, frame);
     if (row === 'score') this.openMenu(Scene.ScoresErase, frame);
     else if (row === 'next' || row === 'prev') screen.turn(this.steps, frame);

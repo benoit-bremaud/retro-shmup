@@ -10,6 +10,11 @@ import { Menu } from './menu';
 /** A row of *Online scores*: a kept run (drawn from its text), a page switch, or *BACK*. */
 export type OnlineScoresRow = 'score' | 'next' | 'prev' | 'back';
 
+/** What `followErase` reads of the kept runs: whether one is still kept (no allocation). */
+export interface KeptRunsReader {
+  keeps(id: string): boolean;
+}
+
 /** Runs per page (GDD v0.39 §9.3): 10 runs, a page switch and *BACK* make 12 rows at most. */
 const RUNS_PER_PAGE = 10;
 /** The heading and the status line above the rows (GDD v0.39 §9.3): gap 32. */
@@ -105,11 +110,11 @@ export class OnlineScoresScreen implements OnlineScoresView {
   }
 
   /** Shows the erase's failure; stops following once it failed or the run left the list. */
-  followErase(error: FailureCode | undefined, keeps: (id: string) => boolean): void {
+  followErase(error: FailureCode | undefined, runs: KeptRunsReader): void {
     const id = this.erasingId;
     if (id === undefined) return;
     if (error !== undefined) this.notice = failureLine(error);
-    if (error !== undefined || !keeps(id)) this.erasingId = undefined;
+    if (error !== undefined || !runs.keeps(id)) this.erasingId = undefined;
   }
 
   private sameRuns(runs: readonly KeptRun[]): boolean {

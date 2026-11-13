@@ -382,6 +382,19 @@ describe('Online scores — guards against a doubled press (GDD §9.1)', () => {
     expect(screen.status).toBe('verified');
   });
 
+  it('rebuilds the rows when as many runs are kept but not the same ones', () => {
+    const screen = new OnlineScoresScreen();
+    const run = {
+      token: TOKEN,
+      score: 1,
+      sentAt: '2026-11-10T10:00:00.000Z',
+      status: 'pending' as const,
+    };
+    screen.open([{ ...run, id: idOf(0) }], 0, createIntentFrame());
+    screen.sync([{ ...run, id: idOf(1), score: 5 }], createIntentFrame());
+    expect(screen.texts).toEqual([`${'5'.padStart(7)}  2026-11-10`]);
+  });
+
   it('stays on page 2 when NEXT is tapped twice in a row', () => {
     const fixture = onScores(20);
     idle(fixture.machine, 10); // past the screen's own opening guard
