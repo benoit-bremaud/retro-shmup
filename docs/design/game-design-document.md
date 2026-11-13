@@ -1270,9 +1270,9 @@ the list (erased, or `404` on its status), moves the highlight to the next run, 
 one at the end, and any other drop keeps the highlight on its run; while a run is highlighted the
 page shown is always that run's page, so a run moved onto page 1 by a drop takes the view to
 page 1 with it (owner 2026-11-13, 460/500; staying on page 2 on its first row 340, on the run now
-on the same row 220). A highlighted *PREV* or *BACK* keeps its page; a highlighted *NEXT* that
-vanishes moves the highlight to *BACK*; a page 2 left without runs closes to page 1 with its
-first row highlighted. Choosing a run opens the erase confirmation; an error or *WAIT* line shows at
+on the same row 220). A page 2 left without runs closes to page 1 with its first row
+highlighted; otherwise a highlighted *PREV* or *BACK* keeps its page, and a highlighted *NEXT*
+that vanishes moves the highlight to *BACK*. Choosing a run opens the erase confirmation; an error or *WAIT* line shows at
 the foot. *Online scores* is reached from the title's options only,
 never from the pause (no request during a run).
 
