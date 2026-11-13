@@ -8,6 +8,8 @@ import type {
   Submission,
 } from '../../src/domain/ports/leaderboard-port';
 import type { StoragePort } from '../../src/domain/ports/storage-port';
+import { KEPT_RUN_PREFIX } from '../../src/domain/online/kept-runs';
+import type { KeptRun } from '../../src/domain/online/kept-runs';
 
 /** A handle the test settles by hand, as the adapter does when `fetch` ends. */
 export class Settable<T> {
@@ -71,4 +73,22 @@ export class MemoryStore implements StoragePort {
     this.values.set(key, value);
     return true;
   }
+  keys(prefix: string): readonly string[] {
+    return [...this.values.keys()].filter((key) => key.startsWith(prefix));
+  }
+  remove(key: string): void {
+    this.values.delete(key);
+  }
+}
+
+/** Stores `runs` as another tab would: one key per run (ADR-0032), bypassing any refusal. */
+export function storeKeptRuns(store: MemoryStore, runs: readonly KeptRun[]): void {
+  for (const { id, token, score, sentAt, status } of runs) {
+    store.values.set(KEPT_RUN_PREFIX + id, JSON.stringify({ token, score, sentAt, status }));
+  }
+}
+
+/** Removes every kept run's key, as erasing them all from another tab would. */
+export function clearKeptRuns(store: MemoryStore): void {
+  for (const key of store.keys(KEPT_RUN_PREFIX)) store.values.delete(key);
 }

@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
-  KEPT_RUNS_KEY,
-  KeptRuns,
-  MAX_KEPT_RUNS,
-  parseKeptRuns,
-  serializeKeptRuns,
+  forgetRun,
+  KEPT_RUN_PREFIX,
+  keepRun,
+  parseKeptRun,
+  readKeptRun,
+  readKeptRuns,
+  restatusRun,
 } from '../../../src/domain/online/kept-runs';
 import type { KeptRun } from '../../../src/domain/online/kept-runs';
+import { MemoryStore } from '../../support/leaderboard-fakes';
 
 const TOKEN = 'a'.repeat(64);
 
@@ -21,74 +24,96 @@ function keptRun(n: number, fields: Partial<KeptRun> = {}): KeptRun {
   };
 }
 
-describe('parseKeptRuns', () => {
-  it('reads what serializeKeptRuns wrote', () => {
-    const kept = new KeptRuns([keptRun(1), keptRun(2, { status: 'verified' })]);
-    expect(parseKeptRuns(serializeKeptRuns(kept)).items).toEqual(kept.items);
+function value(run: KeptRun, fields: Record<string, unknown> = {}): string {
+  const { token, score, sentAt, status } = run;
+  return JSON.stringify({ token, score, sentAt, status, ...fields });
+}
+
+describe('kept runs, one storage key per run (ADR-0032)', () => {
+  it('keeps each run under its own key, never the save document', () => {
+    const store = new MemoryStore();
+    expect(keepRun(store, keptRun(1))).toBe(true);
+    expect(KEPT_RUN_PREFIX).toBe('retro-shmup.online.v1.');
+    expect([...store.values.keys()]).toEqual([`${KEPT_RUN_PREFIX}${keptRun(1).id}`]);
+    expect(readKeptRun(store, keptRun(1).id)).toEqual(keptRun(1));
+  });
+
+  it('lists every valid run, newest id first, with no cap', () => {
+    const store = new MemoryStore();
+    for (let i = 0; i < 25; i += 1) keepRun(store, keptRun(i));
+    const runs = readKeptRuns(store);
+    expect(runs).toHaveLength(25);
+    expect(runs[0]).toEqual(keptRun(24));
+    expect(runs[24]).toEqual(keptRun(0));
+  });
+
+  it('never overwrites a run already kept', () => {
+    const store = new MemoryStore();
+    keepRun(store, keptRun(1, { status: 'verified' }));
+    expect(keepRun(store, keptRun(1))).toBe(true);
+    expect(readKeptRun(store, keptRun(1).id)?.status).toBe('verified');
+  });
+
+  it('reports a write the storage refused', () => {
+    const store = new MemoryStore();
+    store.refuse = true;
+    expect(keepRun(store, keptRun(1))).toBe(false);
+    expect(readKeptRuns(store)).toEqual([]);
+  });
+
+  it('rewrites a status only while the key still holds a valid run (decision 5)', () => {
+    const store = new MemoryStore();
+    keepRun(store, keptRun(1));
+    expect(restatusRun(store, keptRun(1).id, 'rejected')).toBe(true);
+    expect(readKeptRun(store, keptRun(1).id)?.status).toBe('rejected');
+    forgetRun(store, keptRun(1).id);
+    expect(restatusRun(store, keptRun(1).id, 'verified')).toBe(false);
+    expect(store.values.size).toBe(0);
+  });
+
+  it('forgets one run and leaves the others', () => {
+    const store = new MemoryStore();
+    keepRun(store, keptRun(1));
+    keepRun(store, keptRun(2));
+    forgetRun(store, keptRun(1).id);
+    expect(readKeptRuns(store)).toEqual([keptRun(2)]);
+  });
+
+  it('ignores, and never removes, a key whose suffix is not a ULID', () => {
+    const store = new MemoryStore();
+    store.write(`${KEPT_RUN_PREFIX}not-a-ulid`, value(keptRun(1)));
+    store.write('retro-shmup.online.v1', JSON.stringify({ v: 1, runs: [keptRun(1)] }));
+    expect(readKeptRuns(store)).toEqual([]);
+    expect(store.values.size).toBe(2);
   });
 
   it.each([
     ['absent', null],
     ['not JSON', '{'],
-    ['not a document', '[]'],
-    ['another version', JSON.stringify({ v: 2, runs: [] })],
-    ['runs not a list', JSON.stringify({ v: 1, runs: {} })],
-  ])('gives an empty list when %s', (_label, text) => {
-    expect(parseKeptRuns(text).items).toEqual([]);
+    ['not an object', '[]'],
+    ['null', 'null'],
+  ])('reads no run when the value is %s', (_label, text) => {
+    expect(parseKeptRun(keptRun(1).id, text)).toBeUndefined();
   });
 
   it.each([
-    ['an id that is not a ULID', { id: 'not-a-ulid' }],
-    ['an id with a lowercase letter', { id: `01jc${'0'.repeat(22)}` }],
     ['a short token', { token: 'a'.repeat(63) }],
     ['an uppercase token', { token: 'A'.repeat(64) }],
     ['a negative score', { score: -1 }],
     ['a fractional score', { score: 1.5 }],
     ['a date that is not ISO', { sentAt: 'yesterday' }],
     ['an unknown status', { status: 'lost' }],
-  ])('drops an item with %s and keeps the others', (_label, fields) => {
-    const text = JSON.stringify({ v: 1, runs: [{ ...keptRun(1), ...fields }, keptRun(2)] });
-    expect(parseKeptRuns(text).items).toEqual([keptRun(2)]);
+  ])('ignores a value with %s and keeps the others', (_label, fields) => {
+    const store = new MemoryStore();
+    store.write(`${KEPT_RUN_PREFIX}${keptRun(1).id}`, value(keptRun(1), fields));
+    keepRun(store, keptRun(2));
+    expect(readKeptRuns(store)).toEqual([keptRun(2)]);
+    expect(store.values.size).toBe(2);
   });
 
-  it('drops extra fields and keeps at most the first 20 valid items', () => {
-    const runs = Array.from({ length: 25 }, (_, i) => ({ ...keptRun(i), extra: true }));
-    const items = parseKeptRuns(JSON.stringify({ v: 1, runs })).items;
-    expect(items).toHaveLength(MAX_KEPT_RUNS);
-    expect(items[0]).toEqual(keptRun(0));
-  });
-
-  it('uses its own storage key, never the save document', () => {
-    expect(KEPT_RUNS_KEY).toBe('retro-shmup.online.v1');
-  });
-});
-
-describe('KeptRuns', () => {
-  it('adds a run first and is full at 20, never dropping a token', () => {
-    const kept = new KeptRuns([]);
-    for (let i = 0; i < MAX_KEPT_RUNS; i += 1) {
-      expect(kept.full()).toBe(false);
-      expect(kept.add(keptRun(i))).toBe(true);
-    }
-    expect(kept.items[0]).toEqual(keptRun(MAX_KEPT_RUNS - 1));
-    expect(kept.full()).toBe(true);
-    expect(kept.add(keptRun(99))).toBe(false);
-    expect(kept.items).toHaveLength(MAX_KEPT_RUNS);
-  });
-
-  it('sets a status and drops a run by id', () => {
-    const kept = new KeptRuns([keptRun(1), keptRun(2)]);
-    kept.setStatus(keptRun(2).id, 'rejected');
-    kept.drop(keptRun(1).id);
-    expect(kept.items).toEqual([keptRun(2, { status: 'rejected' })]);
-    kept.setStatus('missing', 'verified');
-    kept.drop('missing');
-    expect(kept.items).toEqual([keptRun(2, { status: 'rejected' })]);
-  });
-
-  it('keeps a run once when it is added again', () => {
-    const kept = new KeptRuns([keptRun(1)]);
-    expect(kept.add(keptRun(1))).toBe(true);
-    expect(kept.items).toEqual([keptRun(1)]);
+  it('drops extra fields and never reads an inherited one', () => {
+    const run = keptRun(1);
+    expect(parseKeptRun(run.id, value(run, { extra: true }))).toEqual(run);
+    expect(parseKeptRun(run.id, '{"__proto__":{"status":"verified"}}')).toBeUndefined();
   });
 });

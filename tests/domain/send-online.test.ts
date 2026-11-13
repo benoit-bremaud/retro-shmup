@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_BINDINGS } from '../../src/domain/input/default-bindings';
 import type { Options } from '../../src/domain/options';
 import { Run, RunOutcome } from '../../src/domain/game/run';
-import { KEPT_RUNS_KEY, MAX_KEPT_RUNS, parseKeptRuns } from '../../src/domain/online/kept-runs';
+import { MAX_KEPT_RUNS, readKeptRuns } from '../../src/domain/online/kept-runs';
+import type { KeptRun } from '../../src/domain/online/kept-runs';
 import { failureLine, statusLine } from '../../src/domain/online/online-lines';
 import { OnlineRuns } from '../../src/domain/online/online-runs';
 import { Button, createIntentFrame } from '../../src/domain/ports/input-port';
@@ -14,7 +15,7 @@ import { Starfield } from '../../src/domain/presentation/starfield';
 import type { HighScoreEntry } from '../../src/domain/hall-of-fame/high-scores';
 import { NO_HOST } from '../../src/domain/scenes/scene-host';
 import { Scene, SceneMachine } from '../../src/domain/scenes/scene-machine';
-import { FakePort, MemoryStore } from '../support/leaderboard-fakes';
+import { clearKeptRuns, FakePort, MemoryStore, storeKeptRuns } from '../support/leaderboard-fakes';
 import { RecordingRender } from '../support/recording-render';
 
 const DT = 1 / 60;
@@ -212,16 +213,15 @@ function accept(fixture: Fixture): void {
   idle(fixture.machine, 1);
 }
 
-/** A kept-runs document holding the 20 runs a browser may keep. */
-function fullDocument(): string {
-  const runs = Array.from({ length: MAX_KEPT_RUNS }, (_, i) => ({
-    id: `01JC${String(i).padStart(22, '0')}`,
+/** The 20 runs a browser may keep at SEND, one key each. */
+function fullDocument(): KeptRun[] {
+  return Array.from({ length: MAX_KEPT_RUNS }, (_, i) => ({
+    id: `01JC${String(100 + i).padStart(22, '0')}`,
     token: TOKEN,
     score: 10,
     sentAt: '2026-11-12T10:00:00.000Z',
-    status: 'pending',
+    status: 'pending' as const,
   }));
-  return JSON.stringify({ v: 1, runs });
 }
 
 describe('Send online — the offer (GDD v0.35 §9.1)', () => {
@@ -361,8 +361,8 @@ describe('Send online — the offer (GDD v0.35 §9.1)', () => {
 
   it('shows the erase-first line with 20 runs kept and sends nothing', () => {
     const fixture = onOffer();
-    fixture.store.write(KEPT_RUNS_KEY, fullDocument());
-    expect(parseKeptRuns(fixture.store.read(KEPT_RUNS_KEY)).full()).toBe(true);
+    storeKeptRuns(fixture.store, fullDocument());
+    expect(readKeptRuns(fixture.store)).toHaveLength(MAX_KEPT_RUNS);
     activateSend(fixture.machine);
     expect(fixture.machine.scene).toBe(Scene.SendOnline);
     expect(texts(fixture)).toContain('ERASE AN ONLINE SCORE FIRST');
@@ -389,7 +389,7 @@ describe('Send online — the name entry (GDD v0.35 §9.1)', () => {
   it('returns to the offer with the erase-first line when 20 runs were kept meanwhile', () => {
     const fixture = onOffer();
     activateSend(fixture.machine);
-    fixture.store.write(KEPT_RUNS_KEY, fullDocument());
+    storeKeptRuns(fixture.store, fullDocument());
     typeNameA(fixture.machine);
     expect(fixture.machine.scene).toBe(Scene.SendOnline);
     expect(texts(fixture)).toContain('ERASE AN ONLINE SCORE FIRST');
@@ -600,7 +600,7 @@ describe('Send online — erasing the sent run (GDD v0.35–v0.37 §9.1)', () =>
 
   it('goes on when the run already left the kept runs (GDD v0.37)', () => {
     const fixture = onConfirm();
-    fixture.store.values.delete(KEPT_RUNS_KEY);
+    clearKeptRuns(fixture.store);
     move(fixture.machine, 0, 1);
     press(fixture.machine, Button.Confirm);
     expect(fixture.machine.scene).toBe(Scene.FeedbackOffer);
