@@ -1264,13 +1264,15 @@ run's status shows in full on a line under the heading (empty while *NEXT*, *PRE
 highlighted). The date is the UTC date of the send. The list shows 10 runs per page: page 1 ends
 with *NEXT* / *SUIVANT* when more runs are kept, page 2 with *PREV* / *PRECEDENT*, and each page
 ends with *BACK* (12 rows at most, no scrolling, v0.13). The heading is in the menu font, as
-*High scores*, with the status line under it: gap 32, so 12 rows are 21 px tall (v0.25). A page
-switch highlights its first row; the highlighted run, once dropped from the list (erased, or
-`404` on its status), moves the highlight to the next run, or the previous one at the end, and
-any other drop keeps the highlight on its run; the page shown is always the page of the highlighted
-run, so a run moved onto page 1 by a drop takes the view to page 1 with it (owner 2026-11-13,
-460/500; staying on page 2 on its first row 340, on the run now on the same row 220), and a page 2
-left without runs closes to page 1. Choosing a run opens the erase confirmation; an error or *WAIT* line shows at
+*High scores*, with the status line under it: gap 32, so 12 rows are 21 px tall (v0.25). *NEXT*
+or *PREV* highlights the first row of the page it opens; the highlighted run, once dropped from
+the list (erased, or `404` on its status), moves the highlight to the next run, or the previous
+one at the end, and any other drop keeps the highlight on its run; while a run is highlighted the
+page shown is always that run's page, so a run moved onto page 1 by a drop takes the view to
+page 1 with it (owner 2026-11-13, 460/500; staying on page 2 on its first row 340, on the run now
+on the same row 220). A highlighted *PREV* or *BACK* keeps its page; a highlighted *NEXT* that
+vanishes moves the highlight to *BACK*; a page 2 left without runs closes to page 1 with its
+first row highlighted. Choosing a run opens the erase confirmation; an error or *WAIT* line shows at
 the foot. *Online scores* is reached from the title's options only,
 never from the pause (no request during a run).
 

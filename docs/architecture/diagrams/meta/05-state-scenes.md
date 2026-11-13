@@ -195,7 +195,8 @@ stateDiagram-v2
   takes the `no usable name this run` edge to the online name entry (design; built in 3b-2, #167).
 - **v0.39 (GDD §9.3, #167)**: `Online scores` shows 10 runs per page with *NEXT* / *PREV*;
   choosing a run opens the erase confirmation (*No* first). It is reached from the title's
-  `Options` only, never from `PauseOptions`.
+  `Options` only, never from `PauseOptions`. A drop keeps the highlight on its run, and the
+  view follows that run's page.
 - **Built (#167, 3b-1)**: the `erase, confirmed` transitions pass by an erase confirmation,
   *No* first, as `Confirm quit` (scene `OnlineErase`); the privacy page's gesture prompt is its own
   scene (`OnlineGesture`) that returns to `Send online`. A failed erasure stays on `Online status`

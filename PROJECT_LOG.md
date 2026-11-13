@@ -14,6 +14,8 @@ human context: what was done, why, and by which PR. Not the release changelog (s
   date and status: pages of 10 with *NEXT* / *PREV* (owner, 415/500; compact rows 310,
   scrolling 280), each row score and date, the highlighted run's status under the heading
   (435/500; two lines per run 350, short codes 345). Title options only.
+- After a drop the highlight stays on its run and the view follows that run's page (owner,
+  460/500; staying on page 2 on its first row 340, on the same row 220), answering a Codex P2.
 
 ### Refused name reopens the name entry: GDD v0.38 (#180 `d92982c`, part of #167)
 
