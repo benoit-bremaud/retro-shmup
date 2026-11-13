@@ -54,7 +54,11 @@ sequenceDiagram
         Online->>Port: status(id)
         Port->>LB: GET /v1/runs/{id}
         LB-->>Port: {status}, or 404
-        Port-->>Online: status, or unknown (its key is removed)
+        Port-->>Online: status, or unknown
+      end
+      opt unknown
+        Online->>Keys: forgetRun(id)
+        Keys->>Store: remove retro-shmup.online.v1.<id>
       end
       Online->>Keys: restatusRun(id, last status)
       Keys->>Store: read retro-shmup.online.v1.<id>
