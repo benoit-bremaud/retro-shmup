@@ -8,7 +8,8 @@
 #   L1 check    pre-push hook, review-local --push     lint + test + security + secrets        < 3 min
 #   L2 gate     review-local § 2b, on the pushed head  check + Sonar + browser smoke,          5–15 min
 #               before every merge                     then the attestation
-#   L3 nightly  systemd user timer                     check + TruffleHog + toolchain drift
+#   L3 nightly  systemd timer, clean origin/main WT    audit + gitleaks + TruffleHog fail;
+#                                                      check + toolchain drift only warn
 #
 # Then: `just merge <pr>` (refuses without the gate attestation on the head SHA).
 
@@ -140,7 +141,7 @@ nightly:
     #!/bin/sh
     set -u
     rc=0
-    warn() { "$@" || echo "WARNING nightly: $* (drift, not a failure)" >&2; }
+    warn() { "$@" || echo "WARNING nightly: $* failed (drift, not a failure)" >&2; }
     warn just check
     warn sh scripts/toolchain-drift.sh
     pnpm audit --audit-level high || rc=1

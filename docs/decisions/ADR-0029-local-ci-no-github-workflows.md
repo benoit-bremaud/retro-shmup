@@ -43,7 +43,7 @@ taken to its end: nothing runs on GitHub. Issue #156.
    | L0 | `just fast` | lefthook `pre-commit` | gitleaks on the staged files, ESLint and Prettier on the staged files, shellcheck on staged scripts; the `commit-msg` hook checks the Conventional Commit subject (`scripts/check-commit-msg.sh`) | < 10 s |
    | L1 | `just check` | lefthook `pre-push` (clean tree required), `review-local --push` | `lint` (tsc on the four projects, ESLint, knip, Prettier, shellcheck, `lefthook validate`), `test` (Vitest with the coverage floor, doc coverage ≥ 90 %, the wiring tests `test-local-ci.sh` and `test-attest.sh`), `security` (Semgrep CE `p/javascript` + `p/typescript` on `src` and `tests`, shellcheck covers `scripts`; `pnpm audit --audit-level high`), `secrets` (gitleaks, full history) | < 3 min |
    | L2 | `just gate` | `review-local` § 2b on the pushed head, before every merge | refuses a dirty tree, a HEAD behind the base or unpushed; `check`, then `sonar` (local SonarQube with quality-gate wait, coverage report fresher than the sources, server up), then `smoke` (`pnpm test:smoke`: production build and the browser smoke test in Chromium, Firefox and WebKit, ADR-0026); then the attestation | 5–15 min |
-   | L3 | `just nightly` | systemd user timer `retro-shmup-nightly` (04:50, persistent) | `check`, TruffleHog over the history (offline), `mise outdated` drift on the pinned tools | none |
+   | L3 | `just nightly` | systemd user timer `retro-shmup-nightly` (04:50, persistent) | in a clean `origin/main` worktree: `pnpm audit`, gitleaks and TruffleHog over the history (offline) fail it; `check` and `mise outdated` drift on the pinned tools only warn (amendment 2026-11-15) | none |
 
 2. **The gate is attested** (agents-skills ADR-0003): `just gate` ends with `scripts/attest.sh
    write gate`, a signed git note on `refs/notes/gate` (`gate <owner/repo> <sha>`, SSH signature,
@@ -118,6 +118,15 @@ taken to its end: nothing runs on GitHub. Issue #156.
   the Playwright browsers stay system tools (CONTRIBUTING.md).
 - The owner's main checkout must `git pull` and run `just setup` after the merge: its husky hook
   path was unset by this change.
+
+## Amendment 2026-11-15 (#194, agents-skills#427)
+
+The nightly no longer runs in the owner's working checkout, which was often dirty or on a feature
+branch: the unit resets a dedicated worktree (`~/.cache/nightly/retro-shmup`) to `origin/main`,
+cleans it and installs from the lockfile before `just nightly`. Only a vulnerability (`pnpm audit
+--audit-level high`) or a secret (gitleaks, TruffleHog) fails the nightly; a red `check` or
+toolchain drift prints `WARNING nightly: … (drift, not a failure)`, since `just check` and
+`just gate` already block every change before it reaches `main`.
 
 ## References
 

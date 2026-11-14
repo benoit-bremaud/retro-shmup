@@ -1,6 +1,6 @@
 #!/bin/sh
 # Tests for the local CI wiring (#156, skill local-ci rule 7): the four tiers exist and compose
-# (check = lint + test + security + secrets; nightly ⊇ check), no GitHub workflow is left (ADR-0029),
+# (check = lint + test + security + secrets; nightly warns on check, fails on audit and secrets), no GitHub workflow is left (ADR-0029),
 # the Node major and pnpm pins agree, lefthook.yml is valid and wires the commit-msg and pre-push hooks,
 # the commit-msg check accepts and refuses the right subjects; then, in a throwaway repository with
 # stubbed boundaries (just steps, attest.sh, gh, sonar-scanner): gate refuses a dirty tree, a HEAD
@@ -47,6 +47,12 @@ deps() { just --show "$1" | grep -E "^$1( |:)" | sed 's/.*: *//'; } # deps <reci
 just --show nightly | grep -q 'warn just check' || fail "nightly does not run check as a warning"; ok
 for c in 'pnpm audit.*|| rc=1' 'gitleaks git.*|| rc=1' 'trufflehog git.*|| rc=1' 'exit "[$]rc"'; do
   just --show nightly | grep -q -- "$c" || fail "nightly: vulnerabilities and secrets must fail it ($c)"; ok
+done
+# The nightly unit runs in a clean origin/main worktree, never the working checkout (#194).
+u=scripts/systemd/retro-shmup-nightly.service
+! grep -q '^WorkingDirectory=' "$u" || fail "nightly unit runs in the working checkout"; ok
+for c in 'reset --quiet --hard origin/main' 'clean -ffdq' 'pnpm install --frozen-lockfile' 'cd "$WT" && exec mise x -- just nightly'; do
+  grep -qF -- "$c" "$u" || fail "nightly unit lacks: $c"; ok
 done
 just --show smoke | grep -q 'pnpm test:smoke' || fail "smoke does not run the browser smoke test (ADR-0026)"; ok
 just --show test | grep -q 'scripts/doc-coverage.sh' || fail "test does not measure the doc coverage"; ok
@@ -221,6 +227,20 @@ exit 1
 EOF2
 drift 1 "mise outdated failure propagates" "mise outdated failed" ''
 rm "$box/stub/mise"
+
+# nightly (agents-skills#427): a red check or drift only warns; a vulnerability or a secret fails it.
+printf '#!/bin/sh\n[ "${FAIL_STEP:-}" != drift ]\n' > scripts/toolchain-drift.sh
+for t in gitleaks trufflehog; do
+  printf '#!/bin/sh\necho "%s $*" >> "$LOG"; [ "${FAIL_STEP:-}" != %s ]\n' "$t" "$t" > "$box/stub/$t"
+done
+printf '#!/bin/sh\necho "pnpm $*" >> "$LOG"; [ "${FAIL_STEP:-}" != audit ] || [ "$1" != audit ]\n' > "$box/stub/pnpm"
+chmod +x "$box/stub"/*
+box_run 0 "nightly: green path" "trufflehog git" -- "$real_just" nightly
+box_run 0 "nightly: red check warns" "WARNING nightly: just check failed" -- env FAIL_STEP=check "$real_just" nightly
+box_run 0 "nightly: drift warns" "WARNING nightly: sh scripts/toolchain-drift.sh failed" -- env FAIL_STEP=drift "$real_just" nightly
+for s in audit gitleaks trufflehog; do
+  box_run 1 "nightly: $s fails it" - -- env FAIL_STEP="$s" "$real_just" nightly
+done
 
 # node-guard: the wrong major is refused before any step runs, the right one lets the step run.
 echo 99.0.0 > .nvmrc
