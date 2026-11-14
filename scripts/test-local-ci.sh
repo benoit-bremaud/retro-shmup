@@ -44,7 +44,10 @@ for r in fast check gate nightly setup merge smoke sonar; do
 done
 deps() { just --show "$1" | grep -E "^$1( |:)" | sed 's/.*: *//'; } # deps <recipe>
 [ "$(deps check)" = "lint test security secrets" ] || fail "check must be exactly lint test security secrets"; ok
-deps nightly | grep -qw check || fail "nightly does not depend on check"; ok
+just --show nightly | grep -q 'warn just check' || fail "nightly does not run check as a warning"; ok
+for c in 'pnpm audit.*|| rc=1' 'gitleaks git.*|| rc=1' 'trufflehog git.*|| rc=1' 'exit "[$]rc"'; do
+  just --show nightly | grep -q -- "$c" || fail "nightly: vulnerabilities and secrets must fail it ($c)"; ok
+done
 just --show smoke | grep -q 'pnpm test:smoke' || fail "smoke does not run the browser smoke test (ADR-0026)"; ok
 just --show test | grep -q 'scripts/doc-coverage.sh' || fail "test does not measure the doc coverage"; ok
 [ -z "$(find .github -path '*/workflows/*' -name '*.y*ml' 2>/dev/null)" ] || fail "a GitHub workflow is left (ADR-0029: none)"; ok

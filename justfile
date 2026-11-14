@@ -131,10 +131,19 @@ merge pr:
     sh "$verifier" verify gate "$sha"
     gh pr merge "$pr" --squash --match-head-commit "$sha"
 
-# L3 — nightly, systemd user timer (no time budget): deep secret history (TruffleHog, offline;
-# .trufflehog-exclude lists itself, its wording trips the URI detector) and toolchain drift:
-# scripts/toolchain-drift.sh fails on a mise.toml tool behind its latest release.
-# L3 — nightly (systemd timer): check + TruffleHog + toolchain drift
-nightly: check
-    trufflehog git "file://$PWD" --no-verification --fail --no-update --exclude-paths .trufflehog-exclude
-    sh scripts/toolchain-drift.sh
+# L3 — nightly, systemd user timer, on a clean origin/main worktree (agents-skills#427): only a
+# vulnerability (pnpm audit) or a secret (gitleaks, TruffleHog offline; .trufflehog-exclude lists
+# itself, its wording trips the URI detector) fails it; `check` and the toolchain drift
+# (scripts/toolchain-drift.sh) print a warning, drift is not a defect.
+# L3 — nightly (systemd timer): vulnerabilities + secrets fail; check + toolchain drift warn
+nightly:
+    #!/bin/sh
+    set -u
+    rc=0
+    warn() { "$@" || echo "WARNING nightly: $* (drift, not a failure)" >&2; }
+    warn just check
+    warn sh scripts/toolchain-drift.sh
+    pnpm audit --audit-level high || rc=1
+    gitleaks git --redact --no-banner . || rc=1
+    trufflehog git "file://$PWD" --no-verification --fail --no-update --exclude-paths .trufflehog-exclude || rc=1
+    exit "$rc"
