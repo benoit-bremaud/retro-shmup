@@ -152,7 +152,7 @@ tier when the shell does not activate mise.
 | L2 | `just gate` | before every merge, on the pushed head | `check`, `sonar-scanner` against the local SonarQube (`localhost:9000`) with quality-gate wait, the browser smoke test (`just smoke`), then the signed `gate` attestation of the head SHA | 5–15 min |
 | L3 | `just nightly` | systemd user timer (`scripts/systemd/`), in a clean `origin/main` worktree (`~/.cache/nightly/retro-shmup`) | `pnpm audit`, gitleaks and TruffleHog fail it; a red `check` or toolchain drift prints a `WARNING nightly` line | — |
 
-Install or update the units: `install -m 644 scripts/systemd/retro-shmup-nightly* ~/.config/systemd/user/ && systemctl --user daemon-reload && systemctl --user enable --now retro-shmup-nightly.timer`.
+Install or update the units, from an up-to-date `main`: `install -m 644 scripts/systemd/retro-shmup-nightly* ~/.config/systemd/user/ && systemctl --user daemon-reload && systemctl --user enable --now retro-shmup-nightly.timer`.
 
 `just check` checks the working tree, so the pre-push hook refuses a dirty tree: what is verified
 is what is pushed. Before every push, also run the structured local review gate (`review-local`).
