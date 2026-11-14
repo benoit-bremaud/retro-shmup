@@ -6,6 +6,18 @@ human context: what was done, why, and by which PR. Not the release changelog (s
 
 ---
 
+## 2026-11-15
+
+### Merge of PR #195 (`7c27dee`, closes #194)
+
+- The nightly no longer runs in the working checkout (dirty or on a feature branch, so it failed
+  every day since 2026-11-08): the unit resets `~/.cache/nightly/retro-shmup` to `origin/main`,
+  cleans it and installs from the lockfile (agents-skills#427). Only `pnpm audit`, gitleaks and
+  TruffleHog fail it; a red `check` or toolchain drift prints `WARNING nightly`. ADR-0029 amended.
+- Reviews: adversarial round 1 Must 1 (ADR drift) / Should 4, all fixed; round 2 open.
+  `just gate` attested on `ebdd469`. Units reinstalled from `main`; live run green in the
+  worktree (drift warned, 1 moderate advisory below `high`, no leaks).
+
 ## 2026-11-13
 
 ### Merge of PR #192 (`06c6b7c`, closes #175)
