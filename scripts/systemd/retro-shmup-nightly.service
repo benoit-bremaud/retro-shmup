@@ -1,12 +1,21 @@
 [Unit]
-Description=Nightly local CI of retro-shmup: just nightly, tier L3 (#156, skill local-ci)
+Description=Nightly local CI of retro-shmup: just nightly, tier L3 (#156), on a clean origin/main worktree (#194)
 OnFailure=retro-shmup-nightly-failed.service
 
 [Service]
 Type=oneshot
 # The user manager's PATH has no ~/.local/bin, where mise lives; mise brings the pinned tools.
 Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
-WorkingDirectory=%h/Documents/02_personal/video_games/retro-shmup
-ExecStart=%h/.local/bin/mise x -- just nightly
+Environment=REPO=%h/Documents/02_personal/video_games/retro-shmup WT=%h/.cache/nightly/retro-shmup
+# Never the working checkout: it may be dirty or sit on a feature branch (agents-skills#427).
+# '-': a catch-up run before the network is up uses the last fetched origin/main (pnpm audit
+# still needs the registry and alerts offline).
+ExecStartPre=-/usr/bin/git -C ${REPO} fetch --quiet origin main
+ExecStartPre=/bin/sh -c 'test -d "$WT" || { git -C "$REPO" worktree prune && git -C "$REPO" worktree add --detach "$WT" origin/main; }'
+ExecStartPre=/usr/bin/git -C ${WT} reset --quiet --hard origin/main
+ExecStartPre=/usr/bin/git -C ${WT} clean -ffdq
+ExecStartPre=%h/.local/bin/mise trust --quiet ${WT}
+ExecStartPre=/bin/sh -c 'cd "$WT" && exec mise x -- pnpm install --frozen-lockfile --ignore-scripts'
+ExecStart=/bin/sh -c 'cd "$WT" && exec mise x -- just nightly'
 # A oneshot has no timeout: a hung fetch would block the timer for good.
 TimeoutStartSec=2h

@@ -85,7 +85,8 @@ epic), one `area:*` (`design`, `uml`, `engine`, `game`, `render`, `audio`, `inpu
   tree: typecheck, lint, knip, format, Vitest with coverage, doc coverage, wiring tests, Semgrep
   CE, `pnpm audit --audit-level high`, gitleaks full history), `just gate` (before every merge, on
   the pushed head: `check`, local SonarQube with quality-gate wait, browser smoke in three
-  engines, then the signed `gate` attestation), `just nightly` (systemd timer: TruffleHog, drift).
+  engines, then the signed `gate` attestation), `just nightly` (systemd timer, clean `origin/main` worktree: audit and secrets fail, `check` and
+  drift warn).
 - `just merge <pr>` is the only merge path: it verifies the attestation on the exact head SHA.
   `main` requires the `gate` status. Run tiers as `mise x -- just <tier>` outside an activated
   shell.

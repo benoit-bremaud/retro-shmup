@@ -1,5 +1,5 @@
 #!/bin/sh
-# Toolchain drift (step of `just nightly`): fails when a tool pinned in mise.toml is behind. `mise
+# Toolchain drift (a warning in `just nightly`): fails when a tool pinned in mise.toml is behind. `mise
 # outdated` exits 0 whatever it finds and still lists the global ~/.tool-versions under --no-global,
 # so only the mise.toml rows count. Two passes: without `--bump`, a new patch of the Node major pin
 # (`node = "22"`: the next major is the project's choice, ADR-0011, not drift); with `--bump`, a new
