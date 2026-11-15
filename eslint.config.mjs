@@ -97,6 +97,8 @@ export default defineConfig(
       'test-results/',
       'playwright-report/',
       'blob-report/',
+      // SonarScanner work dir: an interrupted scan leaves its bundled .d.ts files behind.
+      '.scannerwork/',
     ],
   },
   js.configs.recommended,
